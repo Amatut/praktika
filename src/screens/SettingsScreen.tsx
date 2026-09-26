@@ -13,7 +13,7 @@ import { parseMarketFile } from '../storage/market-import.ts';
 import { requestPersistentStorage, storageEstimate } from '../storage/persist.ts';
 import { deleteMarketDataset, getMarketDatasets, saveMarketDataset } from '../storage/repo.ts';
 import { applyImport, exportAll, listBackups, parseImport, resetAll, restoreBackup } from '../storage/transfer.ts';
-import type { ExportFile, ImportStrategy, Settings } from '../storage/types.ts';
+import type { ExportFile, ImportStrategy, MarketDataset, Settings } from '../storage/types.ts';
 import { OfflineOverview } from './offline-controls.tsx';
 
 function Section({ id, title, lead, children }: { id: string; title: string; lead?: string; children: ReactNode }) {
@@ -570,6 +570,13 @@ function MarketSettings({ settings }: { settings: Settings }) {
           ))}
         </select>
       </Row>
+      <Row label="Готовые обзоры" hint="Собраны из открытых источников и перепроверены: у каждой суммы есть ссылка и дата">
+        <BundledMarketOverviews
+          loaded={datasets.value ?? []}
+          regionUnset={!settings.market.region}
+          onMessage={setMessage}
+        />
+      </Row>
       <Row label="Обзоры рынка" hint="Проверенный набор в формате praktika-market (JSON)">
         {(datasets.value ?? []).length === 0 ? (
           <span className="small muted">Данные ещё не загружены.</span>
@@ -623,6 +630,79 @@ function MarketSettings({ settings }: { settings: Settings }) {
         {message && <Notice tone={message.tone}>{message.text}</Notice>}
       </Row>
     </>
+  );
+}
+
+interface BundledOverview {
+  file: string;
+  title: string;
+  region: string;
+  currency: string;
+  checkedAt: string;
+  entries: number;
+}
+
+/** Обзоры, которые поставляются вместе с приложением (public/market): загрузка одной кнопкой, в том числе на телефоне. */
+function BundledMarketOverviews({
+  loaded,
+  regionUnset,
+  onMessage,
+}: {
+  loaded: MarketDataset[];
+  regionUnset: boolean;
+  onMessage: (message: { tone: 'good' | 'error'; text: string }) => void;
+}) {
+  const list = useAsync(async (): Promise<BundledOverview[]> => {
+    const response = await fetch(`${import.meta.env.BASE_URL}market/index.json`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return (await response.json()) as BundledOverview[];
+  }, []);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  if (list.error) return <span className="small muted">Список готовых обзоров не загрузился — нужна сеть при первом открытии.</span>;
+  if (!list.value) return <span className="small muted">Загружаю список…</span>;
+
+  async function load(item: BundledOverview) {
+    setBusy(item.file);
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}${item.file}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = parseMarketFile(await response.text());
+      if (!result.ok) throw new Error(result.message);
+      await saveMarketDataset(result.dataset);
+      if (regionUnset) await updateSettings({ market: { region: item.region, currency: item.currency } });
+      onMessage({
+        tone: 'good',
+        text: `Обзор «${item.title}» загружен: ${result.dataset.entries.length} записей.${regionUnset ? ` Рынок: ${item.region}, ${item.currency}.` : ''} Смотри раздел «Работа и заказы» в «Направлениях».`,
+      });
+    } catch (error) {
+      onMessage({ tone: 'error', text: `Обзор не загружен: ${(error as Error).message}` });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <ul className="plain-list">
+      {list.value.map((item) => {
+        const isLoaded = loaded.some((dataset) => dataset.title === item.title && dataset.checkedAt === item.checkedAt);
+        return (
+          <li key={item.file} className="row-between small">
+            <span>
+              {item.title} · {item.entries} записей · проверено {formatDate(item.checkedAt, { year: true })}
+            </span>
+            {isLoaded ? (
+              <StatusBadge tone="good">Загружен</StatusBadge>
+            ) : (
+              <button type="button" className="btn btn-sm" onClick={() => void load(item)} disabled={busy !== null}>
+                {busy === item.file ? <span className="spinner" aria-hidden="true" /> : <Download aria-hidden="true" />}
+                Загрузить
+              </button>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

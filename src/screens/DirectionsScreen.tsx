@@ -53,6 +53,11 @@ function checkedAge(checkedAt: string): { unknown: boolean; stale: boolean } {
   return { unknown: false, stale: Date.now() - time > 30 * 24 * 3600 * 1000 };
 }
 
+/** 70794 → «70 794»: крупные суммы читаются легче. */
+function formatAmount(value: number | null): string {
+  return value === null ? '—' : value.toLocaleString('ru-RU');
+}
+
 function sameRegion(a: string, b: string): boolean {
   return a.trim().toLocaleLowerCase('ru-RU') === b.trim().toLocaleLowerCase('ru-RU');
 }
@@ -277,8 +282,11 @@ function WorkAndOrders({ lab, datasets }: { lab: Lab; datasets: MarketDataset[] 
     dataset.entries.filter((entry) => entry.lab === lab.id).map((entry) => ({ ...entry, dataset })),
   );
   // Заголовок называет выбранный рынок — значит, и записи показываем для него; остальные по запросу.
-  const forRegion = region ? all.filter((entry) => sameRegion(entry.region, region)) : all;
-  const otherRegions = [...new Set(all.filter((entry) => !forRegion.includes(entry)).map((entry) => entry.region))];
+  // Рынок задаёт обзор целиком («Международный фриланс»), а у записи регион уточнён по источнику
+  // («Freelancer.com, удалённо, весь мир») — подходит совпадение любого из них.
+  const inMarket = (entry: (typeof all)[number]) => sameRegion(entry.dataset.region, region!) || sameRegion(entry.region, region!);
+  const forRegion = region ? all.filter(inMarket) : all;
+  const otherRegions = [...new Set(all.filter((entry) => !forRegion.includes(entry)).map((entry) => entry.dataset.region))];
   const entries = showOther ? all : forRegion;
   const byType = (type: MarketEntry['type']) => entries.filter((entry) => entry.type === type);
   const fields: { type: MarketEntry['type']; title: string }[] = [
@@ -340,11 +348,18 @@ function WorkAndOrders({ lab, datasets }: { lab: Lab; datasets: MarketDataset[] 
                     <td>
                       {entry.title}
                       <div className="tiny muted">{entryKind(entry)}</div>
-                      {entry.note.trim() && <div className="tiny market-note">{entry.note}</div>}
+                      {entry.note.trim() && (
+                        <details className="market-note-details">
+                          <summary className="tiny">Подробнее об источнике</summary>
+                          <div className="tiny market-note">{entry.note}</div>
+                        </details>
+                      )}
                     </td>
-                    <td className="nowrap">
-                      {entry.amountMin ?? '—'}
-                      {entry.amountMax !== null && entry.amountMax !== entry.amountMin ? `–${entry.amountMax}` : ''} {entry.currency}
+                    <td>
+                      <span className="nowrap">
+                        {formatAmount(entry.amountMin)}
+                        {entry.amountMax !== null && entry.amountMax !== entry.amountMin ? `–${formatAmount(entry.amountMax)}` : ''} {entry.currency}
+                      </span>
                       <div className="tiny muted">{PERIOD_LABEL[entry.period]}, до налогов и комиссий</div>
                     </td>
                     <td>

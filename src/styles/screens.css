@@ -670,3 +670,21 @@ a.lesson-row:hover {
     padding: var(--s-4);
   }
 }
+
+.market-note-details {
+  margin-top: 4px;
+}
+
+.market-note-details > summary {
+  color: var(--accent-text);
+  cursor: pointer;
+  width: fit-content;
+}
+
+.market-note-details > summary:hover {
+  text-decoration: underline;
+}
+
+.market-note-details .market-note {
+  margin-top: 4px;
+}
