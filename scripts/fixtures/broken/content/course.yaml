@@ -1,0 +1,93 @@
+# Намеренно сломанные материалы: scripts/verify-content.ts должен их отвергнуть (код выхода 1).
+# Запуск: node scripts/verify-content.ts --root scripts/fixtures/broken
+title: Проверочный курс
+subtitle: Небольшой набор материалов для самопроверки скрипта verify-content.
+
+stages:
+  - id: start
+    title: Начало
+    description: Первые программы.
+  - id: middle
+    title: Середина
+    description: Функции и проверки.
+  - id: finish
+    title: Финиш
+    description: Небольшой проект.
+
+skills:
+  - id: bx-input
+    title: Ввод и вывод
+    module: bx
+    description: Читать числа из ввода и выводить результат.
+  - id: bx-functions
+    title: Функции
+    module: bx
+    description: Писать простые функции с return.
+
+modules:
+  - id: bx
+    number: 1
+    part: basics
+    title: Проверочный модуль
+    why: Нужен только для самопроверки скрипта проверки материалов.
+    outcomes:
+      - Скрипт проверки принимает эти материалы без ошибок.
+    hours: [1, 2]
+    lessons:
+      - id: bx-l1
+        title: Сломанный урок
+    practice: Два небольших задания.
+    mistakes:
+      - Забыть превратить ввод в число.
+    completion: Все задания решены.
+    environment: browser
+
+labs:
+  - id: bx-lab
+    title: Проверочная лаборатория
+    hook: Нужна только для полноты формата.
+    story:
+      title: Придуманная история
+      text: История для проверки формата.
+      fictional: true
+    day: Обычный рабочий день.
+    products: [Небольшие программы]
+    likes: [Решать задачи]
+    hard: [Долго искать ошибку]
+    project:
+      title: Мини-проект
+      result: Работающая программа.
+      sessions: [1, 2]
+      environment: python
+      tools: Браузер
+      prototype: working
+    prerequisites: [Модуль bx]
+    unlockAfter: bx
+    realWork: [Писать и проверять программы]
+    paidTasks:
+      - title: Калькулятор чеков
+        example: Сложить суммы из списка чеков.
+        gap: Нужно уметь читать файлы.
+      - title: Подсчёт баллов
+        example: Посчитать баллы участников.
+        gap: Нужны словари.
+    ready: false
+
+projects:
+  - id: bx-project
+    title: Проверочный проект
+    after: bx
+    story: Придуманный проект для проверки формата.
+    environment: browser
+    minimum: [Программа запускается]
+    extras: [Проверка ввода, Красивый вывод]
+    criteria: [Тесты проходят]
+    stages:
+      - id: s1
+        title: Каркас
+        description: Написать основу программы.
+      - id: s2
+        title: Проверка
+        description: Проверить на примерах.
+    changeRequest: Добавить ещё одну операцию.
+    ready: false

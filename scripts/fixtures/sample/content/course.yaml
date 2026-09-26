@@ -1,0 +1,93 @@
+# Минимальный корректный курс для самопроверки scripts/verify-content.ts.
+# Запуск: node scripts/verify-content.ts --root scripts/fixtures/sample
+title: Проверочный курс
+subtitle: Небольшой набор материалов для самопроверки скрипта verify-content.
+
+stages:
+  - id: start
+    title: Начало
+    description: Первые программы.
+  - id: middle
+    title: Середина
+    description: Функции и проверки.
+  - id: finish
+    title: Финиш
+    description: Небольшой проект.
+
+skills:
+  - id: fx-input
+    title: Ввод и вывод
+    module: fx
+    description: Читать числа из ввода и выводить результат.
+  - id: fx-functions
+    title: Функции
+    module: fx
+    description: Писать простые функции с return.
+
+modules:
+  - id: fx
+    number: 1
+    part: basics
+    title: Проверочный модуль
+    why: Нужен только для самопроверки скрипта проверки материалов.
+    outcomes:
+      - Скрипт проверки принимает эти материалы без ошибок.
+    hours: [1, 2]
+    lessons:
+      - id: fx-l1
+        title: Сумма и удвоение
+    practice: Два небольших задания.
+    mistakes:
+      - Забыть превратить ввод в число.
+    completion: Все задания решены.
+    environment: browser
+
+labs:
+  - id: fx-lab
+    title: Проверочная лаборатория
+    hook: Нужна только для полноты формата.
+    story:
+      title: Придуманная история
+      text: История для проверки формата.
+      fictional: true
+    day: Обычный рабочий день.
+    products: [Небольшие программы]
+    likes: [Решать задачи]
+    hard: [Долго искать ошибку]
+    project:
+      title: Мини-проект
+      result: Работающая программа.
+      sessions: [1, 2]
+      environment: python
+      tools: Браузер
+      prototype: working
+    prerequisites: [Модуль fx]
+    unlockAfter: fx
+    realWork: [Писать и проверять программы]
+    paidTasks:
+      - title: Калькулятор чеков
+        example: Сложить суммы из списка чеков.
+        gap: Нужно уметь читать файлы.
+      - title: Подсчёт баллов
+        example: Посчитать баллы участников.
+        gap: Нужны словари.
+    ready: false
+
+projects:
+  - id: fx-project
+    title: Проверочный проект
+    after: fx
+    story: Придуманный проект для проверки формата.
+    environment: browser
+    minimum: [Программа запускается]
+    extras: [Проверка ввода, Красивый вывод]
+    criteria: [Тесты проходят]
+    stages:
+      - id: s1
+        title: Каркас
+        description: Написать основу программы.
+      - id: s2
+        title: Проверка
+        description: Проверить на примерах.
+    changeRequest: Добавить ещё одну операцию.
+    ready: false

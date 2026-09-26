@@ -1,0 +1,244 @@
+# Корректный урок: все проверки scripts/verify-content.ts должны пройти.
+# Второе неверное решение задания fx-sum и predict guess-loop намеренно зависают — проверка должна
+# остановить их по тайм-ауту, перезапустить Python, засчитать решение как отклонённое, а ответ — как верный.
+id: fx-l1
+module: fx
+number: "1.1"
+title: Сумма и удвоение
+objective: Складывать числа из ввода и писать функцию, которая возвращает результат.
+minutes: [10, 15]
+prerequisites: []
+skills: [fx-input, fx-functions]
+environment: python
+
+story:
+  title: Касса в кафе
+  fictional: true
+  text: >-
+    Лена помогает в кафе и складывает чеки вручную. Иногда она ошибается на десяток рублей.
+    Маленькая программа складывает числа без ошибок. Сегодня Лена напишет такую программу.
+
+why: Складывать числа из ввода — основа почти любой программы, которая что-то считает.
+usedIn: Кассы, калькуляторы, подсчёт баллов в играх.
+
+steps:
+  - id: intro
+    type: theory
+    title: Ввод — это текст
+    body: >-
+      `input()` всегда возвращает строку. Чтобы сложить два числа, строку сначала
+      превращают в число через `int()`.
+
+  - id: show-sum
+    type: example
+    title: Сложение двух чисел
+    code: |-
+      a = 2
+      b = 3
+      print(a + b)
+    notes:
+      - line: 3
+        text: Выведется 5.
+
+  - id: show-input
+    type: example
+    title: Число из ввода
+    code: |-
+      count = int(input("Сколько чашек? "))
+      print("Чашек:", count)
+    stdin: "3\n"
+    notes:
+      - line: 1
+        text: Строка из ввода сразу превращается в число.
+
+  - id: guess-concat
+    type: predict
+    title: Что выведет программа?
+    prompt: Во вводе две строки — `2` и `3`. Что выведет программа?
+    code: |-
+      a = input()
+      b = input()
+      print(a + b)
+    stdin: "2\n3\n"
+    options: ["5", "23"]
+    answer: "23"
+    explanation: Это строки, а `+` для строк склеивает их, поэтому получится `23`.
+
+  - id: guess-console
+    type: predict
+    title: Что появится в консоли?
+    prompt: Во вводе — `Аня`. Что появится в консоли вместе с вопросом программы?
+    code: |-
+      name = input("Как тебя зовут? ")
+      print("Привет,", name)
+    stdin: "Аня\n"
+    answer: |-
+      Как тебя зовут? Аня
+      Привет, Аня
+    explanation: Сначала выводится вопрос, потом введённое имя, потом приветствие.
+
+  - id: guess-error
+    type: predict
+    title: Что произойдёт?
+    prompt: Во вводе — `17`. Что произойдёт?
+    code: |-
+      age = input()
+      print(age + 1)
+    stdin: "17\n"
+    options: ["18", "171", "Ошибка TypeError"]
+    answer: Ошибка TypeError
+    answerIsNotOutput: true
+    explanation: Строку нельзя сложить с числом — Python остановится с TypeError.
+
+  # Намеренный бесконечный цикл: проверка остановит программу по тайм-ауту и перезапустит
+  # Python, но ошибкой это не считается — ответ как раз о том, что программа не остановится.
+  - id: guess-loop
+    type: predict
+    title: Когда закончится цикл?
+    prompt: Что сделает эта программа?
+    code: |-
+      n = 1
+      while n > 0:
+          n = n + 1
+    options: ["Выведет 1", "Будет работать бесконечно"]
+    answer: Будет работать бесконечно
+    answerIsNotOutput: true
+    explanation: n всё время растёт и остаётся больше нуля, поэтому условие цикла никогда не станет ложным.
+
+  - id: practice-sum
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: fx-sum
+      kind: write
+      title: Сумма двух чисел
+      statement: Прочитай два целых числа, каждое в своей строке, и выведи их сумму.
+      input: Два целых числа, каждое в отдельной строке.
+      output: Одно число — сумма.
+      starterCode: |
+        a = input()
+        # допиши программу
+      tests:
+        - id: t1
+          kind: io
+          example: true
+          stdin: "2\n3\n"
+          expected: "5"
+        - id: t2
+          kind: io
+          example: true
+          stdin: "10\n-4\n"
+          expected: "6"
+        - id: t3
+          kind: io
+          edge: true
+          stdin: "0\n0\n"
+          expected: "0"
+      criteria:
+        - Выводится сумма двух чисел из ввода.
+      hints:
+        - Что возвращает input() — число или текст?
+        - Превратить текст в число можно так — `x = int("7")`.
+        - Прочитай каждое число через int(input()) и выведи их сумму.
+      solution:
+        code: |
+          a = int(input())
+          b = int(input())
+          print(a + b)
+        explanation: Оба ввода сразу превращаются в числа, поэтому `+` складывает, а не склеивает.
+      altSolutions:
+        - code: |
+            print(int(input()) + int(input()))
+          note: Всё в одной строке, без переменных.
+      wrongSolutions:
+        - code: |
+            a = input()
+            b = input()
+            print(a + b)
+          note: Строки склеиваются вместо сложения.
+          expectMistake: concat
+        - code: |
+            a = int(input())
+            b = int(input())
+            while a != b:
+                a = a + 0
+            print(a + b)
+          note: Бесконечный цикл — условие не меняется, пока числа разные.
+          expectMistake: null
+      mistakes:
+        - id: concat
+          when:
+            outputEquals: "23"
+          why: input() возвращает строки, а `+` для строк склеивает их.
+          try: Преврати каждый ввод в число через int().
+      skills: [fx-input]
+
+  - id: practice-double
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: fx-double
+      kind: write
+      title: Удвоение
+      statement: Напиши функцию `double(n)`, которая возвращает число в два раза больше `n`.
+      starterCode: |
+        def double(n):
+            pass
+      tests:
+        - id: c1
+          kind: call
+          example: true
+          call: double(2)
+          expected: "4"
+        - id: c2
+          kind: call
+          example: true
+          call: double(-5)
+          expected: "-10"
+        - id: c3
+          kind: call
+          edge: true
+          call: double(0)
+          expected: "0"
+      rules:
+        - id: use-return
+          use: [Return]
+          message: Функция должна возвращать результат через return.
+      criteria:
+        - Функция возвращает удвоенное число.
+      hints:
+        - Функция должна отдать результат или напечатать его?
+        - "Пример на другом действии — функция `def half(n): return n / 2`."
+        - Верни из функции n, умноженное на 2.
+      solution:
+        code: |
+          def double(n):
+              return n * 2
+        explanation: return отдаёт результат тому, кто вызвал функцию.
+      wrongSolutions:
+        - code: |
+            def double(n):
+                print(n * 2)
+          note: Печатает результат вместо return.
+          expectMistake: print-instead-of-return
+        - code: |
+            def double(n):
+                return n + 2
+          note: Прибавляет 2 вместо умножения — для 2 ответ случайно верный.
+          expectMistake: null
+      mistakes:
+        - id: print-instead-of-return
+          when:
+            failedRule: use-return
+          why: print показывает число на экране, но функция при этом возвращает None.
+          try: Замени print(...) на return ...
+      skills: [fx-functions]
+
+  - id: recap
+    type: recap
+    title: Итоги
+    points:
+      - input() возвращает строку, число получается через int().
+      - Функция отдаёт результат через return.
+    question: Почему `"2" + "3"` даёт `23`?
+    answer: Это строки, а `+` для строк склеивает их.

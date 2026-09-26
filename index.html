@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Практика — личный тренер по программированию: короткие уроки, настоящий Python и понятные подсказки." />
+    <meta name="theme-color" content="#F6F7F9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Практика</title>
+    <script>
+      // Тема применяется до отрисовки, чтобы не было вспышки светлого экрана.
+      try {
+        var theme = localStorage.getItem('praktika-theme');
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Для работы «Практики» нужен JavaScript.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

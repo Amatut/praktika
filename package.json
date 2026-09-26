@@ -1,0 +1,57 @@
+{
+  "name": "praktika",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Практика — личный тренажёр программирования: уроки, настоящий Python в браузере, проверки и подсказки курса.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "start": "npm run build && npm run preview",
+    "content": "node scripts/build-content.ts",
+    "verify:content": "node scripts/verify-content.ts",
+    "typecheck": "tsc -b",
+    "lint": "oxlint src scripts server build",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "screenshots": "node scripts/screenshots.ts",
+    "icons": "node scripts/make-icons.ts",
+    "coach": "node --env-file-if-exists=.env server/coach-server.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.128.0",
+    "@codemirror/autocomplete": "6.20.3",
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/lang-python": "6.2.1",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.13",
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "@lezer/highlight": "1.2.4",
+    "@lezer/python": "1.1.19",
+    "idb": "8.0.3",
+    "lucide-react": "1.48.0",
+    "pyodide": "314.0.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "fake-indexeddb": "6.2.5",
+    "oxlint": "1.85.0",
+    "typescript": "6.0.3",
+    "vite": "8.3.1",
+    "vitest": "5.0.2",
+    "yaml": "2.9.1"
+  }
+}

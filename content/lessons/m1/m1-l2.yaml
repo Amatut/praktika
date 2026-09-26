@@ -1,0 +1,862 @@
+id: m1-l2
+module: m1
+number: "1.2"
+title: "Переменные: имена для значений"
+objective: Давать значениям понятные имена, считать с переменными и отслеживать, какое значение лежит в переменной после каждой строки.
+minutes: [25, 30]
+prerequisites: [m1-l1]
+skills: [variables, numbers-arithmetic]
+environment: python
+
+story:
+  title: Цена в одном месте
+  fictional: true
+  text: >-
+    Аня считала бюджет школьной поездки, и цена автобуса встречалась у неё в пяти формулах.
+    Когда перевозчик поднял цену, она исправила четыре места из пяти — и итог получился
+    неверным. Учитель информатики показал, как дать цене имя `bus_price` и писать это имя
+    везде, где нужна цена. Теперь новая цена вписывается в одну строку, а при следующем
+    запуске программа пересчитывает всё остальное сама. Сегодня ты научишься давать значениям
+    имена.
+
+why: >-
+  Переменная даёт значению имя, и код читается как фраза: `total = price * count` понятнее,
+  чем `180 * 3`. А если значение нужно в нескольких местах, поменять его придётся всего в
+  одной строке.
+
+usedIn: >-
+  Переменные есть в каждой программе: счёт в игре, товары в корзине, имя пользователя в
+  приложении, температура в прогнозе погоды. Понятные имена — часть профессиональной работы:
+  код читают коллеги, и хорошее имя экономит им время.
+
+steps:
+  - id: variables
+    type: theory
+    title: Переменная — имя для значения
+    body: |-
+      **Переменная** — это имя, под которым программа запоминает значение. Похоже на коробку с
+      наклейкой: на наклейке написано `price`, а внутри лежит `180`.
+
+      ```python
+      price = 180
+      ```
+
+      Знак `=` здесь не «равно» из математики, а команда: «положи значение справа в переменную
+      слева». Это называется **присваивание**. Справа может стоять и вычисление: в строке
+      `total = price * 3` Python сначала посчитает `price * 3`, а потом положит результат в
+      `total`.
+
+      Дальше вместо числа можно писать имя: `print(price * 2)` выведет `360`. Без кавычек
+      `price` — это переменная, и Python подставит её значение. А `print("price")` выведет
+      просто слово price — в кавычках это текст.
+
+      **Правила имён:**
+
+      - буквы, цифры и знак `_`, причём буквы принято писать латинские: Python примет и
+        русские, но программисты так не делают;
+      - имя не может начинаться с цифры и содержать пробелы;
+      - регистр важен: `price` и `Price` — разные имена.
+
+      Имена из нескольких слов соединяют подчёркиванием: `cup_price`, `total_minutes`. Такой
+      стиль называется **snake_case**. Выбирай имя, по которому понятно, что внутри: `total`
+      лучше, чем `t`, а `cups_count` лучше, чем `x`.
+
+      Если использовать имя, которому ещё не присвоено значение, Python остановится с ошибкой
+      `NameError` — ты её уже встречал.
+    simpler: >-
+      Переменная — это коробка с надписью. `price = 180` значит «положи 180 в коробку с
+      надписью price». Потом пишешь `price` без кавычек — и Python достаёт оттуда 180.
+    coach: >-
+      Читай `=` вслух как «положить в». `total = price * 3` — «в total положить price,
+      умноженное на 3».
+
+  - id: first-variables
+    type: example
+    title: Счёт за кофе
+    body: Запусти программу. Обрати внимание, какие строки что-то выводят, а какие — нет.
+    code: |-
+      cup_price = 180
+      cups = 3
+      total = cup_price * cups
+      print("Чашек:", cups)
+      print("К оплате:", total)
+    notes:
+      - line: 1
+        text: Присваивание — в переменную `cup_price` кладём 180. На экран при этом ничего не выводится.
+      - line: 2
+        text: Вторая переменная — количество чашек.
+      - line: 3
+        text: Python считает `180 * 3` и кладёт результат 540 в `total`.
+      - line: 4
+        text: "`cups` без кавычек — имя переменной, Python подставит её значение `3`."
+      - line: 5
+        text: "Выведется `К оплате: 540`."
+    tryIt: >-
+      Поменяй `cups = 3` на `cups = 5` и запусти снова: сумма пересчитается, хотя строку с
+      `total` ты не трогал.
+
+  - id: names-quiz
+    type: quiz
+    title: Какое имя подойдёт?
+    question: Какое из этих имён Python примет как имя переменной?
+    options:
+      - 2cups
+      - cup price
+      - cup-price
+      - cups_count
+    correct: 3
+    explanation: >-
+      `2cups` начинается с цифры, в `cup price` есть пробел, а `cup-price` Python прочитает
+      как «cup минус price». Подходит `cups_count`: латиница, а вместо пробела —
+      подчёркивание.
+
+  - id: practice-notebooks
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m1-l2-e1
+      kind: repeat
+      title: Тетради к учебному году
+      statement: |-
+        Тетрадь стоит 45 рублей, нужно купить 8 тетрадей. Напиши программу:
+
+        1. создай переменную `notebook_price` со значением 45 и переменную `count` со значением 8;
+        2. посчитай стоимость покупки и сохрани её в переменной `total`;
+        3. выведи строку `Итого: ...` со стоимостью.
+      output: Одна строка — «Итого:» и стоимость покупки.
+      constraints:
+        - Имена переменных — точно как в условии, по ним проверка найдёт значения.
+        - "`total` посчитай из двух переменных, а не записывай готовым числом."
+      starterCode: |
+        # Цена тетради и количество
+
+        # Стоимость покупки
+
+        # Вывод
+      tests:
+        - id: t1
+          kind: io
+          title: Пример
+          example: true
+          expected: "Итого: 360"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: assert
+          title: Цена и количество
+          code: |-
+            assert notebook_price == 45
+            assert count == 8
+          message: Нужны переменные `notebook_price` со значением 45 и `count` со значением 8.
+        - id: t3
+          kind: assert
+          title: Значение total
+          code: assert total == 360
+          message: В переменной `total` должна лежать стоимость покупки — 360.
+      rules:
+        - id: compute
+          dependsOn:
+            total: [notebook_price, count]
+          message: >-
+            Посчитай `total` из переменных `notebook_price` и `count`, а не из готовых чисел.
+            Тогда при новой цене достаточно поменять одну строку.
+      criteria:
+        - Есть переменные `notebook_price` = 45, `count` = 8 и `total` = 360.
+        - "`total` вычисляется из двух других переменных."
+        - "Выводится строка «Итого: 360»."
+      hints:
+        - >-
+          Сколько переменных нужно создать и в каком порядке? Подумай, какая из них зависит от
+          остальных, — её нужно посчитать последней.
+        - >-
+          Приём на другом примере: `side = 5`, затем `area = side * side` — в `area` окажется
+          25, а `print("Площадь:", area)` выведет `Площадь: 25`.
+        - >-
+          Каркас из четырёх строк: `notebook_price = ...`, `count = ...`,
+          `total = ... * ...`, `print("Итого:", ...)`.
+      solution:
+        code: |
+          notebook_price = 45
+          count = 8
+          total = notebook_price * count
+          print("Итого:", total)
+        explanation: >-
+          Сначала создаются цена и количество, потом из них считается `total` — к этому моменту
+          обе переменные уже существуют. В `print` имя `total` стоит без кавычек, поэтому
+          выводится его значение 360.
+      altSolutions:
+        - code: |
+            notebook_price = 45
+            count = 8
+            total = count * notebook_price
+            print(f"Итого: {total}")
+          note: Множители в другом порядке, вывод f-строкой.
+        - code: |
+            notebook_price, count = 45, 8
+            total = notebook_price * count
+            print("Итого:", total)
+          note: Обе переменные заданы в одной строке.
+      wrongSolutions:
+        - code: |
+            notebook_price = 45
+            count = 8
+            total = notebook_price * count
+            print("Итого:", "total")
+          note: Имя переменной в кавычках.
+          expectMistake: name-in-quotes
+        - code: |
+            total = notebook_price * count
+            notebook_price = 45
+            count = 8
+            print("Итого:", total)
+          note: total считается раньше, чем появились цена и количество.
+          expectMistake: total-first
+        - code: |
+            notebook_price = 45
+            count = 8
+            total = 360
+            print("Итого:", total)
+          note: Готовое число вместо вычисления.
+          expectMistake: ready-total
+        - code: |
+            price = 45
+            count = 8
+            total = price * count
+            print("Итого:", total)
+          note: Другое имя переменной.
+          expectMistake: null
+      mistakes:
+        - id: name-in-quotes
+          when:
+            outputIncludes: total
+          why: >-
+            Имя `total` стоит в кавычках, поэтому Python напечатал слово total, а не значение
+            переменной.
+          try: Убери кавычки вокруг `total` в `print`.
+          verify: На экране должно появиться число.
+        - id: total-first
+          when:
+            errorType: NameError
+            codeRegex: '^total[^\n]*\n[\s\S]*^notebook_price\s*='
+          why: >-
+            Python выполняет строки сверху вниз. Когда он дошёл до строки с `total`, цены и
+            количества ещё не было — они создаются ниже.
+          try: Перенеси строку с `total` ниже строк с `notebook_price` и `count`.
+        - id: ready-total
+          when:
+            failedRule: compute
+            codeRegex: '^total\s*=[\d\s*+()-]+$'
+          why: >-
+            Справа от `total =` стоят готовые числа, а не переменные. Если цена изменится в
+            строке с `notebook_price`, `total` останется старым.
+          try: Запиши справа от `total =` умножение двух переменных — цены и количества.
+          verify: Нажми «Проверить» — требование к коду должно отметиться как выполненное.
+      afterPass: >-
+        Три переменные и одна строка вывода — и каждое число в программе названо по смыслу.
+        Попробуй поменять `count` на 12: пересчитывать `total` вручную не придётся.
+      skills: [variables, numbers-arithmetic]
+
+  - id: reassign
+    type: theory
+    title: Новое значение вместо старого
+    body: |-
+      Переменной можно присвоить новое значение. Старое при этом пропадает: в «коробке» всегда
+      лежит только одно, последнее значение.
+
+      ```python
+      score = 10
+      score = 25
+      print(score)  # 25
+      ```
+
+      Справа от `=` можно использовать саму переменную:
+
+      ```python
+      score = score + 5
+      ```
+
+      Python читает это так: взять текущее значение `score` (25), прибавить 5 и положить
+      результат 30 обратно в `score`. В математике «x = x + 5» не имеет смысла, а в Python
+      это обычная команда «увеличь на 5».
+
+      Важно: **Python не пересчитывает старые вычисления сам**. Если `total = price * 2` уже
+      посчитан, а потом `price` изменили, в `total` останется старый результат — пока строка
+      с `total` не выполнится ещё раз.
+
+      Чтобы не запутаться, пригодится **трассировка** из модуля 0 — проход по программе
+      строка за строкой. Теперь после каждой строки записывай ещё и то, какое значение лежит в
+      каждой переменной. Так программисты проверяют код в уме или на бумаге.
+    simpler: >-
+      Переменная помнит только последнее значение. `score = score + 5` — «возьми, что было,
+      прибавь 5 и положи обратно».
+    coach: >-
+      Трассировку удобно вести табличкой: слева номер строки, справа значения переменных.
+      Попробуй на следующем прогнозе.
+
+  - id: predict-trace
+    type: predict
+    title: Трассировка
+    prompt: >-
+      Как думаешь, что выведет программа? Пройди её по строкам и после каждой запиши, что
+      лежит в `price` и `total`.
+    code: |-
+      price = 100
+      total = price * 2
+      price = price + 50
+      print(price, total)
+    options:
+      - "100 200"
+      - "150 200"
+      - "150 300"
+    answer: "150 200"
+    explanation: >-
+      После второй строки в `price` лежит 100, а в `total` — 200. Третья строка берёт текущее
+      значение `price`, прибавляет 50 и кладёт 150 обратно в `price`. А `total` сам не
+      пересчитывается: он посчитан, когда цена была 100, и в нём так и осталось 200. Чтобы
+      получить 300, строку с `total` нужно выполнить ещё раз — после изменения цены.
+
+  - id: practice-savings
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m1-l2-e2
+      kind: modify
+      title: Копилка по дням
+      statement: |-
+        Программа ведёт копилку: в понедельник там было 500 рублей, во вторник положили ещё
+        200. После каждого изменения программа показывает, сколько в копилке.
+
+        Допиши её: в среду положили ещё 300, а в пятницу взяли 150 на книгу. После каждого
+        изменения тоже выводи, сколько в копилке. Продолжай менять ту же переменную
+        `savings` — так, как это сделано для вторника.
+      output: Четыре строки — сколько в копилке после понедельника, вторника, среды и пятницы.
+      constraints:
+        - Каждую новую сумму считай от текущего значения `savings`, а не записывай готовой.
+      starterCode: |
+        savings = 500
+        print("В копилке:", savings)
+
+        savings = savings + 200
+        print("В копилке:", savings)
+      tests:
+        - id: t1
+          kind: io
+          title: Пример
+          example: true
+          expected: |-
+            В копилке: 500
+            В копилке: 700
+            В копилке: 1000
+            В копилке: 850
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: assert
+          title: Значение savings в конце
+          code: assert savings == 850
+          message: >-
+            В конце в переменной `savings` должно остаться 850 — столько в копилке после
+            пятницы.
+      rules:
+        - id: compute
+          min:
+            Add: 2
+            Sub: 1
+          message: >-
+            Допиши среду и пятницу по образцу вторника: справа от `=` — `savings` плюс или
+            минус деньги этого дня. Так каждая сумма считается от текущего значения, и
+            программа не ошибётся, если изменится сумма в понедельник.
+      criteria:
+        - Выводятся четыре строки с суммами 500, 700, 1000 и 850.
+        - Каждое изменение записано в ту же переменную `savings` и считается от её текущего значения.
+      hints:
+        - >-
+          Посмотри на строки для вторника: что стоит справа от `=` и что происходит со старым
+          значением `savings`?
+        - >-
+          Приём на другом примере: `lives = 3`, потом `lives = lives - 1` — Python берёт
+          текущее значение 3, вычитает 1 и кладёт 2 обратно в `lives`. Старое значение 3
+          пропадает.
+        - >-
+          Каркас — по две строки на день: `savings = savings ... 300` и
+          `print("В копилке:", savings)`, а потом то же самое для траты 150. Какой знак нужен,
+          когда деньги забирают?
+      solution:
+        code: |
+          savings = 500
+          print("В копилке:", savings)
+
+          savings = savings + 200
+          print("В копилке:", savings)
+
+          savings = savings + 300
+          print("В копилке:", savings)
+
+          savings = savings - 150
+          print("В копилке:", savings)
+        explanation: >-
+          Каждая пара строк сначала меняет `savings` — берёт текущее значение и прибавляет или
+          вычитает деньги этого дня, — а потом выводит новую сумму. Старое значение при этом
+          пропадает, поэтому `print` каждый раз показывает последнюю сумму: 500, 700, 1000, 850.
+      wrongSolutions:
+        - code: |
+            savings = 500
+            print("В копилке:", savings)
+
+            savings = savings + 200
+            print("В копилке:", savings)
+
+            savings = savings + 300
+            print("В копилке:", savings)
+
+            savings = savings + 150
+            print("В копилке:", savings)
+          note: Трата в пятницу прибавлена, а не вычтена.
+          expectMistake: wrong-sign
+        - code: |
+            savings = 500
+            print("В копилке:", savings)
+
+            savings = savings + 200
+            print("В копилке:", savings)
+
+            savings + 300
+            print("В копилке:", savings)
+
+            savings - 150
+            print("В копилке:", savings)
+          note: Вычисление без присваивания.
+          expectMistake: no-assign
+        - code: |
+            savings = 500
+            print("В копилке:", savings)
+
+            savings = savings + 200
+            print("В копилке:", savings)
+
+            print("В копилке:", savings + 300)
+            print("В копилке:", savings - 150)
+          note: Посчитано в print, но не сохранено в переменную.
+          expectMistake: print-only
+        - code: |
+            savings = 500
+            print("В копилке:", savings)
+
+            savings = savings + 200
+            print("В копилке:", savings)
+
+            wednesday = savings + 300
+            print("В копилке:", wednesday)
+
+            friday = wednesday - 150
+            print("В копилке:", friday)
+          note: Новые переменные вместо savings.
+          expectMistake: new-names
+      mistakes:
+        - id: wrong-sign
+          when:
+            outputIncludes: "1150"
+          why: >-
+            В пятницу деньги взяли из копилки, а в коде они прибавились — получилось 1150
+            вместо 850.
+          try: 'Когда деньги забирают, их вычитают: `savings = savings - 150`.'
+        - id: no-assign
+          when:
+            codeRegex: '^\s*savings\s*[-+*/](?!=)'
+          where: Строка, которая начинается с `savings` и знака действия
+          why: >-
+            Выражение вроде `savings + 300` Python посчитает, но результат никуда не положит —
+            значение `savings` не изменится.
+          try: 'Сохрани результат в ту же переменную: `savings = savings + 300`.'
+          verify: Во второй половине вывода суммы должны меняться — 1000, потом 850.
+        - id: print-only
+          when:
+            outputIncludes: "550"
+          why: >-
+            Сумма посчитана внутри `print`, но в `savings` не сохранена. Поэтому трата в
+            пятницу вычлась из 700, а не из 1000.
+          try: Сначала измени переменную (`savings = savings + ...`), а потом выведи её.
+        - id: new-names
+          when:
+            failedTest: t2
+            outputEquals: |-
+              В копилке: 500
+              В копилке: 700
+              В копилке: 1000
+              В копилке: 850
+          why: >-
+            Вывод верный, но новые суммы лежат в других переменных, а в `savings` так и
+            осталось 700. Копилка одна — пусть и переменная будет одна.
+          try: Записывай каждую новую сумму обратно в `savings`.
+      afterPass: >-
+        Одна переменная прошла через четыре значения, и программа сама показывает, что в ней
+        лежит после каждого изменения. Попробуй поменять сумму понедельника: при следующем
+        запуске изменятся все четыре суммы.
+      skills: [variables, numbers-arithmetic]
+
+  - id: practice-minutes
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m1-l2-e3
+      kind: fix
+      title: Минуты занятий
+      statement: |-
+        Программа должна посчитать, сколько минут ты позанимаешься за 12 дней по 25 минут. Но
+        при запуске она останавливается с ошибкой `NameError`.
+
+        Найди причину и исправь программу, чтобы она вывела `Всего минут: 300`.
+      output: "Одна строка: `Всего минут: 300`."
+      constraints:
+        - Сохрани переменные и вычисление — исправь только то, что мешает программе работать.
+      starterCode: |
+        print("Всего минут:", total_minutes)
+        days = 12
+        minutes_per_day = 25
+        total_minutes = days * minutes_per_day
+      tests:
+        - id: t1
+          kind: io
+          title: Пример
+          example: true
+          expected: "Всего минут: 300"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: assert
+          title: Значение total_minutes
+          code: assert total_minutes == 300
+          message: В переменной `total_minutes` должно лежать 300.
+      rules:
+        - id: compute
+          dependsOn:
+            total_minutes: [days, minutes_per_day]
+          message: >-
+            Оставь вычисление `total_minutes` из дней и минут — не заменяй его готовым числом.
+        - id: print-computed
+          dependsOn:
+            print: [days, minutes_per_day]
+          message: >-
+            `print` должен показать посчитанное значение `total_minutes`, а не число, записанное
+            заранее. Исправь порядок строк — `print` должен стоять после вычисления.
+      criteria:
+        - "Программа запускается без ошибки и выводит «Всего минут: 300»."
+        - "`total_minutes` по-прежнему считается из `days` и `minutes_per_day`."
+        - Исправлен только порядок строк — новых присваиваний нет.
+      hints:
+        - >-
+          Прочитай сообщение об ошибке: какое имя Python не узнал и в какой строке? Есть ли у
+          этого имени значение к тому моменту?
+        - >-
+          Похожий случай: если в первой строке написать `print(score)`, а `score = 10` — во
+          второй, Python остановится на первой же строке. Он выполняет код сверху вниз и о
+          `score` там ещё не знает.
+        - >-
+          Каркас порядка: сначала три строки с присваиваниями (`days`, `minutes_per_day`,
+          `total_minutes`), и только потом `print`.
+      solution:
+        code: |
+          days = 12
+          minutes_per_day = 25
+          total_minutes = days * minutes_per_day
+          print("Всего минут:", total_minutes)
+        explanation: >-
+          Python выполняет строки сверху вниз. В исходной программе `print` стоял первым, и
+          `total_minutes` к этому моменту ещё не существовала. Когда вывод стоит после
+          присваиваний, все три переменные уже созданы.
+      altSolutions:
+        - code: |
+            days = 12
+            minutes_per_day = 25
+            total_minutes = days * minutes_per_day
+            print(f"Всего минут: {total_minutes}")
+          note: Вывод f-строкой.
+      wrongSolutions:
+        - code: |
+            days = 12
+            minutes_per_day = 25
+            total_minutes = 300
+            print("Всего минут:", total_minutes)
+            total_minutes = days * minutes_per_day
+          note: Тесты проходят, но print выводит число, записанное заранее, а не вычисление.
+          expectMistake: early-value
+        - code: |
+            total_minutes = 0
+            print("Всего минут:", total_minutes)
+            days = 12
+            minutes_per_day = 25
+            total_minutes = days * minutes_per_day
+          note: total_minutes создана заранее, чтобы убрать NameError.
+          expectMistake: early-value
+        - code: |
+            days = 12
+            minutes_per_day = 25
+            print("Всего минут:", total_minutes)
+            total_minutes = days * minutes_per_day
+          note: print перенесён, но всё ещё выше total_minutes.
+          expectMistake: print-too-early
+        - code: |
+            days = 12
+            minutes_per_day = 25
+            total_minutes = days * minutes_per_day
+            print("Всего минут:", "total_minutes")
+          note: Имя переменной в кавычках.
+          expectMistake: name-in-quotes
+        - code: |
+            days = 12
+            minutes_per_day = 25
+            total_minutes = 300
+            print("Всего минут:", total_minutes)
+          note: Вычисление заменено готовым числом.
+          expectMistake: ready-number
+      mistakes:
+        - id: print-too-early
+          when:
+            errorType: NameError
+            codeRegex: '^print[^\n]*total_minutes[^\n]*\n[\s\S]*^total_minutes\s*='
+          where: Строка с `print`
+          why: >-
+            `print` стоит выше строки, где создаётся `total_minutes`. Python выполняет код
+            сверху вниз, и в момент вывода такой переменной ещё нет.
+          try: Перенеси `print` в самый конец — после строки с `total_minutes`.
+        - id: early-value
+          when:
+            failedRule: print-computed
+            codeRegex: '^total_minutes[ \t]*=[ \t]*\d+[ \t]*\n[\s\S]*^total_minutes[ \t]*=[^\n]*\bdays\b'
+          why: >-
+            `print` показывает значение переменной на момент вывода. Сейчас `total_minutes`
+            заранее получает готовое число, и `print` выводит именно его, а настоящее
+            вычисление выполняется уже после вывода.
+          try: >-
+            Убери строку `total_minutes = ...` из начала программы и перенеси `print` под
+            строку, которая считает `total_minutes`.
+        - id: name-in-quotes
+          when:
+            outputIncludes: total_minutes
+          why: >-
+            Имя стоит в кавычках, поэтому Python напечатал его как текст, а не значение
+            переменной.
+          try: Убери кавычки вокруг `total_minutes` в `print`.
+        - id: ready-number
+          when:
+            failedRule: compute
+            codeIncludes: "300"
+          why: >-
+            Теперь программа не считает минуты: 300 записано готовым. Задача была исправить
+            порядок строк, а не вычисление.
+          try: Верни строку `total_minutes = days * minutes_per_day` и поставь `print` после неё.
+      afterPass: >-
+        Ошибка была не в вычислении, а в порядке строк. Когда видишь `NameError`, первым делом
+        проверь: присвоено ли имя выше той строки, где оно используется?
+      skills: [variables]
+
+  - id: practice-pizza
+    type: exercise
+    title: Практика 4
+    exercise:
+      id: m1-l2-e4
+      kind: write
+      title: Пицца на компанию
+      statement: |-
+        Пятеро друзей заказали 3 пиццы по 540 рублей и большой морс за 330. Счёт делят поровну.
+        Напиши программу, которая:
+
+        1. хранит цену пиццы, количество пицц, цену морса и число друзей в переменных — имена
+           выбери сам, понятные;
+        2. считает общую сумму в переменной `total`, а долю каждого — в переменной `per_person`;
+        3. выводит две строки: `Всего: ...` и `С каждого: ...`.
+
+        Если доля получится с `.0` на конце — это нормально: деление `/` всегда даёт float.
+        Проверка примет и `390`, и `390.0`.
+      output: "Две строки: общая сумма и доля каждого."
+      constraints:
+        - Исходные числа — в переменных с понятными именами.
+        - "`total` и `per_person` считаются из этих переменных."
+      starterCode: |
+        # 5 друзей, 3 пиццы по 540, морс за 330
+
+      tests:
+        - id: t1
+          kind: io
+          title: Пример
+          example: true
+          expected: 'Всего: 1950\nС каждого: 390(\.0)?'
+          expectedLabel: |-
+            Всего: 1950
+            С каждого: 390.0
+          compare:
+            mode: regex
+            ignoreSpaces: true
+        - id: t2
+          kind: assert
+          title: Значение total
+          code: assert total == 1950
+          message: В переменной `total` должна лежать общая сумма — 1950.
+        - id: t3
+          kind: assert
+          title: Значение per_person
+          code: assert per_person == 390
+          message: В переменной `per_person` должна лежать доля каждого — 390.
+      rules:
+        - id: named-numbers
+          fromNumbers:
+            total: [540, 3, 330]
+            per_person: [540, 3, 330, 5]
+          message: >-
+            Сохрани исходные числа — цену пиццы, количество, цену морса и число друзей — в
+            переменных с понятными именами, а `total` и `per_person` посчитай из них, без
+            готовых чисел в формулах. Тогда, если друзей придёт шестеро, достаточно поменять
+            одну строку.
+      criteria:
+        - Исходные числа хранятся в переменных с понятными именами.
+        - "`total` = 1950 и `per_person` = 390, оба значения вычисляются в коде."
+        - "Выводятся две строки: «Всего: 1950» и «С каждого: 390» (подойдёт и 390.0)."
+      hints:
+        - >-
+          Разложи задачу на шаги: какие числа даны, что из них нужно посчитать сначала и что —
+          потом? Доля каждого зависит от общей суммы.
+        - >-
+          Приём на другом примере: `ticket = 250`, `people = 4`, `trip = ticket * people` —
+          сначала исходные числа получают имена, потом из имён считается результат.
+        - >-
+          Каркас: четыре строки с исходными числами (например, `pizza_price = ...`), затем
+          `total = ... * ... + ...`, `per_person = total / ...` и два `print`.
+      solution:
+        code: |
+          pizza_price = 540
+          pizzas = 3
+          drink_price = 330
+          friends = 5
+
+          total = pizza_price * pizzas + drink_price
+          per_person = total / friends
+
+          print("Всего:", total)
+          print("С каждого:", per_person)
+        explanation: >-
+          Сначала исходные числа получают имена, потом из них считается `total`: умножение
+          выполняется раньше сложения, поэтому скобки не нужны — 1620 + 330 = 1950. Доля
+          каждого — `total / friends` = 390.0. Если друзей станет шестеро, достаточно поменять
+          одну строку.
+      altSolutions:
+        - code: |
+            pizza_price = 540
+            pizzas = 3
+            drink_price = 330
+            friends = 5
+            total = pizza_price * pizzas + drink_price
+            per_person = total / friends
+            print(f"Всего: {total}\nС каждого: {per_person}")
+          note: Обе строки выводятся одной f-строкой.
+        - code: |
+            pizza_price = 540
+            pizzas = 3
+            drink_price = 330
+            friends = 5
+            pizzas_cost = pizza_price * pizzas
+            total = pizzas_cost + drink_price
+            per_person = total // friends
+            print("Всего:", total)
+            print("С каждого:", per_person)
+          note: Стоимость пицц посчитана отдельно, доля — целочисленным делением.
+      wrongSolutions:
+        - code: |
+            pizza_price = 540
+            pizzas = 3
+            drink_price = 330
+            friends = 5
+            total = pizza_price * pizzas
+            per_person = total / friends
+            print("Всего:", total)
+            print("С каждого:", per_person)
+          note: Забыт морс.
+          expectMistake: no-drink
+        - code: |
+            pizza_price = 540
+            pizzas = 3
+            drink_price = 330
+            friends = 5
+            total = pizza_price * pizzas + drink_price
+            per_person = pizza_price * pizzas + drink_price / friends
+            print("Всего:", total)
+            print("С каждого:", per_person)
+          note: Порядок действий в доле каждого.
+          expectMistake: order-of-operations
+        - code: |
+            total = 1950
+            per_person = 390
+            print("Всего:", total)
+            print("С каждого:", per_person)
+          note: Готовые числа без переменных.
+          expectMistake: no-variables
+        - code: |
+            pizza_price = 540
+            drink_price = 330
+            friends = 5
+            total = pizza_price * 3 + drink_price
+            per_person = total / friends
+            print("Всего:", total)
+            print("С каждого:", per_person)
+          note: Количество пицц вписано в формулу готовым числом.
+          expectMistake: no-variables
+        - code: |
+            pizza_price = 540
+            pizzas = 3
+            drink_price = 330
+            friends = 5
+            per_person = total / friends
+            total = pizza_price * pizzas + drink_price
+            print("Всего:", total)
+            print("С каждого:", per_person)
+          note: per_person считается раньше total.
+          expectMistake: per-person-first
+      mistakes:
+        - id: no-drink
+          when:
+            outputIncludes: "1620"
+          why: В общей сумме только пиццы — морс за 330 не прибавлен.
+          try: Добавь цену морса к стоимости пицц в строке с `total`.
+        - id: order-of-operations
+          when:
+            outputIncludes: "1686"
+          why: >-
+            На число друзей разделилась только цена морса: деление выполняется раньше сложения.
+          try: >-
+            Дели на число друзей всю сумму — удобнее всего готовую переменную `total`. Или
+            возьми сумму в скобки.
+        - id: per-person-first
+          when:
+            errorType: NameError
+            codeRegex: '^per_person[^\n]*\n[\s\S]*^total\s*='
+          why: >-
+            Долю каждого программа считает раньше, чем появилась общая сумма: строки
+            выполняются сверху вниз.
+          try: Поставь строку с `per_person` ниже строки с `total`.
+        - id: no-variables
+          when:
+            failedRule: named-numbers
+            codeIncludes: print
+          why: >-
+            Исходные числа не сохранены в переменных, поэтому непонятно, откуда взялись итоги,
+            и при новом заказе всё придётся пересчитывать вручную.
+          try: >-
+            Заведи переменные для цены пиццы, количества пицц, цены морса и числа друзей и
+            посчитай `total` и `per_person` из них.
+      afterPass: >-
+        Программа разложена на шаги: исходные данные, расчёт, вывод. Одно улучшение: поменяй
+        число друзей на 4 и проверь, пересчитается ли доля каждого без других правок.
+      skills: [variables, numbers-arithmetic]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "`имя = значение` — присваивание: значение справа кладётся в переменную слева. `=` значит «положить», а не «равно»."
+      - "Имена: буквы (принято — латинские), цифры и `_`, не с цифры и без пробелов; регистр важен. Длинные имена пишут в snake_case: `cups_count`."
+      - "Новое присваивание заменяет старое значение; `x = x + 1` считает новое значение от текущего."
+      - Python не пересчитывает старые вычисления сам — нужную строку надо выполнить ещё раз.
+    question: >-
+      Что будет лежать в `a` и `b` после трёх строк: `a = 4`, `b = a * 2`, `a = 10`? Почему?
+    answer: >-
+      В `a` — 10, в `b` — 8. `b` посчитан в тот момент, когда в `a` лежало 4, и после
+      изменения `a` сам не пересчитался.

@@ -1,0 +1,268 @@
+# Намеренно сломанный урок. Формат верный (загрузчик его принимает), но содержимое —
+# нет. scripts/verify-content.ts должен найти ровно эти ошибки:
+#   * пример broken-example завершается NameError, и пояснение ссылается на строку 5 из 2;
+#   * в predict wrong-guess ответ не совпадает с настоящим выводом;
+#   * эталон задания bx-sum не проходит тесты (склеивает строки);
+#   * неверное решение №1 задания bx-sum зависает, хотя от него ждут разбор concat;
+#   * стартовый код задания bx-double уже проходит все проверки;
+#   * неверное решение №1 задания bx-double на самом деле верное — тесты его не ловят;
+#   * неверное решение №2 задания bx-double ждёт разбор, который не срабатывает;
+#   * эталон задания bx-slow проходит тест, но медленнее лимита приложения (timeLimitMs: 300);
+#   * в задании bx-literal у теста g1 expected без кавычек, а call теста g2 — не выражение
+#     (код этого задания не запускается, пока тесты с ошибками).
+# Предупреждения: predict error-guess (в ответе TypeError, а ошибки нет) и два разбора,
+# не подтверждённые ни одним неверным решением.
+id: bx-l1
+module: bx
+number: "1.1"
+title: Сломанный урок
+objective: Показать, что проверка материалов отвергает ошибки в заданиях.
+minutes: [10, 15]
+prerequisites: []
+skills: [bx-input, bx-functions]
+environment: python
+
+story:
+  title: Касса в кафе
+  fictional: true
+  text: >-
+    Лена помогает в кафе и складывает чеки вручную. Иногда она ошибается на десяток рублей.
+    Маленькая программа складывает числа без ошибок. Сегодня Лена напишет такую программу.
+
+why: Складывать числа из ввода — основа почти любой программы, которая что-то считает.
+usedIn: Кассы, калькуляторы, подсчёт баллов в играх.
+
+steps:
+  - id: broken-example
+    type: example
+    title: Пример с опечаткой
+    code: |-
+      total = 2 + 3
+      print(totl)
+    notes:
+      - line: 1
+        text: Считаем сумму.
+      - line: 5
+        text: Такой строки в примере нет.
+
+  - id: wrong-guess
+    type: predict
+    title: Что выведет программа?
+    prompt: Во вводе две строки — `2` и `3`. Что выведет программа?
+    code: |-
+      a = input()
+      b = input()
+      print(a + b)
+    stdin: "2\n3\n"
+    options: ["5", "23"]
+    answer: "5"
+    explanation: Ответ здесь намеренно неверный.
+
+  - id: error-guess
+    type: predict
+    title: Что произойдёт?
+    prompt: Во вводе — `17`. Что произойдёт?
+    code: |-
+      age = int(input())
+      print(age + 1)
+    stdin: "17\n"
+    options: ["18", "Ошибка TypeError"]
+    answer: Ошибка TypeError
+    answerIsNotOutput: true
+    explanation: Здесь ошибки на самом деле нет — программа выведет 18.
+
+  - id: practice-sum
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: bx-sum
+      kind: write
+      title: Сумма двух чисел
+      statement: Прочитай два целых числа, каждое в своей строке, и выведи их сумму.
+      starterCode: |
+        a = input()
+        # допиши программу
+      tests:
+        - id: t1
+          kind: io
+          example: true
+          stdin: "2\n3\n"
+          expected: "5"
+        - id: t2
+          kind: io
+          example: true
+          stdin: "10\n-4\n"
+          expected: "6"
+      criteria:
+        - Выводится сумма двух чисел из ввода.
+      hints:
+        - Что возвращает input() — число или текст?
+        - Превратить текст в число можно так — `x = int("7")`.
+        - Прочитай каждое число через int(input()) и выведи их сумму.
+      solution:
+        code: |
+          a = input()
+          b = input()
+          print(a + b)
+        explanation: Эталон намеренно сломан — строки склеиваются.
+      wrongSolutions:
+        - code: |
+            a = int(input())
+            while True:
+                a = a + 1
+          note: Бесконечный цикл вместо чтения второго числа.
+          expectMistake: concat
+      mistakes:
+        - id: concat
+          when:
+            outputEquals: "23"
+          why: input() возвращает строки, а `+` для строк склеивает их.
+          try: Преврати каждый ввод в число через int().
+      skills: [bx-input]
+
+  - id: practice-double
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: bx-double
+      kind: write
+      title: Удвоение
+      statement: Напиши функцию `double(n)`, которая возвращает число в два раза больше `n`.
+      starterCode: |
+        def double(n):
+            # здесь уже всё готово
+            return n * 2
+      tests:
+        - id: c1
+          kind: call
+          example: true
+          call: double(2)
+          expected: "4"
+        - id: c2
+          kind: call
+          example: true
+          call: double(-5)
+          expected: "-10"
+      rules:
+        - id: use-return
+          use: [Return]
+          message: Функция должна возвращать результат через return.
+      criteria:
+        - Функция возвращает удвоенное число.
+      hints:
+        - Функция должна отдать результат или напечатать его?
+        - "Пример на другом действии — функция `def half(n): return n / 2`."
+        - Верни из функции n, умноженное на 2.
+      solution:
+        code: |
+          def double(n):
+              return n * 2
+        explanation: return отдаёт результат тому, кто вызвал функцию.
+      altSolutions:
+        - code: |
+            double = lambda n: n * 2
+          note: Верное решение без def — правило use-return его ложно отклоняет.
+      wrongSolutions:
+        - code: |
+            def double(n):
+                return n + n
+          note: На самом деле это верное решение — тесты его не отличат.
+        - code: |
+            def double(n):
+                return n * 3
+          note: Умножает на 3, а ждёт разбор про print.
+          expectMistake: print-instead-of-return
+      mistakes:
+        - id: print-instead-of-return
+          when:
+            failedRule: use-return
+          why: print показывает число на экране, но функция при этом возвращает None.
+          try: Замени print(...) на return ...
+      skills: [bx-functions]
+
+  - id: practice-slow
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: bx-slow
+      kind: write
+      title: Приветствие
+      statement: Выведи слово `привет`.
+      starterCode: |
+        # напиши программу
+      tests:
+        - id: s1
+          kind: io
+          example: true
+          expected: привет
+      criteria:
+        - Выводится слово привет.
+      hints:
+        - Какая функция выводит текст на экран?
+        - "Пример вывода другого слова — `print(\"пока\")`."
+        - Выведи слово привет через print.
+      solution:
+        code: |
+          import time
+          finish = time.perf_counter() + 0.5
+          while time.perf_counter() < finish:
+              pass
+          print("привет")
+        explanation: Эталон намеренно медленный — полсекунды при лимите приложения 0,3 с.
+      wrongSolutions:
+        - code: |
+            print("пока")
+          note: Выводит не то слово.
+      timeLimitMs: 300
+      skills: [bx-input]
+
+  - id: practice-literal
+    type: exercise
+    title: Практика 4
+    exercise:
+      id: bx-literal
+      kind: write
+      title: Ответ функции
+      statement: Напиши функцию `greet()`, которая возвращает строку `ok`.
+      starterCode: |
+        def greet():
+            pass
+      tests:
+        - id: g1
+          kind: call
+          example: true
+          call: greet()
+          # Намеренная ошибка: строка без кавычек — это не литерал Python.
+          expected: ok
+        - id: g2
+          kind: call
+          example: true
+          # Намеренная ошибка: незакрытая скобка.
+          call: greet(
+          expected: "'ok'"
+      criteria:
+        - Функция возвращает строку ok.
+      hints:
+        - Функция должна отдать строку или напечатать её?
+        - "Пример на другой строке — `def bye(): return \"пока\"`."
+        - Верни из функции строку ok.
+      solution:
+        code: |
+          def greet():
+              return "ok"
+        explanation: return отдаёт строку тому, кто вызвал функцию.
+      wrongSolutions:
+        - code: |
+            def greet():
+                return "OK"
+          note: Другой регистр букв.
+      skills: [bx-functions]
+
+  - id: recap
+    type: recap
+    title: Итоги
+    points:
+      - input() возвращает строку, число получается через int().
+      - Функция отдаёт результат через return.
+    question: Почему `"2" + "3"` даёт `23`?
+    answer: Это строки, а `+` для строк склеивает их.

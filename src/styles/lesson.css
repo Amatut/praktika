@@ -1,0 +1,1292 @@
+/* Экран урока: заголовок и шаги → рабочая область → наставник. */
+
+.lesson {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1400px;
+  /* Левая направляющая — как у .page (layout.css): прижато к боковой панели, не по центру. */
+  margin: 0;
+  padding: var(--s-5) var(--s-6) var(--s-6);
+}
+
+.lesson-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+
+.lesson-head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.lesson-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------------ шаги урока */
+
+/* Лента прокручивается по горизонтали: поля под кольцо фокуса (3 px + отступ 2 px), чтобы оно не обрезалось.
+   Шаги за краем ленты затухают — видно, что лента продолжается. */
+.stepper {
+  display: flex;
+  gap: 6px;
+  padding: 6px 6px 8px;
+  margin: -4px -6px -2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  list-style: none;
+}
+
+.stepper[data-more-end='true'] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+
+.stepper[data-more-start='true'] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+}
+
+.stepper[data-more-start='true'][data-more-end='true'] {
+  mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+
+.stepper li {
+  flex: none;
+}
+
+.step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.step-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.step-num {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.step-num svg {
+  width: 12px;
+  height: 12px;
+}
+
+.step-chip[data-state='done'] .step-num {
+  border-color: var(--good-border);
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.step-chip[aria-current='step'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.step-chip[aria-current='step'] .step-num {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.step-progress {
+  display: none;
+}
+
+/* ------------------------------------------------------------ сетка урока */
+
+/* Две колонки: шаг и под ним переход между шагами; справа наставник на обе строки.
+   Вторая строка гибкая — высокая панель наставника не отодвигает «Назад / Далее» от шага. */
+.lesson-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--coach-w);
+  grid-template-rows: auto 1fr;
+  gap: var(--s-4) var(--s-5);
+  align-items: start;
+}
+
+.lesson-main {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+}
+
+/* Без своей прокрутки: --coach-top считает LessonScreen. Панель выше окна прилипает нижним краем,
+   и длинный разбор дочитывается прокруткой страницы. */
+.lesson-coach {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  position: sticky;
+  top: var(--coach-top, var(--s-4));
+  min-width: 0;
+  border-radius: var(--r-panel);
+}
+
+.step-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5) var(--s-5) var(--s-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.step-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.step-title {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Метка статуса в колонке — по ширине текста, а не полосой на всю ширину. */
+.lesson .stack-sm > .badge,
+.lesson .stack > .badge {
+  align-self: flex-start;
+}
+
+/* Результат, на который после действия переходит фокус. */
+.step-result:focus-visible {
+  outline-offset: 4px;
+}
+
+.step-result-text {
+  font-size: var(--lesson-text-2);
+}
+
+.step-nav {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'back hint next';
+  align-items: center;
+  gap: var(--s-3);
+  padding-top: var(--s-2);
+}
+
+.step-nav-back {
+  grid-area: back;
+  justify-self: start;
+}
+
+.step-nav-next {
+  grid-area: next;
+  justify-self: end;
+}
+
+.step-nav-hint {
+  grid-area: hint;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------ текст урока */
+
+.prose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  max-width: var(--reading-max);
+  font-size: var(--lesson-size);
+  line-height: 1.6;
+}
+
+.prose ul,
+.prose ol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 22px;
+}
+
+.prose li::marker {
+  color: var(--muted);
+}
+
+.prose h4 {
+  margin-top: var(--s-2);
+  font-size: calc(var(--lesson-size) + 1px);
+}
+
+.prose strong {
+  font-weight: 650;
+}
+
+.prose .code-block {
+  font-size: var(--code-size);
+}
+
+/* Размер врезки задаёт место, где она стоит: в тексте урока — модификатор, рядом с .small — 13 px. */
+.prose-note {
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--accent-soft-border);
+  border-radius: var(--r-control);
+  background: var(--accent-soft);
+}
+
+.prose > .prose-note,
+.prose-note-lesson {
+  font-size: calc(var(--lesson-size) - 1px);
+}
+
+/* Учебный текст во второстепенных местах (наставник, подсказки, разбор, условие, варианты)
+   следует настройке «Текст урока»: на 1 px меньше основного, но не мельче 15 px. */
+.lesson {
+  --lesson-text-2: max(15px, calc(var(--lesson-size) - 1px));
+}
+
+.prose-compact {
+  font-size: var(--lesson-text-2);
+  line-height: 1.55;
+  gap: var(--s-2);
+}
+
+.step-card .kv,
+.step-card .bullets,
+.step-card .field-label {
+  font-size: var(--lesson-text-2);
+}
+
+.inline-code {
+  overflow-wrap: anywhere;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-2);
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  white-space: break-spaces;
+}
+
+.story {
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  max-width: var(--reading-max);
+}
+
+.story-title {
+  font-size: var(--lesson-size);
+  font-weight: 650;
+  margin-bottom: 4px;
+}
+
+.story .prose {
+  color: var(--muted);
+}
+
+.story-note {
+  margin-top: var(--s-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.intro-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+}
+
+/* «Зачем это нужно» и «Где используется» — тоже текст урока: следует настройке, не мельче 15 px. */
+.fact .prose {
+  font-size: var(--lesson-text-2);
+}
+
+/* ------------------------------------------------------------ код только для чтения */
+
+.code-block {
+  margin: 0;
+  padding: var(--s-3) 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--text);
+  font: 400 var(--code-size) / 1.7 var(--font-code);
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+.code-line {
+  display: flex;
+  min-width: max-content;
+  padding: 0 var(--s-4) 0 var(--s-3);
+}
+
+.code-line.is-marked {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.code-ln {
+  flex: none;
+  width: 28px;
+  padding-right: 12px;
+  color: var(--muted);
+  text-align: right;
+  user-select: none;
+}
+
+.code-text {
+  white-space: pre;
+}
+
+.tok-keyword,
+.tok-controlKeyword,
+.tok-operatorKeyword,
+.tok-definitionKeyword,
+.tok-moduleKeyword {
+  color: var(--syn-keyword);
+}
+
+.tok-builtin {
+  color: var(--syn-builtin);
+}
+
+.tok-string,
+.tok-string2,
+.tok-special {
+  color: var(--syn-string);
+}
+
+.tok-number,
+.tok-bool,
+.tok-atom {
+  color: var(--syn-number);
+}
+
+.tok-comment {
+  color: var(--syn-comment);
+  font-style: italic;
+}
+
+.tok-definition {
+  color: var(--syn-function);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------ задание */
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.example-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-2);
+}
+
+.io-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.io-cell .label {
+  font-size: 11px;
+}
+
+.io-block {
+  margin: 0;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  font: 400 var(--code-size) / 1.55 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.io-block .ws {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.io-block .empty-mark {
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* ------------------------------------------------------------ рабочее место: редактор + результаты */
+
+.workbench {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.wb-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 4px var(--s-2) 4px var(--s-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.wb-file {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text);
+  font-family: var(--font-code);
+  font-size: 13px;
+  min-width: 0;
+}
+
+.wb-file svg {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+
+.wb-env {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.code-editor {
+  min-width: 0;
+}
+
+.code-editor .cm-editor {
+  min-height: calc(var(--editor-min-lines, 6) * 1.7em + 24px);
+  max-height: 60vh;
+}
+
+.code-editor .cm-editor .cm-scroller {
+  min-height: calc(var(--editor-min-lines, 6) * 1.7em + 24px);
+}
+
+.wb-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  padding: var(--s-3) var(--s-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.wb-actions .hint-keys {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wb-stdin {
+  padding: 0 var(--s-4) var(--s-3);
+  background: var(--surface-2);
+}
+
+.wb-stdin .disclosure {
+  background: var(--surface);
+}
+
+.wb-results {
+  border-top: 1px solid var(--border);
+}
+
+.wb-results .tabs {
+  padding: 0 var(--s-3);
+}
+
+.results-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  min-height: 96px;
+}
+
+.results-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.run-state {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.console {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  font: 400 var(--code-size) / 1.65 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.console .t-prompt {
+  color: var(--muted);
+}
+
+.console .t-input {
+  color: var(--accent-text);
+}
+
+.console .t-err {
+  color: var(--error);
+}
+
+.console-empty {
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.test-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.test-item {
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+}
+
+.test-item[data-state='fail'] {
+  border-color: var(--error-border);
+}
+
+.test-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+}
+
+button.test-row:hover {
+  background: var(--surface-hover);
+  border-radius: var(--r-control);
+}
+
+.test-row svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.test-row .test-name {
+  font-weight: 600;
+}
+
+.test-row .test-reason {
+  color: var(--muted);
+}
+
+.test-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: 0 var(--s-3) var(--s-3);
+}
+
+.io-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+/* ------------------------------------------------------------ наставник */
+
+.coach {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-4) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.coach-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  flex: none;
+}
+
+.coach-avatar svg {
+  width: 18px;
+  height: 18px;
+}
+
+.coach-name {
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.coach-mode {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.coach-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  font-size: var(--lesson-text-2);
+}
+
+/* Прежние подсказки свёрнуты — открыта последняя. */
+.hint-old > summary {
+  min-height: 32px;
+}
+
+/* Код в узкой колонке наставника переносится, а не уходит под горизонтальную прокрутку. */
+.coach .code-block {
+  overflow-x: visible;
+}
+
+.coach .code-line {
+  min-width: 0;
+}
+
+.coach .code-text {
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.coach-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.coach-foot {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hint-card {
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+}
+
+.hint-card .label {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--error-border);
+  border-radius: var(--r-control);
+  background: var(--error-soft);
+}
+
+.feedback[data-tone='info'] {
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft);
+}
+
+.feedback[data-tone='env'] {
+  border-color: var(--warn-border);
+  background: var(--warn-soft);
+}
+
+.feedback-title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  color: var(--error);
+  font-weight: 650;
+}
+
+.feedback[data-tone='info'] .feedback-title {
+  color: var(--accent-text);
+}
+
+.feedback[data-tone='env'] .feedback-title {
+  color: var(--warn);
+}
+
+.feedback-title svg {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+}
+
+.feedback-part {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--text);
+  font-size: var(--lesson-text-2);
+  line-height: 1.5;
+}
+
+.feedback-part dt {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.feedback-part dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.feedback dl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+}
+
+/* Строки сообщения Python не переносятся, иначе «^» съезжает с ошибочного символа. */
+.feedback .raw {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border-radius: 6px;
+  background: var(--surface);
+  font: 400 var(--code-size) / 1.55 var(--font-code);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.success-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--good-border);
+  border-radius: var(--r-control);
+  background: var(--good-soft);
+}
+
+.success-card .status-line {
+  color: var(--good);
+}
+
+.ai-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+}
+
+.ai-answer {
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+}
+
+/* Цвет — классы tone-* из layout.css; рядом всегда слово. */
+.ai-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+/* ------------------------------------------------------------ прогноз, порядок, тест */
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  text-align: left;
+  font-size: var(--lesson-text-2);
+}
+
+.option-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-text.mono {
+  font-size: var(--code-size);
+}
+
+.option:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.option[aria-checked='true'] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.option[data-result='correct'] {
+  border-color: var(--good);
+  background: var(--good-soft);
+}
+
+.option[data-result='wrong'] {
+  border-color: var(--error);
+  background: var(--error-soft);
+}
+
+.option .mono {
+  white-space: pre-wrap;
+}
+
+/* Пометка после проверки: значок и слово. Цвет — не единственный сигнал. */
+.verdict {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 4px;
+  flex: none;
+  padding: 1px 8px 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: var(--r-chip);
+  background: var(--surface);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.verdict svg {
+  width: 14px;
+  height: 14px;
+}
+
+.verdict[data-ok='true'] {
+  color: var(--good);
+}
+
+.verdict[data-ok='false'] {
+  color: var(--error);
+}
+
+.option-mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1.5px solid var(--border-control);
+  border-radius: 50%;
+  flex: none;
+}
+
+.option[aria-checked='true'] .option-mark {
+  border-color: var(--accent);
+  background: radial-gradient(var(--accent) 45%, transparent 50%);
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  counter-reset: order;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 48px;
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  counter-increment: order;
+}
+
+.order-item::before {
+  content: counter(order);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  flex: none;
+}
+
+.order-item[data-result='ok'] {
+  border-color: var(--good);
+  background: var(--good-soft);
+}
+
+.order-item[data-result='bad'] {
+  border-color: var(--error);
+  background: var(--error-soft);
+}
+
+.order-item .order-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--lesson-text-2);
+}
+
+.order-item .order-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.checklist li {
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+}
+
+.checklist li[data-done='true'] {
+  border-color: var(--good-border);
+}
+
+.checklist .prose {
+  font-size: var(--lesson-text-2);
+}
+
+.recap-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.recap-points li {
+  display: flex;
+  gap: var(--s-2);
+  font-size: var(--lesson-size);
+}
+
+.recap-points svg {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  color: var(--good);
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* Пояснение к строке — кнопка: наведение, фокус или нажатие подсвечивают строку в редакторе. */
+.note-btn {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: baseline;
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text);
+  font-size: var(--lesson-text-2);
+  text-align: left;
+}
+
+.note-btn:hover,
+.note-btn.is-active {
+  background: var(--accent-soft);
+}
+
+.note-btn[aria-pressed='true'] {
+  border-color: var(--accent-soft-border);
+}
+
+.line-tag {
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font: 500 12px/1.6 var(--font-code);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ вкладки на телефоне */
+
+.pane-tabs {
+  display: none;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 1279px) and (min-width: 900px) {
+  :root {
+    --coach-w: 256px;
+  }
+
+  .lesson {
+    padding: var(--s-5) var(--s-5) var(--s-6);
+  }
+}
+
+@media (max-width: 899px) {
+  .lesson {
+    padding: var(--s-4) var(--s-4) var(--s-5);
+  }
+
+  .lesson-head {
+    margin-bottom: var(--s-3);
+  }
+
+  .lesson-meta .lesson-objective,
+  .lesson-meta .meta-sep {
+    display: none;
+  }
+
+  .stepper {
+    display: none;
+  }
+
+  .step-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .step-progress .meter {
+    flex: 1;
+  }
+
+  .step-progress-label {
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 550;
+    white-space: nowrap;
+  }
+
+  .lesson-grid {
+    display: flex;
+    flex-direction: column;
+    /* Растягиваем колонки на ширину экрана: иначе длинная строка кода задаёт ширину всей колонки. */
+    align-items: stretch;
+    gap: var(--s-4);
+  }
+
+  .lesson-coach {
+    position: static;
+  }
+
+  .step-card {
+    padding: var(--s-4);
+  }
+
+  .step-title {
+    font-size: 18px;
+  }
+
+  .intro-facts,
+  .example-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .io-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pane-tabs {
+    display: flex;
+    position: sticky;
+    top: calc(var(--topbar-h) + env(safe-area-inset-top));
+    z-index: 20;
+    padding: var(--s-2) 0;
+    margin: calc(var(--s-2) * -1) 0 0;
+    background: var(--bg);
+  }
+
+  .pane-tabs .segmented {
+    width: 100%;
+  }
+
+  .pane-tabs .segmented button {
+    flex: 1;
+  }
+
+  .has-panes [data-pane]:not([data-pane-active='true']) {
+    display: none;
+  }
+
+  .mobile-only {
+    display: flex;
+  }
+
+  .wb-actions .hint-keys {
+    display: none;
+  }
+
+  .wb-env .env-text {
+    display: none;
+  }
+
+  .wb-actions .btn {
+    flex: 1;
+  }
+
+  .code-editor .cm-editor {
+    max-height: none;
+  }
+
+}
+
+/* Телефон: подсказка над кнопками, «Назад» и «Далее» — в одной строке. */
+@media (max-width: 599px) {
+  .step-nav {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'hint hint'
+      'back next';
+  }
+
+  .step-nav-hint {
+    text-align: left;
+  }
+}
