@@ -9,6 +9,8 @@ import './styles/components.css';
 import './styles/layout.css';
 import './styles/lesson.css';
 import './styles/screens.css';
+import './styles/refinement.css';
+import './styles/learning-visuals.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

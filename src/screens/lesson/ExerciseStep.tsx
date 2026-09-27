@@ -1,7 +1,7 @@
 // Шаг-задание: условие → код → запуск и проверка настоящим Python → короткий разбор →
 // подсказки → исправление. Черновик и попытки сохраняются автоматически.
 
-import { CircleAlert, CircleCheck, FileCode2, Lightbulb, Play, RotateCcw, Square } from 'lucide-react';
+import { ChevronDown, CircleAlert, CircleCheck, FileCode2, Lightbulb, Play, RotateCcw, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRunnerState, useSettings } from '../../app/hooks.ts';
 import { reportSaveProblem } from '../../app/problems.ts';
@@ -31,8 +31,11 @@ import { AiCoachBox } from './AiCoachBox.tsx';
 import { checkAnnouncement, failedChecks, onlyRulesFailed, testCounter } from './check-summary.ts';
 import { CoachPanel, CoachPortal, FeedbackCard, SuccessCard } from './coach.tsx';
 import type { Pane, PaneAttributes } from './LessonScreen.tsx';
-import { IoBlock, TestList, Transcript, attemptErrorType, checkPassed, resultsFromOutcome } from './results.tsx';
+import { TestList, Transcript, attemptErrorType, checkPassed, resultsFromOutcome } from './results.tsx';
 import { reviewReasonAfter } from './review.ts';
+import { ExerciseBrief, ExerciseExamples } from './ExerciseBrief.tsx';
+import { OrderDemo } from './LessonPlayground.tsx';
+import { illustrationUrl } from './StoryIllustration.tsx';
 
 export const KIND_LABEL: Record<ExerciseKind, string> = {
   repeat: 'Повтори приём',
@@ -279,14 +282,13 @@ export function ExerciseStep({
   const checkOutcome = last?.kind === 'check' ? last.outcome : null;
   const testResults = checkOutcome ? resultsFromOutcome(exercise, checkOutcome) : [];
   const counter = testCounter(checkOutcome, testResults);
-  const examples = exercise.tests.filter((test) => test.example);
   const errorLine = feedback?.line ?? null;
   const loading = runner.phase === 'loading' || runner.phase === 'restarting';
   const tabId = (value: 'tests' | 'output') => `${exercise.id}-tab-${value}`;
 
   return (
     <>
-      <section className="step-card" aria-labelledby={`${exercise.id}-title`} {...pane('task')}>
+      <section className="step-card exercise-card" aria-labelledby={`${exercise.id}-title`} {...pane('task')}>
         <div className="task-meta">
           <span className="badge badge-accent">{KIND_LABEL[exercise.kind]}</span>
           {reviewMode ? (
@@ -333,74 +335,18 @@ export function ExerciseStep({
         )}
         {reviewDone && <Notice tone="good">{reviewDone}</Notice>}
         <Markdown text={exercise.statement} />
-        {(exercise.input || exercise.output) && (
-          <dl className="kv">
-            {exercise.input && (
-              <>
-                <dt>Входные данные</dt>
-                <dd>
-                  <InlineText text={exercise.input} />
-                </dd>
-              </>
-            )}
-            {exercise.output && (
-              <>
-                <dt>Результат</dt>
-                <dd>
-                  <InlineText text={exercise.output} />
-                </dd>
-              </>
-            )}
-          </dl>
+        {exercise.id === 'm1-l1-e1' && (
+          <details className="order-explorer">
+            <summary>
+              <img src={illustrationUrl('cafe')} alt="Лена и Артём у ноутбука в кофейне" width="1672" height="941" />
+              <span><strong>Наглядный заказ</strong><small>Меняй количество и наблюдай за чеком</small></span>
+              <ChevronDown aria-hidden="true" />
+            </summary>
+            <OrderDemo />
+          </details>
         )}
-        {exercise.constraints.length > 0 && (
-          <div className="stack-sm">
-            <span className="label">Ограничения</span>
-            <ul className="bullets small">
-              {exercise.constraints.map((item) => (
-                <li key={item}>
-                  <InlineText text={item} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {examples.length > 0 && (
-          <div className="examples">
-            <span className="label">{examples.length === 1 ? 'Пример' : 'Примеры'}</span>
-            {examples.map((test) => (
-              <div key={test.id} className="example-row">
-                {test.kind === 'call' ? (
-                  <>
-                    <div className="io-cell">
-                      <span className="label">Вызов</span>
-                      <IoBlock text={test.call} />
-                    </div>
-                    <div className="io-cell">
-                      <span className="label">Результат</span>
-                      <IoBlock text={test.expected} />
-                    </div>
-                  </>
-                ) : test.kind === 'io' ? (
-                  <>
-                    {usesInput && (
-                      <div className="io-cell">
-                        <span className="label">Ввод</span>
-                        <IoBlock text={test.stdin ?? ''} emptyLabel="без ввода" />
-                      </div>
-                    )}
-                    <div className="io-cell" style={usesInput ? undefined : { gridColumn: '1 / -1' }}>
-                      <span className="label">Вывод</span>
-                      <IoBlock text={test.compare?.mode === 'regex' ? (test.expectedLabel ?? '') : test.expected} />
-                    </div>
-                  </>
-                ) : (
-                  <p className="small">{test.message}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <ExerciseBrief exercise={exercise} />
+        <ExerciseExamples exercise={exercise} />
         <details className="disclosure">
           <summary>Как проверяется решение</summary>
           <div className="disclosure-body stack-sm small">

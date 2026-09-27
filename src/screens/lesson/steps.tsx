@@ -26,6 +26,8 @@ import type { LessonRecord, ReviewRecord, SelfCheck } from '../../storage/types.
 import { CoachNote, CoachPanel, CoachPortal, FeedbackCard, InfoCard, SuccessCard } from './coach.tsx';
 import { Transcript } from './results.tsx';
 import { isActiveReview } from './review.ts';
+import { StoryIllustration } from './StoryIllustration.tsx';
+import { LessonPlayground } from './LessonPlayground.tsx';
 
 const ENV_LABEL = {
   python: 'Python в браузере',
@@ -71,7 +73,8 @@ function Verdict({ ok, children }: { ok: boolean; children: string }) {
 export function IntroStep({ lesson }: { lesson: Lesson }) {
   return (
     <>
-      <section className="step-card" aria-labelledby="intro-title">
+      <section className="step-card illustrated-intro" aria-labelledby="intro-title">
+        <StoryIllustration lessonId={lesson.id} title={lesson.story.title} />
         <div className="story">
           <h2 id="intro-title" className="story-title">
             {lesson.story.title}
@@ -79,6 +82,7 @@ export function IntroStep({ lesson }: { lesson: Lesson }) {
           <Markdown text={lesson.story.text} />
           {lesson.story.fictional && <p className="story-note">История-пример: придумана для наглядности.</p>}
         </div>
+        <LessonPlayground key={lesson.id} lessonId={lesson.id} />
         <div className="intro-facts">
           <div className="fact">
             <span className="label">Зачем это нужно</span>

@@ -18,9 +18,10 @@ function findLesson(data: LearnerData, course: Course, lessonId: string | null):
 export function PathChips({ course, current }: { course: Course; current: string }) {
   return (
     <ol className="path" aria-label="Маршрут обучения">
-      {course.stages.map((stage) => (
+      {course.stages.map((stage, index) => (
         <li key={stage.id}>
           <span className="path-chip" aria-current={stage.id === current ? 'step' : undefined} title={stage.description}>
+            <span className="path-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
             {stage.title}
           </span>
         </li>
@@ -81,7 +82,7 @@ export function TodayScreen({ course }: { course: Course }) {
   const readyLessons = course.modules.flatMap((module) => module.lessons).filter((lesson) => lesson.ready).length;
 
   return (
-    <div className="page">
+    <div className="page today-page">
       <header className="page-head">
         <span className="eyebrow">Сегодня</span>
         <h1>{firstTime ? 'Начнём с первой истории' : continueTarget ? 'Продолжим?' : 'Готовые уроки пройдены'}</h1>
@@ -96,7 +97,7 @@ export function TodayScreen({ course }: { course: Course }) {
       </header>
 
       <div className="today-grid">
-        <div className="stack">
+        <div className="stack today-primary">
           {continueTarget ? (
             <section className="continue-card" aria-labelledby="continue-title">
               <span className="eyebrow">
@@ -161,9 +162,10 @@ export function TodayScreen({ course }: { course: Course }) {
           )}
         </div>
 
-        <div className="stack">
-          <section className="card list-card" aria-labelledby="review-title">
+        <div className="stack today-support">
+          <section className="card list-card review-card" aria-labelledby="review-title">
             <div className="card-head">
+              <span className="review-symbol" aria-hidden="true"><CalendarClock /></span>
               <div>
                 <h2 id="review-title" className="card-title">
                   На повторение
@@ -218,7 +220,7 @@ export function TodayScreen({ course }: { course: Course }) {
             )}
           </section>
 
-          <section className="card list-card" aria-labelledby="short-title">
+          <section className="card list-card shortcuts-card" aria-labelledby="short-title">
             <div className="card-head">
               <h2 id="short-title" className="card-title">
                 Коротко
@@ -277,7 +279,7 @@ export function TodayScreen({ course }: { course: Course }) {
             </ul>
           </section>
 
-          <p className="small muted row" style={{ gap: 6 }}>
+          <p className="small muted row today-activity" style={{ gap: 6 }}>
             <Clock aria-hidden="true" width={14} height={14} />
             Сегодня в уроках: {todayMinutes} {plural(todayMinutes, ['минута', 'минуты', 'минут'])}
             {due.length > 0 && <StatusBadge tone="warn">{due.length} на повторение</StatusBadge>}

@@ -1,4 +1,4 @@
-import { Bot, Brain, Bug, CodeXml, Cpu, Database, Gamepad2, Heart, Server, ShieldCheck, Smartphone, type LucideIcon } from 'lucide-react';
+import { Bot, Brain, Bug, CodeXml, Cpu, Database, Gamepad2, Heart, Search, Server, ShieldCheck, Smartphone, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAsync, useDataVersion, useOnline, useSettings } from '../app/hooks.ts';
 import { href, navigate, paths } from '../app/router.ts';
@@ -63,6 +63,9 @@ function sameRegion(a: string, b: string): boolean {
 }
 
 export function DirectionsScreen({ course, labId }: { course: Course; labId: string | null }) {
+  const [query, setQuery] = useState('');
+  const search = query.trim().toLocaleLowerCase('ru-RU');
+  const visibleLabs = course.labs.filter((lab) => [lab.title, lab.hook, lab.project.title].some((value) => value.toLocaleLowerCase('ru-RU').includes(search)));
   const version = useDataVersion(['interests', 'market']);
   const interests = useAsync(getInterests, [version]);
   const market = useAsync(getMarketDatasets, [version]);
@@ -85,8 +88,14 @@ export function DirectionsScreen({ course, labId }: { course: Course; labId: str
       </header>
 
       <div className="labs-layout">
+        <div className="labs-catalog">
+          <div className="lab-search-wrap">
+            <label className="lab-search"><Search aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Сайты, игры, боты…" aria-label="Поиск направления" /></label>
+            <span className="small muted" role="status">{visibleLabs.length} из {course.labs.length}</span>
+          </div>
+          {visibleLabs.length === 0 && <div className="card lab-search-empty"><p>Такого направления не нашлось.</p><button className="btn btn-sm" type="button" onClick={() => setQuery('')}><X aria-hidden="true" />Сбросить поиск</button></div>}
         <div className="lab-grid" role="list" aria-label="Лаборатории">
-          {course.labs.map((lab) => {
+          {visibleLabs.map((lab) => {
             const Icon = LAB_ICON[lab.id] ?? CodeXml;
             const interest = interestMap.get(lab.id);
             const unlock = course.modules.find((module) => module.id === lab.unlockAfter);
@@ -139,6 +148,7 @@ export function DirectionsScreen({ course, labId }: { course: Course; labId: str
               </a>
             );
           })}
+        </div>
         </div>
 
         <LabDetail

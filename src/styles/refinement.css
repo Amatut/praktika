@@ -1,0 +1,271 @@
+/* Presentation layer. Course data, routes, checks and stored progress stay in their existing modules. */
+:root {
+  --sidebar-w: 228px;
+  --content-max: 1280px;
+  --r-panel: 16px;
+  --r-control: 10px;
+  --control-h: 42px;
+  --page-gutter: 36px;
+  --quiet-line: color-mix(in srgb, var(--border) 65%, transparent);
+  --panel-shadow: 0 3px 12px color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+/* A steady shell and one alignment for every screen. */
+.sidebar { padding: 30px 16px 18px; background: var(--surface-2); border-color: var(--quiet-line); }
+.sidebar .brand { padding: 0 10px; margin-bottom: 44px; font-size: 20px; letter-spacing: -.7px; }
+.brand-mark { width: 34px; height: 34px; border-radius: 11px; }
+.nav-caption { padding: 0 12px; margin-bottom: 13px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
+.nav { gap: 7px; }
+.nav-item { min-height: 46px; padding: 0 13px; border: 1px solid transparent; border-radius: 11px; gap: 12px; font-size: 13px; }
+.nav-item[aria-current='page'] { background: var(--accent-soft); border-color: var(--accent-soft-border); }
+.nav-item svg { width: 18px; height: 18px; stroke-width: 1.65; }
+.sidebar-foot { gap: 18px; }
+.pace { padding: 17px 12px 0; border-color: var(--quiet-line); font-size: 11px; line-height: 1.65; }
+.pace strong { font-size: 12px; }
+.sys-status { padding: 0 12px; gap: 9px; font-size: 11px; }
+.sys-status-row .dot { width: 5px; height: 5px; }
+.workspace-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 68px; padding: 12px var(--page-gutter); border-bottom: 1px solid var(--quiet-line); color: var(--muted); font-size: 12px; }
+.workspace-location, .workspace-pace { display: flex; align-items: center; gap: 11px; }
+.workspace-location strong { color: var(--text); font-weight: 500; }
+.workspace-location svg { width: 13px; height: 13px; }
+.workspace-pace svg { width: 14px; height: 14px; }
+.page, .lesson { padding: 34px var(--page-gutter) 48px; }
+.page-head { gap: 10px; margin-bottom: 30px; }
+h1 { font-size: 32px; font-weight: 620; letter-spacing: -.045em; line-height: 1.2; }
+.page-lead { max-width: 70ch; line-height: 1.75; font-size: 14px; }
+.eyebrow { font-size: 10px; letter-spacing: .1em; font-weight: 650; }
+.section { margin-top: 32px; }
+.section-title { font-size: 18px; letter-spacing: -.025em; }
+
+/* Shared components: quiet borders, consistent controls, purposeful emphasis. */
+.card, .step-card { border-color: var(--quiet-line); box-shadow: var(--panel-shadow); }
+.btn { font-size: 13px; font-weight: 600; padding-inline: 16px; transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
+.btn-primary { box-shadow: 0 3px 8px color-mix(in srgb, var(--accent) 12%, transparent); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 20%, transparent); }
+.btn-ghost { box-shadow: none; }
+.btn-sm { font-size: 12px; min-height: 34px; }
+.btn-icon { padding: 0; }
+.btn svg { flex-shrink: 0; }
+.badge { border-radius: 6px; font-size: 11px; min-height: 23px; }
+.card-title { font-size: 16px; font-weight: 600; letter-spacing: -.02em; }
+.card-sub { line-height: 1.6; font-size: 12px; }
+.card-link { transition: border-color 140ms ease, background-color 140ms ease; }
+.card-link:hover { border-color: var(--accent-soft-border); }
+.input, .textarea, .select { border-radius: var(--r-control); }
+.segmented { padding: 4px; border-color: var(--quiet-line); border-radius: 11px; }
+.segmented button { border-radius: 7px; min-height: 34px; }
+.notice { border-radius: 12px; }
+
+/* The four stages are a readable route, without four competing filled pills. */
+.path { gap: 10px; }
+.path li { gap: 10px; }
+.path li:not(:last-child)::after { content: ''; width: 18px; height: 1px; background: var(--border-strong); }
+.path-chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 0; background: transparent; border: 0; font-size: 11px; }
+.path-number { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--border); border-radius: 50%; font: 500 10px/1 var(--font-code); }
+.path-chip[aria-current='step'] { background: transparent; color: var(--accent-text); }
+.path-chip[aria-current='step'] .path-number { background: var(--accent-soft); border-color: var(--accent-soft-border); }
+
+/* Home: current lesson first; complementary actions each have their own space. */
+.today-grid { grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr); gap: 22px; align-items: stretch; }
+.today-primary { grid-column: 1; grid-row: 1; min-width: 0; }
+.today-support { display: contents; }
+.continue-card { position: relative; padding: 28px; gap: 20px; height: 100%; border-color: var(--accent-soft-border); border-radius: 18px; background: linear-gradient(115deg, color-mix(in srgb, var(--accent-soft) 40%, var(--surface)), var(--surface) 75%); box-shadow: var(--panel-shadow); }
+.continue-card::before { content: ''; width: 34px; height: 3px; border-radius: 2px; background: var(--accent); }
+.continue-card h2 { font-size: 25px; line-height: 1.35; letter-spacing: -.035em; max-width: 25ch; }
+.continue-card > p { font-size: 14px; line-height: 1.7; max-width: 60ch; }
+.continue-meta { font-size: 12px; gap: 10px; }
+.continue-card > .row { padding-top: 4px; margin-top: auto; }
+.review-card { grid-column: 2; grid-row: 1; justify-content: center; padding: 24px; }
+.review-card > .card-head { padding: 0; display: flex; flex-direction: column; gap: 17px; margin-bottom: 16px; }
+.review-symbol { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); color: var(--muted); }
+.review-symbol svg { width: 20px; height: 20px; stroke-width: 1.5; }
+.review-card > p.small { padding: 0 !important; font-size: 13px; line-height: 1.7; }
+.review-card .list-rows { padding: 0; }
+.shortcuts-card { grid-column: 1 / -1; padding: 0; border: 0; background: transparent; box-shadow: none; overflow: visible; }
+.shortcuts-card > .card-head { padding: 6px 0 0; margin-bottom: 14px; }
+.shortcuts-card .list-rows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 0; }
+.shortcuts-card .list-rows li { min-width: 0; }
+.shortcuts-card .list-row { position: relative; flex-direction: column; align-items: flex-start; height: 100%; min-height: 172px; padding: 20px; gap: 16px; background: var(--surface); border: 1px solid var(--quiet-line); border-radius: var(--r-panel); transition: border-color 140ms ease, background-color 140ms ease; }
+.shortcuts-card .list-row:hover { border-color: var(--accent-soft-border); background: var(--surface-hover); }
+.shortcuts-card .list-row > svg { position: absolute; right: 20px; top: 24px; width: 14px; height: 14px; }
+.shortcuts-card .row-icon { width: 34px; height: 34px; border-color: var(--quiet-line); color: var(--accent-text); background: var(--accent-soft); }
+.shortcuts-card .list-row-main { gap: 6px; }
+.list-row-title { font-size: 13px; font-weight: 600; }
+.list-row-sub { font-size: 12px; line-height: 1.65; }
+.today-activity { grid-column: 1 / -1; padding: 0 2px; font-size: 11px; }
+
+/* Course: quieter metadata and clearly separated modules. */
+.readiness-card { background: var(--surface-2); padding: 20px 24px; }
+.readiness-card .card-head { margin-bottom: 20px; }
+.readiness { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+.readiness-item { gap: 5px; }
+.readiness-item + .readiness-item { padding-left: 20px; border-left: 1px solid var(--border); }
+.readiness-value { font-size: 24px; font-weight: 550; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.readiness-label { font-size: 11px; line-height: 1.6; }
+.part-title { font-size: 18px; letter-spacing: -.025em; }
+.module-list { gap: 10px; }
+.module-card { grid-template-columns: 48px minmax(0, 1fr) auto; padding: 20px; border-color: var(--quiet-line); transition: border-color 140ms ease, background-color 140ms ease; }
+.module-card:not([data-planned='true']):hover { border-color: var(--accent-soft-border); background: var(--surface-hover); }
+.module-num { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft); border-color: var(--accent-soft-border); color: var(--accent-text); font-weight: 500; }
+.module-card[data-planned='true'] .module-num { background: var(--surface); border-color: var(--border); color: var(--muted); }
+.module-title { font-size: 15px; letter-spacing: -.015em; }
+.module-sub { margin-top: 6px; font-size: 12px; }
+.lesson-row { padding: 18px; border-color: var(--quiet-line); border-radius: 12px; }
+.module-detail { gap: 24px; }
+
+/* Lesson: breathable reading area, clear step navigation and an independent coach. */
+.lesson { max-width: 1480px; }
+.lesson-head { gap: 15px; margin-bottom: 24px; }
+.lesson-head h1 { font-size: 28px; line-height: 1.3; }
+.lesson-meta { font-size: 12px; line-height: 1.7; }
+.lesson-head-row { gap: 12px; }
+.stepper { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 6px; margin: 0 -6px; scrollbar-width: thin; }
+.step-chip { width: 100%; min-height: 35px; border-radius: 8px; border-color: transparent; background: transparent; font-size: 11px; gap: 7px; padding: 4px 9px; }
+.step-chip:hover { border-color: var(--border); background: var(--surface); }
+.step-chip[aria-current='step'] { border-color: var(--accent-soft-border); }
+.step-num { width: 19px; height: 19px; border-color: var(--quiet-line); font-size: 10px; }
+.step-card { padding: 28px; gap: 24px; }
+.step-title { font-size: 21px; letter-spacing: -.03em; line-height: 1.4; }
+.story { padding-left: 0; border-left: 0; }
+.story-title { font-size: calc(var(--lesson-size) + 6px); line-height: 1.4; margin-bottom: 18px; letter-spacing: -.025em; }
+.story .prose { color: var(--text); line-height: 1.8; }
+.story-note { font-size: 11px; margin-top: 14px; }
+.intro-facts { gap: 24px; }
+.intro-facts .fact { padding: 18px 0 0; border: 0; border-top: 1px solid var(--border); background: transparent; border-radius: 0; gap: 12px; }
+.intro-facts .label { color: var(--accent-text); font-size: 10px; letter-spacing: .06em; }
+.intro-facts .prose { line-height: 1.7; }
+.step-card > .kv { padding-top: 20px; border-top: 1px solid var(--quiet-line); }
+.coach { border-color: var(--accent-soft-border); border-radius: var(--r-panel); box-shadow: var(--panel-shadow); }
+.coach-head { padding-bottom: 16px; border-bottom: 1px solid var(--quiet-line); }
+.coach-avatar { width: 36px; height: 36px; border-radius: 11px; }
+.coach-name { font-size: 13px; }
+.coach-mode { font-size: 11px; }
+.coach-body { line-height: 1.7; }
+.coach-foot { font-size: 11px; }
+.step-nav { padding-top: 10px; }
+.workbench { border-color: var(--border-strong); border-radius: 14px; overflow: hidden; }
+.wb-head, .wb-tabs, .wb-actions { background: var(--surface-2); }
+.wb-head { min-height: 44px; }
+.code-block { border-color: var(--quiet-line); }
+.hint-card { border-radius: 10px; }
+
+/* Areas of study: one consistent set of cards, all existing information retained. */
+.labs-layout { gap: 24px; }
+.lab-grid { gap: 12px; }
+.lab-card { gap: 13px; padding: 19px; border-color: var(--quiet-line); transition: border-color 140ms ease, background-color 140ms ease; }
+.lab-card-head { align-items: flex-start; flex-direction: column; gap: 14px; }
+.lab-card-head svg { width: 28px; height: 28px; padding: 4px; background: var(--accent-soft); border-radius: 7px; stroke-width: 1.6; }
+.lab-card strong { font-size: 14px; line-height: 1.5; }
+.lab-card .lab-hook { line-height: 1.7; }
+.lab-card .lab-facts { padding-top: 12px; border-top: 1px solid var(--quiet-line); font-size: 11px; gap: 5px; }
+.lab-card .lab-foot { padding-top: 4px; }
+.lab-card[aria-current='true'] { box-shadow: inset 0 0 0 1px var(--accent-soft-border); border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface)); }
+.lab-card .badge { font-size: 10px; }
+.lab-detail { gap: 20px; }
+.settings-section { padding: 26px; }
+.setting-row { padding-block: 18px; }
+
+/* Tablet retains the established compact rail and working lesson panes. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  :root { --page-gutter: 28px; }
+  .sidebar { padding: 24px 8px 16px; }
+  .sidebar .brand { padding: 0; margin-bottom: 32px; }
+  .nav-caption { display: none; }
+  .nav-item { padding: 8px 2px; gap: 5px; font-size: 10px; }
+  .today-grid { grid-template-columns: minmax(0, 1.5fr) minmax(230px, 1fr); gap: 16px; }
+  .continue-card, .review-card { padding: 23px; }
+  .shortcuts-card .list-row { padding: 17px; }
+  .step-card { padding: 24px; }
+}
+
+@media (max-width: 899px) {
+  :root { --r-panel: 14px; --page-gutter: 22px; }
+  .btn, .btn-sm, .segmented button { min-height: 44px; }
+  .btn-icon, .btn-sm.btn-icon { width: 44px; }
+  .workspace-bar { display: none; }
+  .topbar { border-color: var(--quiet-line); }
+  .page, .lesson { padding: 26px var(--page-gutter) 36px; }
+  .page-head { gap: 10px; margin-bottom: 25px; }
+  h1 { font-size: 28px; }
+  .page-lead { font-size: 13px; line-height: 1.75; }
+  .today-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; }
+  .continue-card { padding: 24px; }
+  .continue-card h2 { font-size: 23px; }
+  .review-card { padding: 20px; }
+  .shortcuts-card .list-rows { gap: 12px; }
+  .shortcuts-card .list-row { padding: 17px; }
+  .shortcuts-card .list-row > svg { right: 16px; top: 22px; }
+  .path { gap: 6px 10px; }
+  .path li { gap: 9px; }
+  .path li:not(:last-child)::after { width: 12px; }
+  .path-chip { font-size: 10px; gap: 6px; }
+  .path-number { width: 23px; height: 23px; font-size: 9px; }
+  .lesson-head h1 { font-size: 25px; }
+  .lesson-head { gap: 14px; margin-bottom: 20px; }
+  .stepper { display: none; }
+  .step-progress { padding: 11px 13px; border: 1px solid var(--quiet-line); background: var(--surface); border-radius: 10px; }
+  .step-progress-label { font-size: 11px; }
+  .step-card { padding: 23px; gap: 22px; }
+  .story-title { font-size: calc(var(--lesson-size) + 4px); }
+  .intro-facts { gap: 20px; }
+  .readiness { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .readiness-item:nth-child(3) { padding-left: 0; border-left: 0; }
+  .module-card { padding: 17px; }
+  .lab-card { padding: 19px; }
+  .settings-section { padding: 22px; }
+  .bottombar { border-color: var(--quiet-line); padding-inline: 6px; }
+  .bottombar a { position: relative; gap: 4px; font-size: 10px; }
+  .bottombar a[aria-current='page']::before { content: ''; position: absolute; top: 0; width: 24px; height: 2px; border-radius: 0 0 3px 3px; background: var(--accent); }
+}
+
+@media (max-width: 599px) {
+  :root { --page-gutter: 18px; }
+  .page, .lesson { padding-top: 24px; }
+  h1 { font-size: 27px; }
+  .eyebrow { font-size: 9px; }
+  .today-grid { display: flex; flex-direction: column; gap: 20px; }
+  .today-primary { order: 0; }
+  .review-card { order: 2; }
+  .shortcuts-card { order: 1; }
+  .today-activity { order: 3; }
+  .continue-card { padding: 22px; gap: 18px; }
+  .continue-card h2 { font-size: 22px; }
+  .continue-card > .row { align-items: stretch; flex-direction: column; gap: 8px; }
+  .continue-card .btn { min-height: 44px; }
+  .shortcuts-card .list-rows { display: flex; gap: 10px; }
+  .shortcuts-card .list-row { flex-direction: row; align-items: center; min-height: 94px; padding: 17px; gap: 13px; }
+  .shortcuts-card .list-row > svg { position: static; flex: none; width: 14px; height: 14px; }
+  .shortcuts-card .row-icon { width: 32px; height: 32px; }
+  .shortcuts-card .list-row-main { gap: 4px; }
+  .review-card > .card-head { flex-direction: row; align-items: center; gap: 12px; }
+  .review-symbol { flex: none; width: 36px; height: 36px; }
+  .path { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+  .path li { gap: 8px; }
+  .path li:not(:last-child)::after { display: none; }
+  .readiness-card { padding: 20px; }
+  .readiness-value { font-size: 21px; }
+  .readiness-item + .readiness-item { padding-left: 12px; }
+  .readiness-item:nth-child(3) { padding-left: 0; }
+  .module-card { grid-template-columns: 38px minmax(0, 1fr); padding: 16px; gap: 12px; }
+  .module-num { width: 36px; height: 36px; font-size: 14px; }
+  .module-badges { grid-column: 2; justify-content: flex-start; }
+  .module-title { font-size: 14px; }
+  .module-sub { font-size: 11px; }
+  .lesson-head h1 { font-size: 23px; }
+  .step-card { padding: 19px; }
+  .step-title { font-size: 19px; }
+  .story .prose { line-height: 1.75; }
+  .kv { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .kv dd:not(:last-child) { margin-bottom: 8px; }
+  .step-progress { gap: 10px; padding: 10px; }
+  .step-progress-label { white-space: normal; flex: 0 1 auto; }
+  .step-progress .meter { min-width: 38px; }
+  .settings-section { padding: 19px; }
+  .lab-card { padding: 16px; }
+  .lab-card-head { gap: 10px; }
+  .lab-card strong { font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .card-link, .module-card, .lab-card, .shortcuts-card .list-row { transition: none; }
+}

@@ -1,4 +1,4 @@
-import { BookOpen, ChartColumn, Compass, House, Settings } from 'lucide-react';
+import { BookOpen, ChartColumn, ChevronRight, Clock3, Compass, House, Settings } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { connectionLabel, useCoachConnection } from '../coach/connection.ts';
 import { useOnline, useRunnerState, useSettings } from './hooks.ts';
@@ -77,6 +77,7 @@ export function AppShell({ section, children }: { section: NavSection | null; ch
 
       <aside className="sidebar">
         <Brand />
+        <span className="nav-caption">Учебное пространство</span>
         <nav className="nav" aria-label="Разделы">
           {NAV.map((item) => (
             <a
@@ -127,6 +128,14 @@ export function AppShell({ section, children }: { section: NavSection | null; ch
       </header>
 
       <main id="main" className="main" tabIndex={-1}>
+        <div className="workspace-bar" aria-label="Текущий раздел">
+          <span className="workspace-location">
+            <span>Мой маршрут</span>
+            <ChevronRight aria-hidden="true" />
+            <strong>{section === 'settings' ? 'Настройки' : NAV.find((item) => item.id === section)?.label ?? 'Практика'}</strong>
+          </span>
+          <span className="workspace-pace"><Clock3 aria-hidden="true" />20–30 минут в день</span>
+        </div>
         {children}
       </main>
 

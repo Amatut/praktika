@@ -49,7 +49,7 @@ export function CourseScreen({ course }: { course: Course }) {
         </div>
       </header>
 
-      <section className="card" aria-labelledby="readiness-title">
+      <section className="card readiness-card" aria-labelledby="readiness-title">
         <div className="card-head">
           <div>
             <h2 id="readiness-title" className="card-title">
