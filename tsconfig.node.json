@@ -12,6 +12,8 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    /* Тесты интерфейса в src импортируют компоненты .tsx. */
+    "jsx": "react-jsx",
 
     /* Linting */
     "strict": true,

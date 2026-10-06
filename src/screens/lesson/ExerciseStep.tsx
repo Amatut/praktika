@@ -1,19 +1,40 @@
 // Шаг-задание: условие → код → запуск и проверка настоящим Python → короткий разбор →
 // подсказки → исправление. Черновик и попытки сохраняются автоматически.
+// Панели: «Задание» (условие), «Код» (полоса main.py с «Запустить / Проверить», редактор, «Ввод для „Запустить“»,
+// нижняя панель «Проверка / Вывод»), «Наставник» (портал в колонку кадра). На телефоне кнопки — в доке внизу.
 
-import { ChevronDown, CircleAlert, CircleCheck, FileCode2, Lightbulb, Play, RotateCcw, Square } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRunnerState, useSettings } from '../../app/hooks.ts';
+import {
+  ChevronRight,
+  CircleAlert,
+  CircleX,
+  Ellipsis,
+  Eye,
+  FileCode2,
+  Keyboard,
+  Lightbulb,
+  ListChecks,
+  Lock,
+  Play,
+  RotateCcw,
+  Square,
+  WifiOff,
+  LoaderCircle,
+  Circle,
+} from 'lucide-react';
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
+import { useOnline, useRunnerState, useSettings } from '../../app/hooks.ts';
 import { reportSaveProblem } from '../../app/problems.ts';
+import { useShellStatus } from '../../app/shell-status.ts';
 import { buildCheckFeedback, buildRunFeedback, testLabel } from '../../coach/feedback.ts';
 import type { Feedback } from '../../coach/types.ts';
 import { CodeBlock } from '../../components/CodeBlock.tsx';
 import { InlineText, Markdown } from '../../components/Markdown.tsx';
-import { rovingKeyDown } from '../../components/roving.ts';
-import { ConfirmDialog, Notice, StatusBadge, plural } from '../../components/ui.tsx';
+import { ConfirmDialog, Disclosure, Kbd, Notice, Spinner, StatusBadge, Tabs, Tag, plural, type TabItem } from '../../components/ui.tsx';
 import type { Exercise, ExerciseKind, Lesson } from '../../content/schema.ts';
 import { CodeEditor } from '../../editor/CodeEditor.tsx';
-import { pythonRunner, type CheckOutcome, type RunOutcome } from '../../runner/runner.ts';
+import { exerciseEnvironment } from '../../runner/environment.ts';
+import { pythonRunner } from '../../runner/runner.ts';
 import {
   completeReview,
   getAllReviews,
@@ -28,13 +49,14 @@ import {
 import { exerciseReviewKey, isDue } from '../../storage/schedule.ts';
 import type { ExerciseRecord, HelpLevel, ReviewRecord } from '../../storage/types.ts';
 import { AiCoachBox } from './AiCoachBox.tsx';
-import { checkAnnouncement, failedChecks, onlyRulesFailed, testCounter } from './check-summary.ts';
-import { CoachPanel, CoachPortal, FeedbackCard, SuccessCard } from './coach.tsx';
-import type { Pane, PaneAttributes } from './LessonScreen.tsx';
-import { TestList, Transcript, attemptErrorType, checkPassed, resultsFromOutcome } from './results.tsx';
-import { reviewReasonAfter } from './review.ts';
+import { checkAnnouncement, failedChecks, testCounts } from './check-summary.ts';
+import { CoachEmpty, CoachPanel, CoachPortal, CollapseButton, FeedbackCard, HintCard, SuccessCard, useLessonFrame } from './coach.tsx';
+import { EnvironmentInfo } from './environment.tsx';
 import { ExerciseBrief, ExerciseExamples } from './ExerciseBrief.tsx';
+import type { Pane, PaneAttributes } from './LessonScreen.tsx';
 import { OrderDemo } from './LessonPlayground.tsx';
+import { CheckView, OutputView, RunState, attemptErrorType, checkPassed, resultsFromOutcome, type LastRun } from './results.tsx';
+import { reviewReasonAfter } from './review.ts';
 import { illustrationUrl } from './StoryIllustration.tsx';
 
 export const KIND_LABEL: Record<ExerciseKind, string> = {
@@ -45,7 +67,28 @@ export const KIND_LABEL: Record<ExerciseKind, string> = {
   read: 'Прочитай код',
 };
 
-type Last = { kind: 'check'; outcome: CheckOutcome; code: string } | { kind: 'run'; outcome: RunOutcome; stdin: string };
+type ResultsTab = 'tests' | 'output';
+
+/** Высота панели «Проверка / Вывод» запоминается в браузере (без хранилища — по умолчанию). */
+const RESULTS_KEY = 'praktika-results-h';
+const RESULTS_MIN = 160;
+
+function readResultsHeight(): number | null {
+  try {
+    const value = Number(window.localStorage.getItem(RESULTS_KEY));
+    return Number.isFinite(value) && value >= RESULTS_MIN ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeResultsHeight(value: number) {
+  try {
+    window.localStorage.setItem(RESULTS_KEY, String(Math.round(value)));
+  } catch {
+    // Хранилище недоступно: высота просто не запомнится.
+  }
+}
 
 export function ExerciseStep({
   lesson,
@@ -56,27 +99,36 @@ export function ExerciseStep({
 }: {
   lesson: Lesson;
   exercise: Exercise;
-  /** Атрибуты частей шага (на телефоне — панели вкладок «Задание / Код»). */
+  /** Атрибуты частей шага (во вкладочной раскладке — панели вкладок «Задание / Код / Наставник»). */
   pane: (value: Pane) => PaneAttributes;
   onPassed: () => void;
   onShowCoach: () => void;
 }) {
   const settings = useSettings();
   const runner = useRunnerState();
+  const online = useOnline();
+  const frame = useLessonFrame();
+  const narrow = frame.layout === 'narrow';
   const [record, setRecord] = useState<ExerciseRecord | null>(null);
   const [code, setCode] = useState(exercise.starterCode);
-  const [last, setLast] = useState<Last | null>(null);
+  const [last, setLast] = useState<LastRun | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [tab, setTab] = useState<'tests' | 'output'>('tests');
+  const [tab, setTab] = useState<ResultsTab>('tests');
   const [action, setAction] = useState<'run' | 'check' | null>(null);
   const [testIndex, setTestIndex] = useState(0);
   const [confirm, setConfirm] = useState<'reset' | 'solution' | null>(null);
   const [announce, setAnnounce] = useState('');
+  const [save, setSave] = useState<'saving' | 'saved' | 'failed' | null>(null);
+  const [cursorLine, setCursorLine] = useState(1);
+  const [reveal, setReveal] = useState<{ line: number; tick: number } | null>(null);
+  const [resultsHeight, setResultsHeight] = useState<number | null>(readResultsHeight);
   const firstExample = exercise.tests.find((test) => test.example) ?? exercise.tests[0];
   const [stdin, setStdin] = useState(firstExample.stdin ?? '');
   const usesInput = exercise.tests.some((test) => Boolean(test.stdin));
   const saveTimer = useRef<number | undefined>(undefined);
   const pendingDraft = useRef<string | null>(null);
+  const codePane = useRef<HTMLElement>(null);
+  const ids = useId();
   // Повторение: задание решается заново; подсказки считаются отдельно для этого подхода.
   const [review, setReview] = useState<ReviewRecord | null>(null);
   const [reviewMode, setReviewMode] = useState(false);
@@ -86,6 +138,10 @@ export function ExerciseStep({
   const previousCode = useRef<string | null>(null);
   // Кнопка, которую нажали, исчезла («Подсказка 3 из 3», «Показать решение») — фокус к тому, что появилось.
   const [helpFocus, setHelpFocus] = useState<{ id: string; tick: number } | null>(null);
+  // Код, с которым задание решено: пока он не менялся, «Проверить» — не главная кнопка (главная — «Далее»).
+  const [settledCode, setSettledCode] = useState<string | null>(null);
+  // После проверки с непройденными тестами «Проверка» прокручивается к раскрытому тесту.
+  const [failTick, setFailTick] = useState(0);
 
   // Загрузка сохранённого черновика и статуса.
   useEffect(() => {
@@ -93,10 +149,14 @@ export function ExerciseStep({
     setLast(null);
     setFeedback(null);
     setTab('tests');
+    setSave(null);
+    setSettledCode(null);
     getExercise(exercise.id).then((stored) => {
       if (!alive) return;
       setRecord(stored ?? null);
       setCode(stored?.draft ?? exercise.starterCode);
+      if (stored?.draft) setSave('saved');
+      if (stored?.status === 'passed') setSettledCode(stored.draft ?? exercise.starterCode);
     });
     setReviewMode(false);
     setReviewDone(null);
@@ -117,7 +177,14 @@ export function ExerciseStep({
     const value = pendingDraft.current;
     if (value === null) return Promise.resolve();
     pendingDraft.current = null;
-    return saveDraft(exercise.id, lesson.id, value).catch((error: unknown) => reportSaveProblem(error, 'Черновик не сохранён'));
+    setSave('saving');
+    return saveDraft(exercise.id, lesson.id, value).then(
+      () => setSave('saved'),
+      (error: unknown) => {
+        setSave('failed');
+        reportSaveProblem(error, 'Черновик не сохранён');
+      },
+    );
   }, [exercise.id, lesson.id]);
 
   // Черновик сохраняется при уходе со страницы и при смене задания.
@@ -136,6 +203,25 @@ export function ExerciseStep({
     if (!helpFocus) return;
     document.getElementById(helpFocus.id)?.focus();
   }, [helpFocus]);
+
+  // Непройденный тест раскрыт — «получилось» должно быть видно без поиска. Прокручивается только панель
+  // «Проверка» (на телефоне она не прокручивается сама — там ничего не происходит), фокус не трогается.
+  useEffect(() => {
+    if (failTick === 0) return;
+    const frame = requestAnimationFrame(() => {
+      const body = codePane.current?.querySelector<HTMLElement>('.results-body');
+      const item = body?.querySelector<HTMLElement>('.test-item[data-state="fail"]:has(.test-detail)');
+      if (!body || !item || body.scrollHeight <= body.clientHeight) return;
+      const box = body.getBoundingClientRect();
+      const rect = item.getBoundingClientRect();
+      const gap = 12;
+      if (rect.bottom + gap <= box.bottom && rect.top >= box.top) return;
+      // Тест целиком, если помещается; иначе — от его строки вниз.
+      const shift = rect.height + gap * 2 <= box.height ? rect.bottom + gap - box.bottom : rect.top - gap - box.top;
+      body.scrollTop += shift;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [failTick]);
 
   const onCodeChange = (value: string) => {
     setCode(value);
@@ -171,7 +257,8 @@ export function ExerciseStep({
     setFeedback(null);
     if (previousCode.current !== null) setCode(previousCode.current);
   }
-  const hintsLocked = Boolean(exercise.noHintsBeforeAttempt) && (record?.checks ?? 0) === 0;
+  const selfStudy = Boolean(exercise.noHintsBeforeAttempt);
+  const hintsLocked = selfStudy && (record?.checks ?? 0) === 0;
 
   async function check() {
     if (busy) return;
@@ -181,8 +268,9 @@ export function ExerciseStep({
     setAnnounce('Проверяю…');
     // Проверка занимает Python сразу, в обработчике нажатия: повторное нажатие уже не начнёт вторую,
     // а «Остановить» с первого мгновения есть что останавливать. Черновик сохраняется, пока идёт проверка.
+    // Окружение задания (файл кода, учебные файлы, базы, seed, ответы сети); тесты дополняют его своими полями.
     const running = pythonRunner.check(
-      { code, tests: exercise.tests, rules: exercise.rules },
+      { code, tests: exercise.tests, rules: exercise.rules, ...exerciseEnvironment(exercise) },
       { perTestMs: exercise.timeLimitMs, onTestStart: setTestIndex },
     );
     await flushDraft();
@@ -190,10 +278,14 @@ export function ExerciseStep({
     setAction(null);
     setLast({ kind: 'check', outcome, code });
     const ok = checkPassed(outcome);
-    setFeedback(ok ? null : buildCheckFeedback(exercise, code, outcome));
+    const nextFeedback = ok ? null : buildCheckFeedback(exercise, code, outcome);
+    setFeedback(nextFeedback);
+    if (nextFeedback) frame.notifyFeedback();
     const tests = resultsFromOutcome(exercise, outcome);
     // Объявление — по типу результата: «код не запустился», «не выполнено требование», «не пройдено X из Y».
     setAnnounce(checkAnnouncement(outcome, tests));
+    if (ok) setSettledCode(code);
+    if (tests.some((test) => !test.passed && test.interrupted !== 'skipped')) setFailTick((value) => value + 1);
     if (outcome.status === 'stopped' || outcome.status === 'failed') return;
     const updated = await recordCheck(exercise.id, lesson.id, {
       passed: ok,
@@ -229,13 +321,19 @@ export function ExerciseStep({
     setTab('output');
     setAnnounce('Запускаю…');
     // Как в check(): Python занимается сразу, черновик сохраняется параллельно.
-    const running = pythonRunner.run(code, stdin, { timeLimitMs: exercise.timeLimitMs ?? undefined });
+    const running = pythonRunner.run(code, stdin, {
+      timeLimitMs: exercise.timeLimitMs ?? undefined,
+      environment: exerciseEnvironment(exercise),
+    });
     await flushDraft();
     const outcome = await running;
     setAction(null);
     setLast({ kind: 'run', outcome, stdin });
     const runFeedback = buildRunFeedback(code, outcome);
-    if (runFeedback) setFeedback(runFeedback);
+    if (runFeedback) {
+      setFeedback(runFeedback);
+      frame.notifyFeedback();
+    }
     if (outcome.status === 'done' || outcome.status === 'timeout') {
       const errorType =
         outcome.status === 'timeout' ? 'timeout' : (outcome.result.compileError?.type ?? outcome.result.error?.type ?? null);
@@ -279,235 +377,325 @@ export function ExerciseStep({
     setFeedback(null);
   }
 
+  function showLine(line: number) {
+    frame.showPane('code');
+    setReveal((value) => ({ line, tick: (value?.tick ?? 0) + 1 }));
+  }
+
   const checkOutcome = last?.kind === 'check' ? last.outcome : null;
   const testResults = checkOutcome ? resultsFromOutcome(exercise, checkOutcome) : [];
-  const counter = testCounter(checkOutcome, testResults);
+  const counts = testCounts(checkOutcome, testResults, exercise.tests.length);
   const errorLine = feedback?.line ?? null;
   const loading = runner.phase === 'loading' || runner.phase === 'restarting';
-  const tabId = (value: 'tests' | 'output') => `${exercise.id}-tab-${value}`;
+  const resultsPrefix = `${ids}-results`;
+
+  function openResults() {
+    setTab('tests');
+    frame.showPane('code', '.results-body');
+  }
+
+  useShellStatus({
+    tests: counts ? { failed: counts.failed, passed: counts.passed, open: openResults } : null,
+    cursor: { file: exercise.filename, line: cursorLine },
+    save,
+    minutes: lesson.minutes,
+  });
+
+  const resultTabs: TabItem<ResultsTab>[] = [
+    {
+      value: 'tests',
+      label: 'Проверка',
+      badge: counts ? (
+        counts.failed > 0 ? (
+          <StatusBadge tone="err">
+            <span className="n">{counts.failed}</span>
+            <span className="visually-hidden"> не прошли</span>
+          </StatusBadge>
+        ) : (
+          <StatusBadge tone="ok">
+            <span className="n">
+              {counts.passed}/{counts.total}
+            </span>
+            <span className="visually-hidden"> пройдено</span>
+          </StatusBadge>
+        )
+      ) : undefined,
+    },
+    { value: 'output', label: 'Вывод' },
+  ];
+
+  // Одна главная кнопка на зону: задание решено и код не менялся — главное «Далее»; ждёт повторение — «Решить заново».
+  const quietCheck = (passed && settledCode !== null && code === settledCode) || (review !== null && !reviewMode);
+
+  const actions = (
+    <div className="wb-actions">
+      {/* Во время запуска или проверки «Запустить» заменяется на «Остановить». */}
+      {busy ? (
+        <button type="button" className="btn btn-danger btn-sm wb-stop" onClick={() => pythonRunner.stop()}>
+          <Square aria-hidden="true" />
+          Остановить
+        </button>
+      ) : (
+        <button type="button" className="btn btn-sm wb-run" onClick={() => void run()}>
+          <Play aria-hidden="true" />
+          Запустить
+        </button>
+      )}
+      <button
+        type="button"
+        className={`btn${quietCheck ? '' : ' btn-primary'} btn-sm wb-check`}
+        onClick={() => void check()}
+        disabled={busy}
+        aria-keyshortcuts="Control+Enter"
+      >
+        {action === 'check' ? <Spinner /> : <ListChecks aria-hidden="true" />}
+        Проверить
+        <Kbd>Ctrl ↵</Kbd>
+      </button>
+    </div>
+  );
+
+  const moreMenu = <MoreMenu file={exercise.filename} disabled={busy || code === exercise.starterCode} onReset={() => setConfirm('reset')} />;
+
+  const stdinLines = stdin.trim() ? stdin.replace(/\n$/, '').split('\n').length : 0;
+  const coachHidden = !frame.coachVisible;
+  // Редактор по высоте кода (не меньше minLines строк, не больше 60 % панели), остальное — «Проверке».
+  // Высота «Проверки», выставленная рукой, главнее.
+  const minLines = Math.max(6, exercise.starterCode.split('\n').length + 2);
+  const editorLines = Math.max(minLines, code.split('\n').length + 1);
+  const codeStyle = {
+    '--editor-lines': String(editorLines),
+    ...(resultsHeight ? { '--results-h': `${resultsHeight}px` } : {}),
+  } as CSSProperties;
+
+  // Ожидание Python и сбой — в той вкладке, что открыта: под строкой прогона или под итогом, а не над ними.
+  const waitState = loading ? (
+    <RunState>{runner.phase === 'loading' ? 'Загружаю Python…' : 'Перезапускаю Python…'}</RunState>
+  ) : runner.phase === 'failed' && !busy ? (
+    <p className="status-line status-err is-long">
+      <CircleAlert aria-hidden="true" />
+      <span>{runner.error}</span>
+    </p>
+  ) : null;
+  const checkState =
+    action === 'check' && !loading ? (
+      <RunState>
+        Проверяю: {testLabel(exercise.tests[Math.min(testIndex, exercise.tests.length - 1)], testIndex)} (
+        <span className="n">{testIndex + 1}</span> из <span className="n">{exercise.tests.length}</span>)
+      </RunState>
+    ) : (
+      waitState
+    );
+  const runState = action === 'run' && !loading ? <RunState>Программа выполняется…</RunState> : waitState;
 
   return (
     <>
-      <section className="step-card exercise-card" aria-labelledby={`${exercise.id}-title`} {...pane('task')}>
-        <div className="task-meta">
-          <span className="badge badge-accent">{KIND_LABEL[exercise.kind]}</span>
-          {reviewMode ? (
-            <StatusBadge tone="accent">Повторение</StatusBadge>
-          ) : passed ? (
-            <StatusBadge tone="good">Решено</StatusBadge>
-          ) : (record?.checks ?? 0) > 0 ? (
-            <StatusBadge tone="warn">
-              {record!.checks} {plural(record!.checks, ['попытка', 'попытки', 'попыток'])}
-            </StatusBadge>
-          ) : (
-            <StatusBadge tone="muted">Новое</StatusBadge>
-          )}
+      <section className="pane pane-task step-card exercise-card" aria-labelledby={`${exercise.id}-title`} {...pane('task')}>
+        <div className="pane-head task-head">
+          <span className="plabel">Задание</span>
+          <span className="pane-actions">
+            <CollapseButton pane="task" />
+          </span>
         </div>
-        <h2 id={`${exercise.id}-title`} className="step-title">
-          {exercise.title}
-        </h2>
-        {review && !reviewMode && (
-          <Notice
-            tone="accent"
-            title="Пора повторить"
-            action={
-              <button type="button" className="btn btn-primary btn-sm" onClick={startReview}>
-                Решить заново
-              </button>
+        <div className="pane-body task-body">
+          <div className="task-meta">
+            <Tag>{KIND_LABEL[exercise.kind]}</Tag>
+            {selfStudy && <Tag icon={Lock}>Самостоятельно</Tag>}
+            {reviewMode ? (
+              <StatusBadge tone="accent">Повторение</StatusBadge>
+            ) : passed ? (
+              <StatusBadge tone="ok">Решено</StatusBadge>
+            ) : (record?.checks ?? 0) > 0 ? (
+              <StatusBadge tone="warn">
+                <span className="n">{record!.checks}</span> {plural(record!.checks, ['попытка', 'попытки', 'попыток'])}
+              </StatusBadge>
+            ) : (
+              <StatusBadge tone="muted">Новое</StatusBadge>
+            )}
+          </div>
+          {review && !reviewMode && (
+            <Notice
+              tone="accent"
+              title="Пора повторить"
+              action={
+                <button type="button" className="btn btn-primary btn-sm" onClick={startReview}>
+                  Решить заново
+                </button>
+              }
+            >
+              {review.reason}.
+            </Notice>
+          )}
+          {reviewMode && (
+            <Notice
+              tone="accent"
+              title="Повторение"
+              action={
+                <button type="button" className="btn btn-sm" onClick={leaveReview}>
+                  Вернуть прежний код
+                </button>
+              }
+            />
+          )}
+          {reviewDone && <Notice tone="ok">{reviewDone}</Notice>}
+          <h2 id={`${exercise.id}-title`} className="step-title task-title">
+            {exercise.title}
+          </h2>
+          <Markdown text={exercise.statement} className="task-statement" />
+          {exercise.id === 'm1-l1-e1' && (
+            <details className="order-explorer">
+              <summary>
+                <ChevronRight aria-hidden="true" className="disclosure-chevron" />
+                <img src={illustrationUrl('cafe')} alt="" width="96" height="54" />
+                <span className="oe-title">Наглядный заказ</span>
+              </summary>
+              <div className="oe-body">
+                <OrderDemo />
+              </div>
+            </details>
+          )}
+          <ExerciseBrief exercise={exercise} />
+          <ExerciseExamples exercise={exercise} />
+          <Disclosure
+            className="task-how"
+            summary={
+              <>
+                Как проверяется решение · <span className="n">{exercise.tests.length}</span>{' '}
+                {plural(exercise.tests.length, ['тест', 'теста', 'тестов'])}
+              </>
             }
           >
-            {review.reason}. Реши задание с чистого листа — сам или с одной подсказкой. Прежний код можно будет вернуть.
-          </Notice>
-        )}
-        {reviewMode && (
-          <Notice
-            tone="accent"
-            title="Повторение"
-            action={
-              <button type="button" className="btn btn-ghost btn-sm" onClick={leaveReview}>
-                Вернуть прежний код
-              </button>
-            }
-          >
-            Подсказки в этом подходе считаются заново. Если справишься сам или с одной подсказкой, следующее повторение будет
-            позже. Прежнее решение сохранено, пока новое не пройдёт проверку.
-          </Notice>
-        )}
-        {reviewDone && <Notice tone="good">{reviewDone}</Notice>}
-        <Markdown text={exercise.statement} />
-        {exercise.id === 'm1-l1-e1' && (
-          <details className="order-explorer">
-            <summary>
-              <img src={illustrationUrl('cafe')} alt="Лена и Артём у ноутбука в кофейне" width="1672" height="941" />
-              <span><strong>Наглядный заказ</strong><small>Меняй количество и наблюдай за чеком</small></span>
-              <ChevronDown aria-hidden="true" />
-            </summary>
-            <OrderDemo />
-          </details>
-        )}
-        <ExerciseBrief exercise={exercise} />
-        <ExerciseExamples exercise={exercise} />
-        <details className="disclosure">
-          <summary>Как проверяется решение</summary>
-          <div className="disclosure-body stack-sm small">
-            <ul className="bullets">
+            <ul className="bullets task-criteria">
               {exercise.criteria.map((item) => (
                 <li key={item}>
                   <InlineText text={item} />
                 </li>
               ))}
             </ul>
-            <p className="muted">
-              Проверок: {exercise.tests.length}. Код выполняется настоящим Python прямо в браузере; результат сравнивается с
-              ожидаемым. Пробелы в конце строк не учитываются.
-            </p>
-          </div>
-        </details>
+          </Disclosure>
+          <EnvironmentInfo source={exercise} />
+        </div>
       </section>
 
-      <section className="workbench" aria-label="Редактор и результаты" {...pane('code')}>
-        <div className="wb-head">
-          <span className="wb-file">
-            <FileCode2 aria-hidden="true" />
-            {exercise.filename}
-          </span>
-          <span className="wb-env">
-            <span className="nowrap env-text">Python{runner.pythonVersion ? ` ${runner.pythonVersion}` : ''} · в браузере</span>
+      <section
+        className="pane pane-code workbench"
+        aria-label="Код и проверка"
+        ref={codePane}
+        style={codeStyle}
+        data-results={resultsHeight ? 'manual' : 'auto'}
+        {...pane('code')}
+      >
+        {!narrow && (
+          <div className="editor-bar">
+            <span className="etab" title={exercise.filename}>
+              <FileCode2 aria-hidden="true" />
+              <span className="etab-name">{exercise.filename}</span>
+            </span>
+            {moreMenu}
+            {actions}
+          </div>
+        )}
+        <div className="editor-wrap">
+          <CodeEditor
+            value={code}
+            onChange={onCodeChange}
+            onSubmit={() => void check()}
+            ariaLabel={`Код задания «${exercise.title}». Ctrl+Enter — проверить. Esc, затем Tab — выйти из редактора.`}
+            errorLine={errorLine}
+            errorKey={feedback}
+            minLines={minLines}
+            onCursor={setCursorLine}
+            revealLine={reveal}
+          />
+        </div>
+        {feedback && coachHidden && (
+          <div className="error-strip">
+            <CircleX aria-hidden="true" />
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setConfirm('reset')}
-              disabled={busy || code === exercise.starterCode}
-              title="Вернуть стартовый код"
+              className="error-strip-btn"
+              onClick={() => frame.showPane('coach', '.coach .feedback')}
             >
-              <RotateCcw aria-hidden="true" />
-              <span>Сначала</span>
+              <span>Разбор у наставника: {feedback.title}</span>
+              <ChevronRight aria-hidden="true" />
             </button>
-          </span>
-        </div>
-        <CodeEditor
-          value={code}
-          onChange={onCodeChange}
-          onSubmit={() => void check()}
-          ariaLabel={`Код задания «${exercise.title}». Ctrl+Enter — проверить. Esc, затем Tab — выйти из редактора.`}
-          errorLine={errorLine}
-          minLines={Math.max(6, exercise.starterCode.split('\n').length + 2)}
-        />
-        <div className="wb-actions">
-          <button type="button" className="btn btn-primary" onClick={() => void check()} disabled={busy}>
-            {action === 'check' ? <span className="spinner" aria-hidden="true" /> : <CircleCheck aria-hidden="true" />}
-            Проверить
-          </button>
-          <button type="button" className="btn" onClick={() => void run()} disabled={busy}>
-            {action === 'run' ? <span className="spinner" aria-hidden="true" /> : <Play aria-hidden="true" />}
-            Запустить
-          </button>
-          {busy && (
-            <button type="button" className="btn btn-danger" onClick={() => pythonRunner.stop()}>
-              <Square aria-hidden="true" />
-              Остановить
-            </button>
-          )}
-          <span className="hint-keys">
-            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> — проверить
-          </span>
-        </div>
-        <div className="wb-stdin" hidden={!usesInput && !code.includes('input(')}>
-          <details className="disclosure">
-            <summary>Ввод для «Запустить»{stdin ? '' : ' (пусто)'}</summary>
-            <div className="disclosure-body stack-sm">
-              <label className="field">
-                <span className="field-hint">
-                  Каждая строка — один ответ на input(). Для проверки используются данные из тестов.
-                </span>
-                <textarea
-                  className="textarea mono"
-                  rows={3}
-                  value={stdin}
-                  onChange={(event) => setStdin(event.target.value)}
-                  aria-label="Ввод для запуска"
-                />
-              </label>
+          </div>
+        )}
+        {(usesInput || code.includes('input(')) && (
+          <details className="stdin">
+            <summary>
+              <span className="stdin-gut" aria-hidden="true">
+                <ChevronRight className="stdin-chev" />
+                <Keyboard />
+              </span>
+              <span className="stdin-label">Ввод для «Запустить»</span>
+              <span className="stdin-meta">
+                {stdinLines === 0 ? (
+                  'пусто'
+                ) : (
+                  <>
+                    <span className="n">{stdinLines}</span> {plural(stdinLines, ['строка', 'строки', 'строк'])}
+                  </>
+                )}
+              </span>
+            </summary>
+            <div className="stdin-body">
+              <textarea
+                className="textarea mono"
+                rows={3}
+                value={stdin}
+                spellCheck={false}
+                onChange={(event) => setStdin(event.target.value)}
+                aria-label="Ввод для «Запустить»"
+                aria-describedby={`${ids}-stdin-note`}
+              />
+              <span id={`${ids}-stdin-note`} className="visually-hidden">
+                Каждая строка — ответ на один input(). «Проверить» берёт ввод из тестов.
+              </span>
             </div>
           </details>
-        </div>
-        <div className="wb-results">
-          <div className="tabs" role="tablist" aria-label="Результаты" onKeyDown={(event) => rovingKeyDown(event)}>
-            {(
-              [
-                ['tests', 'Проверка'],
-                ['output', 'Вывод'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                className="tab"
-                id={tabId(value)}
-                aria-controls={`${exercise.id}-results`}
-                aria-selected={tab === value}
-                tabIndex={tab === value ? 0 : -1}
-                onClick={() => setTab(value)}
-              >
-                {label}
-                {value === 'tests' && counter && (
-                  <span className="count">
-                    <span className="visually-hidden">пройдено </span>
-                    {counter}
-                  </span>
-                )}
-              </button>
-            ))}
+        )}
+        {!narrow && (
+          <ResultsSplitter
+            pane={codePane}
+            height={resultsHeight}
+            onResize={(value) => {
+              setResultsHeight(value);
+              writeResultsHeight(value);
+            }}
+          />
+        )}
+        <section className="results" aria-label="Проверка и вывод">
+          <Tabs label="Результаты" items={resultTabs} value={tab} onChange={setTab} idPrefix={resultsPrefix} className="results-tabs" />
+          <div
+            className="results-body"
+            role="tabpanel"
+            id={`${resultsPrefix}-panel-${tab}`}
+            aria-labelledby={`${resultsPrefix}-tab-${tab}`}
+            tabIndex={-1}
+          >
+            {tab === 'tests' && (
+              <CheckView exercise={exercise} outcome={checkOutcome} results={testResults} state={checkState} checking={action === 'check'} />
+            )}
+            {tab === 'output' && <OutputView last={last} file={exercise.filename} state={runState} running={action === 'run'} />}
           </div>
-          <div className="results-body" role="tabpanel" id={`${exercise.id}-results`} aria-labelledby={tabId(tab)}>
-            {loading && (
-              <div className="run-state">
-                <span className="spinner" aria-hidden="true" />
-                {runner.phase === 'loading'
-                  ? 'Загружаю Python… В первый раз это может занять до минуты.'
-                  : 'Перезапускаю Python после остановки…'}
-              </div>
-            )}
-            {runner.phase === 'failed' && !busy && (
-              <div className="status-line status-error">
-                <CircleAlert aria-hidden="true" />
-                <span>{runner.error}</span>
-              </div>
-            )}
-            {action === 'check' && runner.phase === 'busy' && (
-              <div className="run-state">
-                <span className="spinner" aria-hidden="true" />
-                Проверяю: {testLabel(exercise.tests[Math.min(testIndex, exercise.tests.length - 1)], testIndex)} (
-                {testIndex + 1} из {exercise.tests.length})
-              </div>
-            )}
-            {action === 'run' && runner.phase === 'busy' && (
-              <div className="run-state">
-                <span className="spinner" aria-hidden="true" />
-                Программа выполняется…
-              </div>
-            )}
-            {tab === 'tests' && !action && <CheckView exercise={exercise} outcome={checkOutcome} results={testResults} />}
-            {tab === 'output' && !action && <OutputView last={last} />}
-            {feedback && !action && (
-              <div className="mobile-only">
-                <button type="button" className="btn btn-block btn-wrap" onClick={onShowCoach}>
-                  <Lightbulb aria-hidden="true" />
-                  <span>Разбор у наставника: {feedback.title}</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        </section>
         <div className="visually-hidden" role="status" aria-live="polite">
           {announce}
         </div>
       </section>
 
+      {narrow && frame.dock && createPortal(
+        <>
+          <DockStatus online={online} />
+          {actions}
+        </>,
+        frame.dock,
+      )}
+      {narrow && frame.menu && createPortal(moreMenu, frame.menu)}
+
       <CoachPortal>
         <CoachPanel
-          footnote="Сначала подсказка, полное решение — по запросу."
           after={
             settings.coach.mode === 'ai' ? (
               <AiCoachBox
@@ -520,82 +708,89 @@ export function ExerciseStep({
               />
             ) : undefined
           }
+          note={
+            hintsLocked && !passed ? (
+              <>
+                <Lock aria-hidden="true" />
+                Подсказки — после первой проверки
+              </>
+            ) : undefined
+          }
           actions={
             passed ? (
               !solutionViewed && (
-                <button type="button" className="btn btn-block" onClick={() => void showSolution()}>
+                <button type="button" className="btn btn-sm coach-compare" onClick={() => void showSolution()}>
+                  <Eye aria-hidden="true" />
                   Сравнить с решением наставника
                 </button>
               )
             ) : (
-            <>
-              {hintsShown < 3 && (
-                <button type="button" className="btn btn-primary btn-block" onClick={() => void showHint()} disabled={hintsLocked}>
-                  <Lightbulb aria-hidden="true" />
-                  Подсказка {hintsShown + 1} из 3
-                </button>
-              )}
-              {!solutionViewed && (
-                <button
-                  type="button"
-                  className={`btn btn-block${hintsShown >= 3 ? ' btn-primary' : ''}`}
-                  onClick={() => setConfirm('solution')}
-                  disabled={hintsLocked}
-                >
-                  Показать решение
-                </button>
-              )}
-            </>
+              <>
+                {/* До первой проверки самостоятельной работы кнопки выключены — и значок замка, а не только цвет. */}
+                {hintsShown < 3 && (
+                  <button type="button" className="btn btn-sm coach-hint" onClick={() => void showHint()} disabled={hintsLocked}>
+                    {hintsLocked ? <Lock aria-hidden="true" /> : <Lightbulb aria-hidden="true" />}
+                    Подсказка {hintsShown + 1} из 3
+                  </button>
+                )}
+                {!solutionViewed && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm coach-solution"
+                    onClick={() => setConfirm('solution')}
+                    disabled={hintsLocked}
+                    aria-label="Показать решение"
+                  >
+                    {hintsLocked ? <Lock aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                    <span className="lbl-long">Показать решение</span>
+                    <span className="lbl-short" aria-hidden="true">
+                      Решение
+                    </span>
+                  </button>
+                )}
+              </>
             )
           }
         >
-          {hintsLocked && (
-            <p className="small muted">
-              Это самостоятельная работа: подсказки откроются после первой проверки. Ошибиться — нормально, по результату станет
-              понятно, что повторить.
-            </p>
-          )}
-          {!feedback && !passed && hintsShown === 0 && !solutionViewed && !hintsLocked && (
-            <p>
-              Попробуй сначала сам: напиши код и нажми «Проверить». Если застрянешь — возьми подсказку, решение тоже можно
-              открыть.
-            </p>
-          )}
+          {!feedback && !passed && hintsShown === 0 && !solutionViewed && <CoachEmpty>Разбора пока нет</CoachEmpty>}
           {passed && checkPassed(checkOutcome) && (
             <SuccessCard title="Все проверки пройдены">
-              {exercise.afterPass ? <Markdown text={exercise.afterPass} className="prose-compact" /> : 'Можно переходить дальше.'}
+              {exercise.afterPass ? <Markdown text={exercise.afterPass} className="prose-compact" /> : null}
             </SuccessCard>
           )}
-          {passed && !checkPassed(checkOutcome) && !feedback && (
-            <SuccessCard title="Задание уже решено">Можно улучшить код или перейти дальше.</SuccessCard>
-          )}
-          {feedback && <FeedbackCard feedback={feedback} />}
-          {/* Открыта последняя подсказка; прежние свёрнуты, чтобы панель не разрасталась. */}
-          {Array.from({ length: hintsShown }, (_, index) =>
-            index === hintsShown - 1 ? (
-              <div key={index} className="hint-card" id={`${exercise.id}-hint-${index + 1}`} tabIndex={-1}>
-                <div className="label">Подсказка {index + 1}</div>
-                <Markdown text={exercise.hints[index]} className="prose-compact" />
+          {passed && !checkPassed(checkOutcome) && !feedback && <SuccessCard title="Задание уже решено" />}
+          {feedback && <FeedbackCard feedback={feedback} file={exercise.filename} onShowLine={showLine} />}
+          {hintsShown > 0 && (
+            <section className="hints" aria-labelledby={`${ids}-hints`}>
+              <div className="hints-head">
+                <h3 id={`${ids}-hints`}>Подсказки</h3>
+                <span className="hints-count">
+                  открыта <span className="n">{hintsShown}</span> из <span className="n">3</span>
+                </span>
               </div>
-            ) : (
-              <details key={index} className="disclosure hint-old">
-                <summary>Подсказка {index + 1}</summary>
-                <div className="disclosure-body">
-                  <Markdown text={exercise.hints[index]} className="prose-compact" />
-                </div>
-              </details>
-            ),
+              {/* Открыта последняя подсказка; прежние свёрнуты, чтобы панель не разрасталась. */}
+              {Array.from({ length: hintsShown }, (_, index) =>
+                index === hintsShown - 1 ? (
+                  <HintCard key={index} id={`${exercise.id}-hint-${index + 1}`} label={`Подсказка ${index + 1} из 3`}>
+                    <Markdown text={exercise.hints[index]} className="prose-compact" />
+                  </HintCard>
+                ) : (
+                  <Disclosure key={index} className="hint-old" summary={`Подсказка ${index + 1}`}>
+                    <Markdown text={exercise.hints[index]} className="prose-compact" />
+                  </Disclosure>
+                ),
+              )}
+            </section>
           )}
           {solutionViewed && (
             <details className="disclosure solution" open>
-              <summary id={`${exercise.id}-solution`}>Решение</summary>
-              <div className="disclosure-body stack-sm">
-                <CodeBlock code={exercise.solution.code} label="Решение" />
+              <summary id={`${exercise.id}-solution`}>
+                <ChevronRight aria-hidden="true" className="disclosure-chevron" />
+                <span className="disclosure-summary">Решение</span>
+              </summary>
+              <div className="disclosure-body solution-body">
+                <CodeBlock code={exercise.solution.code} file="решение" label={`Решение наставника, ${exercise.filename}`} wrap />
                 <Markdown text={exercise.solution.explanation} className="prose-compact" />
-                <p className="small muted">
-                  Разобраться в решении — полезно. Навык засчитается, когда похожая задача получится без подсказок: она
-                  появится в повторении.
-                </p>
               </div>
             </details>
           )}
@@ -610,7 +805,7 @@ export function ExerciseStep({
         onConfirm={() => void resetCode()}
         onClose={() => setConfirm(null)}
       >
-        <p>Твой текущий код в этом задании будет заменён исходным. Попытки и статус задания сохранятся.</p>
+        <p>Твой код заменится исходным. Попытки и статус сохранятся.</p>
       </ConfirmDialog>
       <ConfirmDialog
         open={confirm === 'solution'}
@@ -619,157 +814,168 @@ export function ExerciseStep({
         onConfirm={() => void showSolution()}
         onClose={() => setConfirm(null)}
       >
-        <p>
-          {hintsShown < 3
-            ? `Открыто подсказок: ${hintsShown} из 3. Часто следующей подсказки достаточно.`
-            : 'Все подсказки уже открыты — посмотреть решение разумно.'}
-        </p>
-        <p>После просмотра задание можно решить, но оно попадёт в повторение, чтобы закрепить навык самостоятельно.</p>
+        <p>Открыто подсказок: {hintsShown} из 3.</p>
+        <p>Задание попадёт в повторение.</p>
       </ConfirmDialog>
     </>
   );
 }
 
-function CheckView({ exercise, outcome, results }: { exercise: Exercise; outcome: CheckOutcome | null; results: ReturnType<typeof resultsFromOutcome> }) {
-  if (!outcome) {
-    return <p className="small muted">Здесь появятся результаты проверки: ввод, ожидаемый и полученный результат.</p>;
-  }
-  if (outcome.status === 'failed') {
-    return (
-      <div className="status-line status-warn">
-        <CircleAlert aria-hidden="true" />
-        <span>Проверка не выполнена: {outcome.message} Это не ошибка в твоём коде.</span>
-      </div>
-    );
-  }
-  if (outcome.status === 'done' && outcome.result.compileError) {
-    const error = outcome.result.compileError;
-    return (
-      <div className="status-line status-error">
-        <CircleAlert aria-hidden="true" />
-        <span>
-          Код не запустился: {error.type}
-          {error.line ? ` в строке ${error.line}` : ''}. Разбор — у наставника.
-        </span>
-      </div>
-    );
-  }
-  const ok = checkPassed(outcome);
-  const failedRules = outcome.status === 'done' ? outcome.result.rules.filter((rule) => !rule.passed) : [];
-  const passedCount = results.filter((result) => result.passed).length;
+/** Меню «⋯» файла: «Начать заново» стирает код, поэтому не стоит рядом с «Запустить / Проверить». */
+function MoreMenu({ file, disabled, onReset }: { file: string; disabled: boolean; onReset: () => void }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const details = ref.current;
+    if (!details) return;
+    const close = (event: Event) => {
+      if (!details.open) return;
+      if (event instanceof globalThis.KeyboardEvent) {
+        if (event.key !== 'Escape') return;
+        details.open = false;
+        details.querySelector('summary')?.focus();
+        return;
+      }
+      if (!details.contains(event.target as Node)) details.open = false;
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, []);
+
   return (
-    <>
-      <div className="results-summary">
-        {ok ? (
-          <div className="status-line status-good">
-            <CircleCheck aria-hidden="true" />
-            <span>Все проверки пройдены: {results.length} из {results.length}</span>
-          </div>
-        ) : outcome.status === 'timeout' ? (
-          <div className="status-line status-error">
-            <CircleAlert aria-hidden="true" />
-            <span>Программа работала дольше {Math.round(outcome.limitMs / 1000)} с и была остановлена — похоже на бесконечный цикл.</span>
-          </div>
-        ) : outcome.status === 'stopped' ? (
-          <div className="status-line status-muted">
-            <Square aria-hidden="true" />
-            <span>Проверка остановлена.</span>
-          </div>
-        ) : onlyRulesFailed(outcome) ? (
-          <div className="status-line status-error">
-            <CircleAlert aria-hidden="true" />
-            <span>
-              Тесты пройдены: {passedCount} из {results.length}, но не выполнено требование к коду
-            </span>
-          </div>
-        ) : (
-          <div className="status-line status-error">
-            <CircleAlert aria-hidden="true" />
-            <span>
-              Пройдено {passedCount} из {results.length}
-              {failedRules.length > 0 ? ' · не выполнено требование к коду' : ''}
-            </span>
-          </div>
-        )}
+    <details className="more" ref={ref}>
+      <summary className="btn btn-ghost btn-sm btn-icon" aria-label={`Ещё: действия с файлом ${file}`} title="Ещё">
+        <Ellipsis aria-hidden="true" />
+      </summary>
+      <div className="more-pop">
+        <button
+          type="button"
+          className="more-item"
+          disabled={disabled}
+          onClick={() => {
+            if (ref.current) ref.current.open = false;
+            onReset();
+          }}
+        >
+          <RotateCcw aria-hidden="true" />
+          Начать заново
+        </button>
       </div>
-      {failedRules.map((rule) => (
-        <div key={rule.id} className="status-line status-error">
-          <CircleAlert aria-hidden="true" />
-          <span>{rule.message}</span>
-        </div>
-      ))}
-      <TestList key={outcome.status === 'done' ? JSON.stringify(results.map((r) => r.passed)) : outcome.status} exercise={exercise} results={results} />
-    </>
+    </details>
   );
 }
 
-function OutputView({ last }: { last: Last | null }) {
-  if (!last) {
-    return <p className="small muted">«Запустить» выполняет программу с вводом ниже и показывает, что она выводит, — без оценки.</p>;
+/** Граница панели «Проверка / Вывод»: тянуть мышью или стрелками вверх и вниз по 16 px. */
+function ResultsSplitter({
+  pane,
+  height,
+  onResize,
+}: {
+  pane: RefObject<HTMLElement | null>;
+  height: number | null;
+  onResize: (height: number) => void;
+}) {
+  const drag = useRef<{ y: number; height: number } | null>(null);
+  const [active, setActive] = useState(false);
+
+  function limits() {
+    const total = pane.current?.clientHeight ?? 600;
+    return { min: RESULTS_MIN, max: Math.max(RESULTS_MIN, Math.round(total * 0.7)) };
   }
-  if (last.kind === 'check') {
-    if (last.outcome.status !== 'done') return <p className="small muted">Вывода нет: проверка была прервана.</p>;
-    const tests = last.outcome.result.tests;
-    const shown = tests.find((test) => !test.passed) ?? tests[0];
-    if (!shown) return <p className="small muted">Вывода нет.</p>;
-    return (
-      <div className="stack-sm">
-        <span className="tiny muted">Вывод в {tests.indexOf(shown) + 1}-й проверке{shown.stdin ? ` (ввод: ${shown.stdin.trim().split('\n').join(', ')})` : ''}</span>
-        <Transcript parts={shown.transcript} />
-      </div>
-    );
+
+  function current(): number {
+    const results = pane.current?.querySelector<HTMLElement>('.results');
+    return height ?? results?.offsetHeight ?? 280;
   }
-  const outcome = last.outcome;
-  if (outcome.status === 'timeout') {
-    return (
-      <div className="status-line status-error">
-        <CircleAlert aria-hidden="true" />
-        <span>Программа работала дольше {Math.round(outcome.limitMs / 1000)} с и была остановлена. Python перезапущен.</span>
-      </div>
-    );
+
+  function apply(value: number) {
+    const { min, max } = limits();
+    onResize(Math.min(max, Math.max(min, Math.round(value))));
   }
-  if (outcome.status === 'stopped') return <p className="small muted">Программа остановлена.</p>;
-  if (outcome.status === 'failed') {
-    return (
-      <div className="status-line status-warn">
-        <CircleAlert aria-hidden="true" />
-        <span>{outcome.message}</span>
-      </div>
-    );
+
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    // Стрелка вверх поднимает границу — панель результатов становится выше.
+    const step = event.key === 'ArrowUp' ? 16 : event.key === 'ArrowDown' ? -16 : 0;
+    if (step) {
+      event.preventDefault();
+      apply(current() + step);
+    } else if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      const { min, max } = limits();
+      apply(event.key === 'Home' ? max : min);
+    }
   }
-  const result = outcome.result;
-  if (result.compileError) {
-    return (
-      <div className="status-line status-error">
-        <CircleAlert aria-hidden="true" />
-        <span>
-          {result.compileError.line ? `Строка ${result.compileError.line}: ` : ''}
-          <span className="mono">{result.compileError.summary}</span> — программа не запустилась.
-        </span>
-      </div>
-    );
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = { y: event.clientY, height: current() };
+    setActive(true);
   }
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!drag.current) return;
+    apply(drag.current.height - (event.clientY - drag.current.y));
+  }
+
+  function onPointerUp() {
+    drag.current = null;
+    setActive(false);
+  }
+
+  const { min, max } = limits();
   return (
-    <div className="stack-sm">
-      <span className="tiny muted">
-        {last.stdin ? `Ввод: ${last.stdin.trim().split('\n').join(', ')}` : 'Запуск без ввода'} · {result.durationMs} мс
-      </span>
-      <Transcript parts={result.transcript ?? []} />
-      {result.error && (
-        <div className="status-line status-error">
-          <CircleAlert aria-hidden="true" />
-          <span>
-            {result.error.line ? `Строка ${result.error.line}: ` : ''}
-            <span className="mono">{result.error.summary}</span>
-          </span>
-        </div>
+    <div
+      className={`hsplit${active ? ' is-drag' : ''}`}
+      role="separator"
+      tabIndex={0}
+      aria-orientation="horizontal"
+      aria-label="Высота панели «Проверка»"
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={Math.round(current())}
+      onKeyDown={onKeyDown}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    />
+  );
+}
+
+/**
+ * Строка состояния дока на телефоне: Python и сеть — значок + слово. Только когда что-то не так:
+ * «Python готов» и «в сети» — норма, их видно по рабочим кнопкам, а высота экрана на телефоне дорога.
+ */
+function DockStatus({ online }: { online: boolean }) {
+  const runner = useRunnerState();
+  const ready = runner.phase === 'ready' || runner.phase === 'busy';
+  if (ready && online) return null;
+  const python = ready
+    ? null
+    : runner.phase === 'loading' || runner.phase === 'restarting'
+      ? { icon: LoaderCircle, text: runner.phase === 'loading' ? 'Python загружается…' : 'Python перезапускается…', tone: 'busy' }
+      : runner.phase === 'failed'
+        ? { icon: CircleAlert, text: 'Python не запустился', tone: 'err' }
+        : { icon: Circle, text: 'Python запустится с уроком', tone: '' };
+  const PythonIcon = python?.icon;
+  return (
+    <p className="dock-status">
+      {python && PythonIcon && (
+        <span className={`dock-item${python.tone ? ` tone-${python.tone}` : ''}`}>
+          <PythonIcon aria-hidden="true" className={python.tone === 'busy' ? 'spin' : undefined} />
+          {python.text}
+        </span>
       )}
-      {result.limit && (
-        <div className="status-line status-error">
-          <CircleAlert aria-hidden="true" />
-          <span>Слишком много вывода — программа остановлена.</span>
-        </div>
+      {!online && (
+        <span className="dock-item tone-warn" title="Работают скачанные уроки">
+          <WifiOff aria-hidden="true" />
+          Без сети
+        </span>
       )}
-    </div>
+    </p>
   );
 }

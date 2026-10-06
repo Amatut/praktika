@@ -1,0 +1,3198 @@
+id: m5-l7
+module: m5
+number: "5.7"
+title: "Самостоятельная работа: первый проект на функциях"
+objective: >-
+  Самостоятельно переделать готовую программу без функций в программу из небольших функций с
+  return, сохранив её поведение, и подтвердить это на тех же входных данных.
+minutes: [45, 60]
+prerequisites: [m5-l6]
+skills: [function-design, functions, scope]
+environment: python
+
+story:
+  title: Сначала навести порядок
+  fictional: true
+  text: >-
+    Калькулятор Даши за месяц разросся почти до тридцати строк, и большая часть из них жила внутри
+    одного цикла. Друг попросил добавить возведение в степень, и Даша поняла, что не знает, куда
+    вставить новую операцию, не задев остальные. Тогда она решила сначала разложить программу на
+    функции, ничего не меняя в её поведении, а проверять себя простым способом: одни и те же вводы
+    до и после переделки должны давать одинаковый вывод. Рабочая версия уже лежала в Git, поэтому
+    переделывать было не страшно. Сегодня ты пройдёшь тот же путь — сначала в тренажёре, потом со
+    своим проектом на компьютере.
+
+why: >-
+  Переделать программу, не меняя её поведения, — обычная работа программиста: так код готовят к
+  новым требованиям. Проверка простая: на тех же входных данных вывод до и после совпадает строка
+  в строку.
+
+usedIn: >-
+  Такую переделку называют **рефакторингом**. Её делают перед тем, как добавить новую
+  возможность, и защищают проверками — сначала ручными, как сегодня, а позже автоматическими
+  тестами (модуль 9).
+
+steps:
+  - id: reminder
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа — финиш модуля «Функции». В главном задании ты переделываешь
+      калькулятор Даши на функции, во втором — добавляешь в него новую операцию. В обоих
+      подсказки откроются только после первой проверки. Это не запрет на помощь — просто сначала
+      попробуй сам.
+
+      **Что проверяется.** Три функции с заданными именами: проверка вызывает их с разными
+      аргументами и сравнивает, что они вернули. Вывод программы: на тех же вводах он должен
+      совпасть с выводом исходной версии строка в строку. И ещё два требования: основная часть
+      программы (код вне функций или в `main()`, как в уроке 5.5) пользуется новыми функциями,
+      а `global` в программе нет.
+
+      Всё нужное ты уже знаешь:
+
+      - `def имя(параметры):` объявляет функцию, `return` отдаёт результат туда, где её вызвали.
+        Функция без `return` возвращает `None`.
+      - Функция-расчёт не печатает и не спрашивает: данные приходят параметрами, результат уходит
+        через `return`. Читает ввод и печатает основная часть.
+      - Переменные внутри функции — локальные. Счётчик, который растёт в цикле, живёт там же, где
+        цикл.
+      - Одна функция — одно дело. Основную часть можно положить в `main()`, но тогда её нужно
+        вызвать.
+
+      Как работать над заданием:
+
+      1. Нажми «Запустить», ничего не меняя: в поле «Ввод для „Запустить“» уже стоит ввод из
+         первого примера (поле свёрнуто — нажми на заголовок, чтобы раскрыть). Этот вывод —
+         образец.
+      2. Найди в цикле куски трёх видов: проверка «можно ли считать», расчёт и сборка строки для
+         вывода.
+      3. Выноси по одной функции. После каждой нажимай «Запустить» и сравнивай вывод с образцом.
+      4. Когда всё совпало, нажми «Проверить».
+
+      Урок — на два захода по 20–30 минут: сначала оба задания в тренажёре, потом шаг «Свой
+      проект на функциях» на компьютере. Второй заход можно провести в другой день.
+    simpler: >-
+      Нового материала сегодня нет. Программа уже работает — нужно разложить её по функциям так,
+      чтобы снаружи ничего не изменилось. Перенёс кусок в функцию — запустил — сравнил вывод с
+      тем, что был до переделки.
+    coach: >-
+      Ошибка на первой попытке — не провал, а подсказка, что стоит повторить.
+
+  - id: warmup
+    type: predict
+    title: Разминка
+    prompt: >-
+      Разомнись на области видимости: параметр функции называется так же, как переменная
+      снаружи. Как думаешь, что выведет программа?
+    code: |-
+      def apply_discount(price, percent):
+          price = price - price * percent // 100
+          return price
+
+      price = 1000
+      new_price = apply_discount(price, 10)
+      print(price, new_price)
+    options:
+      - "900 900"
+      - "1000 900"
+      - "1000 1000"
+    answer: "1000 900"
+    explanation: >-
+      Параметр `price` — локальная переменная функции. Присваивание внутри меняет только её, а
+      внешняя `price` остаётся 1000. Новое значение попало наружу только через `return` — в
+      переменную `new_price`. Ответ «900 900» — это ожидание, что функция изменит одноимённую
+      переменную снаружи (урок 5.4). В калькуляторе будет то же самое: функции отдают результат
+      через `return`, а счётчик меняет основная часть.
+    coach: >-
+      Вошло через параметр — вышло через return. Этого правила хватит на всю самостоятельную работу.
+
+  - id: plan
+    type: order
+    title: План переделки
+    prompt: >-
+      Как переделать работающую программу на компьютере и ничего не сломать? Расставь шаги по
+      порядку.
+    items:
+      - id: record
+        text: Запустить программу на нескольких вводах — обычных и граничных — и записать, что она выводит
+      - id: save
+        text: Сохранить рабочую версию коммитом
+      - id: extract
+        text: Вынести одну часть программы в функцию
+      - id: compare
+        text: Запустить на тех же вводах и сравнить вывод с записанным
+      - id: commit
+        text: Сделать коммит с понятным сообщением
+    before:
+      - [record, extract]
+      - [save, extract]
+      - [extract, compare]
+      - [compare, commit]
+    explanation: >-
+      Сначала нужны образец — вывод до переделки — и рабочая версия в Git, к которой можно
+      вернуться. Эти два шага можно поменять местами. Потом переносишь одну часть и сразу
+      сравниваешь: если вывод разошёлся, ты точно знаешь, какая правка виновата. Коммит — когда
+      всё совпало. Для следующей функции цикл «вынести → сравнить» повторяется.
+    coach: >-
+      Маленький шаг и проверка после каждого — главный приём этого урока.
+
+  - id: main-task
+    type: exercise
+    title: Самостоятельная работа
+    exercise:
+      id: m5-l7-e1
+      kind: modify
+      title: Калькулятор на функциях
+      statement: |-
+        Перед тобой калькулятор Даши. Он работает, но почти весь код — в одном цикле. Переделай
+        его на функции так, чтобы **поведение не изменилось**: на тех же вводах — тот же вывод,
+        строка в строку.
+
+        Нужны три функции. Имена и порядок параметров — ровно такие, по ним работает проверка:
+
+        ```text
+        find_problem(op, b)             → текст проблемы или пустая строка ""
+        calculate(a, b, op)             → результат вычисления
+        format_line(a, b, op, result)   → строка вида «2 + 3 = 5»
+        ```
+
+        - `find_problem` возвращает `Не знаю операцию «…»` с самой операцией внутри кавычек, если
+          `op` — не одна из операций `+`, `-`, `*`, `/`. Если `op` — это `/`, а `b` равно 0, она
+          возвращает `На ноль делить нельзя`. Иначе проблем нет, и функция возвращает пустую
+          строку `""`.
+        - `calculate` возвращает результат. Основная часть вызывает её, только когда
+          `find_problem` вернула `""`.
+        - `format_line` возвращает готовую строку, а печатает её основная часть.
+
+        Ввод, печать и счётчик вычислений остаются в основной части. Цикл можно оставить внизу
+        программы или положить в функцию `main()`. `global` не используй.
+      input: >-
+        По кругу три строки: первое число или слово «выход», операция, второе число. Круги
+        повторяются, пока не придёт «выход».
+      output: >-
+        Как у исходной программы: заголовок, по строке на каждое вычисление или проблему и в
+        конце — число вычислений.
+      constraints:
+        - Числа во вводе целые.
+        - Тексты заголовка и сообщений не меняй — проверка сравнивает вывод посимвольно.
+        - Текст в скобках у input() может быть любым — в вывод он не входит.
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+      starterCode: |
+        print("Калькулятор. Для выхода введи «выход».")
+        count = 0
+        while True:
+            first = input("Первое число: ")
+            if first == "выход":
+                break
+            a = int(first)
+            op = input("Операция (+ - * /): ")
+            b = int(input("Второе число: "))
+            if op == "+":
+                print(f"{a} + {b} = {a + b}")
+                count += 1
+            elif op == "-":
+                print(f"{a} - {b} = {a - b}")
+                count += 1
+            elif op == "*":
+                print(f"{a} * {b} = {a * b}")
+                count += 1
+            elif op == "/":
+                if b == 0:
+                    print("На ноль делить нельзя")
+                else:
+                    print(f"{a} / {b} = {a / b}")
+                    count += 1
+            else:
+                print(f"Не знаю операцию «{op}»")
+        print(f"Вычислений: {count}")
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: сложение и деление"
+          example: true
+          stdin: "2\n+\n3\n10\n/\n4\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            2 + 3 = 5
+            10 / 4 = 2.5
+            Вычислений: 2
+        - id: t2
+          kind: io
+          title: "Пример 2: проблемы не считаются"
+          example: true
+          stdin: "7\n/\n0\n5\n%\n2\n6\n*\n-3\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            На ноль делить нельзя
+            Не знаю операцию «%»
+            6 * -3 = -18
+            Вычислений: 1
+        - id: t3
+          kind: io
+          title: "Граничный случай: сразу «выход»"
+          edge: true
+          stdin: "выход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            Вычислений: 0
+        - id: t4
+          kind: io
+          title: "Граничный случай: минус в ответе и деление без остатка"
+          edge: true
+          stdin: "9\n-\n12\n8\n/\n2\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            9 - 12 = -3
+            8 / 2 = 4.0
+            Вычислений: 2
+        - id: t5
+          kind: io
+          title: "Граничный случай: нули и пустая операция"
+          edge: true
+          stdin: "0\n+\n0\n5\n\n2\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            0 + 0 = 0
+            Не знаю операцию «»
+            Вычислений: 1
+        - id: t6
+          kind: io
+          title: "Граничный случай: деление с длинной дробью"
+          edge: true
+          stdin: "1\n/\n3\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            1 / 3 = 0.3333333333333333
+            Вычислений: 1
+        - id: c1
+          kind: call
+          title: "calculate: сложение"
+          stdin: "выход\n"
+          call: "calculate(2, 3, '+')"
+          expected: "5"
+        - id: c2
+          kind: call
+          title: "calculate: деление"
+          example: true
+          stdin: "выход\n"
+          call: "calculate(10, 4, '/')"
+          expected: "2.5"
+        - id: c3
+          kind: call
+          title: "calculate: разность равна нулю"
+          edge: true
+          stdin: "выход\n"
+          call: "calculate(7, 7, '-')"
+          expected: "0"
+        - id: c4
+          kind: call
+          title: "calculate: отрицательное число"
+          stdin: "выход\n"
+          call: "calculate(-2, 3, '*')"
+          expected: "-6"
+        - id: p1
+          kind: call
+          title: "find_problem: деление на ноль"
+          example: true
+          stdin: "выход\n"
+          call: "find_problem('/', 0)"
+          expected: "'На ноль делить нельзя'"
+        - id: p2
+          kind: call
+          title: "find_problem: неизвестная операция"
+          stdin: "выход\n"
+          call: "find_problem('%', 5)"
+          expected: "'Не знаю операцию «%»'"
+        - id: p3
+          kind: call
+          title: "find_problem: проблем нет"
+          example: true
+          stdin: "выход\n"
+          call: "find_problem('/', 5)"
+          expected: "''"
+        - id: p4
+          kind: call
+          title: "find_problem: ноль при сложении — не проблема"
+          edge: true
+          stdin: "выход\n"
+          call: "find_problem('+', 0)"
+          expected: "''"
+        - id: p5
+          kind: call
+          title: "find_problem: пустая операция"
+          edge: true
+          stdin: "выход\n"
+          call: "find_problem('', 5)"
+          expected: "'Не знаю операцию «»'"
+        - id: p6
+          kind: call
+          title: "find_problem: два знака вместо одного"
+          edge: true
+          stdin: "выход\n"
+          call: "find_problem('+-', 5)"
+          expected: "'Не знаю операцию «+-»'"
+        - id: f1
+          kind: call
+          title: "format_line: целый результат"
+          example: true
+          stdin: "выход\n"
+          call: "format_line(2, 3, '+', 5)"
+          expected: "'2 + 3 = 5'"
+        - id: f2
+          kind: call
+          title: "format_line: дробный результат"
+          stdin: "выход\n"
+          call: "format_line(10, 4, '/', 2.5)"
+          expected: "'10 / 4 = 2.5'"
+      rules:
+        - id: r-uses
+          use: [call:find_problem, call:calculate, call:format_line]
+          message: >-
+            Основная часть программы пользуется новыми функциями find_problem, calculate и
+            format_line, а не повторяет старые проверки и вычисления.
+        - id: r-no-global
+          avoid: [Global]
+          message: >-
+            Без global: счётчик вычислений меняется в основной части (или в main), а не внутри
+            функций.
+      criteria:
+        - Функции find_problem, calculate и format_line принимают параметры в заданном порядке и возвращают значения, а не печатают их.
+        - find_problem возвращает пустую строку, когда проблем нет; ноль — проблема только для деления.
+        - На тех же вводах программа выводит то же, что исходная, строка в строку.
+        - Основная часть вызывает новые функции, а счётчик меняется в ней самой, без global.
+      hints:
+        - >-
+          Посмотри на ветки `if`/`elif` внутри цикла. Какие из них решают, можно ли вообще
+          считать? Какие считают? Где собирается строка для вывода? Это и есть три будущие
+          функции. А в цикле остаются ввод, печать и счётчик.
+        - |-
+          Тот же приём на другой задаче. Функция возвращает текст проблемы или пустую строку, а
+          основная часть решает, что печатать:
+
+          ```python
+          def find_age_problem(age):
+              if age < 0:
+                  return "Возраст не бывает отрицательным"
+              if age > 150:
+                  return "Слишком большой возраст"
+              return ""
+
+          age = int(input())
+          problem = find_age_problem(age)
+          if problem != "":
+              print(problem)
+          else:
+              print(f"Через год тебе будет {age + 1}")
+          ```
+        - |-
+          Каркас:
+
+          ```text
+          def find_problem(op, b):
+              если op нет в списке ["+", "-", "*", "/"] → вернуть f"Не знаю операцию «{op}»"
+              если op == "/" и b == 0 → вернуть "На ноль делить нельзя"
+              вернуть ""
+
+          def calculate(a, b, op):
+              ветки по op, в каждой — return с результатом
+
+          def format_line(a, b, op, result):
+              вернуть f-строку «a op b = result»
+
+          заголовок, count = 0, цикл как раньше:
+              прочитать first (выйти по «выход»), a, op, b
+              problem = find_problem(op, b)
+              если problem != "" → напечатать problem
+              иначе → result = calculate(…), напечатать format_line(…), count += 1
+          после цикла — «Вычислений: …»
+          ```
+      solution:
+        code: |
+          def find_problem(op, b):
+              if op not in ["+", "-", "*", "/"]:
+                  return f"Не знаю операцию «{op}»"
+              if op == "/" and b == 0:
+                  return "На ноль делить нельзя"
+              return ""
+
+
+          def calculate(a, b, op):
+              if op == "+":
+                  return a + b
+              elif op == "-":
+                  return a - b
+              elif op == "*":
+                  return a * b
+              elif op == "/":
+                  return a / b
+
+
+          def format_line(a, b, op, result):
+              return f"{a} {op} {b} = {result}"
+
+
+          print("Калькулятор. Для выхода введи «выход».")
+          count = 0
+          while True:
+              first = input("Первое число: ")
+              if first == "выход":
+                  break
+              a = int(first)
+              op = input("Операция (+ - * /): ")
+              b = int(input("Второе число: "))
+              problem = find_problem(op, b)
+              if problem != "":
+                  print(problem)
+              else:
+                  result = calculate(a, b, op)
+                  print(format_line(a, b, op, result))
+                  count += 1
+          print(f"Вычислений: {count}")
+        explanation: >-
+          Каждая функция делает одно дело и ничего не печатает: `find_problem` решает, можно ли
+          считать, `calculate` считает, `format_line` собирает строку. Пустая строка `""` — знак
+          «проблем нет», поэтому в конце `find_problem` стоит `return ""`. Операцию сравнивают со
+          списком, а не со строкой `"+-*/"`: в строке `in` ищет кусок текста, и пустой ввод или
+          «+-» сошли бы за известную операцию. Ввод, печать и счётчик остались в основной части —
+          поэтому `global` не понадобился, а вывод совпадает с исходным строка в строку.
+      altSolutions:
+        - code: |
+            def find_problem(op, b):
+                if op != "+" and op != "-" and op != "*" and op != "/":
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                if op == "-":
+                    return a - b
+                if op == "*":
+                    return a * b
+                return a / b
+
+
+            def format_line(a, b, op, result):
+                return str(a) + " " + op + " " + str(b) + " = " + str(result)
+
+
+            def main():
+                print("Калькулятор. Для выхода введи «выход».")
+                count = 0
+                while True:
+                    first = input("Первое число: ")
+                    if first == "выход":
+                        break
+                    a = int(first)
+                    op = input("Операция (+ - * /): ")
+                    b = int(input("Второе число: "))
+                    problem = find_problem(op, b)
+                    if problem == "":
+                        print(format_line(a, b, op, calculate(a, b, op)))
+                        count += 1
+                    else:
+                        print(problem)
+                print(f"Вычислений: {count}")
+
+
+            main()
+          note: >-
+            Основная часть в main(), цепочка != вместо списка, calculate без elif с делением в
+            последнем return, format_line через склейку строк.
+        - code: |
+            OPERATIONS = ["+", "-", "*", "/"]
+
+
+            def find_problem(op, b):
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                if op in OPERATIONS:
+                    return ""
+                return f"Не знаю операцию «{op}»"
+
+
+            def calculate(a, b, op):
+                result = 0
+                if op == "+":
+                    result = a + b
+                elif op == "-":
+                    result = a - b
+                elif op == "*":
+                    result = a * b
+                elif op == "/":
+                    result = a / b
+                return result
+
+
+            def format_line(a, b, op, result):
+                line = f"{a} {op} {b} = {result}"
+                return line
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            first = input("Первое число: ")
+            while first != "выход":
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    result = calculate(a, b, op)
+                    print(format_line(a, b, op, result))
+                    count += 1
+                first = input("Первое число: ")
+            print(f"Вычислений: {count}")
+          note: >-
+            Константа OPERATIONS (чтение глобальной константы допустимо), проверки в другом
+            порядке, один return в calculate, цикл while с условием вместо while True и break.
+        - code: |
+            def find_problem(op, b):
+                problem = ""
+                if op not in ["+", "-", "*", "/"]:
+                    problem = f"Не знаю операцию «{op}»"
+                elif op == "/" and b == 0:
+                    problem = "На ноль делить нельзя"
+                return problem
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                else:
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            def handle(a, b, op):
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                    return 0
+                print(format_line(a, b, op, calculate(a, b, op)))
+                return 1
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                count += handle(a, b, op)
+            print(f"Вычислений: {count}")
+          note: >-
+            Четвёртая функция handle обрабатывает один круг и возвращает 1 или 0 — счётчик
+            растёт через return, без global; find_problem с переменной problem и одним return.
+        - code: |
+            def find_problem(op, b):
+                if op == "+" or op == "-" or op == "*":
+                    return ""
+                elif op == "/":
+                    if b == 0:
+                        return "На ноль делить нельзя"
+                    return ""
+                else:
+                    return f"Не знаю операцию «{op}»"
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                else:
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                    continue
+                result = calculate(a, b, op)
+                print(format_line(a, b, op, result))
+                count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            find_problem повторяет дерево if/elif исходника, return "" стоит в двух ветках;
+            основная часть с continue (решение ученика-рецензента после разбора none-in-branch).
+        - code: |
+            def find_problem(op, b):
+                if len(op) != 1 or op not in "+-*/":
+                    return "Не знаю операцию «" + op + "»"
+                if op == "/":
+                    # на ноль нельзя только делить
+                    if b == 0:
+                        return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                result = None
+                if op == "+":
+                    result = a + b
+                elif op == "-":
+                    result = a - b
+                elif op == "*":
+                    result = a * b
+                elif op == "/":
+                    result = a / b
+                return result
+
+
+            def format_line(a, b, op, result):
+                return " ".join([str(a), op, str(b), "=", str(result)])
+
+
+            def run():
+                print("Калькулятор. Для выхода введи «выход».")
+                count = 0
+                first = input()
+                while first != "выход":
+                    a = int(first)
+                    op = input()
+                    b = int(input())
+                    problem = find_problem(op, b)
+                    if problem != "":
+                        print(problem)
+                    else:
+                        print(format_line(a, b, op, calculate(a, b, op)))
+                        count = count + 1
+                    first = input()
+                return count
+
+
+            total = run()
+            print(f"Вычислений: {total}")
+          note: >-
+            Строка знаков с проверкой длины (пустая операция и «+-» отсеиваются), вложенная
+            проверка нуля с комментарием, склейка и " ".join, input() без текста, run() возвращает
+            счётчик (пробы инженера проверок A6, R-A3, R-A5).
+      wrongSolutions:
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                count += 1
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+            print(f"Вычислений: {count}")
+          note: Счётчик увеличивается внутри calculate без global — UnboundLocalError.
+          expectMistake: unbound-count
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                result = calculate(a, b, op)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, result))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: calculate вызывается до проверки проблемы — на 7 / 0 ZeroDivisionError.
+          expectMistake: calc-before-check
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, op, b):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, op, b)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: Параметры calculate в порядке ввода (a, op, b) — вывод верный, вызовы проверки нет.
+          expectMistake: param-order
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: Нет return "" в конце find_problem — без проблем функция возвращает None.
+          expectMistake: none-instead-empty
+        - code: |
+            def find_problem(op, b):
+                if b == 0:
+                    return "На ноль делить нельзя"
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: Ноль считается проблемой для любой операции.
+          expectMistake: zero-for-all
+        - code: |
+            def find_problem(op, b):
+                if op not in "+-*/":
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: Операция ищется в строке "+-*/" — пустая строка считается известной операцией.
+          expectMistake: empty-op
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                print(f"{a} {op} {b} = {result}")
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    format_line(a, b, op, calculate(a, b, op))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: format_line печатает строку вместо return — вывод верный, вызов возвращает None.
+          expectMistake: prints-line
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            def main():
+                print("Калькулятор. Для выхода введи «выход».")
+                count = 0
+                while True:
+                    first = input("Первое число: ")
+                    if first == "выход":
+                        break
+                    a = int(first)
+                    op = input("Операция (+ - * /): ")
+                    b = int(input("Второе число: "))
+                    problem = find_problem(op, b)
+                    if problem != "":
+                        print(problem)
+                    else:
+                        print(format_line(a, b, op, calculate(a, b, op)))
+                        count += 1
+                print(f"Вычислений: {count}")
+          note: Основная часть в main(), но main() не вызвана — программа ничего не печатает.
+          expectMistake: main-not-called
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                count += 1
+            print(f"Вычислений: {count}")
+          note: count += 1 стоит после if/else — счётчик растёт и на проблемных вводах.
+          expectMistake: count-on-error
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                global count
+                count += 1
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+            print(f"Вычислений: {count}")
+          note: Счётчик меняется внутри calculate через global — тесты проходят, требование нет.
+          expectMistake: global
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                if op == "+":
+                    print(f"{a} + {b} = {a + b}")
+                    count += 1
+                elif op == "-":
+                    print(f"{a} - {b} = {a - b}")
+                    count += 1
+                elif op == "*":
+                    print(f"{a} * {b} = {a * b}")
+                    count += 1
+                elif op == "/":
+                    if b == 0:
+                        print("На ноль делить нельзя")
+                    else:
+                        print(f"{a} / {b} = {a / b}")
+                        count += 1
+                else:
+                    print(f"Не знаю операцию «{op}»")
+            print(f"Вычислений: {count}")
+          note: Функции написаны, но цикл остался старым и ими не пользуется.
+          expectMistake: unused
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            def main():
+                print("Калькулятор. Для выхода введи «выход».")
+                count = 0
+                while True:
+                    first = input("Первое число: ")
+                    if first == "выход":
+                        break
+                    a = int(first)
+                    op = input("Операция (+ - * /): ")
+                    b = int(input("Второе число: "))
+                    problem = find_problem(op, b)
+                    if problem != "":
+                        print(problem)
+                    else:
+                        print(format_line(a, b, op, calculate(a, b, op)))
+                        count += 1
+
+
+            main()
+            print(f"Вычислений: {count}")
+          note: Счётчик создан внутри main(), а итоговый print стоит снаружи — NameError.
+          expectMistake: count-outside-main
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                line = f"{a} {op} {b} = {result}"
+                print(line)
+                return line
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: format_line и печатает, и возвращает строку — каждая строка результата выводится дважды.
+          expectMistake: print-in-function
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Потерялась строка count = 0 — NameError, и все вызовы проверки падают. Разборы по
+            отдельным тестам (например, zero-for-all по p4) срабатывать не должны; общий разбор
+            NameError советовал бы «round», поэтому есть свой разбор count-missing.
+          expectMistake: count-missing
+        - code: |
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                if op == "+":
+                    print(f"{a} + {b} = {a + b}")
+                    count += 1
+                elif op == "-":
+                    print(f"{a} - {b} = {a - b}")
+                    count += 1
+                elif op == "*":
+                    print(f"{a} * {b} = {a * b}")
+                    count += 1
+                elif op == "/":
+                    if b == 0:
+                        print("На ноль делить нельзя")
+                    else:
+                        print(f"{a} / {b} = {a / b}")
+                        count += 1
+                else:
+                    print(f"Не знаю операцию «{op}»")
+            print(f"Вычислений: {count}")
+          note: >-
+            Стартовый код без изменений: ученик нажал «Проверить», чтобы открыть подсказки. Раньше
+            срабатывал разбор none-instead-empty про несуществующую find_problem.
+          expectMistake: no-functions
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    result = calculate(a, b, op)
+                    print(f"{a} {op} {b} = {result}")
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Середина переделки: find_problem и calculate вынесены, format_line ещё нет. Раньше
+            срабатывал разбор unused («цикл остался старым»), хотя цикл уже новый.
+          expectMistake: no-functions
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Проверку нуля (в исходнике она спрятана в ветке деления) забыли перенести в
+            find_problem — ZeroDivisionError в calculate, хотя основная часть написана верно.
+          expectMistake: zero-not-found
+        - code: |
+            def find_problem(op, b):
+                if op in ["+", "-", "*", "/"]:
+                    return ""
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return f"Не знаю операцию «{op}»"
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            return "" для известной операции стоит раньше проверки нуля — до неё дело не доходит,
+            ZeroDivisionError в calculate.
+          expectMistake: zero-not-found
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    if b == 0:
+                        return "На ноль делить нельзя"
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Проверка деления на ноль осталась в calculate — печатается «7 / 0 = На ноль делить
+            нельзя», и счётчик растёт.
+          expectMistake: zero-in-calculate
+        - code: |
+            def find_problem(op, b):
+                if op == "+" or op == "-" or op == "*":
+                    return ""
+                elif op == "/":
+                    if b == 0:
+                        return "На ноль делить нельзя"
+                else:
+                    return f"Не знаю операцию «{op}»"
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            find_problem повторяет дерево исходника, но в ветке деления нет return "" — для 10 / 4
+            функция возвращает None, и программа печатает «None».
+          expectMistake: none-in-branch
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return None
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: «Проблем нет» обозначено явным return None вместо пустой строки.
+          expectMistake: none-instead-empty
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    result = calculate(a, op, b)
+                    print(format_line(a, b, op, result))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            def calculate верный, а в вызове аргументы в порядке ввода: calculate(a, op, b) —
+            «2 + 3 = None».
+          expectMistake: none-result
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(op, a, b):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(op, a, b)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Параметры calculate в порядке (op, a, b), как у find_problem, вызов с тем же порядком —
+            «Запустить» работает, вызовы проверки нет.
+          expectMistake: param-order
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            count = 0
+
+
+            def main():
+                print("Калькулятор. Для выхода введи «выход».")
+                while True:
+                    first = input("Первое число: ")
+                    if first == "выход":
+                        break
+                    a = int(first)
+                    op = input("Операция (+ - * /): ")
+                    b = int(input("Второе число: "))
+                    problem = find_problem(op, b)
+                    if problem != "":
+                        print(problem)
+                    else:
+                        print(format_line(a, b, op, calculate(a, b, op)))
+                        count += 1
+                print(f"Вычислений: {count}")
+
+
+            main()
+          note: Цикл перенесён в main(), а count = 0 остался снаружи — UnboundLocalError.
+          expectMistake: unbound-count
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            def main():
+                print("Калькулятор. Для выхода введи «выход».")
+                count = 0
+                while True:
+                    first = input("Первое число: ")
+                    if first == "выход":
+                        break
+                    a = int(first)
+                    op = input("Операция (+ - * /): ")
+                    b = int(input("Второе число: "))
+                    problem = find_problem(op, b)
+                    if problem != "":
+                        print(problem)
+                    else:
+                        print(format_line(a, b, op, calculate(a, b, op)))
+                        count += 1
+
+
+            main()
+            count = 0
+            print(f"Вычислений: {count}")
+          note: >-
+            «Починка» NameError из count-outside-main: второй count = 0 снаружи main() —
+            печатается «Вычислений: 0».
+          expectMistake: count-shadow
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            calculate передана в format_line без скобок — печатается «2 + 3 = <function calculate
+            at …>». Раньше срабатывал разбор unused.
+          expectMistake: function-object
+        - code: |
+            def find_problem(op, b):
+                if op == "" or op not in "+-*/":
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            «Починка» после разбора empty-op без списка: пустая строка исключена отдельно, но «+-»
+            по-прежнему сходит за известную операцию (тест p6).
+          expectMistake: substring-op
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    problem = f"Не знаю операцию «{op}»"
+                elif op == "/" and b == 0:
+                    problem = "На ноль делить нельзя"
+                return problem
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Переменная problem не получает значения, когда проблем нет, — UnboundLocalError про
+            problem. Разбор unbound-count (про счётчик) срабатывать не должен: общий разбор точен.
+          expectMistake: null
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return round(a / b, 2)
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            «Улучшение» при переделке: деление округлено до 2 знаков — поведение изменилось на
+            1 / 3 (тест t6), общий разбор показывает расхождение.
+          expectMistake: null
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/":
+                    # на ноль делить нельзя
+                    if b == 0:
+                        return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {cout}")
+          note: >-
+            Верная вложенная проверка нуля с комментарием, но опечатка cout в последней строке —
+            NameError во всех тестах. Разборы zero-for-all и count-* срабатывать не должны: общий
+            разбор подскажет «count».
+          expectMistake: null
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                results = {"+": a + b, "-": a - b, "*": a * b, "/": a / b}
+                return results[op]
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            calculate через словарь считает все операции сразу и падает на «0 + 0». Разбор
+            calc-before-check (про вызов до проверки) срабатывать не должен: общий разбор укажет
+            строку со словарём.
+          expectMistake: null
+        - code: |
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * /): ")
+                b = int(input("Второе число: "))
+
+                def find_problem(op, b):
+                    if op not in ["+", "-", "*", "/"]:
+                        return f"Не знаю операцию «{op}»"
+                    if op == "/" and b == 0:
+                        return "На ноль делить нельзя"
+                    return ""
+
+                def calculate(a, b, op):
+                    if op == "+":
+                        return a + b
+                    elif op == "-":
+                        return a - b
+                    elif op == "*":
+                        return a * b
+                    elif op == "/":
+                        return a / b
+
+                def format_line(a, b, op, result):
+                    return f"{a} {op} {b} = {result}"
+
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Функции объявлены внутри цикла, там, где был старый код, — при вводе «выход» они не
+            создаются. Разборы prints-line и print-in-function срабатывать не должны: общий разбор
+            скажет, что функция объявлена внутри другого блока.
+          expectMistake: null
+      mistakes:
+        - id: no-functions
+          when:
+            errorType: NameError
+            codeRegex: '(?<![\s\S])(?:(?![\s\S]*\bdef\s+find_problem\b)|(?![\s\S]*\bdef\s+calculate\b)|(?![\s\S]*\bdef\s+format_line\b))'
+          where: Объявления функций
+          why: >-
+            Проверка вызывает три функции по именам: `find_problem`, `calculate` и `format_line`.
+            Какой-то из них в программе пока нет или она названа иначе, поэтому вызовы проверки
+            падают с NameError. Если ты в середине переделки, это нормально.
+          try: >-
+            Вынеси следующую часть цикла в функцию с именем и параметрами из условия и вызови её
+            из основной части. После каждой новой функции нажимай «Запустить» и сравнивай вывод с
+            образцом.
+          verify: Тесты с вызовами функций больше не должны падать с NameError.
+        - id: unbound-count
+          when:
+            errorType: UnboundLocalError
+            errorIncludes: "'count'"
+          where: Функция, внутри которой меняется счётчик вычислений
+          why: >-
+            Счётчик `count` создан снаружи, а увеличивается внутри функции. Присваивание
+            `count += 1` делает `count` локальной переменной этой функции, а у локальной ещё нет
+            значения — отсюда UnboundLocalError (урок 5.4).
+          try: >-
+            Счётчик должен жить там же, где цикл. Если цикл в основной части, пиши `count += 1` в
+            нём, сразу после печати результата, а не в функции-расчёте. Если цикл внутри `main()`,
+            перенеси туда и `count = 0` — перед циклом.
+          verify: 'В «Примере 1» программа не должна падать, а в конце должно быть «Вычислений: 2».'
+        - id: count-outside-main
+          when:
+            errorType: NameError
+            errorIncludes: "'count'"
+            codeRegex: '^[ \t]+count\s*=\s*0'
+          where: Строка, которая печатает число вычислений
+          why: >-
+            Счётчик `count = 0` создан внутри функции — это её локальная переменная, и снаружи её
+            не видно. А строка, которая печатает «Вычислений», стоит вне функции: там `count`
+            не существует (урок 5.4).
+          try: >-
+            Перенеси итоговый `print` внутрь функции — после цикла, с тем же отступом, что у
+            `while`.
+          verify: 'В «Примере 1» в конце должно быть «Вычислений: 2».'
+        - id: count-missing
+          when:
+            errorType: NameError
+            errorIncludes: "'count'"
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]*count\s*=)'
+          where: Перед циклом в основной части
+          why: >-
+            Счётчик `count` увеличивается и печатается, но нигде не создан: строки `count = 0` в
+            программе нет. `count += 1` может только изменить переменную, которая уже есть, —
+            поэтому NameError.
+          try: >-
+            Верни строку `count = 0` перед циклом — туда, где она стояла в исходной программе. Если
+            цикл внутри `main()`, то в `main()`, перед `while`.
+          verify: 'В «Примере 1» в конце должно быть «Вычислений: 2».'
+        - id: zero-not-found
+          when:
+            errorType: ZeroDivisionError
+            failedTest: p1
+          where: Функция find_problem
+          why: >-
+            `find_problem("/", 0)` вернула `""` — «проблем нет». Основная часть ей поверила,
+            вызвала `calculate`, и Python остановил программу на делении на ноль: ZeroDivisionError.
+            Значит, проверка деления на ноль в `find_problem` не срабатывает.
+          try: >-
+            Проверь три вещи. Есть ли в `find_problem` проверка «операция `/` и `b` равно 0»? Не
+            стоит ли выше неё `return ""` для известной операции: `return` сразу завершает функцию,
+            и до проверки нуля дело не доходит. И сравниваешь ли ты `b` с числом `0`, а не со
+            строкой `"0"`?
+          verify: '`find_problem("/", 0)` должна вернуть «На ноль делить нельзя», а «Пример 2» — дойти до конца.'
+        - id: calc-before-check
+          when:
+            errorType: ZeroDivisionError
+            failedTest: t2
+          where: Строка, где вызывается calculate
+          why: >-
+            `calculate` вызывается раньше, чем программа убедилась, что проблем нет. Для `7 / 0`
+            Python не может поделить и останавливает программу ошибкой ZeroDivisionError — «деление
+            на ноль».
+          try: >-
+            Сначала узнай проблему через `find_problem(op, b)`. Вызывай `calculate` только в той
+            ветке, где проблема — пустая строка `""`.
+          verify: В «Примере 2» должна появиться строка «На ноль делить нельзя», а программа — дойти до конца.
+        - id: param-order
+          when:
+            codeRegex: 'def\s+(?:(?:calculate|format_line)\(\s*(?:\w+\s*,\s*)?op\b|find_problem\(\s*b\b)'
+          where: Строка def с параметрами в другом порядке
+          why: >-
+            Проверка вызывает функции с аргументами в том порядке, что в условии:
+            `find_problem(op, b)`, `calculate(a, b, op)`, `format_line(a, b, op, result)`. Если в
+            `def` параметры стоят иначе, значения попадают не туда: например, в `op` приходит
+            число, а в `b` — знак операции. В твоей программе вызовы совпадают с `def`, поэтому
+            «Запустить» работает, а вызовы проверки — нет.
+          try: Расставь параметры в `def` как в условии и поправь вызовы в основной части.
+          verify: '`calculate(10, 4, "/")` должна вернуть 2.5, а `format_line(2, 3, "+", 5)` — строку «2 + 3 = 5».'
+        - id: none-instead-empty
+          when:
+            failedTest: p3
+            codeRegex: '(?<![\s\S])(?![\s\S]*return\s*(?:""|''''))(?![\s\S]*def\s+find_problem\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+return[ \t]+(?!None\b)[A-Za-z_]\w*[ \t]*$)'
+          where: Конец функции find_problem
+          why: >-
+            Когда проблем нет, `find_problem` возвращает `None`, а не пустую строку: доходит до
+            конца без `return` или возвращает `None` явно. А по условию «проблем нет» — это именно
+            `""`, и проверка ждёт от функции пустую строку.
+          try: >-
+            Поставь последней строкой функции `return ""` (вместо `return None`, если он есть). Если
+            основная часть сравнивала ответ с `None`, сравнивай теперь с пустой строкой:
+            `problem != ""`.
+          verify: '`find_problem("/", 5)` должна вернуть пустую строку, а «Пример 1» — вывести «2 + 3 = 5».'
+        - id: none-in-branch
+          when:
+            failedTest: p3
+            outputIncludes: None
+          where: Ветки find_problem
+          why: >-
+            Когда проблем нет, `find_problem` иногда не доходит ни до одного `return` — например,
+            при `find_problem("/", 5)`. Тогда функция возвращает `None`, а основная часть печатает
+            его как «None». Так бывает, когда `return ""` стоит только в некоторых ветках.
+          try: >-
+            Проследи, что делает функция при `op = "/"` и `b = 5`. Надёжнее всего поставить
+            `return ""` последней строкой функции — с отступом тела функции, а не внутри `if`:
+            тогда он сработает всегда, когда проблем не нашлось.
+          verify: '`find_problem("/", 5)` должна вернуть пустую строку, а «Пример 1» — вывести «10 / 4 = 2.5».'
+        - id: zero-in-calculate
+          when:
+            failedTest: p1
+            outputIncludes: "= На ноль делить нельзя"
+          where: Функции calculate и find_problem
+          why: >-
+            Проверка деления на ноль осталась в `calculate`. Поэтому `find_problem("/", 0)`
+            отвечает «проблем нет», и основная часть считает пример удачным: печатает «7 / 0 = На
+            ноль делить нельзя» и увеличивает счётчик.
+          try: >-
+            Перенеси проверку `b == 0` для деления в `find_problem`: это она решает, можно ли
+            считать. А `calculate` пусть только считает.
+          verify: 'В «Примере 2» должна быть отдельная строка «На ноль делить нельзя», а в конце — «Вычислений: 1».'
+        - id: zero-for-all
+          when:
+            failedTest: p4
+            outputIncludes: На ноль делить нельзя
+            codeRegex: '(?<![/]["''][ \t]*:[ \t]*\n)^[ \t]*(?:el)?if\b(?![^\n]*\band\b)[^\n]*\bb\s*==\s*0'
+          where: Проверка деления на ноль в find_problem
+          why: >-
+            `find_problem("+", 0)` сообщает о проблеме, хотя прибавить ноль можно. Ноль опасен
+            только для деления, а проверка `b == 0` срабатывает при любой операции.
+          try: >-
+            Объедини два условия через `and`. Проблема — когда операция `/` **и** `b` равно 0.
+          verify: >-
+            `find_problem("+", 0)` должна вернуть пустую строку, а в граничном случае «нули и
+            пустая операция» после заголовка должна идти строка «0 + 0 = 0».
+        - id: empty-op
+          when:
+            failedTest: p5
+            codeRegex: '(?<![\s\S])(?![\s\S]*(?:\blen\(\s*\w+\s*\)\s*!=\s*1|\b\w+\s*==\s*(?:""|''''))\s+or\b)[\s\S]*?\bin\s*["'']'
+          where: Проверка операции в find_problem
+          why: >-
+            Для строки `in` ищет кусок текста (подстроку), а пустая строка входит в любую строку:
+            `"" in "+-*/"` — это `True`. Поэтому пустой ввод сходит за известную операцию.
+          try: >-
+            Сравнивай операцию со списком: `["+", "-", "*", "/"]`. Для списка `in` сравнивает
+            элементы целиком: ни пустой строки, ни «+-» в нём нет.
+          verify: '`find_problem("", 5)` должна вернуть «Не знаю операцию «»».'
+        - id: substring-op
+          when:
+            failedTest: p6
+            codeRegex: '(?<![\s\S])(?![\s\S]*\blen\(\s*\w+\s*\)\s*!=\s*1\s+or\b)[\s\S]*?\bin\s*["'']'
+          where: Проверка операции в find_problem
+          why: >-
+            Для строки `in` ищет кусок текста, а не отдельный знак: `"+-" in "+-*/"` — это `True`.
+            Поэтому ввод «+-» сходит за известную операцию, хотя исходный калькулятор отвечал на
+            него «Не знаю операцию «+-»».
+          try: >-
+            Сравнивай операцию со списком: `["+", "-", "*", "/"]`. Для списка `in` сравнивает
+            элементы целиком: ни пустой строки, ни «+-» в нём нет.
+          verify: '`find_problem("+-", 5)` должна вернуть «Не знаю операцию «+-»».'
+        - id: prints-line
+          when:
+            failedTest: f1
+            codeRegex: '^([ \t]*)def\s+format_line\b[^\n]*\n(?:\1[ \t]+[^\n]*\n|[ \t]*\n)*?\1[ \t]+(?:return\s+)?print\('
+          where: Тело функции format_line
+          why: >-
+            `format_line` печатает строку, а не возвращает её. На экране строка видна, но тот, кто
+            вызвал функцию, получает `None` (урок 5.3).
+          try: >-
+            Замени `print(...)` внутри функции на `return` с той же f-строкой, а печатай в основной
+            части: `print(format_line(a, b, op, result))`.
+          verify: '`format_line(2, 3, "+", 5)` должна вернуть строку «2 + 3 = 5».'
+        - id: print-in-function
+          when:
+            codeRegex: '^([ \t]*)def\s+(?:find_problem|calculate|format_line)\b[^\n]*\n(?:\1[ \t]+[^\n]*\n|[ \t]*\n)*?\1[ \t]+print\('
+          where: print внутри find_problem, calculate или format_line
+          why: >-
+            Одна из функций `find_problem`, `calculate` или `format_line` сама вызывает `print`. В
+            этой программе они только возвращают значения, а печатает основная часть. Если
+            печатают обе, строка появляется на экране дважды.
+          try: >-
+            Убери `print` из функции и оставь `return` — основная часть уже печатает то, что
+            функция вернула.
+          verify: Каждая строка «Примера 1» должна появиться в выводе один раз.
+        - id: none-result
+          when:
+            outputIncludes: "= None"
+          where: Функция calculate и строка, где её вызывают
+          why: >-
+            `calculate` вернула `None`: для этого ввода она не дошла ни до одного `return`. Так
+            бывает, если в нужной ветке нет `return` или если аргументы в вызове стоят не в том
+            порядке, что параметры в `def`: `calculate(a, op, b)` при `def calculate(a, b, op)`
+            кладёт знак операции в `b`, а число — в `op`, и ни одно сравнение с `op` не срабатывает.
+          try: >-
+            Сверь вызов с `def`: аргументы идут в том же порядке — `calculate(a, b, op)`. И проверь,
+            что в каждой ветке `calculate` стоит `return`.
+          verify: 'В «Примере 1» должны появиться строки «2 + 3 = 5» и «10 / 4 = 2.5».'
+        - id: function-object
+          when:
+            outputIncludes: "<function "
+          where: Строка, где вызывается calculate
+          why: >-
+            В строке результата напечаталось `<function …>`: имя функции без скобок её не вызывает
+            (урок 5.1). Поэтому в `format_line` попала сама функция `calculate`, а не результат
+            вычисления.
+          try: >-
+            Вызови `calculate` со скобками и аргументами — `result = calculate(a, b, op)` — и передай
+            в `format_line` переменную `result`.
+          verify: 'В «Примере 1» должна появиться строка «2 + 3 = 5».'
+        - id: main-not-called
+          when:
+            outputEquals: ""
+          where: Последняя строка программы
+          why: >-
+            Программа ничего не напечатала — даже заголовок. Похоже, основная часть лежит в функции
+            (например, `main()`), а сама функция не вызвана: `def` только объявляет её. То же
+            будет, если написать имя без скобок — `main`.
+          try: Добавь последней строкой программы, без отступа, вызов этой функции — например, `main()`.
+          verify: «Пример 1» должен начаться с заголовка калькулятора.
+        - id: count-shadow
+          when:
+            outputIncludes: "Вычислений: 0"
+            codeRegex: '(?<![\s\S])(?=[\s\S]*^count\s*=\s*0)(?=[\s\S]*^def\s+\w+[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+count\s*=\s*0)'
+          where: Строки count = 0 внутри функции и снаружи
+          why: >-
+            В программе два разных счётчика с одним именем. `count` внутри функции растёт, а
+            итоговый `print` снаружи печатает другой `count`, созданный вне функции, — он так и
+            остался нулём (урок 5.4).
+          try: >-
+            Оставь один счётчик — внутри функции — и перенеси итоговый `print` туда же, после
+            цикла. Строку `count = 0` снаружи убери.
+          verify: 'В «Примере 1» в конце должно быть «Вычислений: 2».'
+        - id: count-on-error
+          when:
+            outputIncludes: "Вычислений: 3"
+          where: Строка count += 1
+          why: >-
+            Счётчик вырос и на проблемных вводах. В «Примере 2» три попытки, но посчитать удалось
+            только одну — «6 * -3». В исходной программе `count += 1` стоит только там, где
+            результат напечатан.
+          try: Перенеси `count += 1` в ветку, где проблем нет и строка с результатом напечатана.
+          verify: 'В «Примере 2» в конце должно быть «Вычислений: 1».'
+        - id: global
+          when:
+            failedRule: r-no-global
+          where: Строка с global
+          why: >-
+            `global` разрешает функции тайком менять переменную снаружи. Программа работает, но
+            такую функцию не проверить отдельно: каждый её вызов меняет чужой счётчик (урок 5.4).
+          try: >-
+            Убери из функции `global` и `count += 1`. Увеличивай счётчик в цикле основной части —
+            там же, где он создан.
+          verify: Требование «без global» должно выполниться, а тесты — остаться зелёными.
+        - id: unused
+          when:
+            failedRule: r-uses
+          where: Цикл в основной части
+          why: >-
+            Функции объявлены, но основная часть пользуется не всеми: где-то в цикле остались
+            старые проверки, вычисления или сборка строки. Тогда функции — лишний код, а новую
+            операцию всё равно придётся вставлять в цикл.
+          try: >-
+            Замени старые ветки в цикле вызовами: сначала `find_problem`, потом — если проблем нет —
+            `calculate` и `format_line`.
+          verify: Требование должно выполниться, а вывод на примерах — остаться прежним.
+      afterPass: >-
+        Поведение прежнее, а программа теперь из понятных частей: каждую функцию можно вызвать и
+        проверить отдельно. Подумай, какие функции придётся поменять, чтобы добавить новую
+        операцию, — это следующее задание.
+      skills: [function-design, functions, scope]
+      noHintsBeforeAttempt: true
+
+  - id: bonus-power
+    type: exercise
+    title: Новое требование
+    exercise:
+      id: m5-l7-e2
+      kind: modify
+      title: "Новое требование: степень"
+      statement: |-
+        Друг Даши просит новую операцию `^` — возведение в степень: `2 ^ 10 = 1024`. Вставь сюда
+        свой калькулятор на функциях из самостоятельной работы — или решение, которое открывал
+        кнопкой «Показать решение», — и добавь операцию `^`.
+
+        Всё остальное работает как раньше: другие операции, сообщения о проблемах и счётчик
+        вычислений. Функции те же три: `find_problem(op, b)`, `calculate(a, b, op)` и
+        `format_line(a, b, op, result)`. Нулевая степень — не проблема: `5 ^ 0 = 1`.
+      input: >-
+        Как в самостоятельной работе: первое число или «выход», операция, второе число. Среди
+        операций теперь есть `^`.
+      output: >-
+        Строка вида «2 ^ 10 = 1024» для степени и прежний вывод для всего остального.
+      constraints:
+        - Числа во вводе целые, показатель степени не отрицательный.
+        - Текст в скобках у input() можно дополнить знаком ^ — он не проверяется.
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+      starterCode: |
+        # Вставь сюда свой калькулятор на функциях
+        # и добавь операцию ^ — возведение в степень
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример: степень и сложение"
+          example: true
+          stdin: "2\n^\n10\n3\n+\n4\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            2 ^ 10 = 1024
+            3 + 4 = 7
+            Вычислений: 2
+        - id: t2
+          kind: io
+          title: Старые операции работают как раньше
+          stdin: "7\n/\n0\n9\n-\n12\n5\n%\n2\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            На ноль делить нельзя
+            9 - 12 = -3
+            Не знаю операцию «%»
+            Вычислений: 1
+        - id: t3
+          kind: io
+          title: "Граничный случай: нулевая степень"
+          edge: true
+          stdin: "5\n^\n0\nвыход\n"
+          expected: |-
+            Калькулятор. Для выхода введи «выход».
+            5 ^ 0 = 1
+            Вычислений: 1
+        - id: c1
+          kind: call
+          title: "calculate: степень"
+          example: true
+          stdin: "выход\n"
+          call: "calculate(2, 10, '^')"
+          expected: "1024"
+        - id: c2
+          kind: call
+          title: "calculate: нулевая степень"
+          edge: true
+          stdin: "выход\n"
+          call: "calculate(5, 0, '^')"
+          expected: "1"
+        - id: c3
+          kind: call
+          title: "calculate: отрицательное основание"
+          edge: true
+          stdin: "выход\n"
+          call: "calculate(-3, 3, '^')"
+          expected: "-27"
+        - id: c4
+          kind: call
+          title: "calculate: деление как раньше"
+          stdin: "выход\n"
+          call: "calculate(10, 4, '/')"
+          expected: "2.5"
+        - id: p1
+          kind: call
+          title: "find_problem: нулевая степень — не проблема"
+          example: true
+          stdin: "выход\n"
+          call: "find_problem('^', 0)"
+          expected: "''"
+        - id: p2
+          kind: call
+          title: "find_problem: неизвестная операция — как раньше"
+          stdin: "выход\n"
+          call: "find_problem('%', 1)"
+          expected: "'Не знаю операцию «%»'"
+        - id: p3
+          kind: call
+          title: "find_problem: пустая операция — как раньше"
+          edge: true
+          stdin: "выход\n"
+          call: "find_problem('', 5)"
+          expected: "'Не знаю операцию «»'"
+      rules:
+        - id: r-uses
+          use: [call:find_problem, call:calculate, call:format_line]
+          message: >-
+            Основная часть программы пользуется функциями find_problem, calculate и format_line,
+            а не считает по-старому.
+        - id: r-no-global
+          avoid: [Global]
+          message: Без global — счётчик вычислений меняется в основной части (или в main).
+      criteria:
+        - calculate возвращает степень для операции ^, например 1024 для 2 ^ 10 и 1 для 5 ^ 0.
+        - find_problem считает ^ известной операцией, и нулевая степень для неё — не проблема.
+        - Остальные операции, сообщения и счётчик работают как раньше.
+      hints:
+        - >-
+          Какая из трёх функций знает, какие операции вообще бывают, а какая — как считать каждую
+          из них? Новая операция должна появиться в обеих. А `format_line` менять не придётся —
+          подумай почему.
+        - >-
+          На другом примере: в Python степень — это `**`, `3 ** 2` даёт 9, а `2 ** 0` — 1. А знак
+          `^` Python понимает по-своему: запусти `print(3 ^ 2)` и посмотри, что получится.
+        - |-
+          Каркас правок:
+
+          ```text
+          def find_problem(op, b):
+              в список известных операций добавить "^"
+              остальное — как было
+
+          def calculate(a, b, op):
+              прежние ветки
+              новая ветка: если op == "^" → вернуть a в степени b (оператор Python **)
+          ```
+      solution:
+        code: |
+          def find_problem(op, b):
+              if op not in ["+", "-", "*", "/", "^"]:
+                  return f"Не знаю операцию «{op}»"
+              if op == "/" and b == 0:
+                  return "На ноль делить нельзя"
+              return ""
+
+
+          def calculate(a, b, op):
+              if op == "+":
+                  return a + b
+              elif op == "-":
+                  return a - b
+              elif op == "*":
+                  return a * b
+              elif op == "/":
+                  return a / b
+              elif op == "^":
+                  return a ** b
+
+
+          def format_line(a, b, op, result):
+              return f"{a} {op} {b} = {result}"
+
+
+          print("Калькулятор. Для выхода введи «выход».")
+          count = 0
+          while True:
+              first = input("Первое число: ")
+              if first == "выход":
+                  break
+              a = int(first)
+              op = input("Операция (+ - * / ^): ")
+              b = int(input("Второе число: "))
+              problem = find_problem(op, b)
+              if problem != "":
+                  print(problem)
+              else:
+                  result = calculate(a, b, op)
+                  print(format_line(a, b, op, result))
+                  count += 1
+          print(f"Вычислений: {count}")
+        explanation: >-
+          Новая операция — две правки по смыслу: `find_problem` узнала знак `^`, а `calculate`
+          получила ветку с `**`. Пользователь вводит `^`, а Python возводит в степень своим
+          оператором `**`: знак `^` у него означает другое. `format_line`, цикл и счётчик остались
+          прежними — в тексте `input()` для операции только добавился знак `^`. Строку
+          «2 ^ 10 = 1024» `format_line` собирает так же, как любую другую.
+      altSolutions:
+        - code: |
+            OPERATIONS = ["+", "-", "*", "/", "^"]
+
+
+            def find_problem(op, b):
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                if op in OPERATIONS:
+                    return ""
+                return f"Не знаю операцию «{op}»"
+
+
+            def calculate(a, b, op):
+                result = 0
+                if op == "+":
+                    result = a + b
+                elif op == "-":
+                    result = a - b
+                elif op == "*":
+                    result = a * b
+                elif op == "/":
+                    result = a / b
+                elif op == "^":
+                    result = a ** b
+                return result
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            first = input("Первое число: ")
+            while first != "выход":
+                a = int(first)
+                op = input("Операция: ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+                first = input("Первое число: ")
+            print(f"Вычислений: {count}")
+          note: Константа со списком операций, один return в calculate, while с условием.
+        - code: |
+            def find_problem(op, b):
+                if op != "+" and op != "-" and op != "*" and op != "/" and op != "^":
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "^":
+                    return pow(a, b)
+                if op == "+":
+                    return a + b
+                if op == "-":
+                    return a - b
+                if op == "*":
+                    return a * b
+                return a / b
+
+
+            def format_line(a, b, op, result):
+                return str(a) + " " + op + " " + str(b) + " = " + str(result)
+
+
+            def main():
+                print("Калькулятор. Для выхода введи «выход».")
+                count = 0
+                while True:
+                    first = input("Первое число: ")
+                    if first == "выход":
+                        break
+                    a = int(first)
+                    op = input("Операция (+ - * / ^): ")
+                    b = int(input("Второе число: "))
+                    problem = find_problem(op, b)
+                    if problem == "":
+                        print(format_line(a, b, op, calculate(a, b, op)))
+                        count += 1
+                    else:
+                        print(problem)
+                print(f"Вычислений: {count}")
+
+
+            main()
+          note: >-
+            Решение с main(); степень через встроенную pow (в курсе не вводилась, но верна), новая
+            ветка стоит первой — выше деления в последнем return.
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/", "^"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "^":
+                    result = 1
+                    for i in range(b):
+                        result = result * a
+                    return result
+                if op == "+":
+                    return a + b
+                if op == "-":
+                    return a - b
+                if op == "*":
+                    return a * b
+                return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Степень циклом for и накопителем (модуль 3) — верна, потому что показатель по условию
+            не отрицательный; ветка ^ стоит первой (пробы инженера проверок B1, R-B1).
+      wrongSolutions:
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/", "^"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+                elif op == "^":
+                    return a ^ b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: Степень через ^ — в Python это другая операция, 2 ^ 10 даёт 8.
+          expectMistake: xor
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+                elif op == "^":
+                    return a ** b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: В calculate ветка есть, а find_problem про ^ не знает.
+          expectMistake: not-known
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/", "^"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: find_problem пропускает ^, а в calculate нет ветки — возвращается None.
+          expectMistake: no-calc-branch
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/", "^"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                else:
+                    return a / b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: Деление стоит в else, и степень попадает в эту ветку — 2 ^ 10 = 0.2.
+          expectMistake: else-division
+        - code: |
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "^"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+                elif op == "^":
+                    return a ** b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            В списке операций / заменён на ^ — новая операция работает, а деление сломалось. Своего
+            разбора нет: общий разбор покажет расхождение в тесте «Старые операции».
+          expectMistake: null
+        - code: |
+            import math
+
+
+            def find_problem(op, b):
+                if op not in ["+", "-", "*", "/", "^"]:
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+                elif op == "^":
+                    return math.pow(a, b)
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Степень через math.pow — результат дробный, «2 ^ 10 = 1024.0». Общий разбор советовал
+            бы целочисленное деление, поэтому есть свой разбор.
+          expectMistake: float-power
+        - code: |
+            def find_problem(op, b):
+                if op not in "+-*/^":
+                    return f"Не знаю операцию «{op}»"
+                if op == "/" and b == 0:
+                    return "На ноль делить нельзя"
+                return ""
+
+
+            def calculate(a, b, op):
+                if op == "+":
+                    return a + b
+                elif op == "-":
+                    return a - b
+                elif op == "*":
+                    return a * b
+                elif op == "/":
+                    return a / b
+                elif op == "^":
+                    return a ** b
+
+
+            def format_line(a, b, op, result):
+                return f"{a} {op} {b} = {result}"
+
+
+            print("Калькулятор. Для выхода введи «выход».")
+            count = 0
+            while True:
+                first = input("Первое число: ")
+                if first == "выход":
+                    break
+                a = int(first)
+                op = input("Операция (+ - * / ^): ")
+                b = int(input("Второе число: "))
+                problem = find_problem(op, b)
+                if problem != "":
+                    print(problem)
+                else:
+                    print(format_line(a, b, op, calculate(a, b, op)))
+                    count += 1
+            print(f"Вычислений: {count}")
+          note: >-
+            Заодно с ^ список операций переписан короче, строкой «+-*/^» — пустая операция снова
+            сходит за известную (тест p3).
+          expectMistake: empty-op
+      mistakes:
+        - id: xor
+          when:
+            failedTest: c1
+            codeRegex: '\w\s*\^\s*\w'
+          where: Ветка для ^ в calculate
+          why: >-
+            В Python знак `^` — не степень, а совсем другая операция (она работает с двоичной
+            записью чисел), поэтому `2 ^ 10` даёт 8, а не 1024. Ошибки нет, и программа молча
+            печатает неверный ответ. Пользователь вводит знак `^`, но считать нужно оператором
+            степени Python.
+          try: Возведи в степень оператором `**`, как в уроке 1.1, — `2 ** 10` даёт 1024.
+          verify: '`calculate(2, 10, "^")` должна вернуть 1024.'
+        - id: not-known
+          when:
+            outputIncludes: Не знаю операцию «^»
+          where: Проверка известных операций в find_problem
+          why: >-
+            `find_problem` не знает новую операцию и называет её неизвестной, поэтому до
+            `calculate` дело не доходит.
+          try: >-
+            Добавь `"^"` к известным операциям в `find_problem` — в список или в цепочку
+            сравнений, смотря как у тебя написана проверка.
+          verify: В примере должна появиться строка «2 ^ 10 = 1024».
+        - id: else-division
+          when:
+            outputIncludes: "^ 10 = 0.2"
+          where: Последняя ветка calculate
+          why: >-
+            `find_problem` уже пропускает `^`, но в `calculate` деление стоит в ветке `else` (или
+            в последнем `return` без условия). Новая операция попала туда и поделила: `2 / 10 =
+            0.2`.
+          try: >-
+            Добавь для `^` свою ветку выше деления — или сделай деление отдельной веткой
+            `elif op == "/"`.
+          verify: В примере должна появиться строка «2 ^ 10 = 1024».
+        - id: no-calc-branch
+          when:
+            outputIncludes: "= None"
+          where: Функция calculate
+          why: >-
+            `find_problem` уже пропускает `^`, но `calculate` для этой операции ничего не
+            возвращает: ветки для `^` нет или в ней нет `return`. Функция дошла до конца и вернула
+            `None`.
+          try: Добавь в `calculate` ветку для `"^"`, которая возвращает результат через `return`.
+          verify: В примере должна появиться строка «2 ^ 10 = 1024».
+        - id: float-power
+          when:
+            outputIncludes: "^ 10 = 1024.0"
+          where: Ветка для ^ в calculate
+          why: >-
+            Степень посчитана верно, но результат дробный — «1024.0». Так бывает, если считать
+            через `math.pow`: он всегда возвращает дробное число. Исходный калькулятор печатает
+            результаты сложения, вычитания и умножения целых чисел без «.0».
+          try: Возведи в степень оператором `**`, как в уроке 1.1, — для целых `2 ** 10` даёт целое 1024.
+          verify: В примере должна появиться строка «2 ^ 10 = 1024».
+        - id: empty-op
+          when:
+            failedTest: p3
+            codeRegex: '(?<![\s\S])(?![\s\S]*\blen\(\s*\w+\s*\)\s*!=\s*1\s+or\b)[\s\S]*?\bin\s*["'']'
+          where: Проверка операции в find_problem
+          why: >-
+            Для строки `in` ищет кусок текста, а пустая строка входит в любую строку:
+            `"" in "+-*/^"` — это `True`. Поэтому пустой ввод сходит за известную операцию, хотя
+            раньше калькулятор отвечал на него «Не знаю операцию «»».
+          try: >-
+            Сравнивай операцию со списком: `["+", "-", "*", "/", "^"]`. Для списка `in` сравнивает
+            элементы целиком, и пустой строки в нём нет.
+          verify: '`find_problem("", 5)` должна вернуть «Не знаю операцию «»».'
+      afterPass: >-
+        Новое требование уложилось в две правки в двух функциях, и ни одна старая строка не
+        сломалась. Это и есть польза разбиения на функции. Одно улучшение на будущее: сейчас
+        показатель степени не бывает отрицательным. Если его разрешить, ввод `0 ^ -1` уронит
+        программу ошибкой деления на ноль (ZeroDivisionError). Подумай, какая из трёх функций
+        должна сообщать о такой проблеме, чтобы калькулятор не падал.
+      skills: [function-design, functions]
+      noHintsBeforeAttempt: true
+
+  - id: own-project
+    type: checklist
+    title: Свой проект на функциях
+    body: >-
+      Это отдельная сессия на компьютере, минут на 20–30, — её можно провести в другой день.
+      Возьми свой первый проект. Если своего нет, возьми `calc.py` из урока 5.6 (папка
+      `python-practice\calculator`): это тот же учебный калькулятор, что в тренажёре. Тренажёр
+      не видит твой компьютер, поэтому отмечай пункты сам — по результату, а не по прочтении.
+      Команды дальше — для учебного калькулятора; для своего проекта подставь имя своего файла.
+    items:
+      - id: checks
+        text: >-
+          **Составь таблицу ручных проверок.** Открой терминал в папке проекта, запусти
+          программу (`python calc.py` или `py calc.py`) и попробуй 3–5 вводов: обычные и
+          граничные — деление на ноль, неизвестная операция, пустая операция (Enter вместо
+          знака), сразу «выход». Для каждого ввода запиши, что программа выводит сейчас.
+        help: |-
+          Таблицу удобно вести в заметке или прямо в README.md — под заголовком
+          `## Как проверить`. Одна строка таблицы может выглядеть так:
+
+          ```text
+          7 / 0  →  На ноль делить нельзя
+          ```
+
+          Не знаешь, что проверять, — возьми вводы из тестов задания «Калькулятор на функциях».
+          Если на каком-то вводе программа падает с ошибкой, это тоже её поведение: запиши тип
+          ошибки — после переделки он должен остаться тем же. На macOS и Linux команда запуска —
+          `python3 calc.py`.
+      - id: clean
+        text: >-
+          **Убедись, что рабочая версия лежит в Git.** Набери `git status`. Должно быть
+          «nothing to commit, working tree clean» (в русской версии Git — «нечего коммитить…»).
+          Если Git видит изменения, сначала сделай коммит.
+        help: >-
+          «fatal: not a git repository» значит, что терминал открыт не в папке проекта или
+          репозитория ещё нет. Git не установлен или репозиторий не создан — вернись к уроку 5.6.
+          Если ты уже дописал таблицу в README.md, Git покажет его изменённым: закоммить его,
+          например, с сообщением «Добавить в README ручные проверки».
+      - id: refactor
+        text: >-
+          **Переделай программу на функции — по одной.** Вынес функцию → сохранил файл →
+          запустил на вводах из таблицы → сравнил. Только после этого берись за следующую.
+        help: >-
+          Запутался и программа сломалась — закрой `calc.py` в редакторе и набери
+          `git restore calc.py`: файл вернётся к последнему коммиту (урок 5.6), и можно начать
+          заново. Чтобы откатываться недалеко, удобно делать коммит после каждой функции, вывод
+          которой совпал с таблицей. Если твой проект — учебный калькулятор, можно опереться на
+          своё решение из тренажёра, но таблицу проверок всё равно пройди: в тренажёре ввод был
+          записан заранее, а здесь ты вводишь его сам.
+      - id: same
+        text: >-
+          **Сравни с таблицей.** На каждом вводе из таблицы программа выводит то же, что до
+          переделки, строка в строку.
+        help: >-
+          Одна строка не совпала — найди функцию, которая за неё отвечает, и проверь её отдельно:
+          временно добавь сразу после объявлений функций, до основной части, проверочный вызов с
+          ожидаемым ответом, например
+          `print(find_problem("/", 0), "ожидаю: На ноль делить нельзя")`. Запусти, сравни и потом
+          убери эту строку. В конце файла такой вызов сработал бы только после «выход»: до этого
+          программа ждёт ввода в цикле. Вывод не изменился после правки — проверь, сохранён ли
+          файл.
+      - id: commit
+        text: >-
+          **Сохрани результат коммитом:** `git add calc.py`, затем
+          `git commit -m "Разбить калькулятор на функции"`. Команда `git log --oneline` покажет
+          как минимум три коммита, новый — сверху.
+        help: >-
+          Для своего проекта подставь имя своего файла и своё сообщение: оно отвечает на вопрос
+          «что изменилось?». Если внизу окна двоеточие и команда «не заканчивается», нажми `q`.
+          «nothing added to commit» — не было `git add`. Если ты уже коммитил после каждой функции
+          и Git отвечает «nothing to commit, working tree clean», всё уже сохранено — отметь пункт.
+      - id: readme
+        text: >-
+          **Проверь README.** Описание и команда запуска по-прежнему верны? Если что-то поменял —
+          сохрани README.md и сделай ещё один коммит.
+        help: >-
+          После переделки на функции команда запуска обычно не меняется: программа по-прежнему
+          запускается через `python calc.py`. Тогда README трогать не нужно — просто отметь пункт.
+    coach: >-
+      Та же схема, что в тренажёре: образец → маленький шаг → сравнение. Только проверяешь теперь
+      ты сам.
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - "Обе задачи получились без подсказок — функции, return и разбиение на части уже твои. Можно переходить к модулю 6."
+      - "Функция вернула None, печатала результат вместо return или main() не была вызвана — повтори урок 5.1 (вызов функции) и урок 5.3 (return)."
+      - "UnboundLocalError, счётчик вырос не там или хотелось написать global — повтори урок 5.4 (область видимости)."
+      - "Трудно было решить, какие куски вынести, и функции вышли длинными — урок 5.5. Ошибки Git на компьютере — урок 5.6 и его подсказки «Если не получается»."
+    question: Как ты проверил, что после переделки калькулятор ведёт себя так же, как раньше?
+    answer: >-
+      Запустил старую и новую версии на одних и тех же вводах — обычных и граничных — и сравнил
+      вывод строка в строку. В тренажёре это делают тесты задания, а на компьютере — таблица
+      ручных проверок, составленная до переделки.

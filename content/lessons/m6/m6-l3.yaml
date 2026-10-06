@@ -1,0 +1,1609 @@
+id: m6-l3
+module: m6
+number: "6.3"
+title: Промежуточные значения и трассировка
+objective: >-
+  Находить логическую ошибку, когда программа не падает, но результат неверный: выдвигать гипотезу,
+  проверять её отладочным выводом промежуточных значений и трассировкой, исправлять одну причину и
+  убирать отладочный вывод.
+minutes: [20, 30]
+prerequisites: [m6-l2, m3-l6]
+skills: [debugging]
+environment: python
+
+story:
+  title: "«Собрано: 500»"
+  fictional: true
+  text: >-
+    Карина из родительского комитета собирает деньги на выпускной и завела маленькую программу,
+    которая складывает взносы. Через неделю программа показала «Собрано: 500», хотя только
+    в первый день родители перевели несколько тысяч. Python не показал ни одной ошибки — программа
+    уверенно печатала неверное число. Карина не стала переписывать всё заново: она поставила `print`
+    внутрь цикла и увидела, что сумма на каждом шаге начинается с нуля. Строку `total = 0` случайно
+    сдвинули внутрь цикла, и после исправления итог сошёлся с переводами.
+
+why: >-
+  При самых коварных ошибках программа не падает: она работает до конца и уверенно печатает
+  неверный ответ. Промежуточные значения показывают, на каком шаге расчёт свернул не туда, —
+  например, что сумма обнуляется на каждом проходе цикла.
+
+usedIn: >-
+  Отладочный вывод и журналы работы программ (логи) — главный инструмент разбора ошибок там, где
+  отладчик (о нём — следующий урок) не подключишь, например на сервере. Трассировку в уме и на
+  бумаге используют, когда читают чужой код и когда разбирают ошибку вместе с коллегой.
+
+steps:
+  - id: hypothesis
+    type: theory
+    title: Гипотеза и промежуточные значения
+    body: |-
+      **Логическая ошибка** — программа работает до конца, но ответ неверный. Traceback нет, Python
+      молчит — место ошибки приходится искать самому. Помогает порядок действий:
+
+      1. Возьми **минимальный пример** (урок 6.2), на котором ответ неверный, и запиши, каким
+         ответ должен быть.
+      2. Составь **ожидание по шагам** — трассировку, как в уроке 3.6: какие значения должны быть у
+         переменных после каждого шага.
+      3. Выведи **промежуточные значения** — что на самом деле лежит в переменных на этих шагах.
+      4. Найди **первое расхождение** ожидания и факта. Причина — на этом шаге или раньше, там,
+         откуда пришло неверное значение: где ошибка видна, там не всегда её причина (урок 6.1).
+         Всё, что ниже, — уже последствия.
+
+      **Гипотеза** — предположение о причине, которое можно проверить одним запуском: «total
+      обнуляется на каждом шаге», «в функцию приходит строка, а не число». Одна гипотеза — одна
+      проверка — одно исправление — снова запуск. Если править наугад в трёх местах сразу, не
+      узнаешь, какая правка помогла, а какая сломала что-то новое. И переписывать всё заново обычно
+      не нужно: чаще всего неверен один шаг.
+
+      **Отладочный вывод** — временный `print`, как трассировочный в уроке 3.6. Помечай его словом
+      `ОТЛАДКА:` — такие строки легко заметить в выводе и найти в коде. Ещё удобнее f-строка со
+      знаком `=` после имени: она печатает и имя, и значение.
+
+      ```python
+      total = 15
+      price = "150"
+      print(f"ОТЛАДКА: {total=} {price=}")
+      ```
+
+      ```text
+      ОТЛАДКА: total=15 price='150'
+      ```
+
+      Значение строки печатается в кавычках: сразу видно, что `price` — текст, а не число. Кавычки
+      Python ставит одинарные, даже если в коде были двойные.
+
+      **Где ставить отладочный print:**
+
+      - в начале функции — что в неё пришло;
+      - перед `return` — что она отдаёт;
+      - в конце тела цикла — каким стал накопитель после очередного шага.
+
+      Когда ошибка найдена и исправлена, **убери отладочный вывод** — удали строку или
+      закомментируй её знаком `#`. Он добавляет строки к выводу программы, и проверка в тренажёре
+      не пройдёт, пока они печатаются.
+    simpler: >-
+      Представь, что ехал по навигатору и приехал не туда. Проезжать весь путь заново не нужно:
+      сверяешь с картой каждый поворот и находишь первый, где свернул не туда. Твоя трассировка —
+      это карта, а отладочный `print` показывает, где программа на самом деле оказалась после
+      каждого шага.
+    coach: >-
+      Сначала запиши, что ожидаешь увидеть, и только потом запускай — иначе любое число покажется
+      правдоподобным.
+
+  - id: collected
+    type: example
+    title: Взносы под микроскопом
+    body: |-
+      Программа Карины с отладочным выводом внутри цикла. Три взноса: 1500, 2000 и 500. Ожидание по
+      шагам — `total` должен быть 1500, потом 3500, потом 4000.
+
+      Нажми «Запустить» и сравни отладочные строки с ожиданием: на каком шаге они впервые разошлись?
+    code: |-
+      def total_collected(payments):
+          for payment in payments:
+              total = 0
+              total = total + payment
+              print(f"ОТЛАДКА: {payment=} {total=}")
+          return total
+
+
+      print("Собрано:", total_collected([1500, 2000, 500]))
+    notes:
+      - line: 3
+        text: >-
+          Подозрительная строка: она стоит внутри цикла и выполняется перед каждым взносом.
+          Гипотеза — `total` обнуляется на каждом шаге. Если она верна, в отладочных строках
+          `total` окажется равен самому взносу.
+      - line: 5
+        text: >-
+          Отладочный вывод: метка `ОТЛАДКА:` и f-строка с `=`. Каждая его строка — значения после
+          одного взноса: их и сравнивай с ожиданием 1500, 3500, 4000.
+      - line: 9
+        text: Итог — то, что осталось в `total` после последнего прохода цикла.
+    tryIt: >-
+      Перенеси `total = 0` на строку выше `for` — с тем же отступом, что у `for`, — и запусти:
+      отладочные строки покажут 1500, 3500, 4000, а итог станет 4000. Потом удали отладочный `print`
+      и запусти ещё раз: останется одна строка.
+    coach: >-
+      Гипотеза подтвердилась одним запуском — без переписывания программы.
+
+  - id: equals-sign
+    type: predict
+    title: "Что покажет {price=}?"
+    prompt: >-
+      Как думаешь, что выведет программа? Обрати внимание на знак `=` в первой f-строке.
+    code: |-
+      price = "150"
+      count = 2
+      print(f"{price=} {count=}")
+      print(price * count)
+    options:
+      - |-
+        price='150' count=2
+        150150
+      - |-
+        price=150 count=2
+        300
+      - |-
+        price='150' count=2
+        300
+    answer: |-
+      price='150' count=2
+      150150
+    explanation: >-
+      Со знаком `=` f-строка печатает имя и значение: строку — в кавычках (Python показывает
+      одинарные, даже если в коде стояли двойные), число — без кавычек. А раз `price` — строка,
+      `price * count` не умножает число, а повторяет текст два раза: `150150`. Кавычки в
+      отладочном выводе — частая подсказка, что «число» так и осталось текстом, например после
+      `input()` или `split()`.
+    coach: >-
+      Если в отладочном выводе у «числа» кавычки — это не число.
+
+  - id: where-print
+    type: quiz
+    title: Куда поставить print
+    question: >-
+      Функция `average(marks)` считает средний балл: складывает оценки в `total`, считает их в
+      `count` и возвращает `total / count`. Программа вызывает её так: `result = average(marks)` —
+      и ответ неверный. Гипотеза: «в функцию приходит не тот список». Куда поставить отладочный
+      `print`, чтобы проверить её одним запуском?
+    options:
+      - 'Сразу после вызова: `print(f"ОТЛАДКА: {result=}")`'
+      - 'Первой строкой в теле функции: `print(f"ОТЛАДКА: {marks=}")`'
+      - 'Последней строкой программы: `print(f"ОТЛАДКА: {total=} {count=}")`'
+    correct: 1
+    explanation: >-
+      Гипотеза — о том, что приходит в функцию, значит, смотреть нужно на вход: первой строкой в
+      теле функции. `result` покажет только, что ответ неверный, а это ты уже знаешь. А `total` и
+      `count` существуют только внутри функции (урок 5.4): в последней строке программы Python их
+      не найдёт и остановится с NameError.
+
+  - id: practice-reset
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m6-l3-e1
+      kind: repeat
+      title: Коробки за неделю
+      statement: |-
+        Кладовщик склада стройматериалов Анатолий получил от программы «Пришло коробок за неделю: 8»,
+        хотя по накладным их 47. В программу уже вставлен отладочный вывод.
+
+        1. Запусти программу и сравни значения `total` с ожидаемыми: после каждого дня должно быть
+           12, 12, 19, 39, 47.
+        2. Найди первое расхождение и исправь причину.
+        3. Убери отладочный вывод: программа должна печатать одну строку.
+
+        ```text
+        Пришло коробок за неделю: 47
+        ```
+
+        Проверка вызывает и саму функцию `week_arrivals` с другими списками — в том числе с пустым:
+        неделя без поставок.
+      input: Ввода нет — коробки по дням записаны в программе.
+      output: "Одна строка: `Пришло коробок за неделю: 47`."
+      constraints:
+        - Исправь одну причину — не переписывай программу целиком.
+        - Для пустого списка функция возвращает 0.
+        - В готовой программе нет отладочного вывода.
+      starterCode: |
+        def week_arrivals(boxes_by_day):
+            for boxes in boxes_by_day:
+                total = 0
+                total = total + boxes
+                print(f"ОТЛАДКА: {boxes=} {total=}")
+            return total
+
+
+        arrivals = [12, 0, 7, 20, 8]
+        print("Пришло коробок за неделю:", week_arrivals(arrivals))
+      tests:
+        - id: t1
+          kind: io
+          title: Коробки за неделю
+          example: true
+          expected: "Пришло коробок за неделю: 47"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: call
+          title: Три дня
+          example: true
+          call: week_arrivals([1, 2, 3])
+          expected: "6"
+        - id: t3
+          kind: call
+          title: "Граничный случай: неделя без поставок"
+          edge: true
+          call: week_arrivals([])
+          expected: "0"
+        - id: t4
+          kind: call
+          title: "Граничный случай: один день"
+          edge: true
+          call: week_arrivals([5])
+          expected: "5"
+      criteria:
+        - "`week_arrivals` возвращает сумму всех чисел списка, для пустого списка — 0."
+        - "Программа печатает одну строку «Пришло коробок за неделю: 47»."
+        - Отладочного вывода не осталось.
+      hints:
+        - >-
+          Сравни отладочные строки с ожиданием 12, 12, 19, 39, 47. На каком дне они впервые
+          разошлись? Что `total` должен «помнить» с прошлого дня — и что помнит на самом деле?
+        - >-
+          Копилка на другом примере: её заводят один раз, до пополнений, — `saved = 0`, а в цикле
+          только прибавляют: `saved = saved + coins`. Если заводить копилку заново перед каждой
+          монетой, в ней всегда будет лежать одна последняя монета.
+        - |-
+          Каркас:
+          ```text
+          def week_arrivals(boxes_by_day):
+              total = 0
+              for boxes in boxes_by_day:
+                  total = …
+              return total
+          ```
+          Строку с `ОТЛАДКА` удали или закомментируй.
+      solution:
+        code: |
+          def week_arrivals(boxes_by_day):
+              total = 0
+              for boxes in boxes_by_day:
+                  total = total + boxes
+              return total
+
+
+          arrivals = [12, 0, 7, 20, 8]
+          print("Пришло коробок за неделю:", week_arrivals(arrivals))
+        explanation: >-
+          Отладочные строки показали, что `total` на каждом шаге равен `boxes`: сумма начиналась
+          заново, потому что строка `total = 0` стояла внутри цикла. Накопитель заводят один раз —
+          перед `for`. Заодно заработал пустой список: цикл не выполняется ни разу, и функция
+          возвращает 0. Раньше переменная `total` в этом случае не появлялась вовсе, и вызов падал
+          с UnboundLocalError.
+      altSolutions:
+        - code: |
+            def week_arrivals(boxes_by_day):
+                total = 0
+                for boxes in boxes_by_day:
+                    total += boxes
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: Прибавление через +=.
+        - code: |
+            def week_arrivals(boxes_by_day):
+                total = 0
+                for boxes in boxes_by_day:
+                    total = total + boxes
+                    # print(f"ОТЛАДКА: {boxes=} {total=}")
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: Отладочная строка закомментирована, а не удалена — в вывод она не попадает.
+        - code: |
+            def week_arrivals(boxes_by_day):
+                return sum(boxes_by_day)
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: Встроенная sum из урока 4.2 — тоже верно, хотя цикл уже не нужен.
+      wrongSolutions:
+        - code: |
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = 0
+                    total = total + boxes
+                    print(f"ОТЛАДКА: {boxes=} {total=}")
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: Стартовый код без изменений.
+          expectMistake: still-reset
+        - code: |
+            def week_arrivals(boxes_by_day):
+                total = 0
+                for boxes in boxes_by_day:
+                    total = total + boxes
+                    print(f"ОТЛАДКА: {boxes=} {total=}")
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: Ошибка исправлена, но отладочный вывод остался.
+          expectMistake: debug-left
+        - code: |
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = total + boxes
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: Строку total = 0 удалили вместо того, чтобы перенести.
+          expectMistake: no-start
+        - code: |
+            total = 0
+
+
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = total + boxes
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: total = 0 вынесли за пределы функции.
+          expectMistake: no-start
+        - code: |
+            def week_arrivals(boxes_by_day):
+                total = 0
+                for boxes in boxes_by_day:
+                    total = total + boxes
+                    return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: return внутри цикла — функция выходит после первого дня.
+          expectMistake: return-in-loop
+        - code: |
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = 0
+                    total = total + boxes
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", 47)
+          note: Ответ подогнан готовым числом, функция по-прежнему считает неверно.
+          expectMistake: patched-answer
+        - code: |
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = 0
+                    total = total + boxes
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", sum(arrivals))
+          note: Подгонка через sum в print — функция не исправлена.
+          expectMistake: patched-answer
+        - code: |
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = 0
+                    total = total + boxes
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals) + 39)
+          note: Подгонка поправкой — к неверному итогу прибавлена разница 39.
+          expectMistake: patched-answer
+        - code: |
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = total + boxes
+                total = 0
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: total = 0 перенесли не выше, а ниже цикла.
+          expectMistake: no-start
+        - code: |
+            # ожидаю по дням: 12, 12, 19, 39, 47
+            def week_arrivals(boxes_by_day):
+                for boxes in boxes_by_day:
+                    total = total + boxes
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: >-
+            Ожидание записано комментарием, как советует теория, а total = 0 удалили. Комментарий с 47
+            не должен вызывать разбор «подгонка ответа».
+          expectMistake: no-start
+        - code: |
+            def week_arrivals(boxes_by_day):
+                total = 0
+                for i in range(1, len(boxes_by_day)):
+                    total = total + boxes_by_day[i]
+                    # ожидаю total: 12, 12, 19, 39, 47
+                return total
+
+
+            arrivals = [12, 0, 7, 20, 8]
+            print("Пришло коробок за неделю:", week_arrivals(arrivals))
+          note: Переписано по индексам, первый день потерян; в коде комментарий-ожидание с 47.
+          expectMistake: null
+      mistakes:
+        - id: still-reset
+          when:
+            outputIncludes: "за неделю: 8"
+          where: Строка `total = 0` внутри цикла
+          why: >-
+            Итог 8 — это коробки одного последнего дня. Отладочные строки показывают то же самое:
+            `total` на каждом шаге равен `boxes`, прошлые дни не накапливаются. Значит, сумма
+            начинается заново на каждом проходе — строка, которая обнуляет `total`, стоит внутри
+            цикла.
+          try: Перенеси `total = 0` выше `for`, но внутрь функции — с тем же отступом, что у `for`.
+          verify: Отладочные строки должны показать 12, 12, 19, 39, 47, а итог — 47.
+        - id: return-in-loop
+          when:
+            outputIncludes: "за неделю: 12"
+          where: Строка `return total`
+          why: >-
+            Итог 12 — коробки только первого дня. Функция вернула ответ после первого прохода цикла:
+            `return` оказался внутри цикла, а `return` сразу завершает функцию.
+          try: Сдвинь `return total` влево, на уровень `for`, — тогда он выполнится после цикла.
+          verify: "В выводе должно быть «Пришло коробок за неделю: 47»."
+        - id: patched-answer
+          when:
+            failedTest: t2
+            outputIncludes: "за неделю: 47"
+          where: Строка с `print`
+          why: >-
+            Программа печатает 47, но сама функция по-прежнему считает неверно: проверка «Три дня»
+            вызывает `week_arrivals([1, 2, 3])` и ждёт 6. Значит, 47 получилось не из исправленной
+            функции, а подогнано в строке с `print` — готовым числом, `sum` или поправкой. Подгонка
+            прячет ошибку, но не исправляет её.
+          try: >-
+            Верни последнюю строку к виду `print("Пришло коробок за неделю:", week_arrivals(arrivals))`
+            и исправь саму функцию: найди по отладочным строкам первый день, на котором `total`
+            разошёлся с ожиданием.
+          verify: Проверка «Три дня» должна дать 6.
+        - id: no-start
+          when:
+            errorType: UnboundLocalError
+          where: Строка `total = total + boxes`
+          why: >-
+            Внутри функции `total` впервые встречается в строке `total = total + boxes`: Python
+            берёт старое значение `total`, а его ещё нет. Так бывает, если строку `total = 0`
+            удалить, поставить ниже цикла или вынести за пределы функции: у функции свои переменные
+            (урок 5.4).
+          try: Заведи накопитель внутри функции, перед `for`, — с тем же отступом, что у `for`.
+          verify: Ошибка UnboundLocalError должна исчезнуть, а итог — стать 47.
+        - id: debug-left
+          when:
+            failedTest: t1
+            outputIncludes: "за неделю: 47"
+          where: Строка с отладочным `print`
+          why: >-
+            Сумма уже верная — 47. Но в выводе остались отладочные строки, а проверка сравнивает
+            вывод целиком.
+          try: Удали отладочный `print` или закомментируй его знаком `#`.
+          verify: "В выводе должна остаться одна строка «Пришло коробок за неделю: 47»."
+      afterPass: >-
+        Отладочные строки показали, что `total` каждый раз равен `boxes`, — гипотеза «сумма
+        обнуляется» подтвердилась одним запуском, а исправление заняло одну строку. Заодно
+        заработала неделя без поставок: функция возвращает 0 вместо ошибки.
+      skills: [debugging, accumulators]
+
+  - id: practice-strings
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m6-l3-e2
+      kind: fix
+      title: Лучший бросок в дартс
+      statement: |-
+        На турнире по дартсу судья вводит очки бросков игрока одной строкой через пробел, а
+        программа печатает лучший бросок:
+
+        ```text
+        Лучший бросок: 60
+        ```
+
+        На «45 60 5» ответ верный — 60. А на «9 12 7» программа печатает 9, хотя лучший бросок — 12.
+        Python ошибок не показывает.
+
+        В поле «Ввод для „Запустить“» уже стоит «9 12 7». Добавь отладочный вывод через `f"{…=}"` —
+        например, в цикл функции — и запусти. Посмотри, что на самом деле лежит в переменных, найди
+        причину, исправь её и убери отладочный вывод.
+
+        Функцию `best_throw` не удаляй: проверка вызывает её отдельно, со списком чисел.
+      input: Одна строка — очки бросков через пробел, целые числа от 0 до 60, хотя бы одно.
+      output: "Одна строка: `Лучший бросок: <очки>`."
+      constraints:
+        - Исправь причину, а не отдельный пример.
+        - В готовой программе нет отладочного вывода.
+      starterCode: |
+        def best_throw(throws):
+            best = throws[0]
+            for points in throws:
+                if points > best:
+                    best = points
+            return best
+
+
+        line = input()
+        throws = line.split()
+        print("Лучший бросок:", best_throw(throws))
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "9 12 7\n"
+          expected: "Лучший бросок: 12"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "45 60 5\n"
+          expected: "Лучший бросок: 60"
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: разная длина чисел"
+          edge: true
+          stdin: "50 6\n"
+          expected: "Лучший бросок: 50"
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: промах — 0 очков"
+          edge: true
+          stdin: "10 0 9\n"
+          expected: "Лучший бросок: 10"
+          compare:
+            ignoreSpaces: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: один бросок"
+          edge: true
+          stdin: "20\n"
+          expected: "Лучший бросок: 20"
+          compare:
+            ignoreSpaces: true
+        - id: t6
+          kind: io
+          title: "Граничный случай: все броски одинаковые"
+          edge: true
+          stdin: "3 3 3\n"
+          expected: "Лучший бросок: 3"
+          compare:
+            ignoreSpaces: true
+        - id: t7
+          kind: call
+          title: Функция со списком чисел
+          stdin: "1\n"
+          call: best_throw([9, 12, 7])
+          expected: "12"
+        - id: t8
+          kind: io
+          title: "Граничный случай: лучший — последний бросок"
+          edge: true
+          stdin: "5 8 30\n"
+          expected: "Лучший бросок: 30"
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - "Очки сравниваются как числа: на «9 12 7» лучший бросок — 12."
+        - Функция `best_throw` находит лучший бросок в списке чисел.
+        - "Вывод — одна строка «Лучший бросок: …», отладочного вывода не осталось."
+      hints:
+        - >-
+          Сравни два примера: где программа права, а где ошибается? Чем отличаются числа в этих
+          примерах? Посмотри, что на самом деле лежит в `points` и `best` на каждом шаге цикла.
+        - >-
+          На другом примере: `x = "7"` и `y = 7`. `print(x, y)` покажет `7 7` — не отличить. А
+          `print(f"{x=} {y=}")` покажет `x='7' y=7`: кавычки выдают строку. Строки Python сравнивает
+          как слова в словаре — по первому символу, который отличается (урок 2.1): `"слон" > "кот"`,
+          потому что «с» в алфавите дальше «к». Длина решает, только когда одна строка — начало
+          другой: `"5" < "50"`.
+        - |-
+          Каркас основной части:
+          ```text
+          line = input()
+          throws = []
+          for part in line.split():
+              throws.append(…)      # part, превращённый в число
+          print("Лучший бросок:", best_throw(throws))
+          ```
+      solution:
+        code: |
+          def best_throw(throws):
+              best = throws[0]
+              for points in throws:
+                  if points > best:
+                      best = points
+              return best
+
+
+          line = input()
+          throws = []
+          for part in line.split():
+              throws.append(int(part))
+          print("Лучший бросок:", best_throw(throws))
+        explanation: >-
+          `split()` даёт список строк, и функция сравнивала текст: `"9" > "12"`, потому что строки
+          сравниваются по первому отличающемуся символу, а «9» больше «1». Отладочный вывод
+          `f"{points=} {best=}"` выдаёт это кавычками: `points='12' best='9'`. После `int()` в список попадают числа, и сравнение
+          становится числовым. Саму функцию менять не пришлось: ошибка была в том, что в неё
+          передавали.
+      altSolutions:
+        - code: |
+            def best_throw(throws):
+                best = int(throws[0])
+                for points in throws:
+                    if int(points) > best:
+                        best = int(points)
+                return best
+
+
+            line = input()
+            throws = line.split()
+            print("Лучший бросок:", best_throw(throws))
+          note: Числа получаются внутри функции — и для best, и для каждого points.
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = line.split()
+            for i in range(len(throws)):
+                throws[i] = int(throws[i])
+            # print(f"ОТЛАДКА: {throws=}")
+            print("Лучший бросок:", best_throw(throws))
+          note: Список переделан на месте по индексам, отладочная строка закомментирована.
+        - code: |
+            def best_throw(throws):
+                return max(throws)
+
+
+            throws = []
+            for part in input().split():
+                throws.append(int(part))
+            print("Лучший бросок:", best_throw(throws))
+          note: Функция через встроенную max — со списком чисел она работает верно.
+      wrongSolutions:
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = line.split()
+            print("Лучший бросок:", best_throw(throws))
+          note: Стартовый код без изменений.
+          expectMistake: strings-compare
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = []
+            for part in line.split():
+                throws.append(float(part))
+            print("Лучший бросок:", best_throw(throws))
+          note: Очки превращены в дробные числа — печатается 12.0.
+          expectMistake: float-points
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = line.split()
+            for part in throws:
+                int(part)
+            print("Лучший бросок:", best_throw(throws))
+          note: int() вызван, но результат никуда не сохранён — в списке по-прежнему строки.
+          expectMistake: strings-compare
+        - code: |
+            def best_throw(throws):
+                best = int(throws[0])
+                for points in throws:
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = line.split()
+            print("Лучший бросок:", best_throw(throws))
+          note: В число превращён только первый бросок — строка сравнивается с числом.
+          expectMistake: partial-convert
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    if int(points) > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = line.split()
+            print("Лучший бросок:", best_throw(throws))
+          note: В число превращается только points, best остаётся строкой.
+          expectMistake: partial-convert
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    print(f"ОТЛАДКА: {points=} {best=}")
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = []
+            for part in line.split():
+                throws.append(int(part))
+            print("Лучший бросок:", best_throw(throws))
+          note: Ошибка исправлена, но отладочный вывод остался.
+          expectMistake: debug-left
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = int(line.split())
+            print("Лучший бросок:", best_throw(throws))
+          note: В int() передан весь список — TypeError.
+          expectMistake: int-of-list
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    if points > best:
+                        best = points
+                    return best
+
+
+            line = input()
+            throws = []
+            for part in line.split():
+                throws.append(int(part))
+            print("Лучший бросок:", best_throw(throws))
+          note: Числа исправлены, но return best съехал внутрь цикла (например, после удаления отладки).
+          expectMistake: return-in-loop
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                i = 1
+                while i < len(throws) - 1:
+                    if throws[i] > best:
+                        best = throws[i]
+                    i = i + 1
+                return best
+
+
+            line = input()
+            throws = []
+            for part in line.split():
+                throws.append(int(part))
+            print("Лучший бросок:", best_throw(throws))
+          note: Числа исправлены, но функция переписана по индексам и не смотрит последний бросок.
+          expectMistake: null
+        - code: |
+            def best_throw(throws):
+                best = throws[0]
+                for points in throws:
+                    print(f"ОТЛАДКА: {points=} {best=}")
+                    if points > best:
+                        best = points
+                return best
+
+
+            line = input()
+            throws = line.split()
+            print("Лучший бросок:", best_throw(throws))
+          note: >-
+            Отладка добавлена, причина ещё не исправлена. Из-за отладочных строк не проходит и
+            «45 60 5» — разбор про return в цикле срабатывать не должен.
+          expectMistake: strings-compare
+      mistakes:
+        - id: int-of-list
+          when:
+            errorIncludes: "not 'list'"
+          where: Строка, где вызывается `int(...)`
+          why: >-
+            `int()` превращает в число одну строку, а `split()` вернул список строк —
+            `['9', '12', '7']`. Список целиком числом не станет.
+          try: >-
+            Превращай части по одной: заведи пустой список и в цикле по `line.split()` добавляй в
+            него `int(part)`.
+          verify: "На «9 12 7» должно получиться «Лучший бросок: 12»."
+        - id: partial-convert
+          when:
+            errorIncludes: not supported between instances of
+          where: Сравнение в цикле функции
+          why: >-
+            Python не сравнивает число со строкой: одно значение уже превратилось в число, а другое
+            осталось текстом. `f"{points=} {best=}"` покажет, у какого из них кавычки.
+          try: >-
+            Преврати в числа все очки сразу — когда собираешь список из строки ввода. Тогда и
+            `points`, и `best` будут числами.
+          verify: "Ошибка TypeError должна исчезнуть, а на «9 12 7» — появиться «Лучший бросок: 12»."
+        - id: return-in-loop
+          when:
+            failedTest: t2
+            codeRegex: '^([ \t]*)(?:for|while)\b[^\n]*:[ \t]*\n(?:(?:\1[ \t]+[^\n]*)?\n)*?\1[ \t]+return\b'
+            outputIncludes: "Лучший бросок:"
+          where: Строка `return best`
+          why: >-
+            Функция возвращает первый бросок: на «9 12 7» — 9, на «45 60 5» — 45. Значит, она
+            выходит после первого прохода цикла: `return best` оказался внутри цикла, а `return`
+            сразу завершает функцию.
+          try: Сдвинь `return best` влево, на уровень `for`, — тогда он выполнится после цикла.
+          verify: "На «9 12 7» должно получиться «Лучший бросок: 12», а на «45 60 5» — 60."
+        - id: strings-compare
+          when:
+            outputIncludes: "Лучший бросок: 9"
+          where: Строка `throws = line.split()`
+          why: >-
+            `split()` даёт список строк — `['9', '12', '7']`. Строки сравниваются как слова в
+            словаре, по первому отличающемуся символу: `'9' > '12'`, потому что «9» больше «1».
+            Отладочный `print(f"ОТЛАДКА: {points=} {best=}")` в цикле покажет кавычки вокруг
+            значений.
+          try: >-
+            Преврати очки в числа до того, как передаёшь их в функцию: собери новый список и
+            добавляй в него `int(part)` для каждой части строки. Сам вызов `int(part)` без
+            сохранения ничего не меняет.
+          verify: "На «9 12 7» должно получиться «Лучший бросок: 12»."
+        - id: float-points
+          when:
+            outputIncludes: "Лучший бросок: 12.0"
+          where: Место, где строки превращаются в числа
+          why: >-
+            Сравнение уже числовое, но `float()` даёт дробные числа, и `print` показывает `12.0`.
+            Очки в дартсе целые, и в выводе нужно `12`.
+          try: Превращай очки в числа через `int()`, а не `float()`.
+          verify: "На «9 12 7» должно получиться «Лучший бросок: 12» — без «.0»."
+        - id: debug-left
+          when:
+            failedTest: t1
+            outputIncludes: "Лучший бросок: 12"
+          where: Строка с отладочным `print`
+          why: >-
+            Лучший бросок уже верный — 12. Но в выводе остались отладочные строки, а проверка
+            сравнивает вывод целиком.
+          try: Удали отладочный `print` или закомментируй его знаком `#`.
+          verify: "В выводе должна остаться одна строка «Лучший бросок: 12»."
+      afterPass: >-
+        На «45 60 5» ошибка пряталась: сравнение строк случайно дало тот же ответ, что и сравнение
+        чисел. Поэтому программу проверяют на нескольких примерах, а кавычки в отладочном выводе
+        сразу выдают текст там, где ждали число.
+      skills: [debugging, type-conversion, string-methods]
+
+  - id: practice-frost
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m6-l3-e3
+      kind: fix
+      title: Лёд на катке
+      statement: |-
+        Фарид с соседями заливает каток во дворе: лёд схватывается, только если мороз стоит
+        несколько дней подряд. Программа читает температуры за дни одной строкой и печатает длину
+        самой длинной серии морозных дней подряд. Мороз — температура ниже нуля; 0 — ещё не мороз.
+
+        ```text
+        Самая длинная серия морозных дней: 3
+        ```
+
+        В функции две переменные: `streak` (по-английски «серия») — сколько морозных дней подряд
+        идёт прямо сейчас, а `best` — самая длинная серия, найденная к этому дню.
+
+        На одних данных программа отвечает верно, на других — нет, и Python ошибок не показывает.
+
+        1. В поле «Ввод для „Запустить“» уже стоит первый пример — запусти. Потом впиши второй,
+           «-3 -5 2 -1 -2 -4 1», и найди пример, где ответ неверный.
+        2. Добавь отладочный вывод в конец тела цикла, после `if/else`, — так видны значения после
+           каждого дня. Что выводить, реши сам: то, что проверит твою гипотезу. Сравни с тем, что
+           должно быть.
+        3. Исправь причину и убери отладочный вывод.
+      input: Одна строка — температуры за дни через пробел, целые числа; хотя бы один день.
+      output: "Одна строка: `Самая длинная серия морозных дней: <число>`."
+      constraints:
+        - Мороз — только температура ниже нуля.
+        - В готовой программе нет отладочного вывода.
+      starterCode: |
+        def longest_frost(temps):
+            best = 0
+            streak = 0
+            for t in temps:
+                if t < 0:
+                    streak = streak + 1
+                else:
+                    if streak > best:
+                        best = streak
+                    streak = 0
+            return best
+
+
+        temps = []
+        for part in input().split():
+            temps.append(int(part))
+        print("Самая длинная серия морозных дней:", longest_frost(temps))
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "1 -2 -3 -4\n"
+          expected: "Самая длинная серия морозных дней: 3"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "-3 -5 2 -1 -2 -4 1\n"
+          expected: "Самая длинная серия морозных дней: 3"
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: все дни морозные"
+          edge: true
+          stdin: "-1 -1\n"
+          expected: "Самая длинная серия морозных дней: 2"
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: ноль — не мороз"
+          edge: true
+          stdin: "5 6 0\n"
+          expected: "Самая длинная серия морозных дней: 0"
+          compare:
+            ignoreSpaces: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: нули прерывают серию"
+          edge: true
+          stdin: "0 -1 0 -2 -3\n"
+          expected: "Самая длинная серия морозных дней: 2"
+          compare:
+            ignoreSpaces: true
+        - id: t6
+          kind: io
+          title: "Граничный случай: один день"
+          edge: true
+          stdin: "-7\n"
+          expected: "Самая длинная серия морозных дней: 1"
+          compare:
+            ignoreSpaces: true
+        - id: t7
+          kind: io
+          title: Длинная серия раньше короткой
+          stdin: "-1 -2 -3 5 -4\n"
+          expected: "Самая длинная серия морозных дней: 3"
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - "Самая длинная серия находится, где бы она ни стояла: в начале, в середине или в конце данных."
+        - Ноль — не мороз и прерывает серию.
+        - Отладочного вывода не осталось.
+      hints:
+        - >-
+          На каком из примеров ответ неверный? Где в нём заканчивается самая длинная серия — и что
+          идёт сразу после неё?
+        - |-
+          Трассировка на другом примере — `2 -1 -1`. Отладочный
+          `print(f"ОТЛАДКА: {t=} {streak=} {best=}")` в конце тела цикла, ожидание и факт рядом:
+          ```text
+          день | t  | streak | best: ожидание | best: факт
+          1    | 2  | 0      | 0              | 0
+          2    | -1 | 1      | 1              | 0
+          3    | -1 | 2      | 2              | 0
+          ```
+          `best` отстал от ожидания на втором дне. После третьего дня цикл закончился. Когда
+          программа собиралась обновить `best`?
+        - |-
+          `best` должен обновляться и тогда, когда серия дошла до последнего дня. Например, сразу
+          после того как серия выросла:
+          ```text
+          if t < 0:
+              streak = streak + 1
+              если streak больше best — запомнить streak в best
+          else:
+              streak = 0
+          ```
+      solution:
+        code: |
+          def longest_frost(temps):
+              best = 0
+              streak = 0
+              for t in temps:
+                  if t < 0:
+                      streak = streak + 1
+                      if streak > best:
+                          best = streak
+                  else:
+                      streak = 0
+              return best
+
+
+          temps = []
+          for part in input().split():
+              temps.append(int(part))
+          print("Самая длинная серия морозных дней:", longest_frost(temps))
+        explanation: >-
+          Отладочный вывод в конце тела цикла на «1 -2 -3 -4» показывает: `streak` дорастает до 3,
+          а `best` так и остаётся 0. Его обновляли только в ветке `else`, то есть в день без мороза.
+          Если серия тянется до последнего дня, такого дня после неё нет, и она не учитывается. Теперь `best`
+          обновляется сразу, как только серия выросла. Верно и другое исправление: оставить проверку
+          в `else` и повторить её после цикла.
+      altSolutions:
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                if streak > best:
+                    best = streak
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Проверка в else оставлена и повторена после цикла — для серии, которая дошла до конца.
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak += 1
+                        best = max(best, streak)
+                    else:
+                        streak = 0
+                    # print(f"ОТЛАДКА: {t=} {streak=} {best=}")
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: best обновляется через max, отладочная строка закомментирована.
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t <= -1:
+                        streak = streak + 1
+                    else:
+                        streak = 0
+                    if streak > best:
+                        best = streak
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Проверка best — после if/else на каждом шаге; для целых t <= -1 то же, что t < 0.
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                if streak > best:
+                    return streak
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: >-
+            После цикла: если последняя серия длиннее — вернуть её. Верная логика; разбор
+            «return streak» не должен на неё срабатывать.
+      wrongSolutions:
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Стартовый код без изменений.
+          expectMistake: last-streak
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t <= 0:
+                        streak = streak + 1
+                        if streak > best:
+                            best = streak
+                    else:
+                        streak = 0
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Главная ошибка исправлена, но ноль засчитан как мороз.
+          expectMistake: zero-is-frost
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                return streak
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Функция возвращает текущую серию вместо самой длинной.
+          expectMistake: returns-streak
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        streak = 0
+                if streak > best:
+                    best = streak
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Проверку перенесли из else за цикл — теперь теряются серии, после которых был день без мороза.
+          expectMistake: lost-inner-update
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                        best = streak
+                    else:
+                        streak = 0
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: best перезаписывается текущей серией без сравнения.
+          expectMistake: best-overwritten
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                        if streak > best:
+                            best = streak
+                    else:
+                        streak = 0
+                    print(f"ОТЛАДКА: {t=} {streak=} {best=}")
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Ошибка исправлена, но отладочный вывод остался.
+          expectMistake: debug-left
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                    print(f"ОТЛАДКА: {t=} {streak=} {best=}")
+                if streak > best:
+                    return streak
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Верное исправление с return streak под if, но отладочный вывод остался.
+          expectMistake: debug-left
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        streak = 0
+                if streak > best:
+                    return streak
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Проверку из else перенесли за цикл (return streak, если длиннее) — серии в середине теряются.
+          expectMistake: lost-inner-update
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                best = streak
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: После цикла best = streak без сравнения — «обнови best» понято буквально.
+          expectMistake: best-after-loop
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Весь блок else вместе со streak = 0 перенесён в ветку мороза.
+          expectMistake: streak-reset-in-frost
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        streak = streak + 1
+                    else:
+                        if streak > best:
+                            best = streak
+                        streak = 0
+                return best
+                if streak > best:
+                    best = streak
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Проверку после цикла дописали ниже return — она не выполняется.
+          expectMistake: after-return
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t < 0:
+                        if streak > best:
+                            best = streak
+                        streak = streak + 1
+                    else:
+                        streak = 0
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Проверка в ветке мороза стоит до streak + 1 — best отстаёт на день.
+          expectMistake: check-before-grow
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if not t > 0:
+                        streak = streak + 1
+                        if streak > best:
+                            best = streak
+                    else:
+                        streak = 0
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: Главная ошибка исправлена, но мороз записан как not t > 0 — ноль засчитан.
+          expectMistake: zero-is-frost
+        - code: |
+            def longest_frost(temps):
+                best = 0
+                streak = 0
+                for t in temps:
+                    if t <= 0:
+                        streak = streek + 1
+                        if streak > best:
+                            best = streak
+                    else:
+                        streak = 0
+                return best
+
+
+            temps = []
+            for part in input().split():
+                temps.append(int(part))
+            print("Самая длинная серия морозных дней:", longest_frost(temps))
+          note: >-
+            t <= 0 и опечатка streek — программа падает с NameError. Разбор про ноль не должен
+            срабатывать: ученик увидит общий разбор NameError.
+          expectMistake: null
+      mistakes:
+        - id: zero-is-frost
+          when:
+            failedTest: t4
+            outputEquals: "Самая длинная серия морозных дней: 1"
+          where: Условие мороза в `if`
+          why: >-
+            Ноль — ещё не мороз: по условию мороз — температура ниже нуля. Сейчас день с нулём
+            продолжает серию, и на «5 6 0» получается 1 вместо 0.
+          try: Сравнивай строго — `t < 0`.
+          verify: "На «5 6 0» должно получиться 0."
+        - id: returns-streak
+          when:
+            codeRegex: '^[ \t]*(?<!:[ \t]*\r?\n[ \t]*)return[ \t]+streak\b'
+            outputIncludes: "морозных дней:"
+          where: Строка `return streak`
+          why: >-
+            `streak` — длина текущей серии, в день без мороза она обнуляется. Ответ задачи — самая
+            длинная серия, её хранит `best`. На первом примере `streak` случайно совпал с ответом, а
+            на втором последний день без мороза — и функция вернула 0.
+          try: >-
+            Верни `best`. А чтобы учесть серию, которая дошла до последнего дня, сравни её с `best`
+            — в ветке мороза или после цикла: `if streak > best:` и под ним `best = streak`.
+          verify: На обоих примерах должно получиться 3.
+        - id: after-return
+          when:
+            failedTest: t1
+            codeRegex: '^([ \t]+)return[ \t]+best[ \t]*\n(?:[ \t]*\n)*\1(?:if|best)\b'
+          where: Строки под `return best`
+          why: >-
+            Проверка последней серии стоит ниже `return best`. Но `return` сразу завершает функцию,
+            и строки под ним не выполняются: на «1 -2 -3 -4» `best` так и остаётся 0.
+          try: Перенеси `return best` в самый конец функции — под проверку после цикла.
+          verify: "На «1 -2 -3 -4» должно получиться 3."
+        - id: check-before-grow
+          when:
+            failedTest: t1
+            outputIncludes: "морозных дней: 2"
+          where: Проверка `streak > best` в ветке мороза
+          why: >-
+            На «1 -2 -3 -4» получилось 2 вместо 3: `best` отстаёт от серии на один день. Так бывает,
+            когда `best` обновляется раньше, чем серия выросла, — проверка стоит до
+            `streak = streak + 1`. Отладочный вывод в конце тела цикла покажет, что в морозные дни
+            `best` меньше `streak` на 1.
+          try: Поставь проверку после строки `streak = streak + 1`.
+          verify: На «1 -2 -3 -4» должно получиться 3, а на «-7» — 1.
+        - id: last-streak
+          when:
+            failedTest: t1
+            outputIncludes: "морозных дней: 0"
+          where: Ветка `else` — единственное место, где обновляется `best`
+          why: >-
+            На «1 -2 -3 -4» серия тянется до последнего дня, а `best` обновляется только в день без
+            мороза. После последнего морозного дня такого дня нет, и серия так и не попадает в
+            `best`. Отладочный `print(f"ОТЛАДКА: {t=} {streak=} {best=}")` в конце тела цикла это
+            покажет: `streak` дорастает до 3, а `best` остаётся 0.
+          try: >-
+            Проверь и серию, которая дошла до конца данных: `if streak > best:` и под ним
+            `best = streak` — сразу после `streak = streak + 1` или ещё раз после цикла.
+          verify: На «1 -2 -3 -4» должно получиться 3, а на втором примере — по-прежнему 3.
+        - id: streak-reset-in-frost
+          when:
+            failedTest: t1
+            outputEquals: "Самая длинная серия морозных дней: 1"
+          where: Строки, где меняется `streak`
+          why: >-
+            На «1 -2 -3 -4» получилось 1: серия ни разу не выросла больше одного дня. Значит, в
+            морозный день `streak` начинается заново — например, `streak = 0` переехала в ветку
+            мороза вместе с проверкой. Отладочный вывод в конце тела цикла покажет `streak=1` на
+            каждом морозном дне.
+          try: >-
+            В ветке мороза `streak` только растёт на 1, а потом сравнивается с `best`. Обнулять
+            серию нужно в день без мороза: `else:` и под ним `streak = 0`.
+          verify: "На «1 -2 -3 -4» должно получиться 3."
+        - id: best-overwritten
+          when:
+            failedTest: t7
+            outputEquals: "Самая длинная серия морозных дней: 1"
+          where: Строка, где `best` получает значение `streak`
+          why: >-
+            `best` перезаписывается текущей серией без сравнения: после длинной серии пришла
+            короткая — и `best` уменьшился. На «-1 -2 -3 5 -4» получилось 1 вместо 3.
+          try: >-
+            Запоминай серию в `best`, только если она длиннее: `if streak > best:`.
+          verify: "На «-1 -2 -3 5 -4» должно получиться 3."
+        - id: best-after-loop
+          when:
+            failedTest: t2
+            codeRegex: '^(?: {4}|\t)best[ \t]*=[ \t]*streak[ \t]*$'
+            outputIncludes: "морозных дней:"
+          where: Строка `best = streak` после цикла
+          why: >-
+            После цикла `best` перезаписывается последней серией без сравнения. На втором примере
+            последний день без мороза: `streak` там 0 — и серия из трёх дней, найденная раньше,
+            пропадает.
+          try: >-
+            Запоминай последнюю серию, только если она длиннее: после цикла `if streak > best:` и
+            под ним `best = streak`.
+          verify: На обоих примерах должно получиться 3.
+        - id: lost-inner-update
+          when:
+            outputIncludes: "морозных дней: 0"
+          where: Проверка `streak > best`
+          why: >-
+            Серия, после которой пришёл день без мороза, не доходит до ответа: `streak` обнуляется,
+            а её длина так и не попала в `best`. Посмотри, где `best` получает значение: не осталась
+            ли проверка только после цикла? Там видна лишь последняя серия.
+          try: >-
+            Обновляй `best` сразу в ветке мороза — или проверяй `streak > best` и в `else` (перед
+            `streak = 0`), и ещё раз после цикла.
+          verify: На втором примере должно получиться 3.
+        - id: debug-left
+          when:
+            failedTest: t1
+            outputIncludes: "морозных дней: 3"
+          where: Строка с отладочным `print`
+          why: >-
+            Ответ уже верный — 3. Но в выводе остались отладочные строки, а проверка сравнивает
+            вывод целиком.
+          try: Удали отладочный `print` или закомментируй его знаком `#`.
+          verify: "В выводе должна остаться одна строка «Самая длинная серия морозных дней: 3»."
+      afterPass: >-
+        Ошибка проявлялась, только когда самая длинная серия заканчивалась последним днём, — поэтому
+        второй пример проходил. Конец данных — такая же граница, как ноль или пустой список: проверяй
+        программу и на ней.
+      skills: [debugging, accumulators, boundary-checks, loop-tracing]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "При логической ошибке программа не падает: ищи первое расхождение между ожиданием по шагам и промежуточными значениями."
+      - Одна гипотеза → один отладочный вывод → одно исправление → снова запуск.
+      - '`f"{x=}"` печатает имя и значение; у строки значение в кавычках.'
+      - Отладочный вывод помечай словом ОТЛАДКА и убирай, когда ошибка исправлена.
+    question: >-
+      Программа не падает, но итог неверный. С чего начнёшь — и как поймёшь, что ошибка исправлена?
+    answer: >-
+      Возьму минимальный пример, на котором ответ неверный, и запишу, какие значения должны быть
+      по шагам. Выведу промежуточные значения с меткой ОТЛАДКА и найду первый шаг, где факт
+      разошёлся с ожиданием. Проверю одну гипотезу и исправлю одну причину. Запущу на том же примере — ответ
+      должен совпасть с ожиданием, — потом проверю граничные случаи и уберу отладочный вывод.

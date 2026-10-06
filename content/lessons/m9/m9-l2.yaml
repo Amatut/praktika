@@ -1,0 +1,3067 @@
+id: m9-l2
+module: m9
+number: "9.2"
+title: Нормальные и граничные случаи
+objective: >-
+  Подбирать набор тестов из нормальных и граничных случаев (порог и соседнее значение, ноль,
+  пустые данные, один элемент, край списка), который ловит ошибки, пропущенные удобными примерами.
+minutes: [25, 30]
+prerequisites: [m9-l1, m2-l5]
+skills: [edge-cases, assert-checks, boundary-checks]
+environment: python
+
+story:
+  title: Ровно 75 баллов
+  fictional: true
+  text: >-
+    Учитель информатики Павел Сергеевич написал программу для школьной олимпиады: по баллам она
+    решает, кому положен диплом, а по правилам диплом дают от 75 баллов. Он даже написал тест с
+    тремя проверками — на работах в 90, 60 и 82 балла, — и тот проходил. После награждения к нему
+    подошла Алиса: у неё ровно 75, а в списке она значилась «без диплома». В коде стояло
+    `> 75` вместо `>= 75`, а ни одна проверка не касалась самого порога. С тех пор в каждом тесте
+    Павла Сергеевича есть порог и соседнее с ним значение.
+
+why: >-
+  Ошибки чаще всего прячутся не в обычных значениях, а на краях: ровно на пороге, в пустом списке,
+  в последнем элементе. Например, тесты на 90 и 60 баллов проходят, а ученица с ровно 75 баллами
+  остаётся без диплома.
+
+usedIn: >-
+  Подбор групп случаев и граничных значений — базовая техника тестировщиков (QA) и разработчиков:
+  так составляют проверки для форм, тарифов, скидок и расчётов. Иногда так проверяют и сами тесты:
+  подставляют в код ошибки-«мутанты» и смотрят, заметят ли их тесты. Это называют мутационным
+  тестированием, для него есть готовые инструменты.
+
+steps:
+  - id: cases
+    type: theory
+    title: Какие случаи проверять
+    body: |-
+      В уроке 9.1 ручные проверки стали assert. Но тест ловит только те ошибки, до которых
+      дотягиваются его случаи. «Тест прошёл» значит одно: **на этих входах** функция ответила
+      верно. Поэтому главный вопрос — какие входы взять.
+
+      **Обычные случаи.** Все входы не перебрать. Их делят на группы (классы), внутри которых
+      функция ведёт себя одинаково, и из каждой берут одного представителя — это обычные, или
+      нормальные, случаи. Билет в зоопарк: младше 7 лет — бесплатно, с 7 до 17 включительно —
+      детский, с 18 — взрослый. Групп три — значит, хватит трёх возрастов: 4, 12 и 35.
+
+      **Границы.** Граница — значение, где одна группа сменяется другой. Как в уроке 2.5,
+      проверяют сам порог и соседа с другой стороны: для правила «от 75 баллов» — 75 и 74. Сам
+      порог ловит `>` вместо `>=` — на 90 и на 40 верная и ошибочная версии отвечают одинаково.
+      Сосед ловит порог, сдвинутый на единицу.
+
+      **Особые входы** — то, на чём код ломается чаще всего:
+
+      - ноль;
+      - пустая строка или пустой список;
+      - один элемент;
+      - все элементы одинаковые;
+      - первый и последний элемент — край списка;
+      - очень большое значение.
+
+      Код со списком легко теряет последний элемент или падает на пустом списке: например,
+      подводит итог только при каком-то условии внутри цикла или ещё до цикла берёт первый
+      элемент.
+      Границы и особые входы вместе называют **граничными случаями**. Неверный ввод, например
+      текст вместо числа, — тема урока 9.4.
+
+      **Ожидание — готовое число.** Тест
+      `assert final_price(1000) == 1000 - 1000 * 10 // 100` повторяет формулу из кода. Если
+      формула в коде неверна, тест ошибётся точно так же и пройдёт. Пиши число, посчитанное по
+      условию: `== 900`.
+
+      **Мутант** — версия функции с одной подставленной ошибкой: `>` вместо `>=`, забытый
+      последний элемент списка, лишнее условие. Хороший набор тестов замечает каждого мутанта.
+      Так тренажёр и проверяет твои тесты: вызывает каждую функцию `test_…` без аргументов
+      сначала с верной функцией — все проверки должны пройти, — потом с каждым мутантом: на
+      каждом должна упасть хотя бы одна проверка. Засчитывается любое падение — и на assert, и
+      на другой ошибке.
+
+      Удобный порядок набора: обычные случаи → границы → особые входы, с коротким комментарием
+      над каждой группой.
+
+      Частое заблуждение — «чем больше тестов, тем лучше». Десять проверок из середины диапазона
+      ловят меньше ошибок, чем две на границе.
+    simpler: >-
+      Проверяй не там, где удобно, а там, где страшно: ровно на пороге и рядом с ним, на пустом
+      списке, на нуле, на одном элементе, на конце списка. А ожидаемый ответ пиши готовым числом
+      по условию задачи — не переписывай формулу из кода.
+    coach: >-
+      Для каждого «если» в условии задачи спроси себя: какое значение ровно на этой границе и
+      какое рядом с ней?
+
+  - id: ticket-test
+    type: example
+    title: Тест для цены билета
+    body: |-
+      Правила зоопарка: детям младше 7 лет вход бесплатный, с 7 до 17 лет включительно — детский
+      билет за 150, с 18 лет — взрослый за 300. Тест собран по группам: обычные случаи, границы,
+      особый вход. Комментарии над группами — для человека, Python их пропускает.
+    code: |-
+      def ticket_price(age):
+          if age < 7:
+              return 0
+          if age < 18:
+              return 150
+          return 300
+
+
+      def test_ticket_price():
+          # обычные случаи — по одному из каждой группы
+          assert ticket_price(4) == 0
+          assert ticket_price(12) == 150
+          assert ticket_price(35) == 300
+          # границы: последний возраст группы и первый — следующей
+          assert ticket_price(6) == 0
+          assert ticket_price(7) == 150
+          assert ticket_price(17) == 150
+          assert ticket_price(18) == 300
+          # особый вход: малыш, которому ещё нет года
+          assert ticket_price(0) == 0
+
+
+      test_ticket_price()
+      print("Все тесты прошли")
+    notes:
+      - line: 10
+        text: >-
+          Обычные случаи: по одному возрасту из каждой группы — малыш, школьник, взрослый.
+          Больше проверок из середины групп ничего нового бы не поймали.
+      - line: 14
+        text: >-
+          Границы: у каждого порога два значения — последний возраст одной группы и первый
+          возраст следующей. Ожидания взяты из правил зоопарка, а не из кода.
+      - line: 19
+        text: >-
+          Особый вход — ноль: малышу нет и года. О таких входах легко забыть, а код на них иногда
+          отвечает неожиданно.
+      - line: 23
+        text: Тест нужно вызвать, иначе проверки не выполнятся — это ты помнишь по уроку 9.1.
+    tryIt: >-
+      Замени в функции `age < 18` на `age <= 18` и запусти. Какой assert остановил программу?
+      Теперь поставь `#` в начале четырёх строк с границами и запусти снова: заметил бы тест
+      ошибку без них? Потом верни всё как было.
+    coach: >-
+      Смотри не на число assert, а на то, какие входы они покрывают: восемь проверок здесь — это
+      три группы, две границы по два значения и один особый вход.
+
+  - id: diploma-boundary
+    type: predict
+    title: 75 баллов — диплом?
+    prompt: >-
+      По правилам олимпиады диплом дают от 75 баллов. К функции уже есть тест, и в нём есть даже
+      значение рядом с порогом — 76. Как думаешь, что напечатает программа?
+    code: |-
+      def diploma(points):
+          if points > 75:
+              return "диплом"
+          return "без диплома"
+
+
+      def test_diploma():
+          assert diploma(90) == "диплом"
+          assert diploma(76) == "диплом"
+          assert diploma(40) == "без диплома"
+
+
+      test_diploma()
+      print("Все тесты прошли")
+      print("75:", diploma(75))
+    options:
+      - |-
+        Все тесты прошли
+        75: диплом
+      - |-
+        Все тесты прошли
+        75: без диплома
+      - Ничего — тест упадёт с AssertionError
+    answer: |-
+      Все тесты прошли
+      75: без диплома
+    explanation: >-
+      Все три assert верны: 90 и 76 больше 75, а 40 — нет, поэтому тест проходит и печатается «Все
+      тесты прошли». Но для 75 условие `points > 75` ложно, и функция отвечает «без диплома», хотя
+      по правилам диплом положен. 76 стоит рядом с порогом, но с той же стороны, что и 90: там `>`
+      и `>=` отвечают одинаково. Ошибку видно только на самом пороге. Добавь в тест
+      `assert diploma(75) == "диплом"` — и он упадёт, как и должен.
+    coach: >-
+      Зелёный тест значит «на этих входах всё верно», а не «ошибок нет».
+
+  - id: copy-of-code
+    type: quiz
+    title: Какой тест заметит опечатку?
+    question: >-
+      По условию скидка — 10 %. В функции опечатка, лишний ноль:
+      `return price - price * 10 // 1000`. Разработчик написал три теста. Какой из них заметит
+      ошибку?
+    options:
+      - "`assert final_price(1000) == 1000 - 1000 * 10 // 1000`"
+      - "`assert final_price(1000) == 900`"
+      - "`assert final_price(1000) == final_price(1000)`"
+    correct: 1
+    explanation: >-
+      Со скидкой 10 % заказ за 1000 должен стоить 900, а функция с опечаткой вернёт 990. Первый
+      тест переписал формулу из кода вместе с опечаткой: слева 990 и справа 990 — тест проходит.
+      Третий сравнивает функцию саму с собой и не упадёт никогда. Только второй сравнивает
+      результат с числом, посчитанным по условию, и падает: 990 не равно 900.
+    coach: >-
+      Ожидание в тесте — второе, независимое мнение. Если взять его из кода, второго мнения не
+      остаётся.
+
+  - id: practice-discount
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m9-l2-e1
+      kind: repeat
+      title: Скидка на тетради
+      statement: |-
+        В магазине канцтоваров скидка зависит от числа тетрадей в заказе: **от 3 тетрадей — 10 %,
+        от 10 тетрадей — 20 %** (оба порога включительно). Функция `discount_percent(count)`
+        возвращает процент скидки и написана верно.
+
+        В тесте уже есть три обычных случая. Добавь в `test_discount_percent` границы: у каждого
+        порога — по два значения, последнее количество перед порогом и сам порог, как в примере с
+        билетами. Ожидания посчитай по правилам скидки.
+
+        Тренажёр проверит тест на верной функции и на четырёх её версиях с ошибками на порогах —
+        каждую версию тест должен заметить.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Функцию `discount_percent` не меняй — она верная.
+        - Ожидание пиши готовым числом по правилам скидки.
+      starterCode: |
+        def discount_percent(count):
+            # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+            if count >= 10:
+                return 20
+            if count >= 3:
+                return 10
+            return 0
+
+
+        def test_discount_percent():
+            # обычные случаи уже есть
+            assert discount_percent(1) == 0
+            assert discount_percent(5) == 10
+            assert discount_percent(15) == 20
+            # добавь границы: по два значения у каждого порога
+
+
+        test_discount_percent()
+        print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+        - id: t-ref
+          kind: assert
+          title: Тест проходит на верной функции
+          example: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _reference(count):
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            _saved = discount_percent
+            discount_percent = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                discount_percent = _saved
+          message: >-
+            Все проверки должны проходить на верной функции: ожидания считаются по правилам скидки.
+        - id: t-called
+          kind: assert
+          title: Каждая функция test_… вызывается в программе
+          code: |-
+            import ast
+
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _defined = [node.name for node in ast.walk(_tree)
+                        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
+            _used = [node.id for node in ast.walk(_tree)
+                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)]
+            assert all(name in _used for name in _defined)
+          message: >-
+            Одна из функций test_… нигде не вызывается — при запуске её проверки не выполняются.
+        - id: t-m-3
+          kind: assert
+          title: "Тест замечает ошибку — скидка 10 % только с 4 тетрадей"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(count):
+                if count >= 10:
+                    return 20
+                if count > 3:
+                    return 10
+                return 0
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = discount_percent
+            discount_percent = _mutant
+            try:
+                _result = _caught()
+            finally:
+                discount_percent = _saved
+            assert _result
+          message: >-
+            Тест не заметил версию функции, где за 3 тетради скидки нет.
+        - id: t-m-2
+          kind: assert
+          title: "Тест замечает ошибку — скидка 10 % уже с 2 тетрадей"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(count):
+                if count >= 10:
+                    return 20
+                if count >= 2:
+                    return 10
+                return 0
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = discount_percent
+            discount_percent = _mutant
+            try:
+                _result = _caught()
+            finally:
+                discount_percent = _saved
+            assert _result
+          message: >-
+            Тест не заметил версию функции, где скидка 10 % даётся уже за 2 тетради.
+        - id: t-m-10
+          kind: assert
+          title: "Тест замечает ошибку — скидка 20 % только с 11 тетрадей"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(count):
+                if count > 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = discount_percent
+            discount_percent = _mutant
+            try:
+                _result = _caught()
+            finally:
+                discount_percent = _saved
+            assert _result
+          message: >-
+            Тест не заметил версию функции, где за 10 тетрадей скидка всё ещё 10 %.
+        - id: t-m-9
+          kind: assert
+          title: "Тест замечает ошибку — скидка 20 % уже с 9 тетрадей"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(count):
+                if count >= 9:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = discount_percent
+            discount_percent = _mutant
+            try:
+                _result = _caught()
+            finally:
+                discount_percent = _saved
+            assert _result
+          message: >-
+            Тест не заметил версию функции, где скидка 20 % даётся уже за 9 тетрадей.
+      criteria:
+        - Тест проходит на верной функции — ожидания посчитаны по правилам скидки.
+        - >-
+          У каждого порога есть две проверки: сам порог и количество перед ним. Поэтому тест
+          замечает и `>` вместо `>=`, и порог, сдвинутый на единицу.
+        - Тест вызывается, программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          При каких количествах тетрадей функция меняет ответ? Для каждого такого места подумай,
+          какое количество стоит прямо на нём и какое — сразу перед ним.
+        - >-
+          Тот же приём на другой функции: доставка бесплатна от 2000 рублей. Граница — 2000,
+          поэтому проверяют сам порог, `free_delivery(2000)`, и последнюю сумму перед ним,
+          `free_delivery(1999)`. Ожидания берут из правила: на 2000 доставка уже бесплатная, на
+          1999 — ещё нет.
+        - |-
+          Каркас — четыре строки внутри `test_discount_percent`:
+          ```text
+          # порог 3: последнее количество перед ним и сам порог
+          assert discount_percent(…) == …
+          assert discount_percent(…) == …
+          # порог 10: последнее количество перед ним и сам порог
+          assert discount_percent(…) == …
+          assert discount_percent(…) == …
+          ```
+      solution:
+        code: |
+          def discount_percent(count):
+              # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+              if count >= 10:
+                  return 20
+              if count >= 3:
+                  return 10
+              return 0
+
+
+          def test_discount_percent():
+              # обычные случаи уже есть
+              assert discount_percent(1) == 0
+              assert discount_percent(5) == 10
+              assert discount_percent(15) == 20
+              # границы: последнее количество перед порогом и сам порог
+              assert discount_percent(2) == 0
+              assert discount_percent(3) == 10
+              assert discount_percent(9) == 10
+              assert discount_percent(10) == 20
+
+
+          test_discount_percent()
+          print("Все тесты прошли")
+        explanation: >-
+          У функции два порога, 3 и 10, и у каждого две проверки. Проверка на 3 замечает версию с
+          `> 3`, а проверка на 2 — версию, где скидка начинается раньше. То же у порога 10: 10 и 9.
+          Ожидания взяты из правил: «от 3» и «от 10» включают сами 3 и 10. Если проверять ещё и
+          значения после порога (4 и 11), это тоже верно — такой тест просто чуть длиннее.
+      altSolutions:
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            def test_thresholds():
+                # порог 3: до него, на нём и после
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(4) == 10
+                # порог 10: до него, на нём и после
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+                assert discount_percent(11) == 20
+                # особый вход: заказ без тетрадей
+                assert discount_percent(0) == 0
+
+
+            test_discount_percent()
+            test_thresholds()
+            print("Все тесты прошли")
+          note: Границы в отдельной функции, по три значения у порога и ноль.
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                table = [(2, 0), (3, 10), (9, 10), (10, 20)]
+                for count, expected in table:
+                    assert discount_percent(count) == expected, f"{count} тетрадей"
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Границы — таблицей пар и циклом, с сообщением в assert.
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(3) == 10, "от 3 тетрадей скидка уже есть"
+                assert discount_percent(2) == 0, "за 2 тетради скидки ещё нет"
+                assert discount_percent(10) == 20, "от 10 тетрадей скидка 20 %"
+                assert discount_percent(9) == 10, "за 9 тетрадей скидка ещё 10 %"
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Сначала порог, потом значение перед ним; у каждой проверки сообщение.
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            def test_edges():
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+
+
+            if __name__ == "__main__":
+                test_discount_percent()
+                test_edges()
+                print("Все тесты прошли")
+          note: Вызовы тестов в блоке if __name__ == "__main__" из урока 8.2.
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def check(count, expected):
+                actual = discount_percent(count)
+                assert actual == expected, f"{count} тетрадей: {actual} вместо {expected}"
+
+
+            def test_discount_percent():
+                check(1, 0)
+                check(5, 10)
+                check(15, 20)
+                check(2, 0)
+                check(3, 10)
+                check(9, 10)
+                check(10, 20)
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Помощница check с параметрами названа без test_, тест её вызывает (находка рецензента).
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            def test_threshold_3():
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+
+
+            def test_threshold_10():
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+
+
+            for test in [test_discount_percent, test_threshold_3, test_threshold_10]:
+                test()
+            print("Все тесты прошли")
+          note: Тесты вызваны циклом на верхнем уровне — разбор про проверки вне теста его не задевает.
+      wrongSolutions:
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(3) == 10
+                assert discount_percent(10) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Проверены только сами пороги 3 и 10, без значений перед ними.
+          expectMistake: missed-2
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 10
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Неверное ожидание — «от 10» понято как «больше 10».
+          expectMistake: wrong-expectation
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(4) == 10
+                assert discount_percent(11) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Добавлены 4 и 11 — значения рядом с порогами, но не сами пороги.
+          expectMistake: missed-3
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(4) == 10
+                assert discount_percent(10) == 20
+                assert discount_percent(11) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: У порога 10 нет значения перед ним — 9.
+          expectMistake: missed-9
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Нет проверки ровно на пороге 10.
+          expectMistake: missed-10
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            def test_thresholds():
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 10
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Новая тестовая функция не вызвана, и в ней неверное ожидание для 10.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            def test_thresholds():
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Границы верные, но новая тестовая функция нигде не вызывается.
+          expectMistake: not-called
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            test_discount_percent()
+            assert discount_percent(2) == 0
+            assert discount_percent(3) == 10
+            assert discount_percent(9) == 10
+            assert discount_percent(10) == 20
+            print("Все тесты прошли")
+          note: Проверки границ стоят вне тестовой функции, на верхнем уровне программы.
+          expectMistake: top-level-asserts
+        - code: |
+            def discount_percent(count):
+                if count >= 10:
+                    return 20
+                if count > 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 0
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Ожидание для 3 неверное, а функцию «поправили» под него — тест подогнан под код.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) = 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: В одной проверке один знак = вместо ==.
+          expectMistake: assign-in-assert
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 0
+                assert discount_percent(10) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: По шаблону «перед порогом скидки нет» для 9 тетрадей ожидается 0 (попытка ученика).
+          expectMistake: wrong-expectation
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count > 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Тест верный, но в функцию, как в tryIt примера, подставлен мутант и не возвращён.
+          expectMistake: wrong-expectation
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            if __name__ == "__main__":
+                test_discount_percent()
+                assert discount_percent(2) == 0
+                assert discount_percent(3) == 10
+                assert discount_percent(9) == 10
+                assert discount_percent(10) == 20
+                print("Все тесты прошли")
+          note: Проверки границ в блоке if __name__ == "__main__", а не в тестовой функции.
+          expectMistake: top-level-asserts
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+
+
+            test_discount_percent()
+            for count, expected in [(2, 0), (3, 10), (9, 10), (10, 20)]:
+                assert discount_percent(count) == expected
+            print("Все тесты прошли")
+          note: Границы таблицей и циклом на верхнем уровне программы.
+          expectMistake: top-level-asserts
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                print(discount_percent(2) == 0)
+                print(discount_percent(3) == 10)
+                print(discount_percent(9) == 10)
+                print(discount_percent(10) == 20)
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Границы проверены через print(сравнение) вместо assert.
+          expectMistake: extra-output
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_case(count, expected):
+                assert discount_percent(count) == expected
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                test_case(2, 0)
+                test_case(3, 10)
+                test_case(9, 10)
+                test_case(10, 20)
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Помощница с параметрами названа test_case — тренажёр вызывает её без аргументов.
+          expectMistake: test-with-params
+        - code: |
+            def discount_percent(count):
+                # от 3 тетрадей — скидка 10 %, от 10 тетрадей — 20 %
+                if count >= 10:
+                    return 20
+                if count >= 3:
+                    return 10
+                return 0
+
+
+            def test_discount_percent():
+                assert discount_percent(1) == 0
+                assert discount_percent(5) == 10
+                assert discount_percent(15) == 20
+                assert discount_percent(2) == discount_percent(2)
+                assert discount_percent(3) == discount_percent(3)
+                assert discount_percent(9) == discount_percent(9)
+                assert discount_percent(10) == discount_percent(10)
+
+
+            test_discount_percent()
+            print("Все тесты прошли")
+          note: Функция сравнивается сама с собой — такие проверки не падают никогда.
+          expectMistake: self-compare
+      mistakes:
+        - id: assign-in-assert
+          when:
+            errorType: SyntaxError
+            errorIncludes: invalid syntax
+            codeRegex: '^[ \t]*assert\b(?:[^=\n()]*[^=\n()<>! \t]|[^=\n]*\))[ \t]*=[^=]'
+          why: >-
+            В assert сравнивают двумя знаками `==`. Один знак `=` — это присваивание, а внутри
+            assert оно запрещено, поэтому Python не может даже запустить программу.
+          try: >-
+            Поставь в этой строке `==` вместо `=` — как в готовых проверках, например
+            `discount_percent(5) == 10`.
+          verify: Ошибка SyntaxError должна исчезнуть.
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Тест упал на верной функции: функция здесь написана правильно, значит, не совпадает
+            одно из ожиданий. Чаще всего путают, входит ли сам порог: «от 3» и «от 10» включают
+            сами 3 и 10. Бывает, что ожидание перенесено с другого порога: от 3 до 9 тетрадей
+            скидка 10 %, а не 0.
+          try: >-
+            Найди строку, на которой остановилась программа, и заново посчитай ожидание по
+            правилам скидки, не глядя в код. Если ты менял саму `discount_percent`, чтобы
+            проверить тест, сначала верни её к исходному виду.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: test-with-params
+          when:
+            failedTest: t-ref
+            errorType: TypeError
+            codeRegex: '^def test_\w*\([ \t]*[A-Za-z_]'
+          where: Строка `def test_…(…)` с параметрами в скобках
+          why: >-
+            Тренажёр сам вызывает каждую функцию, имя которой начинается с `test_`, — без
+            аргументов (так же потом будет делать pytest). У твоей тестовой функции есть параметры,
+            поэтому такой вызов падает с TypeError, хотя «Запустить» работает.
+          try: >-
+            Оставь у функций `test_…` пустые скобки. Помощницу с параметрами назови без `test_`,
+            например `check(count, expected)`, и вызывай её из `test_discount_percent`.
+          verify: Тест «Тест проходит на верной функции» должен стать зелёным.
+        - id: wrong-expectation-silent
+          when:
+            failedTest: t-ref
+            outputIncludes: тесты прошли
+          why: >-
+            Программа печатает «Все тесты прошли», но тренажёр вызвал все твои функции test_… на
+            верной функции, и одна проверка упала. Значит, ожидание в ней не совпадает с правилами
+            скидки, а при запуске этого не видно: либо эта функция test_… не вызывается, либо сама
+            `discount_percent` изменена и подстроилась под неверное ожидание.
+          try: >-
+            Верни функцию к исходному виду и вызови каждую функцию test_… перед строкой с print —
+            тогда «Запустить» покажет, какая проверка падает. Потом сверь её ожидание с правилами:
+            «от 3» и «от 10» включают сами пороги.
+          verify: Тест «Тест проходит на верной функции» должен стать зелёным.
+        - id: not-called
+          when:
+            failedTest: t-called
+            outputIncludes: тесты прошли
+          why: >-
+            Одна из функций test_… объявлена, но нигде не вызывается. Программа печатает «Все
+            тесты прошли», хотя её проверки при запуске не выполнялись, — так ошибку можно и не
+            заметить.
+          try: Добавь вызов этой функции рядом с `test_discount_percent()`, перед строкой с print.
+          verify: Тест «Каждая функция test_… вызывается в программе» должен стать зелёным.
+        - id: extra-output
+          when:
+            failedTest: t-io
+            outputIncludes: тесты прошли
+          why: >-
+            Вывод должен быть ровно одной строкой «Все тесты прошли», а в нём есть что-то ещё.
+            `print(...)` только показывает значение и ничего не проверяет: программа идёт дальше,
+            даже если напечатано False. Проверяет assert.
+          try: >-
+            Замени `print(… == …)` на `assert … == …` внутри `test_discount_percent`, остальные
+            лишние print убери. Последняя строка программы — ровно `print("Все тесты прошли")`.
+          verify: Тест «Вывод программы» должен стать зелёным.
+        - id: self-compare
+          when:
+            codeRegex: '^[ \t]*assert[ \t]+(\w+\(.*\))[ \t]*==[ \t]*\1[ \t]*(?:,.*)?$'
+            outputIncludes: тесты прошли
+          why: >-
+            В проверке функция сравнивается сама с собой: слева и справа один и тот же вызов. Такой
+            assert не упадёт никогда — ни на верной функции, ни на версии с ошибкой.
+          try: >-
+            Справа запиши готовое число, посчитанное по правилам скидки, — как в
+            `discount_percent(5) == 10`.
+          verify: Все тесты «Тест замечает ошибку…» должны стать зелёными.
+        - id: top-level-asserts
+          when:
+            codeRegex: '^(?:assert\b|(?:for|if|while)\b.*:[ \t]*\n(?:[ \t]+.*\n|[ \t]*\n)*?[ \t]+assert\b)'
+            outputIncludes: тесты прошли
+          why: >-
+            Часть проверок стоит вне тестовой функции: на верхнем уровне программы, в цикле или в
+            блоке `if __name__ == "__main__":`. При запуске они выполняются, но тренажёр вызывает
+            на версиях с ошибками только функции test_…, а этих проверок там нет.
+          try: >-
+            Перенеси строки с assert внутрь `test_discount_percent` — с отступом, как готовые
+            проверки. Снаружи оставь только вызовы тестов и print.
+          verify: Все тесты «Тест замечает ошибку…» должны стать зелёными.
+        - id: missed-3
+          when:
+            failedTest: t-m-3
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где скидка 10 % начинается только с 4 тетрадей. Такая
+            ошибка — `>` вместо `>=` — видна только на самом пороге.
+          try: Добавь проверку ровно на пороге 3 тетрадей.
+          verify: Тест «Тест замечает ошибку — скидка 10 % только с 4 тетрадей» должен стать зелёным.
+        - id: missed-2
+          when:
+            failedTest: t-m-2
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где скидка 10 % даётся уже за 2 тетради. Порог
+            сдвинут на единицу вниз, и увидеть это можно только на последнем количестве без
+            скидки.
+          try: Добавь проверку последнего количества перед порогом 3 — там скидки ещё нет.
+          verify: Тест «Тест замечает ошибку — скидка 10 % уже с 2 тетрадей» должен стать зелёным.
+        - id: missed-10
+          when:
+            failedTest: t-m-10
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где за 10 тетрадей скидка всё ещё 10 %, а 20 %
+            начинается только с 11. Это `>` вместо `>=` у второго порога.
+          try: Добавь проверку ровно на пороге 10 тетрадей.
+          verify: Тест «Тест замечает ошибку — скидка 20 % только с 11 тетрадей» должен стать зелёным.
+        - id: missed-9
+          when:
+            failedTest: t-m-9
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где скидка 20 % даётся уже за 9 тетрадей. Второй порог
+            сдвинут на единицу вниз.
+          try: Добавь проверку последнего количества перед порогом 10 — скидка там ещё 10 %.
+          verify: Тест «Тест замечает ошибку — скидка 20 % уже с 9 тетрадей» должен стать зелёным.
+      afterPass: >-
+        У каждого порога есть проверка с обеих сторон — такой набор ловит и `>` вместо `>=`, и
+        порог, сдвинутый на единицу. Улучшение: если его у тебя ещё нет, добавь особый вход —
+        заказ без тетрадей, `discount_percent(0)`.
+      skills: [edge-cases, assert-checks, boundary-checks]
+
+  - id: practice-streak
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m9-l2-e2
+      kind: modify
+      title: Лучшая серия тренировок
+      statement: |-
+        В приложении для тренировок есть значок «Лучшая серия» — самое большое число дней подряд,
+        когда человек тренировался. Функция `best_streak(minutes)` получает список минут по дням:
+        `0` — день без тренировки, любое число больше нуля — тренировка была. Функция написана
+        верно.
+
+        В тесте два удобных случая: в обоих после самой длинной серии ещё идёт день без
+        тренировки. Добавь особые входы, которые встречаются у настоящих пользователей:
+
+        - серия в самом конце списка длиннее всех остальных — человек тренируется до сих пор;
+        - пустой список — новый пользователь, записей ещё нет;
+        - дни в списке есть, но ни одной тренировки — только нули.
+
+        Ожидания посчитай сам, по правилу. Тренажёр проверит тест на верной функции и на трёх её
+        версиях с ошибками, которые удобные примеры не замечают.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Функцию `best_streak` не меняй — она верная.
+        - Ожидание пиши готовым числом, посчитанным вручную.
+      starterCode: |
+        def best_streak(minutes):
+            best = 0
+            current = 0
+            for m in minutes:
+                if m > 0:
+                    current += 1
+                    if current > best:
+                        best = current
+                else:
+                    current = 0
+            return best
+
+
+        def test_best_streak():
+            assert best_streak([30, 45, 0, 20]) == 2
+            assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+            # добавь особые входы
+
+
+        test_best_streak()
+        print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+        - id: t-ref
+          kind: assert
+          title: Тест проходит на верной функции
+          example: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _reference(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            _saved = best_streak
+            best_streak = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                best_streak = _saved
+          message: >-
+            Все проверки должны проходить на верной функции: ожидания считаются по правилу серии.
+        - id: t-called
+          kind: assert
+          title: Каждая функция test_… вызывается в программе
+          code: |-
+            import ast
+
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _defined = [node.name for node in ast.walk(_tree)
+                        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
+            _used = [node.id for node in ast.walk(_tree)
+                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)]
+            assert all(name in _used for name in _defined)
+          message: >-
+            Одна из функций test_… нигде не вызывается — при запуске её проверки не выполняются.
+        - id: t-m-last
+          kind: assert
+          title: "Тест замечает ошибку — последняя серия не учитывается"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                    else:
+                        if current > best:
+                            best = current
+                        current = 0
+                return best
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = best_streak
+            best_streak = _mutant
+            try:
+                _result = _caught()
+            finally:
+                best_streak = _saved
+            assert _result
+          message: >-
+            Тест не заметил версию функции, которая забывает серию в самом конце списка.
+        - id: t-m-empty
+          kind: assert
+          title: "Тест замечает ошибку — падение на пустом списке"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(minutes):
+                if minutes[0] > 0:
+                    current = 1
+                else:
+                    current = 0
+                best = current
+                for m in minutes[1:]:
+                    if m > 0:
+                        current += 1
+                    else:
+                        current = 0
+                    if current > best:
+                        best = current
+                return best
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = best_streak
+            best_streak = _mutant
+            try:
+                _result = _caught()
+            finally:
+                best_streak = _saved
+            assert _result
+          message: >-
+            Тест не заметил версию функции, которая падает с ошибкой, когда записей ещё нет.
+        - id: t-m-zeros
+          kind: assert
+          title: "Тест замечает ошибку — серия 1 без единой тренировки"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(minutes):
+                if len(minutes) == 0:
+                    return 0
+                best = 1
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = best_streak
+            best_streak = _mutant
+            try:
+                _result = _caught()
+            finally:
+                best_streak = _saved
+            assert _result
+          message: >-
+            Тест не заметил версию функции, которая показывает серию 1 человеку без единой тренировки.
+      criteria:
+        - Тест проходит на верной функции — ожидания посчитаны вручную по правилу серии.
+        - >-
+          В тесте есть серия в самом конце списка, которая длиннее остальных, пустой список и
+          список из одних нулей.
+        - Тест замечает все три версии функции с ошибками.
+        - Тест вызывается, программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          Посмотри на два готовых случая: где в списке стоит самая длинная серия? А где ещё она
+          может оказаться — и каким бывает сам список у разных людей?
+        - >-
+          Тот же приём на другой функции: `total(minutes)` считает сумму минут. Её особые входы —
+          `total([])` (записей нет, ответ 0), `total([5])` (один день) и `total([0, 0])` (одни
+          нули). А край списка у `max_steps(steps)` (самый активный день) проверяют так, чтобы
+          ответ давал именно последний день: `max_steps([3000, 5000, 9000]) == 9000`. Если
+          функция «забудет» последний день, она вернёт 5000, и тест это заметит. Ожидания берут из
+          смысла задачи, а не из запуска функции.
+        - |-
+          Каркас — три строки внутри `test_best_streak`:
+          ```text
+          # серия в самом конце списка длиннее остальных
+          assert best_streak([…]) == …
+          # пустой список: записей ещё нет
+          assert best_streak([]) == …
+          # дни есть, но ни одной тренировки
+          assert best_streak([…]) == …
+          ```
+      solution:
+        code: |
+          def best_streak(minutes):
+              best = 0
+              current = 0
+              for m in minutes:
+                  if m > 0:
+                      current += 1
+                      if current > best:
+                          best = current
+                  else:
+                      current = 0
+              return best
+
+
+          def test_best_streak():
+              assert best_streak([30, 45, 0, 20]) == 2
+              assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+              # серия в самом конце списка длиннее остальных
+              assert best_streak([10, 0, 20, 30]) == 2
+              # пустой список: новый пользователь
+              assert best_streak([]) == 0
+              # дни есть, но ни одной тренировки
+              assert best_streak([0, 0, 0]) == 0
+
+
+          test_best_streak()
+          print("Все тесты прошли")
+        explanation: >-
+          В списке `[10, 0, 20, 30]` лучшая серия — два последних дня, и после неё нуля уже нет.
+          Функция, которая подводит итог серии только на дне без тренировки, эту серию потеряет и
+          ответит 1. Если бы серия в конце была не длиннее первой, ответ дала бы первая серия, и
+          ошибка бы спряталась. Пустой список — новый пользователь: серии нет, ответ 0, и функция
+          не должна падать.
+          Список из одних нулей — тоже 0 дней, а не 1. Вместо длинных списков подойдут и короткие:
+          `[25]` (один день — он и начало, и конец списка) и `[0]`.
+      altSolutions:
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                # один день с тренировкой: начало и конец списка сразу
+                assert best_streak([25]) == 1
+                # пусто
+                assert best_streak([]) == 0
+                # один день без тренировки
+                assert best_streak([0]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Самые короткие особые входы — один элемент.
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                cases = [
+                    ([30, 45, 0, 20], 2),
+                    ([0, 15, 0, 40, 25, 30, 0], 3),
+                    ([20, 30, 40], 3),
+                    ([], 0),
+                    ([0, 0, 0], 0),
+                ]
+                for minutes, expected in cases:
+                    assert best_streak(minutes) == expected, f"список {minutes}"
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Таблица случаев и цикл, серия на весь список.
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+
+
+            def test_series_at_end():
+                assert best_streak([15, 0, 0, 30, 30, 30]) == 3
+
+
+            def test_no_training():
+                assert best_streak([]) == 0
+                assert best_streak([0, 0]) == 0
+
+
+            test_best_streak()
+            test_series_at_end()
+            test_no_training()
+            print("Все тесты прошли")
+          note: Особые входы в отдельных тестовых функциях, все вызваны.
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+
+
+            def test_empty():
+                assert best_streak([]) == 0, "у нового пользователя серии нет"
+
+
+            def test_no_training():
+                assert best_streak([0, 0]) == 0, "без тренировок серия 0"
+
+
+            def test_ends_with_series():
+                assert best_streak([0, 60]) == 1, "серия в конце списка"
+
+
+            if __name__ == "__main__":
+                test_best_streak()
+                test_empty()
+                test_no_training()
+                test_ends_with_series()
+                print("Все тесты прошли")
+          note: Четыре тестовые функции с сообщениями, вызовы в if __name__ (находка рецензента).
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def check(minutes, expected):
+                result = best_streak(minutes)
+                assert result == expected, f"{minutes}: {result} вместо {expected}"
+
+
+            def test_best_streak():
+                check([30, 45, 0, 20], 2)
+                check([0, 15, 0, 40, 25, 30, 0], 3)
+                check([10, 0, 10, 10, 10], 3)
+                check([], 0)
+                check([0, 0, 0], 0)
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Помощница check с параметрами названа без test_ (находка рецензента).
+      wrongSolutions:
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Добавлен только пустой список.
+          expectMistake: missed-last
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([10, 20, 30, 0, 5]) == 3
+                assert best_streak([]) == 0
+                assert best_streak([0, 0, 0]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Серия в конце списка есть, но она не самая длинная — ошибку это не выявляет.
+          expectMistake: missed-last
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([20, 30, 40]) == 3
+                assert best_streak([]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Нет списка без тренировок.
+          expectMistake: missed-zeros
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([20, 30, 40]) == 3
+                assert best_streak([0, 0, 0]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Нет пустого списка.
+          expectMistake: missed-empty
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([20, 30, 40]) == 2
+                assert best_streak([]) == 0
+                assert best_streak([0, 0, 0]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Неверное ожидание — серия из трёх дней посчитана как 2.
+          expectMistake: wrong-expectation
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+
+
+            def test_edges():
+                assert best_streak([20, 30, 40]) == 3
+                assert best_streak([]) == 0
+                assert best_streak([0, 0, 0]) == 1
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Новая тестовая функция не вызвана, и в ней неверное ожидание для списка из нулей.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+
+
+            def test_edges():
+                assert best_streak([20, 30, 40]) == 3
+                assert best_streak([]) == 0
+                assert best_streak([0, 0, 0]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Особые входы верные, но новая тестовая функция нигде не вызывается.
+          expectMistake: not-called
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([30, 45, 0, 20, 10]) == 2
+                assert best_streak([]) == 0
+                assert best_streak([0, 0, 0]) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Серия в конце равна по длине первой (ничья) — ответ даёт первая серия, ошибка не видна.
+          expectMistake: missed-last
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([10, 0, 20, 30]) == 2
+                assert best_streak([]) == 0
+                assert best_streak(0) == 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: «Ни одной тренировки» записано числом 0, а не списком (попытка ученика).
+          expectMistake: not-a-list
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([]) = 0
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: В проверке один знак = вместо ==.
+          expectMistake: assign-in-assert
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+
+
+            test_best_streak()
+            assert best_streak([20, 30, 40]) == 3
+            assert best_streak([]) == 0
+            assert best_streak([0, 0, 0]) == 0
+            print("Все тесты прошли")
+          note: Особые входы дописаны вне тестовой функции, на верхнем уровне.
+          expectMistake: top-level-asserts
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                print(best_streak([20, 30, 40]) == 3)
+                print(best_streak([]) == 0)
+                print(best_streak([0, 0, 0]) == 0)
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Особые входы через print(сравнение) вместо assert.
+          expectMistake: extra-output
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                assert best_streak([20, 30, 40]) == best_streak([20, 30, 40])
+                assert best_streak([]) == best_streak([])
+                assert best_streak([0, 0, 0]) == best_streak([0, 0, 0])
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Функция сравнивается сама с собой — такие проверки не падают никогда.
+          expectMistake: self-compare
+        - code: |
+            def best_streak(minutes):
+                best = 0
+                current = 0
+                for m in minutes:
+                    if m > 0:
+                        current += 1
+                        if current > best:
+                            best = current
+                    else:
+                        current = 0
+                return best
+
+
+            def test_case(minutes, expected):
+                assert best_streak(minutes) == expected
+
+
+            def test_best_streak():
+                assert best_streak([30, 45, 0, 20]) == 2
+                assert best_streak([0, 15, 0, 40, 25, 30, 0]) == 3
+                test_case([20, 30, 40], 3)
+                test_case([], 0)
+                test_case([0, 0, 0], 0)
+
+
+            test_best_streak()
+            print("Все тесты прошли")
+          note: Помощница с параметрами названа test_case — тренажёр вызывает её без аргументов.
+          expectMistake: test-with-params
+      mistakes:
+        - id: assign-in-assert
+          when:
+            errorType: SyntaxError
+            errorIncludes: invalid syntax
+            codeRegex: '^[ \t]*assert\b(?:[^=\n()]*[^=\n()<>! \t]|[^=\n]*\))[ \t]*=[^=]'
+          why: >-
+            В assert сравнивают двумя знаками `==`. Один знак `=` — это присваивание, а внутри
+            assert оно запрещено, поэтому Python не может даже запустить программу.
+          try: >-
+            Поставь в этой строке `==` вместо `=` — как в готовых проверках, например
+            `best_streak([30, 45, 0, 20]) == 2`.
+          verify: Ошибка SyntaxError должна исчезнуть.
+        - id: not-a-list
+          when:
+            errorType: TypeError
+            errorIncludes: not iterable
+          where: Вызов `best_streak(…)` в твоём тесте
+          why: >-
+            `best_streak` ждёт список минут по дням, а в одной из твоих проверок в скобках стоит
+            число. Функция верная: traceback показывает строку в ней, потому что упала она, но
+            причина — в том, что ей передали.
+          try: >-
+            Оберни дни в квадратные скобки, например `best_streak([0, 0])`. Саму функцию не
+            меняй.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Тест упал на верной функции: функция здесь написана правильно, значит, не совпадает
+            одно из ожиданий.
+          try: >-
+            Найди строку, на которой остановилась программа, и посчитай серию вручную: это дни
+            подряд, где минут больше нуля, а день с нулём серию обрывает. Если тренировок не было
+            совсем, сколько дней в самой длинной серии? Если ты менял саму `best_streak`, сначала
+            верни её к исходному виду.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: test-with-params
+          when:
+            failedTest: t-ref
+            errorType: TypeError
+            codeRegex: '^def test_\w*\([ \t]*[A-Za-z_]'
+          where: Строка `def test_…(…)` с параметрами в скобках
+          why: >-
+            Тренажёр сам вызывает каждую функцию, имя которой начинается с `test_`, — без
+            аргументов (так же потом будет делать pytest). У твоей тестовой функции есть параметры,
+            поэтому такой вызов падает с TypeError, хотя «Запустить» работает.
+          try: >-
+            Оставь у функций `test_…` пустые скобки. Помощницу с параметрами назови без `test_`,
+            например `check(minutes, expected)`, и вызывай её из `test_best_streak`.
+          verify: Тест «Тест проходит на верной функции» должен стать зелёным.
+        - id: wrong-expectation-silent
+          when:
+            failedTest: t-ref
+            outputIncludes: тесты прошли
+          why: >-
+            Программа печатает «Все тесты прошли», но тренажёр вызвал все твои функции test_… на
+            верной функции, и одна проверка упала. Значит, ожидание в ней неверное, а при запуске
+            этого не видно: либо эта функция test_… не вызывается, либо сама `best_streak`
+            изменена и подстроилась под неверное ожидание.
+          try: >-
+            Верни функцию к исходному виду и вызови каждую функцию test_… перед строкой с print —
+            тогда «Запустить» покажет, какая проверка падает. Потом пересчитай её ожидание вручную.
+          verify: Тест «Тест проходит на верной функции» должен стать зелёным.
+        - id: not-called
+          when:
+            failedTest: t-called
+            outputIncludes: тесты прошли
+          why: >-
+            Одна из функций test_… объявлена, но нигде не вызывается. Программа печатает «Все
+            тесты прошли», хотя её проверки при запуске не выполнялись.
+          try: Добавь вызов этой функции рядом с `test_best_streak()`, перед строкой с print.
+          verify: Тест «Каждая функция test_… вызывается в программе» должен стать зелёным.
+        - id: extra-output
+          when:
+            failedTest: t-io
+            outputIncludes: тесты прошли
+          why: >-
+            Вывод должен быть ровно одной строкой «Все тесты прошли», а в нём есть что-то ещё.
+            `print(...)` только показывает значение и ничего не проверяет: программа идёт дальше,
+            даже если напечатано False. Проверяет assert.
+          try: >-
+            Замени `print(… == …)` на `assert … == …` внутри `test_best_streak`, остальные лишние
+            print убери. Последняя строка программы — ровно `print("Все тесты прошли")`.
+          verify: Тест «Вывод программы» должен стать зелёным.
+        - id: self-compare
+          when:
+            codeRegex: '^[ \t]*assert[ \t]+(\w+\(.*\))[ \t]*==[ \t]*\1[ \t]*(?:,.*)?$'
+            outputIncludes: тесты прошли
+          why: >-
+            В проверке функция сравнивается сама с собой: слева и справа один и тот же вызов. Такой
+            assert не упадёт никогда — ни на верной функции, ни на версии с ошибкой.
+          try: >-
+            Справа запиши готовое число — длину серии, посчитанную вручную, как в
+            `best_streak([30, 45, 0, 20]) == 2`.
+          verify: Все тесты «Тест замечает ошибку…» должны стать зелёными.
+        - id: top-level-asserts
+          when:
+            codeRegex: '^(?:assert\b|(?:for|if|while)\b.*:[ \t]*\n(?:[ \t]+.*\n|[ \t]*\n)*?[ \t]+assert\b)'
+            outputIncludes: тесты прошли
+          why: >-
+            Часть проверок стоит вне тестовой функции: на верхнем уровне программы, в цикле или в
+            блоке `if __name__ == "__main__":`. При запуске они выполняются, но тренажёр вызывает
+            на версиях с ошибками только функции test_…, а этих проверок там нет.
+          try: >-
+            Перенеси строки с assert внутрь `test_best_streak` — с отступом, как готовые проверки.
+            Снаружи оставь только вызовы тестов и print.
+          verify: Все тесты «Тест замечает ошибку…» должны стать зелёными.
+        - id: missed-last
+          when:
+            failedTest: t-m-last
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, которая подводит итог серии только на дне без
+            тренировки. Если серия идёт до самого конца списка, нуля после неё нет, и такая
+            функция её теряет. В твоих списках после лучшей серии всегда стоит ноль, или серия в
+            конце не длиннее остальных: тогда ответ даёт другая серия, и ошибка не видна.
+          try: Добавь список, где серия в самом конце длиннее всех остальных.
+          verify: Тест «Тест замечает ошибку — последняя серия не учитывается» должен стать зелёным.
+        - id: missed-empty
+          when:
+            failedTest: t-m-empty
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, которая сразу берёт первый день списка. У нового
+            пользователя записей ещё нет, и такая функция падает с ошибкой.
+          try: Добавь проверку для пустого списка. Что должна показать функция человеку без записей?
+          verify: Тест «Тест замечает ошибку — падение на пустом списке» должен стать зелёным.
+        - id: missed-zeros
+          when:
+            failedTest: t-m-zeros
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, которая начинает счёт лучшей серии с 1. У человека,
+            который ещё ни разу не тренировался, она покажет серию в один день.
+          try: Добавь список, в котором нет ни одной тренировки, — только дни с нулём.
+          verify: Тест «Тест замечает ошибку — серия 1 без единой тренировки» должен стать зелёным.
+      afterPass: >-
+        Теперь набор ловит классическую ошибку «забыли последнюю серию», которая прячется от
+        удобных примеров, и не пропустит падение на пустом списке. Улучшение: если его у тебя ещё
+        нет, добавь список из одного дня, `[25]`, — это ещё один край, где начало списка совпадает
+        с концом.
+      skills: [edge-cases, assert-checks, lists]
+
+  - id: practice-preview
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m9-l2-e3
+      kind: write
+      title: Превью уведомления на часах
+      statement: |-
+        На маленьком экране часов уведомление показывается коротко. Функция
+        `preview(text, limit)` уже написана и работает верно. Её правило:
+
+        - если в тексте **не больше** `limit` символов, он возвращается как есть;
+        - иначе остаются первые `limit - 3` символа и три обычные точки `...` — так, чтобы всего
+          вышло ровно `limit` символов.
+
+        Например, `preview("Встреча в 18:00 у входа", 12)` возвращает `"Встреча в..."` — ровно
+        12 символов вместе с точками и пробелом.
+
+        Напиши набор тестов с нуля: одну или несколько функций `test_…` с обычными и граничными
+        случаями. Вызови их, а последней строкой выведи `Все тесты прошли`. Тренажёр проверит
+        набор на верной функции и на трёх её версиях с ошибками — каждую версию набор должен
+        заметить.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Функцию `preview` не меняй — она верная.
+        - Точки в ожидании — три обычные точки `...`, не один символ «…».
+        - "`limit` в тестах бери не меньше 4: на экране должна поместиться хотя бы одна буква и точки."
+        - Имена тестовых функций выбираешь сам, но они начинаются с `test_`.
+        - >-
+          Функции `test_…` — без параметров: тренажёр вызывает их сам, без аргументов. Одинаковые
+          проверки можно собрать в таблицу и перебрать циклом внутри теста.
+      starterCode: |
+        def preview(text, limit):
+            if len(text) <= limit:
+                return text
+            return text[:limit - 3] + "..."
+
+
+        # Напиши одну или несколько функций test_… для preview:
+        # обычные случаи, граница, особые входы.
+
+        # Вызови свои тесты, а последней строкой выведи «Все тесты прошли».
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            ignoreCase: true
+            ignoreSpaces: true
+        - id: t-has
+          kind: assert
+          title: Есть тестовая функция
+          example: true
+          code: |-
+            assert [name for name, value in list(globals().items())
+                    if name.startswith("test_") and callable(value)]
+          message: >-
+            Тренажёр ищет тесты по имени: нужна хотя бы одна функция, имя которой начинается с test_.
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на верной функции
+          example: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _reference(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            _saved = preview
+            preview = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                preview = _saved
+          message: >-
+            Все проверки должны проходить на верной функции: ожидания считаются по правилу из
+            условия.
+        - id: t-called
+          kind: assert
+          title: Каждая функция test_… вызывается в программе
+          code: |-
+            import ast
+
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _defined = [node.name for node in ast.walk(_tree)
+                        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
+            _used = [node.id for node in ast.walk(_tree)
+                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)]
+            assert all(name in _used for name in _defined)
+          message: >-
+            Одна из функций test_… нигде не вызывается — при запуске её проверки не выполняются.
+        - id: t-m-short
+          kind: assert
+          title: "Тесты замечают ошибку — точки добавляются к любому тексту"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(text, limit):
+                return text[:limit - 3] + "..."
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = preview
+            preview = _mutant
+            try:
+                _result = _caught()
+            finally:
+                preview = _saved
+            assert _result
+          message: >-
+            Тесты не заметили версию функции, которая обрезает и добавляет точки даже к короткому
+            тексту.
+        - id: t-m-exact
+          kind: assert
+          title: "Тесты замечают ошибку — текст ровно в limit символов обрезается"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(text, limit):
+                if len(text) < limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = preview
+            preview = _mutant
+            try:
+                _result = _caught()
+            finally:
+                preview = _saved
+            assert _result
+          message: >-
+            Тесты не заметили версию функции, которая обрезает текст длиной ровно limit символов.
+        - id: t-m-long
+          kind: assert
+          title: "Тесты замечают ошибку — превью длиннее limit"
+          edge: true
+          code: |-
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _mutant(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit] + "..."
+
+
+            def _caught():
+                for test in _tests:
+                    try:
+                        test()
+                    except Exception:
+                        return True
+                return False
+
+
+            _saved = preview
+            preview = _mutant
+            try:
+                _result = _caught()
+            finally:
+                preview = _saved
+            assert _result
+          message: >-
+            Тесты не заметили версию функции, которая оставляет limit символов и добавляет точки
+            сверх них.
+      criteria:
+        - Тесты проходят на верной функции — ожидания посчитаны по правилу из условия.
+        - >-
+          Есть обычные случаи (текст короче limit и длиннее limit), граница (текст ровно в limit
+          символов) и особый вход (например, пустой текст).
+        - Набор замечает все три версии функции с ошибками.
+        - Тесты вызываются, программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          Перечитай правило: при какой длине текста функция перестаёт возвращать его как есть?
+          Раздели тексты на группы по сравнению с limit и найди значение, где одна группа
+          сменяется другой.
+        - >-
+          Тот же приём на другой функции: `short_name(name, 5)` оставляет имя как есть, если в
+          нём не больше 5 букв. Группы и граница: `"Аня"` — короче, `"Алина"` — ровно 5 (граница),
+          `"Александра"` — длиннее. И особый вход — пустая строка `""`.
+        - |-
+          Каркас:
+          ```text
+          def test_preview():
+              # короче limit — текст не меняется
+              assert preview("текст", число) == "ожидание"
+              # ровно limit символов — граница
+              assert preview("текст", число) == "ожидание"
+              # длиннее limit — всего ровно limit символов вместе с точками
+              assert preview("текст", число) == "ожидание"
+              # пустой текст
+              assert preview("", число) == "ожидание"
+
+          вызов теста
+          print(…)
+          ```
+          Вместо слов подставь свои тексты, числа и ожидания. Длину своего текста можно проверить
+          в «Запустить»: `print(len("Привет!"))`.
+      solution:
+        code: |
+          def preview(text, limit):
+              if len(text) <= limit:
+                  return text
+              return text[:limit - 3] + "..."
+
+
+          def test_preview():
+              # короче limit — текст не меняется
+              assert preview("Привет", 10) == "Привет"
+              # ровно limit символов — граница, тоже без изменений
+              assert preview("Привет!", 7) == "Привет!"
+              # длиннее limit — ровно limit символов вместе с точками
+              assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+              # особый вход: пустой текст
+              assert preview("", 5) == ""
+
+
+          test_preview()
+          print("Все тесты прошли")
+        explanation: >-
+          Группы текстов — короче limit, ровно limit и длиннее. Граница — текст ровно в limit
+          символов: «не больше» его включает, поэтому он возвращается как есть. Именно эта
+          проверка замечает версию с `<` вместо `<=`. Точное ожидание для длинного текста замечает
+          версию, где точки добавлены сверх limit, а короткий или пустой текст — версию, которая
+          обрезает всё подряд. Тексты и limit могут быть любыми, лишь бы ожидания были посчитаны
+          по правилу.
+      altSolutions:
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_short_text():
+                assert preview("Сбор в 9", 20) == "Сбор в 9"
+                assert preview("", 5) == ""
+
+
+            def test_exact_limit():
+                assert preview("Сбор в 9", 8) == "Сбор в 9"
+
+
+            def test_long_text():
+                assert preview("Купи хлеб и молоко", 10) == "Купи хл..."
+
+
+            test_short_text()
+            test_exact_limit()
+            test_long_text()
+            print("Все тесты прошли")
+          note: Каждая группа — в своей тестовой функции.
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                cases = [
+                    ("Привет", 10, "Привет"),
+                    ("Привет!", 7, "Привет!"),
+                    ("Встреча в 18:00 у входа", 12, "Встреча в..."),
+                    ("", 5, ""),
+                ]
+                for text, limit, expected in cases:
+                    assert preview(text, limit) == expected, f"{text} / {limit}"
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Таблица случаев и цикл.
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Сбор в 9", 20) == "Сбор в 9"
+                assert preview("Сбор в 9", 8) == "Сбор в 9"
+                result = preview("Не забудь зарядку для часов", 15)
+                assert len(result) == 15
+                assert result[-3:] == "..."
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Для длинного текста проверены длина и точки в конце, а не точный текст.
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                text = "Привет"
+                assert preview(text, len(text)) == text
+                assert preview("Ок", 5) == "Ок"
+                assert preview("abcdefghij", 8) == "abcde..."
+                assert preview("", 4) == ""
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Граница через len(text), латинский текст для обрезки.
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def check(text, limit, expected):
+                result = preview(text, limit)
+                assert result == expected, f"«{text}», {limit}: получили «{result}»"
+
+
+            def test_1():
+                check("Сон 8 ч", 20, "Сон 8 ч")
+
+
+            def test_2():
+                check("Сон 8 ч", 7, "Сон 8 ч")
+
+
+            def test_3():
+                check("Сон 8 ч", 6, "Сон...")
+
+
+            for test in [test_1, test_2, test_3]:
+                test()
+            print("Все тесты прошли")
+          note: Помощница check без test_, три теста вызваны циклом (находка рецензента).
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_short_and_exact():
+                assert "Привет 👋" == preview(text="Привет 👋", limit=8)
+                assert "Код: 4521" == preview(text="Код: 4521", limit=9)
+
+
+            def test_long():
+                assert "Код: 45..." == preview(text="Код: 4521, никому", limit=10)
+                assert "" == preview(text="", limit=5)
+
+
+            test_short_and_exact()
+            test_long()
+            print("Все тесты прошли")
+          note: Именованные аргументы, ожидание слева, эмодзи в тексте (находка рецензента).
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("a=b", 10) == "a=b"
+                assert preview("2+2=4", 5) == "2+2=4"
+                assert preview("x=1, y=2", 5) == "x=..."
+                assert preview("", 4) == ""
+
+
+            test_preview()
+            print("все тесты прошли")
+          note: Знак = внутри текстов уведомлений, итог строчными буквами (находка рецензента).
+      wrongSolutions:
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Проверен только длинный текст из условия.
+          expectMistake: missed-short
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Нет текста ровно в limit символов.
+          expectMistake: missed-exact
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("", 5) == ""
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Нет длинного текста — обрезка не проверена.
+          expectMistake: missed-long
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в 1..."
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: В ожидании 14 символов вместо 12 — ошибка в подсчёте символов.
+          expectMistake: wrong-expectation
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Прив..."
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+
+
+            print("Все тесты прошли")
+          note: Тест не вызван, а текст ровно в limit символов ошибочно считается длинным.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            assert preview("Привет", 10) == "Привет"
+            assert preview("Привет!", 7) == "Привет!"
+            assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+            assert preview("", 5) == ""
+            print("Все тесты прошли")
+          note: Проверки есть, но не собраны в функцию test_….
+          expectMistake: no-test-function
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+                assert preview("", 5) == ""
+
+
+            print("Все тесты прошли")
+          note: Набор верный, но тестовая функция нигде не вызывается.
+          expectMistake: not-called
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+                assert preview("", 5) == ""
+
+
+            test_preview()
+            print(preview("Встреча в 18:00 у входа", 12))
+            print("Все тесты прошли")
+          note: Оставлен лишний print с результатом функции.
+          expectMistake: extra-output
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("", 5) = ""
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: В assert один знак = вместо ==.
+          expectMistake: assign-in-assert
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в 18…"
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: В ожидании один символ «…» вместо трёх точек.
+          expectMistake: wrong-expectation
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def check_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+
+
+            check_preview()
+            print("Все тесты прошли")
+          note: Тестовая функция названа не с test_ — тренажёр её не найдёт.
+          expectMistake: no-test-function
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+
+
+            test_preview()
+            print("Все тесты прошли!")
+          note: Лишний восклицательный знак в итоговой строке.
+          expectMistake: extra-output
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет, мир", 10) == "Привет, мир"
+                assert preview("Купи молоко и хлеб", 10) == "Купи мо..."
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Для «границы» взят текст из 11 символов при limit 10 — запятая и пробел не посчитаны (попытка ученика).
+          expectMistake: wrong-expectation
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_one(text, limit, expected):
+                assert preview(text, limit) == expected
+
+
+            test_one("Привет", 10, "Привет")
+            test_one("Привет, мир", 11, "Привет, мир")
+            test_one("Купи молоко и хлеб", 10, "Купи мо...")
+            test_one("", 5, "")
+            print("Все тесты прошли")
+          note: Тестовая функция с параметрами, вызвана четыре раза (попытка ученика).
+          expectMistake: test-with-params
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+
+
+            test_preview()
+            assert preview("Привет!", 7) == "Привет!"
+            print("Все тесты прошли")
+          note: Проверка границы дописана на верхнем уровне, вне test_preview.
+          expectMistake: top-level-asserts
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                print(preview("Привет", 10) == "Привет")
+                print(preview("Привет!", 7) == "Привет!")
+                print(preview("Встреча в 18:00 у входа", 12) == "Встреча в...")
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Проверки через print(сравнение) вместо assert.
+          expectMistake: extra-output
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == preview("Привет!", 7)
+                assert preview("Встреча в 18:00 у входа", 12) == preview("Встреча в 18:00 у входа", 12)
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Граница и длинный текст сравниваются с самой функцией — такие проверки не падают.
+          expectMistake: self-compare
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview():
+                assert preview("Привет", 10) == "Привет"
+                assert preview("Привет!", 7) == "Привет!"
+                assert preview("Встреча в 18:00 у входа", 12) == "Встреча в..."
+                assert preview("", 5) == ""
+
+
+            print("все тесты прошли")
+          note: Тест не вызван, итог строчными — t-io это принимает, разбор тоже должен сработать.
+          expectMistake: not-called
+        - code: |
+            def preview(text, limit):
+                if len(text) <= limit:
+                    return text
+                return text[:limit - 3] + "..."
+
+
+            def test_preview()
+                assert preview(text="Привет", limit=10) == "Привет"
+                assert preview(text="Привет!", limit=7) == "Привет!"
+                assert preview(text="Встреча в 18:00 у входа", limit=12) == "Встреча в..."
+
+
+            test_preview()
+            print("Все тесты прошли")
+          note: Забыто двоеточие после def; именованные аргументы не должны вызывать разбор про = в assert.
+          expectMistake: null
+      mistakes:
+        - id: assign-in-assert
+          when:
+            errorType: SyntaxError
+            errorIncludes: invalid syntax
+            codeRegex: '^[ \t]*assert\b(?:[^=\n()]*[^=\n()<>! \t]|[^=\n]*\))[ \t]*=[^=]'
+          why: >-
+            В assert сравнивают двумя знаками `==`. Один знак `=` — это присваивание, а внутри
+            assert оно запрещено, поэтому Python не может даже запустить программу.
+          try: Поставь в этой строке `==` вместо `=`.
+          verify: Ошибка SyntaxError должна исчезнуть.
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Тест упал на верной функции — значит, не совпадает одно из ожиданий. Чаще всего
+            ошибаются в подсчёте символов, ставят один символ «…» вместо трёх точек или путают
+            границу: в тексте ровно limit символов — это «не больше limit», поэтому он не
+            обрезается.
+          try: >-
+            Найди строку, на которой остановилась программа, и проверь длины в «Запустить»,
+            например `print(len("Встреча в..."))` — выйдет 12. У текста для границы длина должна
+            быть ровно limit, у ожидания для длинного текста — тоже. Если ты менял саму `preview`,
+            сначала верни её к исходному виду.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: test-with-params
+          when:
+            failedTest: t-ref
+            errorType: TypeError
+            codeRegex: '^def test_\w*\([ \t]*[A-Za-z_]'
+          where: Строка `def test_…(…)` с параметрами в скобках
+          why: >-
+            Тренажёр сам вызывает каждую функцию, имя которой начинается с `test_`, — без
+            аргументов (так же потом будет делать pytest). У твоей тестовой функции есть параметры,
+            поэтому такой вызов падает с TypeError, хотя «Запустить» работает.
+          try: >-
+            Оставь у функций `test_…` пустые скобки и перенеси проверки внутрь. Помощницу с
+            параметрами назови без `test_`, например `check(text, limit, expected)`, или собери
+            случаи в таблицу и перебери их циклом внутри теста.
+          verify: Тест «Тесты проходят на верной функции» должен стать зелёным.
+        - id: wrong-expectation-silent
+          when:
+            failedTest: t-ref
+            outputIncludes: тесты прошли
+          why: >-
+            Программа печатает «Все тесты прошли», но тренажёр вызвал все твои функции test_… на
+            верной функции, и одна проверка упала. Значит, ожидание в ней неверное, а при запуске
+            этого не видно: либо эта функция test_… не вызывается, либо сама `preview` изменена и
+            подстроилась под неверное ожидание.
+          try: >-
+            Верни функцию к исходному виду и вызови каждую функцию test_… перед строкой с print —
+            тогда «Запустить» покажет, какая проверка падает. Потом пересчитай её ожидание по
+            правилу: текст ровно в limit символов не обрезается.
+          verify: Тест «Тесты проходят на верной функции» должен стать зелёным.
+        - id: no-test-function
+          when:
+            failedTest: t-has
+            outputIncludes: тесты прошли
+          why: >-
+            Тренажёр ищет тесты по имени: это функции, имя которых начинается с `test_`. Проверки
+            на верхнем уровне программы или в функции с другим именем он не найдёт и не сможет
+            вызвать на версиях с ошибками.
+          try: Собери проверки в функцию `def test_…():`, вызови её, а потом выведи «Все тесты прошли».
+          verify: Тест «Есть тестовая функция» должен стать зелёным.
+        - id: not-called
+          when:
+            failedTest: t-called
+            outputIncludes: тесты прошли
+          why: >-
+            Функция test_… объявлена, но нигде не вызывается. Программа печатает «Все тесты
+            прошли», хотя проверки при запуске не выполнялись, — объявить тест мало.
+          try: Вызови каждую тестовую функцию перед строкой с print.
+          verify: Тест «Каждая функция test_… вызывается в программе» должен стать зелёным.
+        - id: extra-output
+          when:
+            failedTest: t-io
+            outputIncludes: тесты прошли
+          why: >-
+            Вывод должен состоять ровно из строки «Все тесты прошли», а в нём есть что-то ещё:
+            лишние строки или знаки. Assert сам сравнивает значения, поэтому печатать результаты
+            функции не нужно — иначе их снова придётся сверять глазами.
+          try: >-
+            Если печатаешь сравнение `print(… == …)`, замени его на assert внутри теста. Остальные
+            лишние print убери, а в последней строке оставь только текст «Все тесты прошли».
+          verify: Тест «Вывод программы» должен стать зелёным.
+        - id: self-compare
+          when:
+            codeRegex: '^[ \t]*assert[ \t]+(\w+\(.*\))[ \t]*==[ \t]*\1[ \t]*(?:,.*)?$'
+            outputIncludes: тесты прошли
+          why: >-
+            В проверке функция сравнивается сама с собой: слева и справа один и тот же вызов. Такой
+            assert не упадёт никогда — ни на верной функции, ни на версии с ошибкой.
+          try: >-
+            Справа запиши готовую строку, посчитанную по правилу, — как `"Встреча в..."` для
+            `preview("Встреча в 18:00 у входа", 12)`.
+          verify: Все тесты «Тесты замечают ошибку…» должны стать зелёными.
+        - id: top-level-asserts
+          when:
+            codeRegex: '^(?:assert\b|(?:for|if|while)\b.*:[ \t]*\n(?:[ \t]+.*\n|[ \t]*\n)*?[ \t]+assert\b)'
+            outputIncludes: тесты прошли
+          why: >-
+            Часть проверок стоит вне тестовой функции: на верхнем уровне программы, в цикле или в
+            блоке `if __name__ == "__main__":`. При запуске они выполняются, но тренажёр вызывает
+            на версиях с ошибками только функции test_…, а этих проверок там нет.
+          try: >-
+            Перенеси строки с assert внутрь своей функции test_… — с отступом. Снаружи оставь
+            только вызовы тестов и print.
+          verify: Все тесты «Тесты замечают ошибку…» должны стать зелёными.
+        - id: missed-short
+          when:
+            failedTest: t-m-short
+            outputIncludes: тесты прошли
+          why: >-
+            Тесты не заметили версию функции, которая обрезает и добавляет точки к любому тексту.
+            Похоже, все твои проверки — про длинный текст, а что функция делает с коротким, пока
+            не проверено.
+          try: Добавь текст короче limit и пустой текст. Что функция должна вернуть для каждого?
+          verify: Тест «Тесты замечают ошибку — точки добавляются к любому тексту» должен стать зелёным.
+        - id: missed-exact
+          when:
+            failedTest: t-m-exact
+            outputIncludes: тесты прошли
+          why: >-
+            Тесты не заметили версию функции с `<` вместо `<=`: она обрезает текст, в котором
+            ровно limit символов. Это граница правила, и видно ошибку только на ней.
+          try: Добавь проверку, где длина текста в точности равна limit.
+          verify: Тест «Тесты замечают ошибку — текст ровно в limit символов обрезается» должен стать зелёным.
+        - id: missed-long
+          when:
+            failedTest: t-m-long
+            outputIncludes: тесты прошли
+          why: >-
+            Тесты не заметили версию функции, которая оставляет limit символов и добавляет точки
+            сверх них: превью выходит длиннее экрана. Обрезку длинного текста твой набор пока не
+            проверяет.
+          try: Добавь текст длиннее limit и точное ожидание — ровно limit символов вместе с точками.
+          verify: Тест «Тесты замечают ошибку — превью длиннее limit» должен стать зелёным.
+      afterPass: >-
+        Ты сам нашёл границу в правиле, записанном словами: «не больше limit» включает текст ровно
+        в limit символов. Улучшение: для длинного текста добавь ещё и проверку длины,
+        `assert len(preview("Встреча в 18:00 у входа", 12)) == 12`, — она не зависит от того,
+        верно ли ты посчитал буквы в ожидании.
+      skills: [edge-cases, assert-checks, string-methods]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - Обычные (нормальные) случаи — по одному представителю из каждой группы входов, где функция ведёт себя одинаково.
+      - "Границы — сам порог и соседнее значение с другой стороны: порог ловит `>` вместо `>=`, сосед — порог, сдвинутый на единицу."
+      - "Особые входы: ноль, пусто, один элемент, край списка — на них код ломается чаще всего. Вместе с границами это граничные случаи."
+      - Ожидание — готовое значение по условию, а не копия формулы из кода. Хороший набор замечает каждого мутанта.
+    question: >-
+      Функция `average(marks)` возвращает средний балл по списку оценок. Назови три особых входа,
+      которые ты проверишь, и что ожидаешь для каждого.
+    answer: >-
+      Один элемент: `[5]` → 5, среднее равно самой оценке. Все одинаковые: `[4, 4, 4]` → 4. Пустой
+      список `[]`: формула «сумма, делённая на количество» поделит на ноль и упадёт с
+      ZeroDivisionError. Что функция должна вернуть в этом случае, решает условие задачи. Если в
+      условии об этом ничего нет, это вопрос к автору правила, а не повод угадывать. Такие вопросы
+      всплывают, когда подбираешь граничные случаи, — ещё до первого запуска.

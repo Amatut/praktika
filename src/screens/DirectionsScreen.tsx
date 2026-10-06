@@ -1,13 +1,39 @@
-import { Bot, Brain, Bug, CodeXml, Cpu, Database, Gamepad2, Heart, Search, Server, ShieldCheck, Smartphone, X, type LucideIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+// «Направления» — как панель «Расширения» редактора: слева список проб, справа документ выбранного направления
+// (история, первая проба, что нужно знать, работа и заказы, карта интересов). Вид — src/styles/screens/directions.css.
+import {
+  ArrowUp,
+  Bot,
+  Brain,
+  Bug,
+  ChevronRight,
+  CircleDashed,
+  CodeXml,
+  Compass,
+  Cpu,
+  Database,
+  ExternalLink,
+  Gamepad2,
+  GitBranch,
+  Heart,
+  Hourglass,
+  Search,
+  Server,
+  ShieldCheck,
+  Smartphone,
+  Timer,
+  TriangleAlert,
+  WifiOff,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useAsync, useDataVersion, useOnline, useSettings } from '../app/hooks.ts';
 import { href, navigate, paths } from '../app/router.ts';
 import { InlineText, Markdown } from '../components/Markdown.tsx';
-import { Notice, StatusBadge, formatDate, plural } from '../components/ui.tsx';
+import { Choice, Disclosure, EmptyState, Notice, StatusBadge, Tag, formatDate, plural } from '../components/ui.tsx';
 import type { Course, Lab } from '../content/schema.ts';
 import { getInterests, getMarketDatasets, saveInterest, type InterestInput } from '../storage/repo.ts';
 import type { InterestRecord, MarketDataset, MarketEntry } from '../storage/types.ts';
-import { PathChips } from './TodayScreen.tsx';
 
 export const LAB_ICON: Record<string, LucideIcon> = {
   web: CodeXml,
@@ -22,7 +48,7 @@ export const LAB_ICON: Record<string, LucideIcon> = {
   systems: Cpu,
 };
 
-const ENV_LABEL = { python: 'Python', web: 'Веб-пример', external: 'Внешний инструмент' } as const;
+const ENV_LABEL = { python: 'Python', web: 'веб-пример', external: 'внешний инструмент' } as const;
 const PROTOTYPE_LABEL = {
   working: 'рабочий прототип',
   simulation: 'учебная имитация',
@@ -41,9 +67,9 @@ const PERIOD_LABEL: Record<MarketEntry['period'], string> = { month: 'в мес�
 
 /** Что это за сумма: объявление — не выплата, опрос — не статистика выплат (см. docs/market.md). */
 function entryKind(entry: MarketEntry): string {
-  if (entry.sourceType === 'survey') return 'Опрос: суммы со слов участников, не выплаты';
-  if (entry.sourceType === 'statistics') return 'Статистика выплат';
-  return entry.isOffer ? 'Предложение (объявление), не выплата' : 'Подтверждённая оплата';
+  if (entry.sourceType === 'survey') return 'опрос, со слов участников';
+  if (entry.sourceType === 'statistics') return 'статистика выплат';
+  return entry.isOffer ? 'объявление, не выплата' : 'подтверждённая оплата';
 }
 
 /** Данные старше 30 дней или без понятной даты проверки могли устареть. */
@@ -62,6 +88,56 @@ function sameRegion(a: string, b: string): boolean {
   return a.trim().toLocaleLowerCase('ru-RU') === b.trim().toLocaleLowerCase('ru-RU');
 }
 
+/**
+ * Дата источника — всегда с годом (данные прошлого года не должны выглядеть свежими), словами, как везде:
+ * «26 сентября 2026». Сама дата не рвётся по строкам.
+ */
+function SourceDate({ value }: { value: string }) {
+  if (Number.isNaN(new Date(value).getTime())) return <>дата неизвестна</>;
+  return (
+    <time dateTime={value} className="nowrap">
+      {formatDate(value, { year: true })}
+    </time>
+  );
+}
+
+/** «4–6 сессий»: числа — моноширинным, слово — шрифтом интерфейса. */
+function Sessions({ lab }: { lab: Lab }) {
+  const [from, to] = lab.project.sessions;
+  return (
+    <>
+      <span className="n">
+        {from}–{to}
+      </span>{' '}
+      {plural(to, ['сессия', 'сессии', 'сессий'])}
+    </>
+  );
+}
+
+/** «после модуля 5»: слова — шрифтом интерфейса, номер — моноширинным. */
+function UnlockText({ number }: { number: number }) {
+  return (
+    <>
+      после модуля <span className="n">{number}</span>
+    </>
+  );
+}
+
+/** Телефон и планшет в портрете: документ направления стоит под списком, а не рядом. */
+const NARROW = '(max-width: 899px)';
+
+function smoothScroll(): ScrollBehavior {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
+/** Фокус на заголовок документа (скринридер объявит направление); на узком экране — ещё и прокрутка к документу. */
+function revealDetail(scroll: boolean, behavior: ScrollBehavior): number {
+  return requestAnimationFrame(() => {
+    document.getElementById('lab-title')?.focus({ preventScroll: true });
+    if (scroll) document.getElementById('lab-detail')?.scrollIntoView({ behavior, block: 'start' });
+  });
+}
+
 export function DirectionsScreen({ course, labId }: { course: Course; labId: string | null }) {
   const [query, setQuery] = useState('');
   const search = query.trim().toLocaleLowerCase('ru-RU');
@@ -73,84 +149,122 @@ export function DirectionsScreen({ course, labId }: { course: Course; labId: str
   const interestMap = new Map((interests.value ?? []).map((record) => [record.labId, record]));
   // Форма интересов берёт начальные значения один раз — поэтому ждём первой загрузки отметок.
   const interestsReady = interests.value !== undefined || interests.error !== null;
+  // Поиск скрыл выбранное направление: на узком экране его документ под «Не нашлось» выглядел бы результатом поиска.
+  const orphanDoc = search !== '' && !visibleLabs.includes(selected);
+  const docRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Вход по адресу направления (#/directions/games — из «Прогресса» или «Сегодня») на узком экране: документ — под
+  // списком из десяти рядов, поэтому сразу показываем его. Без направления в адресе (нижняя навигация) — список.
+  useEffect(() => {
+    if (!labId || !window.matchMedia(NARROW).matches) return;
+    const frame = revealDetail(true, 'auto');
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Другое направление открывается с начала документа (на ПК документ прокручивается сам). Выбранный ряд
+  // списка виден и при переходе по адресу (#/directions/systems — десятый ряд): на ПК список прокручивается
+  // сам под неподвижным поиском; на телефоне список — сама страница, её не двигаем.
+  useEffect(() => {
+    docRef.current?.scrollTo({ top: 0 });
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!list || !row || list.scrollHeight <= list.clientHeight) return;
+    const box = list.getBoundingClientRect();
+    const rowBox = row.getBoundingClientRect();
+    if (rowBox.top < box.top) list.scrollTop += rowBox.top - box.top;
+    else if (rowBox.bottom > box.bottom) list.scrollTop += rowBox.bottom - box.bottom;
+  }, [selected.id]);
 
   return (
-    <div className="page">
-      <header className="page-head">
-        <span className="eyebrow">Направления</span>
-        <h1>Найди то, что хочется создавать</h1>
-        <p className="page-lead">
-          Истории о разных областях и маленькие пробы. Решать, кем стать, пока не нужно: интерес и навык оцениваются отдельно.
-        </p>
-        <div style={{ marginTop: 8 }}>
-          <PathChips course={course} current="labs" />
+    <div className="page-split dir">
+      <div className="dir-list">
+        {/* Шапка и поиск — неподвижная строка панели, под ними прокручивается список (≥ 900 px).
+            На телефоне название экрана уже в верхней строке — метка панели остаётся только для скринридера. */}
+        <div className="pane-head dir-list-head">
+          <h1 className="plabel">
+            <Compass aria-hidden="true" />
+            Направления
+          </h1>
         </div>
-      </header>
+        <div className="dir-search">
+          <label className="lab-search">
+            <Search aria-hidden="true" />
+            <input className="input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Сайты, игры, боты…" aria-label="Поиск направления" />
+          </label>
+          <span className="dir-count" role="status">
+            <span className="visually-hidden">Показано: </span>
+            <span className="n">{visibleLabs.length}</span> из <span className="n">{course.labs.length}</span>
+          </span>
+        </div>
+        <div className="dir-scroll" ref={listRef}>
+          {visibleLabs.length === 0 ? (
+            <div className="dir-empty">
+              <EmptyState
+                title="Такого направления не нашлось"
+                icon={Search}
+                action={
+                  <button className="btn btn-sm" type="button" onClick={() => setQuery('')}>
+                    <X aria-hidden="true" />
+                    Сбросить поиск
+                  </button>
+                }
+              />
+            </div>
+          ) : (
+            <ul className="rows dir-rows" aria-label="Список направлений">
+              {visibleLabs.map((lab) => {
+                const Icon = LAB_ICON[lab.id] ?? CodeXml;
+                const interest = interestMap.get(lab.id);
+                const unlock = course.modules.find((module) => module.id === lab.unlockAfter);
+                return (
+                  <li key={lab.id}>
+                    <a
+                      className="row lab-card"
+                      href={href(paths.directions(lab.id))}
+                      aria-current={lab.id === selected.id ? 'true' : undefined}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        navigate(paths.directions(lab.id), { replace: true });
+                        // Узкий экран: документ под списком — переносим туда фокус и прокрутку. На ПК документ рядом:
+                        // с клавиатуры (Enter, у события detail = 0) фокус переходит к документу, мышью — остаётся в списке.
+                        const narrow = window.matchMedia(NARROW).matches;
+                        if (narrow || event.detail === 0) revealDetail(narrow, smoothScroll());
+                      }}
+                    >
+                      <span className="row-ic" aria-hidden="true">
+                        <Icon />
+                      </span>
+                      <span className="row-main">
+                        <span className="row-title">{lab.title}</span>
+                        <span className="row-sub">{lab.hook}</span>
+                        <span className="lab-card-meta">
+                          <span>
+                            <Sessions lab={lab} />
+                          </span>
+                          {unlock && (
+                            <span>
+                              <UnlockText number={unlock.number} />
+                            </span>
+                          )}
+                          {interest && (
+                            <StatusBadge tone="accent" icon={Heart}>
+                              {interest.status === 'tried' ? 'Пробовал' : 'Интересно'}
+                            </StatusBadge>
+                          )}
+                        </span>
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
 
-      <div className="labs-layout">
-        <div className="labs-catalog">
-          <div className="lab-search-wrap">
-            <label className="lab-search"><Search aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Сайты, игры, боты…" aria-label="Поиск направления" /></label>
-            <span className="small muted" role="status">{visibleLabs.length} из {course.labs.length}</span>
-          </div>
-          {visibleLabs.length === 0 && <div className="card lab-search-empty"><p>Такого направления не нашлось.</p><button className="btn btn-sm" type="button" onClick={() => setQuery('')}><X aria-hidden="true" />Сбросить поиск</button></div>}
-        <div className="lab-grid" role="list" aria-label="Лаборатории">
-          {visibleLabs.map((lab) => {
-            const Icon = LAB_ICON[lab.id] ?? CodeXml;
-            const interest = interestMap.get(lab.id);
-            const unlock = course.modules.find((module) => module.id === lab.unlockAfter);
-            return (
-              <a
-                key={lab.id}
-                role="listitem"
-                className="lab-card"
-                href={href(paths.directions(lab.id))}
-                aria-current={lab.id === selected.id ? 'true' : undefined}
-                onClick={(event) => {
-                  event.preventDefault();
-                  navigate(paths.directions(lab.id), { replace: true });
-                  // Описание под карточками: показываем его и переносим туда фокус (отступ под липкую строку — в CSS).
-                  if (window.matchMedia('(max-width: 1199px)').matches) {
-                    requestAnimationFrame(() => {
-                      document.getElementById('lab-title')?.focus({ preventScroll: true });
-                      document.getElementById('lab-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    });
-                  }
-                }}
-              >
-                <span className="lab-card-head">
-                  <Icon aria-hidden="true" />
-                  <strong>{lab.title}</strong>
-                </span>
-                <span className="lab-hook">{lab.hook}</span>
-                <span className="lab-facts">
-                  <span>
-                    <span className="lab-fact-label">Мини-проект:</span> {lab.project.title}
-                  </span>
-                  {lab.prerequisites[0] && (
-                    <span>
-                      <span className="lab-fact-label">Нужно знать:</span> {lab.prerequisites[0]}
-                    </span>
-                  )}
-                </span>
-                <span className="lab-foot">
-                  <span className="badge">
-                    {lab.project.sessions[0]}–{lab.project.sessions[1]} {plural(lab.project.sessions[1], ['сессия', 'сессии', 'сессий'])}
-                  </span>
-                  {unlock && <span className="badge">после модуля {unlock.number}</span>}
-                  {interest && (
-                    <span className="badge badge-accent">
-                      <Heart aria-hidden="true" />
-                      {interest.status === 'tried' ? 'Пробовал' : 'Интересно'}
-                    </span>
-                  )}
-                </span>
-              </a>
-            );
-          })}
-        </div>
-        </div>
-
+      <div className={`dir-doc${orphanDoc ? ' dir-doc-orphan' : ''}`} ref={docRef}>
         <LabDetail
           key={selected.id}
           course={course}
@@ -182,100 +296,135 @@ function LabDetail({
 }) {
   const unlock = course.modules.find((module) => module.id === lab.unlockAfter);
   const Icon = LAB_ICON[lab.id] ?? CodeXml;
+
+  // Узкий экран: список выше документа — возвращаемся к выбранному ряду (не к полю поиска: на телефоне фокус в поле
+  // открыл бы клавиатуру). Если поиск скрыл ряд — к поиску.
+  function backToList() {
+    const row = document.querySelector<HTMLElement>('.lab-card[aria-current="true"]');
+    const target = row ?? document.querySelector<HTMLElement>('.dir-search input');
+    target?.scrollIntoView({ behavior: smoothScroll(), block: row ? 'center' : 'start' });
+    target?.focus({ preventScroll: true });
+  }
+
   return (
-    <section id="lab-detail" className="lab-detail" aria-labelledby="lab-title">
-      <div className="card stack">
-        <div className="stack-sm">
-          <span className="eyebrow row" style={{ gap: 6 }}>
-            <Icon aria-hidden="true" width={14} height={14} />
-            Лаборатория
+    <section id="lab-detail" className="dir-detail" aria-labelledby="lab-title">
+      <header className="dir-head">
+        <button type="button" className="btn btn-sm btn-ghost dir-back" onClick={backToList}>
+          <ArrowUp aria-hidden="true" />
+          К списку
+        </button>
+        <div className="dir-head-top">
+          <span className="row-ic dir-head-ic" aria-hidden="true">
+            <Icon />
           </span>
           <h2 id="lab-title" tabIndex={-1}>
             {lab.title}
           </h2>
-          <p className="muted">{lab.hook}</p>
+        </div>
+        <Markdown text={lab.hook} className="dir-hook" />
+        <div className="dir-tags">
+          <Tag icon={Timer}>
+            <Sessions lab={lab} />
+          </Tag>
+          {unlock && (
+            <Tag icon={GitBranch}>
+              <UnlockText number={unlock.number} />
+            </Tag>
+          )}
+          <Tag>{PROTOTYPE_LABEL[lab.project.prototype]}</Tag>
+          <Tag>{ENV_LABEL[lab.project.environment]}</Tag>
+        </div>
+        {interestsReady && !interestsError && <InterestMark labId={lab.id} interest={interest} />}
+      </header>
+
+      <section className="dir-sec" aria-labelledby="lab-story-title">
+        <div className="dir-sec-head">
+          <h3 id="lab-story-title">История</h3>
+          {lab.story.fictional && <Tag>Вымышленная история</Tag>}
         </div>
         <div className="story">
-          <h3 className="story-title">{lab.story.title}</h3>
+          <h4 className="dir-story-title">{lab.story.title}</h4>
           <Markdown text={lab.story.text} />
-          {lab.story.fictional && <p className="story-note">История-пример: придумана или составлена для наглядности.</p>}
         </div>
+      </section>
 
-        <div className="stack-sm">
-          <span className="label">Первая проба</span>
-          <div className="fact">
-            <strong>{lab.project.title}</strong>
-            <span className="small">{lab.project.result}</span>
-            <span className="row" style={{ marginTop: 4 }}>
-              <span className="badge">
-                {lab.project.sessions[0]}–{lab.project.sessions[1]} сессий по 20–30 мин
-              </span>
-              <span className="badge">{ENV_LABEL[lab.project.environment]}</span>
-              <span className="badge">{PROTOTYPE_LABEL[lab.project.prototype]}</span>
-            </span>
-            <span className="tiny muted">Инструменты: {lab.project.tools}</span>
-          </div>
+      <section className="dir-sec" aria-labelledby="lab-try-title">
+        <div className="dir-sec-head">
+          <h3 id="lab-try-title">Первая проба</h3>
           {!lab.ready && (
-            <StatusBadge tone="muted">
-              Материалы пробы готовятся{unlock ? ` · имеет смысл после модуля ${unlock.number}` : ''}
+            <StatusBadge tone="muted" icon={Hourglass}>
+              Материалы пишутся
             </StatusBadge>
           )}
         </div>
-
-        <div className="grid-2">
-          <div className="stack-sm">
-            <span className="label">Нужно знать</span>
-            <ul className="bullets small">
-              {lab.prerequisites.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="stack-sm">
-            <span className="label">Что создают</span>
-            <ul className="bullets small">
-              {lab.products.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
+        <div className="dir-try">
+          <h4 className="dir-try-title">{lab.project.title}</h4>
+          <Markdown text={lab.project.result} />
+          <p className="dir-line">
+            <span className="dir-line-label">Инструменты</span>
+            <span>{lab.project.tools}</span>
+          </p>
         </div>
+      </section>
 
-        <details className="disclosure">
-          <summary>Обычный день специалиста</summary>
-          <div className="disclosure-body stack-sm small">
-            <p>{lab.day}</p>
-            <div className="grid-2">
-              <div>
-                <span className="label">Что нравится</span>
-                <ul className="bullets" style={{ marginTop: 6 }}>
-                  {lab.likes.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <span className="label">Что бывает сложно или скучно</span>
-                <ul className="bullets" style={{ marginTop: 6 }}>
-                  {lab.hard.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </details>
+      <div className="dir-sec dir-cols">
+        <section aria-labelledby="lab-know-title">
+          <h3 id="lab-know-title">Нужно знать</h3>
+          <ul className="bullets dir-bullets">
+            {lab.prerequisites.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+        <section aria-labelledby="lab-make-title">
+          <h3 id="lab-make-title">Что создают</h3>
+          <ul className="bullets dir-bullets">
+            {lab.products.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
       </div>
 
+      <Disclosure summary="Обычный день специалиста" className="dir-day">
+        <div className="dir-day-body">
+          <Markdown text={lab.day} />
+          <div className="dir-cols dir-cols-tight">
+            <div>
+              <h4 className="dir-h4">Что нравится</h4>
+              <ul className="bullets dir-bullets">
+                {lab.likes.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="dir-h4">Что бывает сложно или скучно</h4>
+              <ul className="bullets dir-bullets">
+                {lab.hard.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </Disclosure>
+
       <WorkAndOrders lab={lab} datasets={datasets} />
+
       {interestsError ? (
-        <Notice tone="error" title="Отметки об интересах не загрузились">
-          {interestsError.message}
-        </Notice>
+        <section className="dir-sec" aria-labelledby="interest-title">
+          <div className="dir-sec-head">
+            <h3 id="interest-title">Карта интересов</h3>
+          </div>
+          <Notice tone="error" title="Отметки не загрузились">
+            {interestsError.message}
+          </Notice>
+        </section>
       ) : interestsReady ? (
         <InterestForm lab={lab} interest={interest} />
       ) : (
-        <p className="small muted" role="status">
+        <p className="dir-sec loading-line" role="status">
           Загружаю отметки…
         </p>
       )}
@@ -304,142 +453,241 @@ function WorkAndOrders({ lab, datasets }: { lab: Lab; datasets: MarketDataset[] 
     { type: 'hourly', title: 'Ставка фрилансера за час' },
     { type: 'project', title: 'Бюджет заказа' },
   ];
+  const marketLabel = region
+    ? `Рынок: ${region}${settings.market.currency ? `, ${settings.market.currency}` : ''}${showOther ? ' и другие рынки' : ''}`
+    : all.length > 0
+      ? 'Все рынки · регион не выбран'
+      : 'Регион и валюта не выбраны';
 
   return (
-    <section className="card stack" aria-labelledby="market-title">
-      <div className="card-head" style={{ marginBottom: 0 }}>
-        <div>
-          <h3 id="market-title" className="card-title">
-            Работа и заказы
-          </h3>
-          <p className="card-sub">
-            {region
-              ? `Рынок: ${region}${settings.market.currency ? `, ${settings.market.currency}` : ''}${showOther ? ' и другие рынки' : ''}`
-              : all.length > 0
-                ? 'Регион не выбран — показаны записи всех рынков'
-                : 'Регион и валюта ещё не выбраны'}
-          </p>
+    <section className="dir-sec dir-market" aria-labelledby="market-title">
+      <div className="dir-sec-head">
+        <div className="dir-sec-title">
+          <h3 id="market-title">Работа и заказы</h3>
+          <p className="dir-sub">{marketLabel}</p>
         </div>
-        {!region && (
+        {/* Без обзоров ведёт в настройки рынка «Загрузить обзор» ниже — второй вход туда же не нужен. */}
+        {!region && datasets.length > 0 && (
           <a className="btn btn-sm" href={href(paths.settings('market'))}>
             Выбрать
           </a>
         )}
       </div>
 
-      <div className="market-fields">
-        {fields.map((field) => {
-          const items = byType(field.type);
-          return (
-            <div key={field.type} className="market-field">
-              <div className="label">{field.title}</div>
-              <div className="value">{items.length === 0 ? 'Данные ещё не загружены' : `${items.length} ${plural(items.length, ['запись', 'записи', 'записей'])} ниже`}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {entries.length > 0 ? (
-        <div style={{ overflowX: 'auto' }}>
-          <table className="market-table">
-            <thead>
-              <tr>
-                <th scope="col">Что</th>
-                <th scope="col">Сумма</th>
-                <th scope="col">Рынок и уровень</th>
-                <th scope="col">Источник</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => {
-                const age = checkedAge(entry.checkedAt);
-                return (
-                  <tr key={index}>
-                    <td>
-                      {entry.title}
-                      <div className="tiny muted">{entryKind(entry)}</div>
-                      {entry.note.trim() && (
-                        <details className="market-note-details">
-                          <summary className="tiny">Подробнее об источнике</summary>
-                          <div className="tiny market-note">{entry.note}</div>
-                        </details>
-                      )}
-                    </td>
-                    <td>
-                      <span className="nowrap">
-                        {formatAmount(entry.amountMin)}
-                        {entry.amountMax !== null && entry.amountMax !== entry.amountMin ? `–${formatAmount(entry.amountMax)}` : ''} {entry.currency}
-                      </span>
-                      <div className="tiny muted">{PERIOD_LABEL[entry.period]}, до налогов и комиссий</div>
-                    </td>
-                    <td>
-                      {entry.region}
-                      <div className="tiny muted">{entry.level}</div>
-                    </td>
-                    <td>
-                      <a href={entry.url} target="_blank" rel="noopener noreferrer">
-                        {SOURCE_LABEL[entry.sourceType]}
-                      </a>
-                      <div className={`tiny ${age.stale ? 'status-warn' : 'muted'}`}>
-                        {entry.publishedAt ? `опубл. ${formatDate(entry.publishedAt, { year: true })}, ` : ''}
-                        {age.unknown ? 'дата проверки неизвестна — могло устареть' : `проверено ${formatDate(entry.checkedAt, { year: true })}`}
-                        {age.stale && !age.unknown ? ' · могло устареть' : ''}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {!online && <p className="tiny muted">Нет сети — показан сохранённый обзор.</p>}
-        </div>
+      {datasets.length === 0 ? (
+        <EmptyState
+          title="Данные ещё не загружены"
+          icon={CircleDashed}
+          action={
+            <a className="btn btn-sm" href={href(paths.settings('market'))}>
+              Загрузить обзор
+            </a>
+          }
+        />
+      ) : all.length === 0 ? (
+        <EmptyState
+          title="В загруженных обзорах записей нет"
+          icon={CircleDashed}
+          action={
+            <a className="btn btn-sm" href={href(paths.settings('market'))}>
+              Обзоры рынка
+            </a>
+          }
+        />
       ) : (
-        <p className="small muted">
-          {all.length > 0
-            ? `Для рынка «${region}» записей нет. Суммы одного рынка нельзя переносить на другой.`
-            : 'Суммы здесь появятся только из проверенных источников — с датой, регионом, валютой, уровнем и ссылкой. Обзор можно импортировать в настройках. Приложение не придумывает цифры.'}
-        </p>
-      )}
-      {region && otherRegions.length > 0 && (
-        <div className="row">
-          <button type="button" className="btn btn-ghost btn-sm" aria-pressed={showOther} onClick={() => setShowOther((value) => !value)}>
-            {showOther ? `Только ${region}` : `Показать другие рынки: ${otherRegions.join(', ')}`}
-          </button>
-        </div>
+        <>
+          <dl className="dir-fields">
+            {fields.map((field) => {
+              const count = byType(field.type).length;
+              return (
+                <div key={field.type} className="dir-field">
+                  <dt>{field.title}</dt>
+                  <dd>
+                    {count === 0 ? (
+                      'нет записей'
+                    ) : (
+                      <>
+                        <span className="n">{count}</span> {plural(count, ['запись', 'записи', 'записей'])} ниже
+                      </>
+                    )}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+
+          {!online && (
+            <div className="dir-offline">
+              <Tag icon={WifiOff}>Без сети · сохранённый обзор</Tag>
+            </div>
+          )}
+
+          {entries.length > 0 ? (
+            <div className="dir-table-wrap">
+              <table className="market-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Что</th>
+                    <th scope="col">Сумма</th>
+                    <th scope="col">Рынок и уровень</th>
+                    <th scope="col">Источник</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <MarketRow key={index} entry={entry} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="dir-note">Для рынка «{region}» записей нет</p>
+          )}
+          {region && otherRegions.length > 0 && (
+            <div>
+              <button type="button" className="btn btn-sm btn-wrap" aria-pressed={showOther} onClick={() => setShowOther((value) => !value)}>
+                {showOther ? `Только ${region}` : `Показать другие рынки: ${otherRegions.join(', ')}`}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
-      <div className="stack-sm">
-        <span className="label">За что платят</span>
-        <ul className="plain-list">
+      <div className="dir-paid">
+        <h4 className="dir-h4">За что платят</h4>
+        <ul className="dir-tasks">
           {lab.paidTasks.map((task) => (
-            <li key={task.title} className="fact">
-              <strong className="small">{task.title}</strong>
-              <span className="small">
-                <span className="muted">Пример требований. </span>
-                <InlineText text={task.example} />
-              </span>
-              <span className="tiny muted">Чего пока не хватает новичку: {task.gap}</span>
+            <li key={task.title}>
+              <p className="dir-task-title">{task.title}</p>
+              <dl className="dir-kv">
+                <dt>Пример требований</dt>
+                <dd>
+                  <InlineText text={task.example} />
+                </dd>
+                <dt>Не хватает новичку</dt>
+                <dd>{task.gap}</dd>
+              </dl>
             </li>
           ))}
         </ul>
       </div>
-      <details className="disclosure">
-        <summary>Что нужно для настоящей работы</summary>
-        <div className="disclosure-body">
-          <ul className="bullets small">
-            {lab.realWork.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-          <p className="tiny muted" style={{ marginTop: 8 }}>
-            Ни один курс и ни один заказ сам по себе не означает готовность к работе: к учебным навыкам добавляются требования,
-            сроки, тестирование, правки, документация и общение.
-          </p>
-        </div>
-      </details>
+
+      <Disclosure summary="Что нужно для настоящей работы" className="dir-real">
+        <ul className="bullets dir-bullets">
+          {lab.realWork.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </Disclosure>
     </section>
   );
 }
+
+/**
+ * Запись обзора рынка — строка таблицы. «Подробнее» (заметка об источнике) раскрывается отдельной строкой на всю
+ * ширину таблицы, а не узкой колонкой «Что»; в строках-карточках — сразу под источником.
+ */
+function MarketRow({ entry }: { entry: MarketEntry }) {
+  const [open, setOpen] = useState(false);
+  const noteId = useId();
+  const age = checkedAge(entry.checkedAt);
+  const note = entry.note.trim();
+  const range = `${formatAmount(entry.amountMin)}${entry.amountMax !== null && entry.amountMax !== entry.amountMin ? `–${formatAmount(entry.amountMax)}` : ''}`;
+  return (
+    <>
+      <tr>
+        <td className="mt-what">
+          <span className="mt-title">{entry.title}</span>
+          <span className="mt-sub">{entryKind(entry)}</span>
+        </td>
+        <td data-label="Сумма">
+          {/* Валюта не отрывается от суммы: строка может перенестись только после тире диапазона. */}
+          <span className="mt-amount">
+            <span className="n">{range}</span>
+            {'\u00a0'}
+            {entry.currency}
+          </span>
+          <span className="mt-sub">{PERIOD_LABEL[entry.period]} · до налогов</span>
+        </td>
+        <td data-label="Рынок и уровень">
+          <span>{entry.region}</span>
+          <span className="mt-sub">{entry.level}</span>
+        </td>
+        <td data-label="Источник">
+          <a className="mt-link" href={entry.url} target="_blank" rel="noopener noreferrer">
+            {SOURCE_LABEL[entry.sourceType]}
+            <ExternalLink aria-hidden="true" />
+            <span className="visually-hidden"> (откроется в новой вкладке)</span>
+          </a>
+          {entry.publishedAt && (
+            <span className="mt-sub">
+              опубл. <SourceDate value={entry.publishedAt} />
+            </span>
+          )}
+          <span className="mt-sub">
+            {age.unknown ? (
+              'дата проверки неизвестна'
+            ) : (
+              <>
+                проверено <SourceDate value={entry.checkedAt} />
+              </>
+            )}
+          </span>
+          {age.stale && (
+            <span className="mt-stale">
+              <TriangleAlert aria-hidden="true" />
+              могло устареть
+            </span>
+          )}
+          {note && (
+            <button type="button" className="mt-note-toggle" aria-expanded={open} aria-controls={noteId} onClick={() => setOpen((value) => !value)}>
+              <ChevronRight aria-hidden="true" />
+              Подробнее<span className="visually-hidden"> об источнике</span>
+            </button>
+          )}
+        </td>
+      </tr>
+      {note && (
+        <tr className="mt-note-row" id={noteId} hidden={!open}>
+          <td colSpan={4}>
+            <p className="mt-note">{note}</p>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+/**
+ * Отметка интереса в шапке документа: кнопка, пока отметки нет, затем бейдж. Фокус остаётся на месте кнопки
+ * (обёртка с tabIndex −1), иначе после нажатия он ушёл бы в начало страницы.
+ */
+function InterestMark({ labId, interest }: { labId: string; interest: InterestRecord | null }) {
+  const markRef = useRef<HTMLDivElement>(null);
+  return (
+    <div className="dir-head-mark" ref={markRef} tabIndex={-1}>
+      {interest ? (
+        <StatusBadge tone="accent" icon={Heart}>
+          {interest.status === 'tried' ? 'Пробовал' : 'Интересно'}
+        </StatusBadge>
+      ) : (
+        <button
+          type="button"
+          className="btn"
+          onClick={async () => {
+            markRef.current?.focus({ preventScroll: true });
+            await saveInterest({ labId, status: 'curious' });
+          }}
+        >
+          <Heart aria-hidden="true" />
+          Интересно, хочу попробовать
+        </button>
+      )}
+    </div>
+  );
+}
+
+type ContinueAnswer = NonNullable<InterestRecord['continue']>;
 
 function InterestForm({ lab, interest }: { lab: Lab; interest: InterestRecord | null }) {
   const [liked, setLiked] = useState(interest?.liked ?? '');
@@ -465,50 +713,38 @@ function InterestForm({ lab, interest }: { lab: Lab; interest: InterestRecord | 
   }
 
   return (
-    <section className="card stack" aria-labelledby="interest-title">
-      <div>
-        <h3 id="interest-title" className="card-title">
-          Карта интересов
-        </h3>
-        <p className="card-sub">«Понравилось» не значит «освоено»: интерес хранится отдельно от навыков.</p>
+    <section className="dir-sec dir-interest" aria-labelledby="interest-title">
+      {/* Отметка «Интересно» / «Пробовал» и кнопка для неё — в шапке документа (InterestMark), здесь только вопросы. */}
+      <div className="dir-sec-head">
+        <h3 id="interest-title">Карта интересов</h3>
       </div>
-      {!interest && (
-        <div className="row">
-          <button type="button" className="btn" onClick={() => void save('curious')}>
-            <Heart aria-hidden="true" />
-            Интересно, хочу попробовать
-          </button>
-        </div>
-      )}
       <div className="interest-form">
-        <p className="small muted">После пробы (или просто прочитав историю) ответь на три вопроса — это поможет выбрать маршрут.</p>
         <label className="field">
           <span className="field-label">Что понравилось?</span>
-          <textarea className="textarea" rows={2} value={liked} onChange={(event) => setLiked(event.target.value)} />
+          <textarea className="textarea" rows={3} value={liked} onChange={(event) => setLiked(event.target.value)} />
         </label>
         <label className="field">
           <span className="field-label">Что утомило или показалось скучным?</span>
-          <textarea className="textarea" rows={2} value={tiring} onChange={(event) => setTiring(event.target.value)} />
+          <textarea className="textarea" rows={3} value={tiring} onChange={(event) => setTiring(event.target.value)} />
         </label>
         <div className="field">
           <span className="field-label" id={`${lab.id}-continue`}>
             Хочется продолжить?
           </span>
-          <div className="segmented" role="radiogroup" aria-labelledby={`${lab.id}-continue`}>
-            {(
-              [
-                ['yes', 'Да'],
-                ['maybe', 'Возможно'],
-                ['no', 'Пока нет'],
-              ] as const
-            ).map(([value, label]) => (
-              <button key={value} type="button" role="radio" aria-checked={answer === value} onClick={() => setAnswer(value)}>
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* Пока ответа нет, в группе ни одна кнопка не выбрана — в Tab попадает первая. */}
+          <Choice<ContinueAnswer | ''>
+            label="Хочется продолжить?"
+            labelledBy={`${lab.id}-continue`}
+            value={answer ?? ''}
+            options={[
+              ['yes', 'Да'],
+              ['maybe', 'Возможно'],
+              ['no', 'Пока нет'],
+            ]}
+            onChange={(value) => setAnswer(value === '' ? null : value)}
+          />
         </div>
-        <div className="row">
+        <div className="dir-actions">
           <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={!dirty}>
             Сохранить
           </button>
@@ -517,17 +753,10 @@ function InterestForm({ lab, interest }: { lab: Lab; interest: InterestRecord | 
               Проба пройдена
             </button>
           )}
-          {saved && <StatusBadge tone="good">Сохранено</StatusBadge>}
+          <span role="status" className="dir-saved">
+            {saved && <StatusBadge tone="ok">Сохранено</StatusBadge>}
+          </span>
         </div>
-        {interest && (
-          <p className="tiny muted">
-            {interest.status === 'tried'
-              ? 'Отмечено: пробовал это направление.'
-              : lab.ready
-                ? 'Отмечено: интересно. После пробы отметь «Проба пройдена».'
-                : 'Отмечено: интересно. Отметка «пробовал» появится, когда будут готовы материалы пробы.'}
-          </p>
-        )}
       </div>
     </section>
   );

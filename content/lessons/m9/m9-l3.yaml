@@ -1,0 +1,2328 @@
+id: m9-l3
+module: m9
+number: "9.3"
+title: "pytest: первый набор тестов"
+objective: >-
+  Поставить pytest в виртуальное окружение, запустить им набор тестов и по отчёту о падении
+  найти, какой тест упал, на какой проверке и что функция вернула вместо ожидаемого. Держать
+  тесты независимыми, чтобы любой из них проходил и отдельно от других.
+minutes: [30, 40]
+prerequisites: [m9-l2, m8-l3]
+skills: [pytest-basics, assert-checks, venv-deps]
+environment: external
+
+story:
+  title: Сорок проверок и одна остановка
+  fictional: true
+  text: >-
+    У Матвея, администратора велопроката «Круг», накопилось сорок проверок, и запускались они
+    подряд, одной программой. Стоило упасть одной — Python останавливался на ней, и Матвей не
+    знал, сломано ли что-то ещё: исправлял, запускал, находил следующую ошибку, и так по кругу.
+    Знакомый разработчик показал ему pytest: одна команда в терминале запускает каждый тест
+    отдельно и в конце показывает все упавшие сразу — вместе с тем, что функция вернула на самом
+    деле. Первый же запуск нашёл три ошибки за раз.
+
+why: >-
+  Когда тестов много, нужен инструмент, который сам их находит, запускает по одному и показывает
+  понятный отчёт. Например, команда `python -m pytest` за секунду сообщает «2 failed, 1 passed»,
+  какие именно тесты упали и что при этом вернула функция.
+
+usedIn: >-
+  pytest — один из самых распространённых инструментов для тестов на Python. На нём пишут тесты
+  разработчики и тестировщики-автоматизаторы, а его отчёт о падении — первое, что смотрят, когда
+  правка что-то сломала. С ним же ты будешь проверять свой итоговый проект.
+
+steps:
+  - id: why-pytest
+    type: theory
+    title: "pytest: каждый тест отдельно"
+    body: |-
+      До сих пор тесты запускал ты сам: вызывал функции `test_…` внизу файла и печатал «Все
+      тесты прошли». Пока тестов три, это удобно. Когда их сорок, начинаются неудобства. Одно
+      ты знаешь по уроку 9.1: AssertionError без сообщения не говорит, что вернула функция.
+      Второе увидишь в прогнозе ниже: что происходит с остальными тестами, когда один упал.
+
+      **pytest** — сторонняя библиотека для запуска тестов. Её ставят в виртуальное окружение
+      проекта через pip, как пакет из урока 8.3.
+
+      **Как pytest находит тесты.** Он просматривает папку и берёт файлы, имя которых
+      начинается с `test_` (например, `test_rent.py`), а в них — функции, имя которых тоже
+      начинается с `test_`. Внутри — обычный `assert`. Вызывать тесты самому не нужно: pytest
+      вызывает каждый сам.
+
+      **Каждый тест — отдельно.** Упал один — pytest всё равно запускает остальные, а в конце
+      показывает все падения сразу. Для каждого падения он пишет, что вернула функция и чего
+      ждал тест.
+
+      **Как устроен проект.** Функция — в одном файле, тесты — в другом:
+
+      ```text
+      python-practice\m9\
+          rent.py        ← функция rent_price
+          test_rent.py   ← from rent import rent_price и тесты
+      ```
+
+      Запуск — команда `python -m pytest` в папке проекта при включённом окружении. С ключом
+      `-v` pytest пишет имя и результат каждого теста.
+
+      **Независимые тесты.** pytest может запустить любой тест отдельно от других. Поэтому
+      каждый тест сам готовит свои данные: не рассчитывает, что другой тест выполнился раньше, и
+      не трогает настоящие файлы с данными — тест может их испортить или упасть, если данные в
+      файле поменялись. Для работы с файлами у pytest есть временная папка — она встретится в
+      самостоятельной работе.
+
+      **В тренажёре pytest нет:** pip здесь нет, как ты видел в уроке 8.3, и поставить пакет
+      нельзя. Поэтому в заданиях внизу файла с тестами стоит блок запуска:
+
+      ```python
+      if __name__ == "__main__":
+          test_one_hour()
+          print("Все тесты прошли")
+      ```
+
+      Он знаком тебе по уроку 8.2: когда файл запускают, `__name__` равно `"__main__"`, и тесты
+      вызываются. pytest же импортирует файл как модуль, поэтому у него блок не выполняется —
+      тесты pytest вызывает сам. Один и тот же файл работает и в тренажёре, и на компьютере.
+    simpler: >-
+      pytest — «запускалка» тестов. Она сама находит функции `test_…`, вызывает каждую отдельно
+      и в конце пишет, какие прошли, какие упали и почему. Ставится в окружение через pip,
+      запускается командой `python -m pytest`.
+    coach: >-
+      Установка — самая длинная часть урока. Если компьютера сейчас нет, сделай задания в
+      браузере, а чек-лист пройди позже.
+
+  - id: first-fail-stops
+    type: predict
+    title: Сколько тестов выполнится?
+    prompt: >-
+      Правило проката: первый час — 200, каждый следующий — 100, а меньше часа — как за час. В
+      функции случайно написали `150` вместо `100`. Файл запускают кнопкой «Запустить», без
+      pytest. Как думаешь, что успеет появиться на экране?
+    code: |-
+      def rent_price(hours):
+          if hours <= 1:
+              return 200
+          return 200 + (hours - 1) * 150
+
+
+      def test_one_hour():
+          assert rent_price(1) == 200
+
+
+      def test_three_hours():
+          assert rent_price(3) == 400
+
+
+      def test_long_ride():
+          assert rent_price(8) == 900
+
+
+      def test_half_hour():
+          assert rent_price(0.5) == 200
+
+
+      if __name__ == "__main__":
+          test_one_hour()
+          print("test_one_hour: ок")
+          test_three_hours()
+          print("test_three_hours: ок")
+          test_long_ride()
+          print("test_long_ride: ок")
+          test_half_hour()
+          print("test_half_hour: ок")
+    options:
+      - |-
+        test_one_hour: ок
+        test_half_hour: ок
+      - "test_one_hour: ок"
+      - |-
+        test_one_hour: ок
+        test_three_hours: ок
+        test_long_ride: ок
+        test_half_hour: ок
+    answer: "test_one_hour: ок"
+    explanation: >-
+      `rent_price(1)` вернула 200 — первый тест прошёл, строка напечаталась. `rent_price(3)`
+      вернула 500 вместо 400: AssertionError остановил весь файл, и до двух последних тестов
+      дело не дошло. Упавший тест не пропускается — после него не выполняется ничего. Из этого
+      запуска не узнать, что `test_long_ride` тоже падает (1250 вместо 900), а `test_half_hour`
+      исправен. pytest запустил бы все четыре теста и сообщил: 2 failed, 2 passed — обе ошибки
+      за один запуск.
+    coach: >-
+      После ответа посмотри на настоящий запуск: внизу AssertionError, и чисел в нём нет.
+      Сравни его с отчётом pytest дальше в уроке.
+
+  - id: install-run
+    type: checklist
+    title: pytest на компьютере
+    body: >-
+      Делай по пунктам и отмечай сделанное. Нужен компьютер и один раз интернет — чтобы
+      поставить pytest. Блок займёт минут 15–20, его удобно сделать отдельным подходом. Если
+      под рукой только телефон, пройди задания ниже, а к этому блоку вернись позже. Команды написаны для Windows и «Командной строки» (cmd), как в уроке 8.3.
+      Отличия для macOS и Linux — в «Если не получается».
+    items:
+      - id: folder
+        text: >-
+          **Подготовь папку и окружение.** В учебной папке `python-practice` создай папку `m9` и
+          открой в ней «Командную строку». Создай окружение командой `python -m venv .venv` и
+          включи его: `.venv\Scripts\activate`. В начале строки появится `(.venv)`.
+        help: |-
+          Открыть cmd в папке: в адресной строке Проводника набери `cmd` и нажми Enter. Или
+          открой папку `m9` в VS Code и выбери Terminal → New Terminal → ˅ → Command Prompt.
+
+          Сообщение «выполнение сценариев отключено в этой системе» значит, что открыт
+          PowerShell, — открой «Командную строку». Команда `python` не находится — пиши `py`, как
+          в уроке 0.4.
+
+          macOS и Linux: `python3 -m venv .venv`, включение — `source .venv/bin/activate`, и в
+          остальных командах урока тоже `python3` вместо `python`.
+      - id: install
+        text: >-
+          **Поставь pytest:** `python -m pip install pytest`. В конце появится строка
+          `Successfully installed …`. Проверь установку: `python -m pytest --version` — ответ
+          будет вида `pytest 9.1.1` (номер у тебя может быть другим).
+        help: |-
+          Нужен интернет: без него остановись здесь и вернись позже.
+
+          `No module named pytest` — окружение не включено (нет `(.venv)` в начале строки) или
+          pytest поставлен в другом окне. Включи окружение и повтори установку.
+
+          Вместе с pytest ставятся его помощники — pluggy, iniconfig и другие, это нормально.
+          Записать зависимости можно, как в уроке 8.3: `python -m pip freeze > requirements.txt`.
+      - id: files
+        text: |-
+          **Создай два файла** в папке `m9`. Первый — `rent.py` с функцией из урока 9.1:
+
+          ```python
+          def rent_price(hours):
+              if hours <= 1:
+                  return 200
+              return 200 + (hours - 1) * 100
+          ```
+
+          Второй — `test_rent.py`:
+
+          ```python
+          from rent import rent_price
+
+
+          def test_one_hour():
+              assert rent_price(1) == 200
+
+
+          def test_three_hours():
+              assert rent_price(3) == 400
+
+
+          def test_long_ride():
+              assert rent_price(8) == 900
+          ```
+        help: >-
+          Имена файлов — точно такие: pytest ищет файлы, имя которых начинается с `test_`.
+          Внизу `test_rent.py` вызовов тестов нет — pytest вызовет их сам. Команда `dir`
+          покажет, что оба файла лежат в папке `m9`.
+      - id: run
+        text: >-
+          **Запусти тесты:** `python -m pytest`. В последней строке должно быть `3 passed`.
+          Потом запусти `python -m pytest -v` — у каждого теста будет своя строка со словом
+          `PASSED`.
+        help: |-
+          `collected 0 items` и `no tests ran` — pytest не нашёл тестов: имя файла или функций
+          не начинается с `test_`, либо терминал открыт не в папке `m9`.
+
+          `ModuleNotFoundError: No module named 'rent'` — файл `rent.py` назван иначе или лежит
+          в другой папке.
+
+          `No module named pytest` — окружение не включено: вернись к первому пункту.
+      - id: break
+        text: >-
+          **Сломай и прочитай отчёт.** В `rent.py` замени `100` на `150`, сохрани и снова
+          запусти `python -m pytest`. Найди в отчёте: сколько тестов упало, как они называются,
+          строку со знаком `>` и строки, которые начинаются с `E`.
+        help: >-
+          Всё ещё `3 passed` — файл не сохранён: pytest читает то, что записано на диске, а не
+          то, что открыто в редакторе. Как читать отчёт — в следующем блоке урока.
+      - id: fix
+        text: >-
+          **Верни как было и запусти один тест.** Верни `100`, сохрани и запусти
+          `python -m pytest` — снова `3 passed`. Затем запусти только один тест:
+          `python -m pytest test_rent.py::test_long_ride`. В отчёте будет `collected 1 item` и
+          `1 passed`.
+        help: >-
+          Запись `файл::тест` просит pytest выполнить один тест — так проверяют, что тест не
+          зависит от других. Папки `.pytest_cache` и `__pycache__` pytest создаёт сам: их можно
+          удалить, а в Git они не нужны — впиши их в `.gitignore`, как в уроке 8.4.
+      - id: own-test
+        text: >-
+          **Допиши свой тест.** В конец `test_rent.py` добавь функцию `test_two_hours`: ожидание
+          посчитай сам по правилу проката. Сохрани и запусти `python -m pytest -v` — строк
+          `PASSED` станет четыре, хотя вызова ты не писал. Потом переименуй функцию в
+          `check_two_hours`, сохрани и запусти `python -m pytest`: в итоге снова `3 passed` —
+          функцию без `test_` в начале имени pytest не видит. Верни имя `test_two_hours`.
+        help: |-
+          Твой тест упал — найди в отчёте строку, которая начинается с `E`: первое число в ней —
+          что вернула функция, второе — твоё ожидание. Пересчитай по правилу проката: первый час
+          — 200, каждый следующий — 100. Функция здесь верная, её уже проверили три теста,
+          поэтому, если ошибся в расчёте, исправь ожидание в тесте.
+
+          Строк `PASSED` по-прежнему три — проверь, что имя функции начинается с `test_`, `def`
+          стоит без отступа, а файл сохранён.
+    coach: >-
+      Отмечай пункт, когда увидел результат в терминале, а не когда прочитал. Если установка
+      затянулась, здесь удобно сделать паузу: задания ниже работают и без компьютера.
+
+  - id: read-report
+    type: theory
+    title: Как читать отчёт о падении
+    body: |-
+      Вот что показал pytest в пункте «Сломай» (примерно так: путь, версии и время у тебя будут
+      другими):
+
+      ```text
+      ============================= test session starts =============================
+      platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
+      rootdir: C:\Users\...\python-practice\m9
+      collected 3 items
+
+      test_rent.py .FF                                                         [100%]
+
+      ================================== FAILURES ===================================
+      ______________________________ test_three_hours _______________________________
+
+          def test_three_hours():
+      >       assert rent_price(3) == 400
+      E       assert 500 == 400
+      E        +  where 500 = rent_price(3)
+
+      test_rent.py:9: AssertionError
+      _______________________________ test_long_ride ________________________________
+
+          def test_long_ride():
+      >       assert rent_price(8) == 900
+      E       assert 1250 == 900
+      E        +  where 1250 = rent_price(8)
+
+      test_rent.py:13: AssertionError
+      =========================== short test summary info ===========================
+      FAILED test_rent.py::test_three_hours - assert 500 == 400
+      FAILED test_rent.py::test_long_ride - assert 1250 == 900
+      ========================= 2 failed, 1 passed in 0.09s =========================
+      ```
+
+      Отчёт читают снизу вверх, как traceback в уроке 6.1:
+
+      1. **Последняя строка** — итог: `2 failed, 1 passed` — два теста упали, один прошёл.
+      2. **`short test summary info`** — список упавших: файл, `::`, имя теста и короткая
+         причина.
+      3. **Блок `FAILURES`** — подробности, по блоку на каждый упавший тест:
+         - строка со знаком `>` — упавший assert;
+         - `E assert 500 == 400` — **слева то, что вернула функция, справа ожидание** из теста;
+         - `where 500 = rent_price(3)` — какой вызов дал это значение;
+         - `test_rent.py:9` — файл и номер строки с этим assert.
+      4. **Строка прогресса** `test_rent.py .FF` — по знаку на тест, в порядке файла: точка —
+         прошёл, `F` — упал.
+
+      В уроке 9.1 AssertionError приходил без чисел, и значения приходилось печатать самому.
+      pytest показывает их сам. Поэтому и договариваемся писать `assert функция(...) ==
+      ожидание`: слева «что получилось», справа «что должно быть» — тогда строку `E` понимаешь
+      с первого взгляда.
+    simpler: >-
+      Отчёт читают снизу: сколько упало → какие → подробности. В строке `E assert 500 == 400`
+      слева то, что вернула функция, справа — чего ждал тест.
+    coach: >-
+      Отчёт длинный, но обычно нужны три места: итог внизу, строка с `>` и строки с `E`.
+
+  - id: report-quiz
+    type: quiz
+    title: Что вернула функция?
+    question: По отчёту выше — что вернула `rent_price(8)`?
+    options:
+      - "900"
+      - "1250"
+      - "8"
+    correct: 1
+    explanation: >-
+      В строке `E assert 1250 == 900` слева то, что вернула функция, справа — ожидание из теста.
+      Строка `where 1250 = rent_price(8)` это подтверждает: 200 + 7 × 150 = 1250. 900 — это
+      ожидание, а 8 — аргумент, то есть часы проката.
+
+  - id: practice-van
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m9-l3-e1
+      kind: fix
+      title: Исправь функцию по отчёту
+      statement: |-
+        Прокат «Круг» отвозит велосипеды на старт велопробега. В фургон помещается 4 велосипеда,
+        и функция `trips_needed(bikes)` считает, сколько рейсов понадобится. Нет велосипедов —
+        нет и рейсов.
+
+        На компьютере тесты из этого файла запустили через pytest, и он показал:
+
+        ```text
+            def test_ten_bikes():
+        >       assert trips_needed(10) == 3
+        E       assert 2 == 3
+        E        +  where 2 = trips_needed(10)
+
+        test_van.py:9: AssertionError
+        =========================== short test summary info ===========================
+        FAILED test_van.py::test_ten_bikes - assert 2 == 3
+        ========================= 1 failed, 2 passed in 0.09s =========================
+        ```
+
+        На компьютере функция лежит в `van.py`, а тесты — в `test_van.py`, поэтому номер строки
+        там другой.
+
+        По отчёту найди причину и исправь **функцию**. Тесты верные — их не меняй. Блок
+        `if __name__ == "__main__":` внизу запускает тесты в тренажёре: когда функция будет
+        исправлена, программа напечатает «Все тесты прошли».
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: Все тесты прошли"
+      constraints:
+        - "Тесты не меняй: исправлять нужно функцию `trips_needed`."
+        - "Функция возвращает целое число рейсов: 2, а не 2.0."
+      starterCode: |
+        def trips_needed(bikes):
+            # в фургон помещается 4 велосипеда
+            return bikes // 4
+
+
+        def test_full_trips():
+            assert trips_needed(8) == 2
+
+
+        def test_ten_bikes():
+            assert trips_needed(10) == 3
+
+
+        def test_no_bikes():
+            assert trips_needed(0) == 0
+
+
+        if __name__ == "__main__":
+            test_full_trips()
+            test_ten_bikes()
+            test_no_bikes()
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+        - id: t-call-10
+          kind: call
+          title: 10 велосипедов — 3 рейса
+          example: true
+          call: trips_needed(10)
+          expected: "3"
+        - id: t-call-7
+          kind: call
+          title: 7 велосипедов — 2 рейса
+          example: true
+          call: trips_needed(7)
+          expected: "2"
+        - id: t-call-8
+          kind: call
+          title: "8 велосипедов: два полных рейса"
+          call: trips_needed(8)
+          expected: "2"
+        - id: t-call-4
+          kind: call
+          title: "Граничный случай: ровно один полный фургон"
+          edge: true
+          call: trips_needed(4)
+          expected: "1"
+        - id: t-call-1
+          kind: call
+          title: "Граничный случай: один велосипед — тоже рейс"
+          edge: true
+          call: trips_needed(1)
+          expected: "1"
+        - id: t-call-0
+          kind: call
+          title: "Граничный случай: велосипедов нет"
+          edge: true
+          call: trips_needed(0)
+          expected: "0"
+        - id: t-call-101
+          kind: call
+          title: Большая группа
+          call: trips_needed(101)
+          expected: "26"
+        - id: t-tests-kept
+          kind: assert
+          title: Тесты остались прежними
+          code: |
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _reference(bikes):
+                return (bikes + 3) // 4
+
+
+            def _mutant(bikes):
+                return bikes // 4
+
+
+            def _some_test_fails(impl):
+                old = globals()["trips_needed"]
+                globals()["trips_needed"] = impl
+                try:
+                    for test in _tests:
+                        try:
+                            test()
+                        except Exception:
+                            return True
+                    return False
+                finally:
+                    globals()["trips_needed"] = old
+
+
+            assert _tests, "тестов нет"
+            assert not _some_test_fails(_reference), "тесты падают на верной функции"
+            assert _some_test_fails(_mutant), "тесты не замечают ошибку bikes // 4"
+          message: >-
+            Тесты должны остаться прежними: проходить на верной функции и падать, если вернуть в
+            неё `bikes // 4`.
+        - id: t-int
+          kind: assert
+          title: Рейсы — целое число
+          code: |
+            for _bikes in (0, 1, 4, 8, 10):
+                assert type(trips_needed(_bikes)) is int
+          message: >-
+            Функция должна возвращать целое число рейсов: 2, а не 2.0. Обычное деление `/` даёт
+            дробь, даже когда велосипеды делятся поровну, — считай рейсы, например, через `//` и
+            `%`.
+      criteria:
+        - "Функция возвращает число рейсов для любого количества велосипедов: неполный фургон — тоже рейс."
+        - Тесты остались прежними и проходят, программа печатает «Все тесты прошли».
+        - Если вернуть в функцию `bikes // 4`, тесты снова это заметят.
+      hints:
+        - >-
+          Прочитай строки `E` в отчёте: что вернула функция для 10 велосипедов и чего ждал тест?
+          Представь, как эти 10 велосипедов едут в фургоне по 4: сколько поедет в каждом рейсе?
+        - >-
+          Похожий случай: 7 пирожков раскладывают в коробки по 2. `7 // 2` даёт 3 полные
+          коробки, а `7 % 2` — 1 пирожок, которому коробки не хватило. Для него нужна ещё одна
+          коробка — всего 4.
+        - |-
+          Каркас функции:
+          ```text
+          рейсы = полные рейсы (деление нацело на 4)
+          если остаток от деления на 4 не ноль:
+              рейсы = рейсы + 1
+          вернуть рейсы
+          ```
+      solution:
+        code: |
+          def trips_needed(bikes):
+              # в фургон помещается 4 велосипеда
+              trips = bikes // 4
+              if bikes % 4 != 0:
+                  trips = trips + 1
+              return trips
+
+
+          def test_full_trips():
+              assert trips_needed(8) == 2
+
+
+          def test_ten_bikes():
+              assert trips_needed(10) == 3
+
+
+          def test_no_bikes():
+              assert trips_needed(0) == 0
+
+
+          if __name__ == "__main__":
+              test_full_trips()
+              test_ten_bikes()
+              test_no_bikes()
+              print("Все тесты прошли")
+        explanation: >-
+          Отчёт сказал главное: для 10 велосипедов функция вернула 2, а нужно 3. `bikes // 4` —
+          это только полные рейсы: остаток `//` отбрасывает, и два велосипеда остались на базе.
+          `bikes % 4` — сколько велосипедов осталось после полных рейсов; если остаток не ноль,
+          нужен ещё рейс. Для 10: 10 // 4 = 2, остаток 2 — всего 3 рейса. Для 8: остаток 0 —
+          2 рейса. Для 0 — 0 рейсов. Тот же ответ даёт `(bikes + 3) // 4`: прибавь вместимость
+          без единицы, и любой остаток дотянет до следующего рейса. Ещё один способ —
+          `math.ceil(bikes / 4)`, «округлить вверх».
+      altSolutions:
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return (bikes + 3) // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Приём «прибавить вместимость без единицы и поделить нацело».
+        - code: |
+            import math
+
+
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return math.ceil(bikes / 4)
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: math.ceil округляет вверх и возвращает целое число.
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 == 0:
+                    return bikes // 4
+                return bikes // 4 + 1
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Две ветки с return; `// 4 + 1` здесь верно, потому что стоит только в ветке с остатком.
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                trips = 0
+                while bikes > 0:
+                    bikes = bikes - 4
+                    trips = trips + 1
+                return trips
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Рейсы считаются циклом — фургон увозит по 4, пока велосипеды не кончатся.
+        - code: |
+            def trips_needed(bikes):
+                full = bikes // 4
+                rest = bikes % 4
+                if rest != 0:
+                    full += 1
+                return full
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3, f"получили {trips_needed(10)}"
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            def test_one_bike():
+                assert trips_needed(1) == 1
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                test_one_bike()
+                print("Все тесты прошли")
+          note: Отдельные переменные для полных рейсов и остатка, сообщение в assert и новый тест на 1 велосипед — тесты не ослаблены, только дополнены.
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 != 0:
+                    return bikes // 4 + 1
+                return bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Сначала ветка с остатком, в конце — return для деления поровну.
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 == 0:
+                    return bikes // 4
+                else:
+                    return 1 + bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: if/else, последний return стоит под else — разбор «нет return» не должен на это реагировать.
+        - code: |
+            def trips_needed(bikes):
+                """Сколько рейсов фургона на 4 велосипеда нужно."""
+                trips = 0
+                while trips * 4 < bikes:
+                    trips += 1
+                return trips
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            def test_big_group():
+                assert trips_needed(101) == 26
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                test_big_group()
+                print("Все тесты прошли")
+          note: Цикл «добавляй рейс, пока фургоны не вместят всех», докстринг и свой тест на большую группу.
+        - code: |
+            from math import ceil
+
+
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return ceil(bikes / 4)
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                for test_case in (test_full_trips, test_ten_bikes, test_no_bikes):
+                    test_case()
+                print("Все тесты прошли")
+          note: from math import ceil и тесты, которые вызываются циклом.
+      wrongSolutions:
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 2
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Тест подогнан под ответ функции.
+          expectMistake: test-weakened
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return bikes // 3
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Вместимость поменяли на 3 — тесты в файле случайно проходят, но для 1 и 101 велосипеда ответ неверный.
+          expectMistake: capacity-changed
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return bikes // 4 + 1
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Лишний рейс добавляется всегда, даже когда велосипеды делятся поровну.
+          expectMistake: plus-one
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return (bikes + 4) // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Прибавили 4 вместо 3 — тот же лишний рейс при делении поровну и для 0 велосипедов.
+          expectMistake: plus-one
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return round(bikes / 4)
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: round округляет к ближайшему целому, а не вверх.
+          expectMistake: round
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return round(bikes / 4 + 0.5)
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Тесты в файле проходят, но для 4 велосипедов выходит 2 рейса (round(1.5) == 2).
+          expectMistake: round
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return bikes / 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Обычное деление даёт 2.5 рейса.
+          expectMistake: float-division
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Стартовый код — функция не исправлена.
+          expectMistake: not-fixed
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Упавший тест удалён, функция не исправлена — «Все тесты прошли» печатается, но ответ для 10 неверный.
+          expectMistake: not-fixed
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                trips = bikes // 4
+                if bikes % 4 != 0:
+                    trips = trips + 1
+                return trips
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Функция исправлена, но вместе с ней удалён тест, который нашёл ошибку.
+          expectMistake: test-removed
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return int(bikes / 4) + 1
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Рейс добавляется всегда — тест на 8 велосипедов падает.
+          expectMistake: own-tests-fail
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                trips = bikes // 4
+                if bikes % 4 != 0:
+                    trips = trips + 1
+                return trip
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Опечатка в имени переменной — NameError; ученик должен увидеть общий разбор NameError, а не «тест удалён».
+          expectMistake: null
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                trips = bikes // 4
+                if bikes % 4 != 0:
+                    trips = trips + 1
+                return trips
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                print("ОТЛАДКА:", trips_needed(10))
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Функция верная, но остался отладочный вывод.
+          expectMistake: output-changed
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 != 0:
+                    return bikes // 4 + 1
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Рейс добавляется только при остатке, но для деления поровну return нет — функция возвращает None.
+          expectMistake: no-return-for-even
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                trips = bikes // 4
+                if bikes % 4 != 0:
+                    trips = trips + 1
+                    return trips
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: return trips с лишним отступом попал внутрь if — для 8 велосипедов None.
+          expectMistake: no-return-for-even
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                return bikes // 4 + bikes % 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Остаток прибавлен целиком, а не одним рейсом — для 10 выходит 4.
+          expectMistake: own-tests-fail
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 == 0:
+                    return bikes // 4 + 1
+                return bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: >-
+            Ветки перепутаны: рейс добавляется при делении поровну. plus-one сюда сознательно не
+            срабатывает — его условие исключает `// 4 + 1` после проверки `%`, чтобы не задевать
+            верную функцию с ветками при посторонней ошибке. Ученик видит общий совет про
+            упавший тест с подсказкой напечатать результат.
+          expectMistake: own-tests-fail
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes == 10:
+                    return 3
+                return bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Функция подогнана под упавший тест — тесты в файле проходят, скрытый тест на 7 велосипедов ловит; общий разбор по нему.
+          expectMistake: null
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                trips = bikes / 4
+                if bikes % 4 != 0:
+                    trips = bikes // 4 + 1
+                return trips
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: При делении поровну функция возвращает дробь 2.0 — ловит тест «Рейсы — целое число», его сообщение и есть разбор.
+          expectMistake: null
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 == 0:
+                    return bikes // 4
+                return bike // 4 + 1
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Идея верная, но опечатка bike в функции — NameError; нужен общий разбор, а не «лишний рейс».
+          expectMistake: null
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 == 0:
+                    return bikes // 4
+                return bikes // 4 + 1
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bike()
+                test_no_bikes()
+                print("Все тесты прошли")
+          note: Функция верная, опечатка в вызове теста — NameError; нужен общий разбор, а не «лишний рейс».
+          expectMistake: null
+        - code: |
+            def trips_needed(bikes):
+                # в фургон помещается 4 велосипеда
+                if bikes % 4 != 0:
+                    return 1 + bikes // 4
+                return bikes // 4
+
+
+            def test_full_trips():
+                assert trips_needed(8) == 2
+
+
+            def test_ten_bikes():
+                assert trips_needed(10) == 3
+
+
+            def test_no_bikes():
+                assert trips_needed(0) == 0
+
+
+            if __name__ == "__main__":
+                test_full_trips()
+                test_ten_bikes()
+                test_no_bikes()
+                print("Все тесты прошли", total)
+          note: Функция верная, NameError в последнем print — нужен общий разбор, а не «функция не исправлена».
+          expectMistake: null
+      mistakes:
+        - id: test-weakened
+          when:
+            codeRegex: 'trips_needed\(10\)\s*==\s*2\b'
+          where: "Строка `assert trips_needed(10) == …` в тесте `test_ten_bikes`"
+          why: >-
+            Ты поменял ожидание в тесте под ответ функции. Но тест прав: 10 велосипедов не
+            поместятся в два рейса по 4 — два велосипеда останутся на базе.
+          try: Верни в тесте `== 3` и исправь саму функцию.
+          verify: Программа напечатает «Все тесты прошли», а тест «10 велосипедов — 3 рейса» станет зелёным.
+        - id: capacity-changed
+          when:
+            codeRegex: '/\s*3\b'
+          where: Строка с `return` в функции `trips_needed`
+          why: >-
+            В фургон помещается 4 велосипеда, а не 3. Деление на 3 случайно совпало с тестами в
+            файле, но для 1 велосипеда даёт 0 рейсов, а для 101 — 33.
+          try: >-
+            Оставь деление на 4. Посчитай полные рейсы и подумай, что делать с велосипедами,
+            которые остались после них.
+        - id: no-return-for-even
+          when:
+            errorType: AssertionError
+            # Последний return функции стоит с отступом 8+ (внутри if), после него до следующего
+            # def ничего нет, а ветки else нет. Верный код сюда не попадает: тесты в блоке запуска
+            # у него проходят, AssertionError нет.
+            codeRegex: '^def trips_needed\b.*\n(?:(?![ \t]+else\b)(?:[ \t].*)?\n)*?[ \t]{8,}return\b.*\n(?:[ \t]*\n)*(?![ \t])'
+          where: Конец функции `trips_needed`
+          why: >-
+            `return` стоит только внутри `if`. Когда велосипеды делятся поровну (8 или 0), условие
+            ложно, до `return` дело не доходит, и функция возвращает `None`, а тест ждёт 2.
+          try: >-
+            Добавь в конце функции `return` для случая без остатка — с тем же отступом, что и
+            `if`, а не под ним. Проверить себя можно в «Запустить»: временно поставь перед блоком
+            запуска `print(trips_needed(8))`.
+          verify: "Тест «8 велосипедов: два полных рейса» должен стать зелёным. Не забудь потом убрать `print`."
+        - id: plus-one
+          when:
+            # `// 4 + 1` засчитывается, только если в функции до этой строки нет `%`:
+            # в верной функции с ветками (`if bikes % 4 …: return bikes // 4 + 1`) разбор не
+            # должен срабатывать, даже когда программа упала по другой причине.
+            codeRegex: '^def trips_needed\b[^\n]*(?:\n(?:[ \t]+[^%\n]*)?)*?\n[ \t]+[^%#\n]*(?://\s*4\s*\+\s*1|\+\s*4\s*\)\s*//\s*4)'
+            failedTest: t-call-8
+          where: Строка с `return` в функции `trips_needed`
+          why: >-
+            Теперь лишний рейс, когда велосипеды делятся поровну: для 8 велосипедов выходит 3
+            рейса вместо 2. Дополнительный рейс нужен, только если после полных рейсов кто-то
+            остался.
+          try: Добавляй рейс только тогда, когда остаток от деления на 4 не ноль — вспомни операцию `%`.
+        - id: round
+          when:
+            codeIncludes: round(
+          why: >-
+            `round` округляет к ближайшему целому, а не вверх: 1.25 → 1. А ровно половину Python
+            округляет к чётному числу: 2.5 → 2, 1.5 → 2. Рейс же нужен для любого остатка, даже
+            для одного велосипеда, и ни при каком делении поровну лишний рейс не нужен.
+          try: Посчитай полные рейсы через `//` и добавь ещё один, если есть остаток `%`.
+        - id: float-division
+          when:
+            codeRegex: 'return\s+bikes\s*/\s*4\s*$'
+          why: >-
+            Обычное деление `/` даёт дробь: для 10 велосипедов — 2.5 рейса. Фургон не может
+            съездить половину рейса, а функция должна вернуть целое число.
+          try: Полные рейсы считает `//`, оставшиеся велосипеды — `%`. Собери ответ из них.
+        - id: not-fixed
+          when:
+            # `return bikes // 4` — первая инструкция функции (перед ней только комментарии и
+            # пустые строки). В верной функции с ветками эта строка стоит после if, и разбор
+            # не сработает, даже если программа упала по другой причине.
+            codeRegex: '^def trips_needed\b[^\n]*\n(?:[ \t]*(?:#[^\n]*)?\n)*[ \t]+return\s+bikes\s*//\s*4[ \t]*$'
+            failedTest: t-call-10
+          where: "Строка `return bikes // 4`"
+          why: >-
+            Функция по-прежнему возвращает `bikes // 4`, и отчёт pytest по-прежнему прав: для 10
+            велосипедов она вернула 2, а нужно 3. Сколько велосипедов поедет в третьем рейсе и
+            какая часть кода их теряет?
+          try: >-
+            Разложи 10 велосипедов по фургонам на бумаге и сравни с тем, что считает
+            `bikes // 4`.
+        - id: own-tests-fail
+          when:
+            errorType: AssertionError
+          why: >-
+            Тесты в блоке запуска всё ещё падают: функция возвращает не то, чего ждёт один из
+            тестов.
+          try: >-
+            Посмотри в traceback, на каком тесте остановилась программа. Узнай, что вернула
+            функция: временно поставь перед блоком запуска `print(trips_needed(10))` — с числом
+            велосипедов из упавшего теста — и нажми «Запустить». Потом посчитай на бумаге,
+            сколько рейсов нужно, и найди, где функция считает иначе. `print` после этого убери.
+        - id: test-removed
+          when:
+            failedTest: t-tests-kept
+            # Строка блока запуска, до которой нигде нет проверки trips_needed(10) == 3.
+            # Без этого условия разбор срабатывал бы и на NameError: при падении программы
+            # не проходят все тесты.
+            codeRegex: '^if __name__(?<!trips_needed\(10\)\s*==\s*3[\s\S]*)'
+          where: "Тест `test_ten_bikes` и его вызов в блоке запуска"
+          why: >-
+            Если вернуть в функцию `bikes // 4`, ни один из тестов не упадёт. Значит, проверку
+            на 10 велосипедов удалили или изменили — а именно она нашла ошибку.
+          try: Верни тест `test_ten_bikes` в прежнем виде и его вызов в блоке запуска.
+        - id: output-changed
+          when:
+            failedTest: t-io
+            outputIncludes: Все тесты прошли
+          why: >-
+            Функция считает верно, но программа печатает не одну строку «Все тесты прошли».
+            Похоже, остался отладочный `print` или изменён блок запуска.
+          try: Убери лишний вывод. Блок запуска вызывает три теста и печатает «Все тесты прошли».
+      afterPass: >-
+        Ты нашёл причину по отчёту, не запуская отладку: строка `E assert 2 == 3` сразу сказала,
+        что вернула функция. Улучшение: добавь тест на 1 велосипед — это граница «остаток есть, а
+        полных рейсов ноль».
+      skills: [pytest-basics, debugging]
+
+  - id: practice-guests
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m9-l3-e2
+      kind: fix
+      title: Тесты, которые зависят друг от друга
+      statement: |-
+        Функция `add_guest(guest_list, name)` добавляет гостя в список приглашённых на день
+        рождения и возвращает, сколько гостей теперь в списке. Функция верная.
+
+        Тесты проходят, когда их запускают вместе и по порядку. Но pytest умеет запускать любой
+        тест отдельно — например, `python -m pytest test_guests.py::test_second_guest`. Тогда
+        `test_second_guest` падает: он рассчитывает, что Олю в общий список `guests` уже добавил
+        первый тест.
+
+        Сделай тесты независимыми: пусть каждый тест сам готовит список, который ему нужен.
+        Функцию не меняй. Проверка запустит каждый тест отдельно — так, как это сделал бы pytest,
+        — а потом все вместе в обратном порядке.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: Все тесты прошли"
+      constraints:
+        - "Функцию `add_guest` не меняй: исправлять нужно тесты."
+        - Второй тест по-прежнему проверяет, что для второго гостя функция возвращает 2.
+      starterCode: |
+        guests = []
+
+
+        def add_guest(guest_list, name):
+            guest_list.append(name)
+            return len(guest_list)
+
+
+        def test_first_guest():
+            assert add_guest(guests, "Оля") == 1
+
+
+        def test_second_guest():
+            # рассчитывает, что Оля уже добавлена первым тестом
+            assert add_guest(guests, "Макс") == 2
+
+
+        if __name__ == "__main__":
+            test_first_guest()
+            test_second_guest()
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вместе тесты проходят
+          example: true
+          expected: Все тесты прошли
+        - id: t-alone
+          kind: assert
+          title: Каждый тест проходит сам по себе
+          example: true
+          code: |
+            _source = open(__file__, encoding="utf-8").read()
+            _names = [name for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _passes_alone(name, impl):
+                fresh = {"__name__": "test_guests"}
+                exec(compile(_source, "main.py", "exec"), fresh)
+                fresh["add_guest"] = impl
+                try:
+                    fresh[name]()
+                except Exception:
+                    return False
+                return True
+
+
+            def _reference(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            _lonely = [name for name in _names if not _passes_alone(name, _reference)]
+            assert _names, "тестов нет"
+            assert not _lonely, f"отдельно падают: {_lonely}"
+          message: Каждый тест должен проходить, даже если запустить его отдельно от остальных.
+        - id: t-kept
+          kind: assert
+          title: Тесты замечают ошибку в функции
+          code: |
+            _source = open(__file__, encoding="utf-8").read()
+            _names = [name for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _passes_alone(name, impl):
+                fresh = {"__name__": "test_guests"}
+                exec(compile(_source, "main.py", "exec"), fresh)
+                fresh["add_guest"] = impl
+                try:
+                    fresh[name]()
+                except Exception:
+                    return False
+                return True
+
+
+            def _reference(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def _mutant(guest_list, name):
+                size = len(guest_list)
+                guest_list.append(name)
+                return size
+
+
+            assert any(_passes_alone(name, _reference) and not _passes_alone(name, _mutant)
+                       for name in _names)
+          message: >-
+            Тесты должны по-прежнему проверять ответ функции: версия, которая возвращает размер
+            списка до добавления, должна их уронить.
+        - id: t-second
+          kind: assert
+          title: Второй тест проверяет второго гостя
+          code: |
+            _source = open(__file__, encoding="utf-8").read()
+            _names = [name for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _passes_alone(name, impl):
+                fresh = {"__name__": "test_guests"}
+                exec(compile(_source, "main.py", "exec"), fresh)
+                fresh["add_guest"] = impl
+                try:
+                    fresh[name]()
+                except Exception:
+                    return False
+                return True
+
+
+            def _reference(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def _mutant(guest_list, name):
+                guest_list.append(name)
+                return 1
+
+
+            assert any(_passes_alone(name, _reference) and not _passes_alone(name, _mutant)
+                       for name in _names)
+          message: >-
+            Какой-то тест должен добавлять гостя в список, где уже кто-то есть, и ждать 2. Иначе
+            версия функции, которая всегда возвращает 1, пройдёт все тесты.
+        - id: t-order
+          kind: assert
+          title: Тесты проходят и в обратном порядке
+          code: |
+            _source = open(__file__, encoding="utf-8").read()
+            _names = [name for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+
+
+            def _reference(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            _fresh = {"__name__": "test_guests"}
+            exec(compile(_source, "main.py", "exec"), _fresh)
+            _fresh["add_guest"] = _reference
+            for _name in reversed(_names):
+                _fresh[_name]()
+          message: >-
+            Тесты должны проходить в любом порядке. Похоже, один тест оставляет гостей в общем
+            списке, и другой тест, который ждёт пустой список, получает лишних. Пусть каждый тест
+            работает со своим списком.
+        - id: t-func
+          kind: call
+          title: Функция осталась прежней
+          call: add_guest(["Оля"], "Макс")
+          expected: "2"
+      criteria:
+        - Каждый тест проходит, даже если запустить его отдельно от остальных или в другом порядке.
+        - Тесты по-прежнему замечают ошибку в функции, а второй тест проверяет добавление второго гостя.
+        - Функция `add_guest` не изменилась, программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          Представь, что pytest запустил только `test_second_guest`. Что в этот момент лежит в
+          общем списке `guests` и что вернёт функция?
+        - >-
+          Похожий случай: тест `assert count_items(cart) == 2` верен, только если перед ним
+          кто-то положил в общую корзину `cart` две вещи. Независимый тест сам собирает корзину —
+          `cart = ["хлеб", "молоко"]` — и только потом проверяет функцию:
+          `assert count_items(cart) == 2`.
+        - |-
+          Каркас второго теста:
+          ```text
+          def test_second_guest():
+              список = [... гость, который уже приглашён ...]
+              assert add_guest(список, "Макс") == 2
+          ```
+          Первому тесту нужен свой пустой список.
+      solution:
+        code: |
+          def add_guest(guest_list, name):
+              guest_list.append(name)
+              return len(guest_list)
+
+
+          def test_first_guest():
+              guest_list = []
+              assert add_guest(guest_list, "Оля") == 1
+
+
+          def test_second_guest():
+              guest_list = ["Оля"]
+              assert add_guest(guest_list, "Макс") == 2
+
+
+          if __name__ == "__main__":
+              test_first_guest()
+              test_second_guest()
+              print("Все тесты прошли")
+        explanation: >-
+          Каждый тест создаёт свой список: первый — пустой, второй — с уже приглашённой Олей.
+          Теперь тесту всё равно, запускался ли другой тест до него: pytest может выполнить их в
+          любом порядке или по одному. Общий список `guests` больше не нужен — его можно убрать,
+          чтобы случайно на него не опереться.
+      altSolutions:
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = ["Оля"]
+                assert add_guest(guest_list, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Исправлен только второй тест; первый по-прежнему пишет в общий пустой список — тоже независимо.
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                guests.clear()
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                guests.clear()
+                add_guest(guests, "Оля")
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Общий список очищается в начале каждого теста — хуже своего списка, но верно.
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_two_guests():
+                guest_list = []
+                assert add_guest(guest_list, "Оля") == 1
+                assert add_guest(guest_list, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_two_guests()
+                print("Все тесты прошли")
+          note: Оба шага в одном тесте с собственным списком.
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest([], "Оля") == 1
+
+
+            def test_second_guest():
+                assert add_guest(["Оля"], "Макс") == 2
+
+
+            def test_third_guest():
+                assert add_guest(["Оля", "Макс"], "Лена") == 3
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                test_third_guest()
+                print("Все тесты прошли")
+          note: Списки прямо в вызове и ещё один тест на третьего гостя.
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                guests = []
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                guests = ["Оля"]
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Внутри тестов своя переменная с тем же именем guests — это уже не общий список, разбор «зависит от общего списка» не должен мешать.
+        - code: |
+            def add_guest(guest_list, name):
+                # добавляем гостя и считаем, сколько их теперь
+                guest_list.append(name)
+
+                return len(guest_list)  # уже с новым гостем
+
+
+            def test_first_guest():
+                party = []
+                assert add_guest(party, "Оля") == 1
+
+
+            def test_second_guest():
+                party = []
+                add_guest(party, "Оля")
+                assert add_guest(party, "Макс") == 2, "второй гость — второй в списке"
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Второй тест сам добавляет Олю функцией в свой список; комментарии и пустая строка в функции — она не изменилась.
+      wrongSolutions:
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                # рассчитывает, что Оля уже добавлена первым тестом
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Стартовый код — второй тест зависит от первого.
+          expectMistake: still-dependent
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = guests.copy()
+                assert add_guest(guest_list, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Свой список, но скопированный из общего — зависимость от первого теста осталась.
+          expectMistake: still-dependent
+        - code: |
+            guests = ["Оля"]
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Олю положили в общий список заранее — теперь падает первый тест.
+          expectMistake: together-fails
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.clear()
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest([], "Оля") == 1
+
+
+            def test_second_guest():
+                assert add_guest(["Оля"], "Макс") == 1
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Вместо тестов «починена» функция — теперь она стирает список, и тест подогнан под неё.
+          expectMistake: function-changed
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                guest_list = []
+                assert add_guest(guest_list, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = []
+                assert add_guest(guest_list, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Второй тест создал свой список, но забыл положить в него Олю.
+          expectMistake: together-fails
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                test_first_guest()
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Второй тест вызывает первый — отдельно проходит, а вместе Оля добавляется дважды.
+          expectMistake: together-fails
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                add_guest([], "Оля")
+
+
+            def test_second_guest():
+                add_guest(["Оля"], "Макс")
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Из тестов пропали assert — они больше ничего не проверяют.
+          expectMistake: asserts-removed
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest([], "Оля") == 1
+
+
+            def test_second_guest():
+                assert add_guest([], "Макс") == 1
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Второй тест стал копией первого — добавление второго гостя больше не проверяется.
+          expectMistake: second-weakened
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = ["Оля"]
+                assert add_guest(guest_lst, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Опечатка в имени списка — NameError; нужен общий разбор NameError, а не «функция изменилась».
+          expectMistake: null
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = ["Оля"]
+                assert add_guest(guest_list, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Общий список удалён, а первый тест всё ещё им пользуется — NameError, общий разбор.
+          expectMistake: null
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                guest_list = []
+                assert add_guest(guest_list, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = ["Оля"]
+                assert add_guest(guest_list, "Макс") == 2
+                print("ОТЛАДКА:", guest_list)
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Тесты верные, но остался отладочный вывод.
+          expectMistake: output-changed
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                add_guest(guests, "Оля")
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Наивная попытка — второй тест кладёт Олю в общий список, где она уже есть после первого теста.
+          expectMistake: together-fails
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                # рассчитывает, что Оля уже добавлена первым тестом
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                guests.clear()
+                guests.append("Оля")
+                test_second_guest()
+                print("Все тесты прошли")
+          note: «Починен» блок запуска, а не тест — отдельно второй тест по-прежнему падает.
+          expectMistake: still-dependent
+        - code: |
+            guests = []
+
+
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                assert add_guest(guests, "Оля") == 1
+
+
+            def test_second_guest():
+                guests.clear()
+                guests.append("Оля")
+                assert add_guest(guests, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Второй тест сам наполняет общий список и оставляет в нём двух гостей — в обратном порядке первый тест падает; разбор — сообщение теста «в обратном порядке».
+          expectMistake: null
+        - code: |
+            def add_guest(guest_list, name):
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                guest_list = []
+                assert add_guest(guest_list, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = ["Оля"]
+                add_guest(guest_list, "Макс")
+                assert len(guest_list) == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Второй тест проверяет длину списка, а не ответ функции — версия «всегда 1» его пройдёт.
+          expectMistake: len-checked
+        - code: |
+            def add_guest(guest_list, name):
+                # добавляем гостя и считаем, сколько их теперь
+                guest_list.append(name)
+                return len(guest_list)
+
+
+            def test_first_guest():
+                guest_list = []
+                assert add_guest(guest_list, "Оля") == 1
+
+
+            def test_second_guest():
+                guest_list = ["Оля"]
+                assert add_guest(guest_lst, "Макс") == 2
+
+
+            if __name__ == "__main__":
+                test_first_guest()
+                test_second_guest()
+                print("Все тесты прошли")
+          note: Функция не тронута, только комментарий; опечатка в тесте — NameError, нужен общий разбор, а не «функция изменилась».
+          expectMistake: null
+      mistakes:
+        - id: together-fails
+          when:
+            errorType: AssertionError
+          why: >-
+            При обычном запуске один из тестов теперь падает: в списке, который он передаёт в
+            функцию, лежит не то, что нужно. Функция возвращает длину списка после добавления:
+            чтобы получить 1, список до вызова должен быть пустым, чтобы получить 2 — в нём
+            должен быть ровно один гость. Частая причина — тест кладёт Олю в общий список
+            `guests`, где она уже есть после первого теста.
+          try: >-
+            Посмотри в traceback, какой тест упал, и проверь, что лежит в его списке перед
+            вызовом `add_guest`. Тест не должен вызывать другой тест или опираться на общий
+            список — пусть создаёт свой.
+        - id: function-changed
+          when:
+            failedTest: t-func
+            # Тело функции уже не «append + return len». Условие нужно, чтобы разбор не
+            # срабатывал на NameError в тестах: при падении программы не проходит и t-func.
+            # Комментарии и пустые строки внутри функции допускаются — это не изменение.
+            codeRegex: '^def add_guest\b(?!\(\s*guest_list\s*,\s*name\s*\)\s*:[ \t]*(?:#[^\n]*)?\n(?:[ \t]*(?:#[^\n]*)?\n)*[ \t]+guest_list\.append\(\s*name\s*\)[ \t]*(?:#[^\n]*)?\n(?:[ \t]*(?:#[^\n]*)?\n)*[ \t]+return\s+len\(\s*guest_list\s*\)[ \t]*(?:#[^\n]*)?$)'
+          where: Функция `add_guest`
+          why: >-
+            Функция изменилась, а она была верной: для списка с Олей и нового гостя Макса она
+            должна вернуть 2. Ошибка была в тестах, а не в функции.
+          try: Верни функцию как было и исправляй тесты — пусть каждый сам готовит свой список.
+        - id: still-dependent
+          when:
+            failedTest: t-alone
+            # В теле test_second_guest (не в комментарии) есть общий список guests.
+            codeRegex: '^def test_second_guest\b.*(?:\n(?:[ \t].*)?)*?\n[ \t][^#\n]*\bguests\b'
+          where: Тест `test_second_guest`
+          why: >-
+            Вместе тесты проходят, а по отдельности — нет. Если pytest запустит только
+            `test_second_guest`, общий список `guests` будет пуст: функция вернёт 1, а тест ждёт 2.
+          try: Пусть тест сам создаёт список, в котором уже есть нужный гость, и передаёт его в `add_guest`.
+          verify: Тест «Каждый тест проходит сам по себе» должен стать зелёным.
+        - id: asserts-removed
+          when:
+            failedTest: t-kept
+            # Строка def test_…, после которой в коде нет ни одного assert.
+            codeRegex: '^def test_\w*(?![\s\S]*\bassert\b)'
+          where: Тесты `test_…`
+          why: >-
+            Тесты больше ничего не проверяют: даже если функция вернёт размер списка до
+            добавления, ни один тест не упадёт. Похоже, из тестов пропали assert.
+          try: Верни в тесты проверки вида `assert add_guest(...) == …` с ожиданием из условия.
+        - id: len-checked
+          when:
+            failedTest: t-second
+            # В теле test_second_guest есть assert len(...): тест проверяет список, а не ответ
+            # функции. Если вдобавок программа упала по другой причине, совет всё равно верен:
+            # такой тест версию «всегда 1» не ловит.
+            codeRegex: '^def test_second_guest\b.*(?:\n(?:[ \t].*)?)*?\n[ \t]+assert\s+len\s*\('
+          where: Тест `test_second_guest`
+          why: >-
+            Тест проверяет длину списка, а не то, что вернула `add_guest`. Функция, которая
+            добавляет гостя, но всегда возвращает 1, такой тест пройдёт — ошибку в ответе он не
+            заметит.
+          try: Сравнивай в assert результат вызова `add_guest(…)` с ожиданием 2, а не длину списка.
+          verify: Тест «Второй тест проверяет второго гостя» должен стать зелёным.
+        - id: second-weakened
+          when:
+            failedTest: t-second
+            # После def test_second_guest нигде нет ожидания «== 2».
+            codeRegex: '^def test_second_guest\b(?![\s\S]*==\s*2\b)'
+          where: Тест `test_second_guest`
+          why: >-
+            Ни один тест больше не проверяет, что для второго гостя функция возвращает 2: все
+            добавляют гостя в пустой список. Версия функции, которая всегда возвращает 1, пройдёт
+            такие тесты.
+          try: Пусть во втором тесте список до вызова уже содержит одного гостя, а тест ждёт 2.
+        - id: output-changed
+          when:
+            failedTest: t-io
+            outputIncludes: Все тесты прошли
+          why: >-
+            Тесты проходят, но программа печатает не одну строку «Все тесты прошли». Похоже,
+            остался отладочный `print` или изменён блок запуска.
+          try: Убери лишний вывод. Блок запуска вызывает тесты и печатает «Все тесты прошли».
+      afterPass: >-
+        Тесты больше не зависят от порядка и друг от друга: pytest может запустить любой из них
+        отдельно. Улучшение: если общий список `guests` остался, убери его совсем — тогда
+        случайно опереться на него уже не получится.
+      skills: [pytest-basics]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - pytest находит файлы `test_*.py` и функции `test_*` и запускает каждый тест отдельно — одно падение не останавливает остальные.
+      - "`python -m pytest` запускают в папке проекта при включённом окружении; `-v` — строка на каждый тест, `файл::тест` — один тест."
+      - "Отчёт читают снизу: итог → short test summary → блок FAILURES. В `E assert 500 == 400` слева то, что вернула функция, справа — ожидание."
+      - Тесты независимы — каждый сам готовит свои данные и не рассчитывает на другой тест.
+    question: >-
+      Кто-то написал свой тест для фургона, и pytest показал строки `E assert 3 == 2` и
+      `where 3 = trips_needed(10)`. Что вернула функция, чего ждал тест и что ты будешь
+      исправлять — тест или функцию?
+    answer: >-
+      Функция вернула 3, тест ждал 2: слева результат вызова `trips_needed(10)`, справа
+      ожидание из теста. Кто прав, решает условие, а не то, что удобнее поправить: 10
+      велосипедов по 4 в фургон — это 3 рейса, значит, функция права, а ошибся тест.
+      Исправлять нужно ожидание в тесте, функцию не трогать.

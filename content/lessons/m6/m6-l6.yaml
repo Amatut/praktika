@@ -1,0 +1,2246 @@
+id: m6-l6
+module: m6
+number: "6.6"
+title: "Самостоятельная работа: почини чужую программу"
+objective: >-
+  Самостоятельно найти и исправить в незнакомой короткой программе ошибки трёх видов —
+  синтаксическую, ошибку выполнения и логическую, — воспроизводя каждую и подтверждая исправление
+  на тех же данных, а затем привести в порядок другую программу, не меняя её вывода.
+minutes: [20, 30]
+prerequisites: [m6-l1, m6-l2, m6-l3, m6-l5]
+skills: [debugging, traceback-reading, clean-code]
+environment: python
+
+story:
+  title: Программа от предшественника
+  fictional: true
+  text: >-
+    Ярослав начал работать тренером на скалодроме и получил от предшественника две программы:
+    одна ведёт абонементы — сколько занятий осталось и кому пора продлевать, другая считает оплату
+    детской группы. Перед уходом предшественник что-то поправил в первой, и она перестала даже
+    запускаться, а вторая работает, но разобраться в ней трудно: переменные называются `n`, `t` и
+    `x`, а цена занятия записана в четырёх местах. Спросить, что и зачем менялось, не у кого — есть только код,
+    комментарии в нём и тетрадь с посещениями. Ярослав просит тебя помочь: ты сам находишь ошибки,
+    доказываешь каждое исправление и наводишь порядок, не ломая то, что работает.
+
+why: >-
+  Самостоятельная работа показывает, получается ли отлаживать без подсказок: воспроизвести
+  ошибку, прочитать сообщение, проверить гипотезу и доказать исправление на тех же данных. Так
+  чинят программы, которые достались от других людей.
+
+usedIn: >-
+  Поддержка чужого кода — обычная работа программиста: исправить ошибку в программе, которую писал
+  другой человек, и не сломать то, что уже работало. Навести порядок в коде перед изменениями,
+  не меняя его поведения, — тоже ежедневная часть этой работы.
+
+steps:
+  - id: before-start
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа — финиш модуля «Отладка и понятный код». Нового материала
+      нет. В обоих заданиях подсказки откроются только после первой проверки — сначала попробуй
+      сам.
+
+      Порядок отладки, который ты прошёл за модуль:
+
+      1. **Запусти** и прочитай сообщение снизу вверх: последняя строка, нижнее звено, звенья
+         выше (урок 6.1).
+      2. **Воспроизведи:** на каких данных ошибка повторяется каждый раз? Запиши их (6.2).
+      3. **Гипотеза → проверка:** отладочный вывод вроде `print(f"ОТЛАДКА: {left=}")` или
+         отладчик на компьютере (6.3, 6.4).
+      4. **Одно исправление** — и снова запуск на тех же данных.
+      5. Сообщений больше нет — **сверь вывод с примерами**: логическую ошибку Python не
+         покажет.
+      6. **Убери отладочный вывод.** Не трогай то, что работает.
+
+      Уборка кода (6.5) идёт так же маленькими шагами: переименовал везде — запустил — сравнил
+      вывод; вынес число в константу — запустил — сравнил.
+
+      Как это устроено в тренажёре:
+
+      - Проверка, на данных которой программа падает, не проходит. Пока примеры падают,
+        отдельные зелёные проверки ещё ничего не значат. Ошибки Python показывает по одной:
+        исправил одну — запусти снова.
+      - В поле «Ввод для „Запустить“» уже стоит ввод из первого примера. Хочешь проверить одну
+        запись — поменяй ввод там, не забыв первую строку с числом записей: `1`, а на следующей
+        строке сама запись, например `Ира;10;4`.
+      - Находку — запись, на которой старая версия ошибалась, — положи в переменную: проверка
+        сама убедится, что ошибка на ней воспроизводится.
+
+      Если время кончается, остановись после первого задания: второе можно сделать в другой день.
+    simpler: >-
+      Нового сегодня нет. В первой программе несколько ошибок: ищи их по одной — запуск,
+      сообщение, одна правка, снова запуск, а когда Python замолчит, сравни вывод с примером. Во
+      второй программе ошибок нет: сделай её понятнее так, чтобы вывод остался прежним.
+    coach: >-
+      Ошибиться на первой попытке нормально. Новое сообщение после правки — не шаг назад, а
+      следующая ошибка.
+
+  - id: warmup
+    type: predict
+    title: Разминка
+    prompt: >-
+      Перед отладкой — короткая разминка. Как думаешь, что покажет отладочный вывод с `=` в
+      последней строке?
+    code: |-
+      def parse(line):
+          parts = line.split(";")
+          return {"boat": parts[0], "hours": parts[1]}
+
+
+      order = parse("Катамаран;3")
+      print(f"{order=}")
+    options:
+      - "order={'boat': 'Катамаран', 'hours': 3}"
+      - "order={'boat': 'Катамаран', 'hours': '3'}"
+      - "{'boat': 'Катамаран', 'hours': '3'}"
+      - "order=Катамаран;3"
+    answer: "order={'boat': 'Катамаран', 'hours': '3'}"
+    explanation: >-
+      `split` возвращает список строк, поэтому в словаре лежит `'3'` — текст, а не число 3. Знак
+      `=` в f-строке печатает имя переменной и значение «как в коде», а у строк — кавычки.
+      Кавычки вокруг числа в отладочном выводе — верный признак, что его забыли превратить в число
+      через `int()`. Такие кавычки стоит замечать всегда.
+
+  - id: debug-order
+    type: order
+    title: Шаги отладки по порядку
+    prompt: >-
+      Программа падает или выдаёт неверный ответ. Расставь шаги отладки по порядку — так, как ты
+      будешь работать в главном задании.
+    items:
+      - id: reproduce
+        text: Запустить на данных, где видна ошибка, и записать эти данные
+      - id: read
+        text: Прочитать traceback снизу вверх, а если его нет — найти первое расхождение вывода с ожидаемым
+      - id: hypothesis
+        text: Выдвинуть одну гипотезу о причине
+      - id: check
+        text: Проверить гипотезу отладочным выводом или в отладчике
+      - id: fix
+        text: Исправить одну причину
+      - id: rerun
+        text: Запустить снова на тех же данных и на старых примерах
+      - id: cleanup
+        text: Убрать отладочный вывод
+    before:
+      - [reproduce, hypothesis]
+      - [read, hypothesis]
+      - [hypothesis, check]
+      - [check, fix]
+      - [fix, rerun]
+      - [fix, cleanup]
+    explanation: >-
+      Прочитать сообщение и записать данные, на которых ошибка повторяется, можно в любом порядке,
+      но оба шага — до гипотезы. Без воспроизведения гипотезу не на чем проверить: неизвестно, на
+      какие данные смотреть. Одна гипотеза — одна правка, иначе не понять, что помогло, а что
+      сломало. Запуск на тех же данных — доказательство, что ошибка исправлена, а старые примеры
+      показывают, что ничего не сломалось. Отладочный вывод можно убрать до этого запуска или
+      после — главное, до «Проверить»: с лишними строками вывод не совпадёт с примером, и проверка
+      не пройдёт.
+    coach: >-
+      Этот порядок пригодится и в итогах урока: там нужно будет рассказать, как ты воспроизвёл
+      ошибку, что проверил и чем подтвердил исправление.
+
+  - id: main-task
+    type: exercise
+    title: Главное задание
+    exercise:
+      id: m6-l6-e1
+      kind: fix
+      title: Абонементы скалодрома
+      statement: |-
+        **Самостоятельная работа модуля 6.** Подсказки откроются после первой проверки — сначала
+        попробуй сам.
+
+        Почини программу учёта абонементов скалодрома. Она читает число записей, потом сами
+        записи в виде `Имя;куплено;посещено`. Для каждой записи программа печатает, сколько
+        занятий осталось, или «абонемент закончился», а в конце — сколько абонементов пора
+        продлить. Продлевать пора, когда осталось **одно занятие или меньше**.
+
+        В программе несколько ошибок разного вида. Что должна делать каждая функция, написано в
+        комментарии к ней. Не переименовывай функции — проверка вызывает их по именам. Для ввода
+        из первого примера программа должна напечатать:
+
+        ```text
+        Аня: осталось 3
+        Боря: осталось 1
+        Вика: абонемент закончился
+        Продлить: 2
+        ```
+
+        **Доказательство.** Когда найдёшь ошибку в подсчёте «Продлить», запиши в переменную
+        `repro_line` одну запись в том же виде, что во вводе, — `Имя;куплено;посещено`, — на
+        которой старая версия считала неверно. Проверка сравнит на этой записи старое правило и
+        твоё.
+      input: >-
+        Первая строка — число записей (0 или больше), дальше по записи на строке:
+        `Имя;куплено;посещено`. Числа целые, посещено не больше, чем куплено.
+      output: >-
+        По строке на запись — `Имя: осталось N` или `Имя: абонемент закончился`, последняя строка —
+        `Продлить: K`. В коде есть переменная `repro_line`.
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Исправляй по одной ошибке и после каждой правки запускай программу.
+        - Не переименовывай функции и не меняй формат вывода.
+        - Перед «Проверить» убери отладочный вывод.
+      starterCode: |
+        # Учёт абонементов скалодрома.
+        # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+        def parse(line):
+            # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+            parts = line.split(";")
+            return {"name": parts[0], "bought": int(parts[1]), "visited": parts[2]}
+
+
+        def remaining(record):
+            # Сколько занятий осталось.
+            return record["bought"] - record["visited"]
+
+
+        def needs_renewal(record):
+            # Продлевать пора, когда осталось одно занятие или меньше.
+            return remaining(record) < 1
+
+
+        def status(record):
+            # Строка для списка: сколько осталось или «абонемент закончился».
+            left = remaining(record)
+            if left == 0
+                return f"{record['name']}: абонемент закончился"
+            return f"{record['name']}: осталось {left}"
+
+
+        count = int(input())
+        renew = 0
+        for i in range(count):
+            record = parse(input())
+            print(status(record))
+            if needs_renewal(record):
+                renew = renew + 1
+        print(f"Продлить: {renew}")
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "3\nАня;8;5\nБоря;8;7\nВика;4;4\n"
+          expected: |-
+            Аня: осталось 3
+            Боря: осталось 1
+            Вика: абонемент закончился
+            Продлить: 2
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "2\nГлеб;10;2\nДина;6;6\n"
+          expected: |-
+            Глеб: осталось 8
+            Дина: абонемент закончился
+            Продлить: 1
+        - id: t3
+          kind: io
+          title: "Граничный случай: записей нет"
+          edge: true
+          stdin: "0\n"
+          expected: "Продлить: 0"
+        - id: t4
+          kind: io
+          title: "Граничный случай: осталось одно занятие"
+          edge: true
+          stdin: "1\nЕва;12;11\n"
+          expected: |-
+            Ева: осталось 1
+            Продлить: 1
+        - id: t5
+          kind: call
+          title: "parse: результат как в комментарии к ней"
+          stdin: "0\n"
+          call: parse("Аня;8;5")
+          expected: "{'name': 'Аня', 'bought': 8, 'visited': 5}"
+        - id: t6
+          kind: call
+          title: "needs_renewal: осталось одно занятие"
+          edge: true
+          stdin: "0\n"
+          call: 'needs_renewal({"name": "Ева", "bought": 12, "visited": 11})'
+          expected: "True"
+        - id: t7
+          kind: call
+          title: "needs_renewal: занятий не осталось"
+          edge: true
+          stdin: "0\n"
+          call: 'needs_renewal({"name": "Дина", "bought": 6, "visited": 6})'
+          expected: "True"
+        - id: t8
+          kind: call
+          title: "needs_renewal: осталось два занятия"
+          edge: true
+          stdin: "0\n"
+          call: 'needs_renewal({"name": "Жора", "bought": 5, "visited": 3})'
+          expected: "False"
+        - id: t9
+          kind: assert
+          title: repro_line — одна запись из ввода
+          stdin: "0\n"
+          code: |
+            _parts = str(repro_line).split(";")
+            assert len(_parts) == 3
+            assert _parts[0].strip() != ""
+            assert _parts[1].strip().isdigit() and _parts[2].strip().isdigit()
+          message: >-
+            repro_line — одна запись в том же виде, что во вводе: Имя;куплено;посещено, два числа
+            через точку с запятой после имени.
+        - id: t10
+          kind: assert
+          title: На записи repro_line старая версия ошибалась
+          stdin: "0\n"
+          code: |
+            _parts = str(repro_line).split(";")
+            assert len(_parts) == 3 and _parts[1].strip().isdigit() and _parts[2].strip().isdigit()
+            _record = {"name": _parts[0].strip(), "bought": int(_parts[1]), "visited": int(_parts[2])}
+            _left = _record["bought"] - _record["visited"]
+            _old_answer = _left < 1  # так отвечала старая needs_renewal
+            assert needs_renewal(_record) != _old_answer
+          message: >-
+            На записи repro_line старое правило «Продлить» и твоё должны отвечать по-разному: это
+            запись, на которой ошибка воспроизводится и на которой видно, что её больше нет.
+      criteria:
+        - Программа запускается и не падает на примерах и граничных случаях.
+        - Вывод совпадает с примерами строка в строку.
+        - Каждая функция делает то, что написано в комментарии к ней.
+        - «Продлить» считается по правилу из условия — в том числе на границе.
+        - repro_line — запись `Имя;куплено;посещено`, на которой старая проверка отвечала неверно.
+        - Отладочного вывода в программе нет, функции не переименованы.
+      hints:
+        - >-
+          Работай по кругу: запуск → сообщение снизу вверх → одна правка → снова запуск. Когда
+          сообщений не останется, сравни вывод с первым примером построчно: какая строка не
+          совпала и какие записи должны были в неё попасть?
+        - |-
+          Тот же круг на другом коде — учёт книг в библиотеке. Программа падает с TypeError в
+          функции `days_late(book)` на строке `return book["days"] - 14`, а функции `read_book`,
+          которая собрала `book`, в traceback нет: она уже отработала. `print(f"ОТЛАДКА: {book=}")`
+          перед вызовом показывает `'days': '20'` — кавычки выдают строку, значит, исправлять нужно
+          там, где словарь создаётся.
+
+          А правило «штраф, если книгу вернули хотя бы на день позже срока» с условием
+          `days_late(book) > 1` ошибается ровно на границе. Поэтому его проверяют на книге, которую
+          вернули ровно на один день позже.
+        - |-
+          Три места:
+
+          1. Строка с `if` в status — Python прямо назовёт, чего в ней не хватает.
+          2. parse: одно поле словаря осталось строкой, хотя по комментарию там число — сделай его
+             числом так же, как bought.
+          3. needs_renewal: сравни условие с комментарием над ним на записи, где осталось ровно
+             одно занятие.
+
+          Потом `repro_line = "…"` — такая запись есть в первом примере — и убери отладку.
+      solution:
+        code: |
+          # Учёт абонементов скалодрома.
+          # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+          def parse(line):
+              # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+              parts = line.split(";")
+              return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+          def remaining(record):
+              # Сколько занятий осталось.
+              return record["bought"] - record["visited"]
+
+
+          def needs_renewal(record):
+              # Продлевать пора, когда осталось одно занятие или меньше.
+              return remaining(record) <= 1
+
+
+          def status(record):
+              # Строка для списка: сколько осталось или «абонемент закончился».
+              left = remaining(record)
+              if left == 0:
+                  return f"{record['name']}: абонемент закончился"
+              return f"{record['name']}: осталось {left}"
+
+
+          # Запись, на которой старая версия ошибалась: осталось 1, а «Продлить» её не считал.
+          repro_line = "Боря;8;7"
+
+          count = int(input())
+          renew = 0
+          for i in range(count):
+              record = parse(input())
+              print(status(record))
+              if needs_renewal(record):
+                  renew = renew + 1
+          print(f"Продлить: {renew}")
+        explanation: |-
+          Ошибок три, и каждая находится своим способом.
+
+          1. **Синтаксическая.** Программа не запускалась: `SyntaxError: expected ':'` в строке 24
+             — после условия `if left == 0` нет двоеточия. Не выполнилась ни одна строка.
+          2. **Ошибка выполнения.** После двоеточия появился traceback из трёх звеньев:
+             `<module>` (строка 33) → `status` (строка 23) → `remaining` (строка 13) и
+             `TypeError: unsupported operand type(s) for -: 'int' and 'str'`. Строка 13 верна: из
+             числа вычитается строка, которая пришла готовой. Создала её parse — в цепочке её уже
+             нет, она отработала раньше. `print(f"ОТЛАДКА: {record=}")` перед
+             `print(status(record))` показывает `'visited': '5'` в кавычках, а по комментарию parse
+             возвращает числа. Поэтому `int(parts[2])` ставится в parse — там, где значение
+             появилось.
+          3. **Логическая.** Python молчит, но в первом примере «Продлить: 1» вместо 2. Вручную:
+             продлевать пора Боре (осталось 1) и Вике (0). Гипотеза — Боря не считается. Временные
+             строки в цикле `left = remaining(record)`, `renew_now = needs_renewal(record)` и
+             `print(f"ОТЛАДКА: {left=} {renew_now=}")` показывают для Бори
+             `ОТЛАДКА: left=1 renew_now=False`: условие `< 1` не включает границу. По правилу «одно
+             или меньше» нужно `<= 1`. Запись Бори `Боря;8;7` и есть воспроизведение — она
+             записана в `repro_line`.
+
+          После исправления тот же ввод даёт «Продлить: 2», второй пример и граничные случаи не
+          изменились, отладочный вывод убран.
+      altSolutions:
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                name, bought, visited = line.split(";")
+                return {"name": name, "bought": int(bought), "visited": int(visited)}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                if remaining(record) <= 1:
+                    return True
+                return False
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                # print(f"ОТЛАДКА: {record=}")
+                print(status(record))
+                if needs_renewal(record):
+                    renew += 1
+            print(f"Продлить: {renew}")
+
+            repro_line = "Ева;12;11"
+          note: >-
+            Распаковка в parse, if/return в needs_renewal, `+=`, закомментированная отладочная
+            строка и repro_line в конце программы — запись из граничного случая.
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+            repro_line = "Боря; 8; 7"
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) < 2
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            Условие «меньше двух» — для целых чисел то же, что «одно или меньше»; repro_line с
+            пробелами после точки с запятой, в начале программы.
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.strip().split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2].strip())}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                left = remaining(record)
+                return left == 0 or left == 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if not left:
+                    return f"{record['name']}: абонемент закончился"
+                return record["name"] + ": осталось " + str(left)
+
+
+            repro_line = "Иван;5;4"
+
+            count = int(input())
+            to_renew = []
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    to_renew.append(record["name"])
+            print("Продлить:", len(to_renew))
+          note: >-
+            strip в parse, условие через `or`, `if not left`, склейка через `+`, подсчёт через
+            список и len(), print с запятой; в repro_line придуманная запись с одним оставшимся
+            занятием.
+      wrongSolutions:
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": parts[2]}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) < 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: Ничего не исправлено — нет двоеточия после if.
+          expectMistake: syntax-colon
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": parts[2]}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) < 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: Исправлено только двоеточие — visited осталось строкой, TypeError в remaining.
+          expectMistake: str-visited
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": parts[2]}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - int(record["visited"])
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: TypeError вылечен в remaining, где упало, а parse по-прежнему возвращает строку.
+          expectMistake: fixed-in-remaining
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) < 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left <= 1:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: Граница «исправлена» не в той функции — в status, а needs_renewal осталась прежней.
+          expectMistake: status-changed
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) < 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: "Программа не падает, но граница не исправлена — «Продлить: 1» вместо 2."
+          expectMistake: boundary
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) == 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: Граница «исправлена» на `== 1` — теперь не считается абонемент с нулём занятий.
+          expectMistake: zero-left
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: Все ошибки исправлены, но переменной repro_line нет.
+          expectMistake: repro-missing
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря: осталось 1"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: В repro_line строка вывода, а не запись из ввода.
+          expectMistake: repro-format
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Аня;8;5"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: На записи Ани старая и новая версии отвечают одинаково — это не воспроизведение.
+          expectMistake: repro-not-failing
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                left = remaining(record)
+                renew_now = needs_renewal(record)
+                print(f"ОТЛАДКА: {left=} {renew_now=}")
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: Всё исправлено, но отладочный print остался в цикле.
+          expectMistake: debug-left
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 2
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            Граница сдвинута слишком далеко: `<= 2` — в «Продлить» попадает и остаток 2.
+          expectMistake: boundary-too-far
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[1])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            В parse visited сделан числом, но взят не из той части строки — parts[1] вместо parts[2].
+          expectMistake: parse-values
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) < 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if remaining(record) <= 1:
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            Симптом исправлен в цикле, а needs_renewal по-прежнему с `< 1`.
+          expectMistake: boundary
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remainig(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            Граница исправлена, но в имени функции опечатка — NameError. Нужен общий разбор ошибки, а не разбор про границу.
+          expectMistake: null
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = Боря;8;7
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            repro_line без кавычек — NameError на верхнем уровне. Нужен общий разбор ошибки.
+          expectMistake: null
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(part[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) < 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            Опечатка в parse (part вместо parts), граница ещё не исправлена — сначала нужно объяснить падение.
+          expectMistake: null
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            repro_line = "Боря;8;7"
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                print("record:", record)
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            Отладочный print без метки ОТЛАДКА и без `=` остался в цикле.
+          expectMistake: debug-left
+        - code: |
+            # Учёт абонементов скалодрома.
+            # Ввод: первая строка — число записей, дальше записи «Имя;куплено;посещено».
+
+
+            def parse(line):
+                # "Аня;8;5" -> {"name": "Аня", "bought": 8, "visited": 5}
+                parts = line.split(";")
+                return {"name": parts[0], "bought": int(parts[1]), "visited": int(parts[2])}
+
+
+            def remaining(record):
+                # Сколько занятий осталось.
+                return record["bought"] - record["visited"]
+
+
+            def needs_renewal(record):
+                # Продлевать пора, когда осталось одно занятие или меньше.
+                return remaining(record) <= 1
+
+
+            def status(record):
+                # Строка для списка: сколько осталось или «абонемент закончился».
+                left = remaining(record)
+                if left == 0:
+                    return f"{record['name']}: абонемент закончился"
+                return f"{record['name']}: осталось {left}"
+
+
+            count = int(input())
+            renew = 0
+            for i in range(count):
+                record = parse(input())
+                repro_line = "Боря;8;7"
+                print(status(record))
+                if needs_renewal(record):
+                    renew = renew + 1
+            print(f"Продлить: {renew}")
+          note: >-
+            repro_line создаётся внутри цикла — при проверке без записей этой переменной нет.
+          expectMistake: repro-missing
+      mistakes:
+        - id: syntax-colon
+          when:
+            errorIncludes: "expected ':'"
+          why: >-
+            Python не может прочитать строку с `if`: после условия должно стоять двоеточие. Это
+            ошибка записи, поэтому не выполнилась ни одна строка программы — даже те, что выше.
+          try: >-
+            Поставь `:` в конце условия в строке из сообщения. Потом запусти снова — появится
+            следующее сообщение или вывод.
+          verify: Запусти программу — сообщение `expected ':'` должно исчезнуть.
+        - id: str-visited
+          when:
+            errorIncludes: "unsupported operand type(s) for -"
+          why: >-
+            В remaining из числа вычитается строка. Сама строка с вычитанием в remaining верна:
+            неверное значение пришло в неё готовым. Функция, которая его создала, уже отработала —
+            поэтому в traceback её нет.
+          try: >-
+            Выведи перед `print(status(record))` строку `print(f"ОТЛАДКА: {record=}")` и посмотри,
+            у какого значения кавычки. Потом найди функцию, которая собирает record, и сравни её с
+            комментарием к ней.
+          verify: >-
+            TypeError должен исчезнуть, а в первом примере появятся строки «осталось …». Отладочную
+            строку потом убери.
+        - id: fixed-in-remaining
+          when:
+            failedTest: t5
+            codeRegex: 'int\(\s*record\['
+            outputIncludes: Продлить
+          why: >-
+            Вывод стал верным, но parse по-прежнему возвращает visited строкой, хотя в её
+            комментарии — число. Ты превращаешь значение позже, чем оно появилось: любая другая
+            функция, которая возьмёт record из parse, споткнётся снова.
+          try: >-
+            Убери `int(...)` вокруг `record[…]` и превращай `parts[2]` в число прямо в parse — так
+            же, как там уже сделано для bought.
+          verify: 'Нажми «Проверить» — проверка «parse: результат как в комментарии к ней» должна пройти.'
+        - id: parse-values
+          when:
+            failedTest: t5
+            outputIncludes: Продлить
+          why: >-
+            parse возвращает не те значения, что обещает комментарий к ней. Ошибка в самом начале
+            цепочки, поэтому дальше всё считается неверно, хотя remaining и status тут ни при чём.
+          try: >-
+            Выведи перед `print(status(record))` строку `print(f"ОТЛАДКА: {record=}")` и сравни
+            словарь с образцом в комментарии к parse: для каждого поля проверь, из какой части
+            `parts` оно берётся и превращено ли в число.
+          verify: 'Нажми «Проверить» — проверка «parse: результат как в комментарии к ней» должна пройти.'
+        - id: status-changed
+          when:
+            outputIncludes: "Боря: абонемент закончился"
+          why: >-
+            Ты изменил условие в status, и теперь у Бори «абонемент закончился», хотя одно занятие
+            у него осталось. status была верной: ошибка не в том, что печатается про каждого, а в
+            том, кого считают в «Продлить».
+          try: >-
+            Верни в status `left == 0` — одна гипотеза, одна правка. «Продлить» считает
+            needs_renewal: выведи для каждой записи остаток и её ответ.
+          verify: 'В первом примере вторая строка снова должна быть «Боря: осталось 1».'
+        - id: boundary
+          when:
+            failedTest: t6
+            outputIncludes: Продлить
+          why: >-
+            Когда осталось ровно одно занятие, по правилу «одно или меньше» продлевать уже пора, а
+            подсчёт такую запись пропускает. Условие в needs_renewal не включает границу.
+          try: >-
+            Сравни условие в needs_renewal с комментарием над ним. Проверь его на записи из первого
+            примера, где осталось одно занятие: что вернёт remaining и что должна ответить функция?
+          verify: >-
+            Нажми «Проверить» — проверка «needs_renewal: осталось одно занятие» должна пройти, в
+            первом примере должно быть «Продлить: 2», а во втором — остаться «Продлить: 1».
+        - id: zero-left
+          when:
+            failedTest: t7
+            outputIncludes: Продлить
+          why: >-
+            Одно оставшееся занятие теперь считается, а абонемент, где занятий не осталось совсем,
+            из «Продлить» выпал. По правилу «одно занятие или меньше» ноль тоже входит.
+          try: >-
+            Проверь условие в needs_renewal на двух записях: где осталось 1 и где осталось 0. Оба
+            раза функция должна ответить True.
+          verify: 'Во втором примере должно быть «Продлить: 1» — это Дина с нулём занятий.'
+        - id: boundary-too-far
+          when:
+            failedTest: t8
+            outputIncludes: Продлить
+          why: >-
+            Теперь в «Продлить» попадает и абонемент, где осталось два занятия. По правилу «одно
+            занятие или меньше» два не входит: граница сдвинулась дальше, чем нужно.
+          try: >-
+            Проверь условие в needs_renewal на остатках 2, 1 и 0: функция должна ответить False,
+            True и True.
+          verify: 'Нажми «Проверить» — проверка «needs_renewal: осталось два занятия» должна пройти.'
+        - id: repro-missing
+          when:
+            errorIncludes: repro_line
+          why: >-
+            Переменной `repro_line` в программе нет — нечем доказать, что ошибка в «Продлить» была
+            воспроизведена. Или она есть, но создаётся внутри цикла или функции: проверка запускает
+            программу без записей, и такая строка не выполняется.
+          try: >-
+            Добавь строку `repro_line = "…"` с записью вида `Имя;куплено;посещено`, на которой
+            старая версия считала «Продлить» неверно. Удобное место — перед `count = int(input())`,
+            без отступа, вне цикла и функций.
+          verify: Нажми «Проверить» — проверки про repro_line должны пройти.
+        - id: repro-format
+          when:
+            failedTest: t9
+            outputIncludes: Продлить
+          why: >-
+            repro_line — одна запись в том же виде, что во вводе: имя и два числа через точку с
+            запятой. Строка вывода, одно имя или несколько записей сразу не подходят.
+          try: 'Скопируй одну строку из ввода примера: `repro_line = "Имя;куплено;посещено"`.'
+          verify: Нажми «Проверить» — проверка «repro_line — одна запись из ввода» должна пройти.
+        - id: repro-not-failing
+          when:
+            failedTest: t10
+            outputIncludes: Продлить
+          why: >-
+            На этой записи старая и исправленная версии отвечают одинаково — значит, ошибку она не
+            воспроизводит. Нужна запись, на которой старое условие давало неверный ответ.
+          try: >-
+            Для каждой записи первого примера сравни два ответа: что давало старое условие и что
+            должно быть по правилу «одно занятие или меньше». Где они разошлись — та запись и нужна.
+          verify: Нажми «Проверить» — проверка «На записи repro_line старая версия ошибалась» должна пройти.
+        - id: debug-left
+          when:
+            failedTest: t1
+            outputIncludes: Продлить
+            codeRegex: '^[ \t]*print\((?:[^\n]*(?:ОТЛАДКА|=\s*\})|\s*(?:"[^"\n]*"\s*,\s*)?(?:record|left|parts|remaining|needs_renewal)\b)'
+          why: >-
+            Похоже, в программе остался отладочный вывод: его строки попадают в вывод программы, и
+            он не совпадает с примером.
+          try: Удали отладочные print или поставь перед ними `#`.
+          verify: Вывод первого примера должен совпасть с образцом — четыре строки.
+      afterPass: >-
+        Три ошибки разного вида — и каждую ты нашёл своим способом: синтаксическую по сообщению,
+        ошибку выполнения по цепочке вызовов, логическую — по примеру на границе. `repro_line` —
+        твоё доказательство: на этой записи ошибка была, и на ней же видно, что её больше нет. Если
+        будешь за компьютером, пройди старую версию в отладчике (урок 6.4): на этой записи видно,
+        как needs_renewal возвращает False.
+      skills: [debugging, traceback-reading, fix-syntax, boundary-checks]
+      noHintsBeforeAttempt: true
+
+  - id: second-task
+    type: exercise
+    title: Вторая задача
+    exercise:
+      id: m6-l6-e2
+      kind: modify
+      title: "Оплата детской группы: понятнее, не ломая"
+      statement: |-
+        **Вторая задача самостоятельной работы.** Подсказки откроются после первой проверки.
+
+        Вторая программа предшественника считает оплату детской группы скалодрома за месяц.
+        Занятие стоит 350 руб., а если у ребёнка за месяц 4 занятия или больше — скидка 200 руб. с
+        суммы. Программа читает число детей, потом строки `Имя;занятий` и печатает, сколько платит
+        каждый, и итог.
+
+        Программа работает верно, но читать её трудно. Приведи её в порядок, **не меняя вывода**:
+
+        1. Имена `n`, `t`, `x` замени говорящими. Короткое `i` для счётчика цикла можно оставить,
+           а новых однобуквенных имён не заводи.
+        2. Числа 350, 4 и 200 должны встречаться в коде по одному разу — в константах в начале
+           программы, с именами ЗАГЛАВНЫМИ буквами.
+        3. Сколько платит один ребёнок за месяц, считает функция `month_cost(lessons)`: получает
+           число занятий и возвращает сумму за все занятия месяца — со скидкой, если она положена.
+           Основная часть вызывает её, а не считает сама.
+
+        Меняй по шагу и после каждого запускай с вводом первого примера — вывод должен оставаться
+        прежним.
+      input: >-
+        Первая строка — число детей (0 или больше), дальше по строке на ребёнка: `Имя;занятий`
+        (целое число, 0 или больше).
+      output: >-
+        По строке на ребёнка — `Имя: сумма`, последняя строка — `Всего: сумма`. Ровно как у старой
+        программы.
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Вывод не меняется — ни новых слов, ни других пробелов.
+        - Переименовывай во всех местах и запускай после каждого шага.
+      starterCode: |
+        n = int(input())
+        t = 0
+        for i in range(n):
+            x = input().split(";")
+            if int(x[1]) >= 4:
+                t = t + int(x[1]) * 350 - 200
+                print(x[0] + ": " + str(int(x[1]) * 350 - 200))
+            else:
+                t = t + int(x[1]) * 350
+                print(x[0] + ": " + str(int(x[1]) * 350))
+        print("Всего: " + str(t))
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "3\nМиша;4\nНика;2\nОля;8\n"
+          expected: |-
+            Миша: 1200
+            Ника: 700
+            Оля: 2600
+            Всего: 4500
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "2\nКира;3\nСтёпа;5\n"
+          expected: |-
+            Кира: 1050
+            Стёпа: 1550
+            Всего: 2600
+        - id: t3
+          kind: io
+          title: "Граничный случай: ноль занятий"
+          edge: true
+          stdin: "1\nПётр;0\n"
+          expected: |-
+            Пётр: 0
+            Всего: 0
+        - id: t4
+          kind: io
+          title: "Граничный случай: детей нет"
+          edge: true
+          stdin: "0\n"
+          expected: "Всего: 0"
+        - id: t5
+          kind: call
+          title: month_cost — три занятия
+          example: true
+          stdin: "0\n"
+          call: month_cost(3)
+          expected: "1050"
+        - id: t6
+          kind: call
+          title: "month_cost — ровно 4 занятия"
+          edge: true
+          stdin: "0\n"
+          call: month_cost(4)
+          expected: "1200"
+        - id: t7
+          kind: call
+          title: month_cost — ноль занятий
+          edge: true
+          stdin: "0\n"
+          call: month_cost(0)
+          expected: "0"
+        - id: t8
+          kind: assert
+          title: Говорящие имена
+          stdin: "0\n"
+          code: |
+            import ast
+
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _short = set()
+            for _node in ast.walk(_tree):
+                if isinstance(_node, ast.Name) and len(_node.id) == 1:
+                    _short.add(_node.id)
+                elif isinstance(_node, ast.arg) and len(_node.arg) == 1:
+                    _short.add(_node.arg)
+            assert not (_short - {"i", "j", "k", "_"}), _short
+          message: >-
+            В коде остались однобуквенные имена вроде n, t или x — дай им говорящие имена. Короткое
+            i можно оставить для счётчика цикла.
+        - id: t9
+          kind: assert
+          title: Числа — в константах
+          stdin: "0\n"
+          code: |
+            import ast
+
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+
+
+            def _written(number):
+                found = 0
+                for node in ast.walk(_tree):
+                    if isinstance(node, ast.Constant) and type(node.value) is int and node.value == number:
+                        found = found + 1
+                return found
+
+
+            def _pairs(node):
+                pairs = []
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        pairs.append((target, node.value))
+                    elif isinstance(target, ast.Tuple) and isinstance(node.value, ast.Tuple):
+                        pairs.extend(zip(target.elts, node.value.elts))
+                return pairs
+
+
+            def _in_constant(number):
+                for node in _tree.body:
+                    if isinstance(node, ast.Assign):
+                        for target, value in _pairs(node):
+                            if (isinstance(target, ast.Name) and target.id.isupper()
+                                    and isinstance(value, ast.Constant)
+                                    and type(value.value) is int and value.value == number):
+                                return True
+                return False
+
+
+            for _number in (350, 4, 200):
+                assert _written(_number) == 1 and _in_constant(_number), _number
+          message: >-
+            Числа 350, 4 и 200 должны встречаться в коде по одному разу — в константах с именами
+            ЗАГЛАВНЫМИ буквами, например `PRICE_PER_LESSON = 350`.
+      rules:
+        - id: uses-month-cost
+          use: ["call:month_cost"]
+          message: >-
+            Основная часть должна получать сумму за ребёнка вызовом month_cost(...), а не считать её
+            отдельно.
+      criteria:
+        - Вывод на всех примерах и граничных случаях такой же, как у старой программы.
+        - Нет однобуквенных имён, кроме счётчика цикла.
+        - 350, 4 и 200 записаны по одному разу — в константах в начале программы, с именами
+          заглавными буквами.
+        - month_cost(lessons) возвращает сумму за ребёнка за месяц, основная часть её вызывает.
+      hints:
+        - >-
+          Начни с функции: какой расчёт в старой программе повторяется в обеих ветках if и от чего
+          он зависит? Что меняется между ветками, а что остаётся одинаковым?
+        - >-
+          Приём тот же, что с репетиционной базой в уроке 6.5. На другом примере: `TICKET_PRICE = 40`
+          в начале программы, функция `ticket_cost(tickets)` возвращает `tickets * TICKET_PRICE`, а
+          в цикле — `cost = ticket_cost(tickets)` и печать готового значения. Числа живут в
+          константах, функция возвращает результат, основная часть читает, вызывает и печатает.
+        - |-
+          Каркас:
+
+          ```text
+          PRICE_PER_LESSON = …
+          DISCOUNT_FROM = …
+          DISCOUNT = …
+
+
+          def month_cost(lessons):
+              cost = …
+              if lessons >= DISCOUNT_FROM:
+                  …
+              return cost
+
+
+          students = int(input())
+          total = 0
+          for i in range(students):
+              parts = input().split(";")
+              cost = month_cost(…)
+              total = …
+              print(f"{…}: {cost}")
+          print(f"Всего: {total}")
+          ```
+      solution:
+        code: |
+          PRICE_PER_LESSON = 350
+          DISCOUNT_FROM = 4
+          DISCOUNT = 200
+
+
+          def month_cost(lessons):
+              cost = lessons * PRICE_PER_LESSON
+              if lessons >= DISCOUNT_FROM:
+                  cost = cost - DISCOUNT
+              return cost
+
+
+          students = int(input())
+          total = 0
+          for i in range(students):
+              parts = input().split(";")
+              name = parts[0]
+              cost = month_cost(int(parts[1]))
+              total = total + cost
+              print(f"{name}: {cost}")
+          print(f"Всего: {total}")
+        explanation: >-
+          Константы в начале называют каждое число: цену занятия, с какого числа занятий скидка и
+          сколько она. Формула, которая повторялась в обеих ветках, стала функцией month_cost: она
+          возвращает сумму, а основная часть только читает строку, вызывает функцию, копит итог и
+          печатает. Условие `>=` перенесено как было — у Миши ровно 4 занятия, и скидка ему
+          положена. f-строки печатают то же самое, что склейка через `+` и `str()`. Вывод на всех
+          примерах прежний — это и есть рефакторинг: устройство другое, поведение то же.
+      altSolutions:
+        - code: |
+            LESSON_PRICE = 350
+            DISCOUNT_MIN_LESSONS = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                if lessons >= DISCOUNT_MIN_LESSONS:
+                    return lessons * LESSON_PRICE - DISCOUNT
+                return lessons * LESSON_PRICE
+
+
+            children = int(input())
+            total = 0
+            for i in range(children):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total += cost
+                print(parts[0] + ": " + str(cost))
+            print("Всего: " + str(total))
+          note: Другие имена констант, два return, склейка через + и str(), `+=`.
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            def print_report(children):
+                total = 0
+                for _ in range(children):
+                    name, lessons = input().split(";")
+                    cost = month_cost(int(lessons))
+                    total = total + cost
+                    print(f"{name}: {cost}")
+                print(f"Всего: {total}")
+
+
+            print_report(int(input()))
+          note: Распаковка строки, цикл в отдельной функции print_report, `_` вместо i.
+        - code: |
+            PRICE, MIN_LESSONS_FOR_DISCOUNT, DISCOUNT = 350, 4, 200
+
+
+            def month_cost(lessons):
+                full_price = lessons * PRICE
+                if lessons < MIN_LESSONS_FOR_DISCOUNT:
+                    return full_price
+                return full_price - DISCOUNT
+
+
+            count = int(input())
+            total_paid = 0
+            for i in range(count):
+                line = input()
+                name, lessons_text = line.split(";")
+                paid = month_cost(int(lessons_text))
+                total_paid = total_paid + paid
+                print(name + ": " + str(paid))
+            print("Всего: " + str(total_paid))
+          note: >-
+            Константы заданы одной строкой через распаковку, условие «меньше порога — без скидки»
+            с ранним return, другие имена.
+      wrongSolutions:
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                print(cost)
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print(f"Всего: {total}")
+          note: month_cost печатает сумму, а не возвращает её.
+          expectMistake: print-not-return
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons > DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print(f"Всего: {total}")
+          note: При уборке `>=` превратилось в `>` — ровно 4 занятия остались без скидки.
+          expectMistake: boundary
+        - code: |
+            def month_cost(lessons):
+                if lessons >= 4:
+                    return lessons * 350 - 200
+                return lessons * 350
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print(f"Всего: {total}")
+          note: Функция и имена есть, но числа остались в формулах, 350 — дважды.
+          expectMistake: magic-left
+        - code: |
+            price_per_lesson = 350
+            discount_from = 4
+            discount = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * price_per_lesson
+                if lessons >= discount_from:
+                    cost = cost - discount
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print(f"Всего: {total}")
+          note: Числа вынесены, но имена констант строчными буквами.
+          expectMistake: lowercase-constant
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print("Всего: " + str(t))
+          note: t переименована в total не везде — в последней строке осталась t.
+          expectMistake: missed-rename
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            n = int(input())
+            total = 0
+            for i in range(n):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print(f"Всего: {total}")
+          note: Имя n осталось.
+          expectMistake: old-name-left
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{parts[0]}: {cost} руб.")
+            print(f"Всего: {total} руб.")
+          note: При уборке в вывод добавилось «руб.» — вывод изменился.
+          expectMistake: output-changed
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                lessons = int(parts[1])
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print(f"Всего: {total}")
+          note: Имена и константы есть, а функции month_cost нет.
+          expectMistake: no-function
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                lessons = int(parts[1])
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                total = total + cost
+                print(f"{parts[0]}: {cost}")
+            print(f"Всего: {total}")
+          note: Функция написана, но основная часть её не вызывает и считает сама.
+          expectMistake: function-unused
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                name = parts[0]
+                cost = month_cost(parts[1])
+                total = total + cost
+                print(f"{name}: {cost}")
+            print(f"Всего: {total}")
+          note: >-
+            При выносе в функцию потерялся int(): month_cost получает строку, TypeError при сравнении. Нужен общий разбор ошибки, а не «вывод изменился».
+          expectMistake: null
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                    return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                name = parts[0]
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{name}: {cost}")
+            print(f"Всего: {total}")
+          note: >-
+            return попал внутрь if: при числе занятий меньше 4 функция возвращает None. Нужен общий разбор ошибки.
+          expectMistake: null
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                name = parts[0]
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{name}: {cost}")
+            print(f"Всего: {total}")
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+          note: >-
+            Функция объявлена в конце файла, ниже цикла, который её вызывает.
+          expectMistake: def-after-call
+        - code: |
+            Price = 350
+            Discount_from = 4
+            Discount = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * Price
+                if lessons >= Discount_from:
+                    cost = cost - Discount
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                name = parts[0]
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{name}: {cost}")
+            print(f"Всего: {total}")
+          note: >-
+            Числа вынесены, но имена констант с большой буквы, а не ЗАГЛАВНЫМИ.
+          expectMistake: lowercase-constant
+        - code: |
+            def month_cost(lessons):
+                PRICE_PER_LESSON = 350
+                DISCOUNT_FROM = 4
+                DISCOUNT = 200
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                name = parts[0]
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(f"{name}: {cost}")
+            print(f"Всего: {total}")
+          note: >-
+            Константы ЗАГЛАВНЫМИ, но внутри функции, а не в начале программы.
+          expectMistake: constant-inside
+        - code: |
+            PRICE_PER_LESSON = 350
+            DISCOUNT_FROM = 4
+            DISCOUNT = 200
+
+
+            def month_cost(lessons):
+                cost = lessons * PRICE_PER_LESSON
+                if lessons >= DISCOUNT_FROM:
+                    cost = cost - DISCOUNT
+                return cost
+
+
+            students = int(input())
+            total = 0
+            for i in range(students):
+                parts = input().split(";")
+                name = parts[0]
+                cost = month_cost(int(parts[1]))
+                total = total + cost
+                print(name, ":", cost)
+            print(f"Всего: {total}")
+          note: >-
+            print с запятыми добавляет пробел перед двоеточием — вывод изменился.
+          expectMistake: output-changed
+      mistakes:
+        - id: def-after-call
+          when:
+            errorIncludes: "name 'month_cost' is not defined"
+            codeIncludes: def month_cost
+          why: >-
+            Функция `month_cost` в программе есть, но объявлена ниже основной части. Python
+            выполняет программу сверху вниз: когда цикл вызывает функцию, строка с `def` ещё не
+            выполнилась, и такого имени пока нет.
+          try: >-
+            Перенеси `def month_cost` вместе с её телом выше основной части — сразу после
+            констант.
+          verify: >-
+            Запусти с вводом первого примера — NameError должен исчезнуть, а вывод остаться
+            прежним.
+        - id: no-function
+          when:
+            errorIncludes: "name 'month_cost' is not defined"
+          why: >-
+            Проверка вызывает функцию `month_cost`, а в программе её нет. Вывод может быть верным,
+            но расчёт стоимости должен жить в одной функции.
+          try: >-
+            Вынеси расчёт в `def month_cost(lessons):` — она получает число занятий и возвращает
+            сумму через return. В цикле вызывай её.
+          verify: Нажми «Проверить» — проверки month_cost должны пройти.
+        - id: missed-rename
+          when:
+            errorType: NameError
+          why: >-
+            Переименовал не везде: в строке из сообщения осталось старое имя, которого Python уже не
+            знает.
+          try: >-
+            Найди все места со старым именем — в тренажёре это делается глазами, строка за строкой —
+            и замени оставшиеся. Потом запусти с вводом первого примера.
+          verify: Программа должна дойти до конца и напечатать «Всего».
+        - id: print-not-return
+          when:
+            failedTest: t5
+            codeRegex: 'def month_cost[^\n]*\n(?:[ \t]+[^\n]*\n)*?[ \t]+print\('
+          why: >-
+            month_cost печатает сумму, а вызов функции без return даёт None. Такую «сумму» нельзя
+            прибавить к итогу и проверить.
+          try: Замени print внутри month_cost на `return` с той же суммой, а печатай в основной части.
+          verify: Нажми «Проверить» — month_cost(3) должна вернуть 1050.
+        - id: boundary
+          when:
+            outputEquals: |-
+              Миша: 1400
+              Ника: 700
+              Оля: 2600
+              Всего: 4700
+          why: >-
+            У Миши ровно 4 занятия, а скидки он не получил. В старой программе было «4 или больше» —
+            `>=`, а при уборке условие стало строже.
+          try: Верни в условие скидки `>=`.
+          verify: 'В первом примере должно снова быть «Миша: 1200».'
+        - id: output-changed
+          when:
+            failedTest: t1
+            outputIncludes: Всего
+          why: >-
+            Вывод изменился, а рефакторинг меняет устройство программы, но не результат: те же
+            строки, те же слова и пробелы, те же суммы.
+          try: >-
+            Запусти с вводом первого примера и сравни построчно со старым выводом. Отличается текст —
+            верни прежний формат строки; отличаются суммы — сравни формулу в month_cost со старой.
+          verify: Вывод первого примера должен совпасть с образцом строка в строку.
+        - id: function-unused
+          when:
+            failedRule: uses-month-cost
+          why: >-
+            Функция month_cost написана, но основная часть считает стоимость сама. Тогда формула
+            снова живёт в двух местах, и правило скидки придётся менять дважды.
+          try: >-
+            В цикле замени расчёт стоимости вызовом `month_cost(...)` с числом занятий, а результат
+            печатай и прибавляй к итогу.
+          verify: Нажми «Проверить» — требование про month_cost должно выполниться.
+        - id: constant-inside
+          when:
+            failedTest: t9
+            codeRegex: '^[ \t]+[A-Z][A-Z0-9_]*\s*=\s*(350|4|200)\b'
+          why: >-
+            Константы с именами заглавными буквами есть, но заведены внутри функции. Константа —
+            настройка всей программы: её место в начале файла, где её сразу видно и где её меняют
+            в одном месте.
+          try: >-
+            Перенеси строки с константами из функции в начало программы — без отступа, перед
+            `def`.
+          verify: Нажми «Проверить» — проверка «Числа — в константах» должна пройти.
+        - id: lowercase-constant
+          when:
+            failedTest: t9
+            codeRegex: '^(?=[A-Za-z0-9_]*[a-z])[A-Za-z_][A-Za-z0-9_]*\s*=\s*(350|4|200)\s*(#.*)?$'
+          why: >-
+            Число вынесено в переменную — это уже полдела. Но в имени у неё есть строчные буквы,
+            как у обычной переменной. Константы по договорённости PEP 8 пишут ЗАГЛАВНЫМИ: так видно, что
+            значение задано один раз и по ходу программы не меняется.
+          try: >-
+            Переименуй такие переменные заглавными буквами — например `PRICE_PER_LESSON` — во всех
+            местах, где они встречаются.
+          verify: Нажми «Проверить» — проверка «Числа — в константах» должна пройти.
+        - id: magic-left
+          when:
+            failedTest: t9
+          why: >-
+            Числа 350, 4 или 200 всё ещё стоят в формулах или повторяются — или не заведены
+            константами в начале программы. Поменяется цена — придётся искать её по всему коду, и
+            одно место легко пропустить.
+          try: >-
+            Заведи в начале программы константы с именами заглавными буквами — например
+            `PRICE_PER_LESSON = 350` — и в формулах пиши имя константы вместо числа.
+          verify: Нажми «Проверить» — проверка «Числа — в константах» должна пройти.
+        - id: old-name-left
+          when:
+            failedTest: t8
+          why: >-
+            Программа работает, но в ней осталось однобуквенное имя — например, n, t, x или новое
+            вроде c. По нему не понять, что лежит в переменной.
+          try: >-
+            Дай переменной имя, которое говорит, что в ней хранится: число детей, итог, части
+            строки. Переименуй во всех местах и запусти.
+          verify: Нажми «Проверить» — проверка «Говорящие имена» должна пройти.
+      afterPass: >-
+        Вывод тот же, а правило скидки теперь меняется в одной строке — например, скидка с 5
+        занятий. И month_cost можно проверить отдельно, на границе в 4 занятия. Если это задание
+        далось трудно, повтори урок 6.5.
+      skills: [clean-code, function-design]
+      noHintsBeforeAttempt: true
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - >-
+        Если оба задания получились без подсказок — модуль пройден: ты находишь ошибку в
+        незнакомой программе и доказываешь исправление. Дальше — модуль 7, файлы и исключения.
+      - >-
+        Не читался traceback или исправлял там, где упало, а не где появилось значение, — повтори
+        урок 6.1. Трудно было подобрать repro_line — урок 6.2.
+      - >-
+        Долго не находилась ошибка в «Продлить» — повтори 6.3 и границы из урока 2.5, а на
+        компьютере пройди старую версию в отладчике (6.4).
+      - >-
+        При уборке ломался вывод или оставались старые имена и числа — повтори урок 6.5.
+    question: >-
+      Расскажи по шагам, как ты нашёл ошибку в подсчёте «Продлить»: как воспроизвёл, какую гипотезу
+      проверил и чем подтвердил исправление.
+    answer: >-
+      Например так. Сравнил вывод с первым примером: «Продлить: 1» вместо 2 — ошибка
+      воспроизводится на этих данных. Посчитал вручную: продлевать пора Боре (осталось 1) и Вике
+      (0). Гипотеза — Боря с одним занятием не считается. Добавил в цикл временные строки
+      `left = remaining(record)`, `renew_now = needs_renewal(record)` и
+      `print(f"ОТЛАДКА: {left=} {renew_now=}")` — для Бори `left=1 renew_now=False`: гипотеза
+      подтвердилась. Условие было `< 1`, а по правилу «одно или меньше» нужно `<= 1`.
+      После исправления тот же ввод дал «Продлить: 2», второй пример не изменился. Запись Бори
+      стала repro_line, отладочный print я убрал.

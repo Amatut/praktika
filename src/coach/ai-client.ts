@@ -664,17 +664,16 @@ function connectionError(url: URL): CoachError {
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   if (offline && !loopback) return new CoachNetworkError();
   const origin = appOrigin();
+  // Коротко: что случилось и одно действие; вторая строка — на случай, когда адаптер запущен, но отказал (CORS).
   if (loopback) {
     return new CoachUnavailableError(
-      `Сервер наставника не запущен или недоступен (${url.origin}). Запусти его командой «npm run coach» и проверь адрес в настройках.` +
-        (origin
-          ? ` Если адаптер уже запущен, возможно, адрес приложения (${origin}) не указан в COACH_ALLOWED_ORIGINS в файле .env — причину отказа адаптер пишет в своём окне.`
-          : ''),
+      `Нет связи с сервером наставника (${url.origin}). Запусти его: «npm run coach».` +
+        (origin ? ` Уже запущен — добавь ${origin} в COACH_ALLOWED_ORIGINS (.env).` : ''),
     );
   }
   return new CoachUnavailableError(
-    `Сервер наставника недоступен (${url.origin}). Проверь адрес в настройках и подключение к интернету.` +
-      (origin ? ` Если адаптер работает, проверь, что адрес приложения (${origin}) указан в COACH_ALLOWED_ORIGINS на сервере.` : ''),
+    `Нет связи с сервером наставника (${url.origin}). Проверь адрес и интернет.` +
+      (origin ? ` Сервер работает — добавь ${origin} в COACH_ALLOWED_ORIGINS.` : ''),
   );
 }
 

@@ -106,7 +106,9 @@ scope.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   if (request.type === 'run') {
     const runProgram = pyodide.globals.get('run_program');
     try {
-      const json = runProgram(request.code, request.stdin, request.limit) as string;
+      // Окружение (учебные файлы, базы, seed, ответы сети) передаётся в Python строкой JSON.
+      const environment = request.environment ? JSON.stringify(request.environment) : null;
+      const json = runProgram(request.code, request.stdin, request.limit, environment) as string;
       post({ type: 'run-result', id: request.id, result: JSON.parse(json) });
     } catch (error) {
       post(failure(request.id, error));

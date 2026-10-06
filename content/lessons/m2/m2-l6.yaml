@@ -1,0 +1,2897 @@
+id: m2-l6
+module: m2
+number: "2.6"
+title: "Самостоятельная работа: тарифы и скидки"
+objective: >-
+  Самостоятельно написать программу расчёта цены с несколькими правилами (возраст, день недели),
+  проверить её на граничных значениях и найти ошибку на границе в чужой программе.
+minutes: [20, 30]
+prerequisites: [m2-l5]
+skills: [conditions, boolean-logic, boundary-checks, comparisons]
+environment: python
+
+story:
+  title: Табличка у кассы
+  fictional: true
+  text: >-
+    У кассы бассейна «Волна» висит табличка с ценами: малыши плавают бесплатно, школьники и
+    пенсионеры — по льготному билету, а в выходные платный билет дороже. Администратор Света
+    считает цену в уме и в субботнюю очередь иногда ошибается: то забудет надбавку, то продаст
+    взрослый билет семнадцатилетнему. Света решила записать правила программой: программа не
+    устаёт и не путает границы. Сегодня эту программу пишешь ты, от пустого файла до зелёной
+    проверки, а потом ищешь ошибку в чужой кассе.
+
+why: >-
+  Самостоятельная работа показывает, что получается без подсказок: разложить правила на проверки,
+  поставить их в правильном порядке и не ошибиться на границах. Например, касса должна знать, что
+  семнадцатилетний ещё платит по льготному билету, а восемнадцатилетний — уже по взрослому.
+
+usedIn: >-
+  Так устроены кассы и калькуляторы цен в кинотеатрах, музеях и на транспорте, тарифы проката и
+  парковок, скидки в интернет-магазинах: несколько правил, порядок проверок и границы «от» и «до».
+
+steps:
+  - id: reminder
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа: два задания, и подсказки в каждом откроются только после
+      первой проверки. Это не запрет на помощь — просто сначала попробуй сам.
+
+      Всё нужное ты уже знаешь:
+
+      - Число из ввода сначала превращают: `age = int(input())`. Сравнить строку `"30"` с числом
+        через `<` Python не даст — будет TypeError.
+      - Строки сравниваются точно: `day == "сб"` верно, только если введено ровно `сб`.
+      - В цепочке `if / elif / else` выполняется первая подходящая ветка, остальные пропускаются.
+        Частное условие ставь раньше общего.
+      - `and` — нужны оба условия, `or` — хватит одного, `not` переворачивает ответ. Каждая часть —
+        полное сравнение: `day == "сб" or day == "вс"`. Когда смешиваешь `and` и `or`, ставь скобки.
+      - Переменную можно пересчитать от её текущего значения: `score = score + 5` (урок 1.2).
+      - Граница — значение, на котором меняется ответ. «От 18» — это `>= 18`, «младше 12» —
+        `< 12`, «до 10 включительно» — `<= 10`.
+
+      Как работать:
+
+      1. Прочитай правила и примеры.
+      2. До кода составь таблицу проверок — в комментариях или на листке: обычные значения, а у
+         каждой границы три точки: шаг до неё, она сама и шаг после. Ожидаемый ответ бери из
+         правила, а не из программы.
+      3. Напиши код.
+      4. Прогони таблицу через «Запустить». Поле «Ввод для „Запустить“» под редактором кода уже
+         заполнено вводом из первого примера (оно свёрнуто — нажми на заголовок). Каждая строка
+         поля — ответ на один `input()`: меняй их и сравнивай вывод с таблицей.
+      5. Нажми «Проверить».
+
+      Таблица проверок для правила «скидка от 1000» может выглядеть так:
+
+      ```text
+      # сумма   ожидаю
+      # 999     без скидки
+      # 1000    скидка
+      # 1001    скидка
+      # 300     без скидки
+      ```
+    simpler: >-
+      Порядок работы такой: прочитать правила → выписать границы и что на них должно получиться →
+      написать код → запустить по каждой строке таблицы → нажать «Проверить». Подсказки откроются
+      после первой проверки.
+    coach: >-
+      Ошибиться на первой попытке нормально: результаты покажут, что уже получается само, а что
+      стоит повторить.
+
+  - id: warmup
+    type: predict
+    title: Разминка
+    prompt: >-
+      Кассир проверяет программу для билетов: подставил в неё возраст пенсионера — 70 лет. Как
+      думаешь, что она напечатает?
+    code: |-
+      age = 70
+      if age >= 18:
+          print("Взрослый билет")
+      elif age >= 65:
+          print("Пенсионный билет")
+      else:
+          print("Детский билет")
+    options:
+      - Взрослый билет
+      - Пенсионный билет
+      - Детский билет
+    answer: Взрослый билет
+    explanation: >-
+      `70 >= 18` — True, поэтому цепочка остановилась на первой ветке, и до проверки `age >= 65`
+      дело не дошло. Общее условие («от 18») перехватило частное («от 65»). Пенсионную проверку
+      нужно ставить раньше взрослой.
+    coach: >-
+      Если ответил «Пенсионный билет» — это частая ловушка цепочки `elif`. Хорошо, что она
+      попалась до главного задания, а не в нём.
+
+  - id: main-task
+    type: exercise
+    title: Самостоятельная работа
+    exercise:
+      id: m2-l6-e1
+      kind: write
+      title: Касса бассейна
+      statement: |-
+        Напиши программу для кассы бассейна «Волна». Она читает две строки: возраст (целое число) и
+        день недели — ровно так, маленькими буквами: `пн`, `вт`, `ср`, `чт`, `пт`, `сб` или `вс`.
+
+        Цена разового посещения:
+
+        - младше 7 лет — бесплатно, в любой день;
+        - от 7 до 17 лет включительно и от 65 лет — льготный билет, 200;
+        - все остальные — 350;
+        - в субботу и воскресенье платный билет дороже на 50.
+
+        Программа печатает одну строку: `Бесплатно` или `К оплате: <цена>`. Например, для
+        десятилетнего гостя в субботу:
+
+        ```text
+        К оплате: 250
+        ```
+
+        Перед кодом составь таблицу проверок — в комментариях или на листке: какие возрасты стоят
+        на границах правил и что для них должно получиться. Её не проверяют, но она помогает найти
+        ошибку ещё до «Проверить».
+      input: >-
+        Две строки: возраст (целое число, 0 или больше) и день недели — `пн`, `вт`, `ср`, `чт`,
+        `пт`, `сб` или `вс`.
+      output: "Одна строка: `Бесплатно` или `К оплате: <цена>`."
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Текст в скобках `input("…")` может быть любым — он не проверяется.
+        - День вводится ровно так, как в условии, — переделывать его не нужно.
+      starterCode: |
+        # Касса бассейна «Волна»
+        # Ввод: возраст, день недели (каждое — на своей строке)
+        #
+        # Таблица проверок (заполни до кода):
+        # возраст  день  ожидаю         получилось
+        # 30       ср    К оплате: 350
+        #
+
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "30\nср\n"
+          expected: "К оплате: 350"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "10\nсб\n"
+          expected: "К оплате: 250"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t3
+          kind: io
+          title: Пример 3
+          example: true
+          stdin: "5\nвс\n"
+          expected: Бесплатно
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t4
+          kind: io
+          title: "Обычный случай: 70 лет, понедельник"
+          stdin: "70\nпн\n"
+          expected: "К оплате: 200"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t5
+          kind: io
+          title: "Обычный случай: 30 лет, воскресенье"
+          stdin: "30\nвс\n"
+          expected: "К оплате: 400"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t6
+          kind: io
+          title: "Граничный случай: 6 лет"
+          edge: true
+          stdin: "6\nпт\n"
+          expected: Бесплатно
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t7
+          kind: io
+          title: "Граничный случай: ровно 7 лет"
+          edge: true
+          stdin: "7\nпт\n"
+          expected: "К оплате: 200"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t8
+          kind: io
+          title: "Граничный случай: ровно 17 лет"
+          edge: true
+          stdin: "17\nчт\n"
+          expected: "К оплате: 200"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t9
+          kind: io
+          title: "Граничный случай: 18 лет"
+          edge: true
+          stdin: "18\nчт\n"
+          expected: "К оплате: 350"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t10
+          kind: io
+          title: "Граничный случай: 64 года"
+          edge: true
+          stdin: "64\nвт\n"
+          expected: "К оплате: 350"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t11
+          kind: io
+          title: "Граничный случай: ровно 65 лет"
+          edge: true
+          stdin: "65\nвт\n"
+          expected: "К оплате: 200"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t12
+          kind: io
+          title: "Граничный случай: 65 лет в воскресенье"
+          edge: true
+          stdin: "65\nвс\n"
+          expected: "К оплате: 250"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t13
+          kind: io
+          title: "Граничный случай: малыш до года в субботу"
+          edge: true
+          stdin: "0\nсб\n"
+          expected: Бесплатно
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t14
+          kind: io
+          title: "Граничный случай: 18 лет в субботу"
+          edge: true
+          stdin: "18\nсб\n"
+          expected: "К оплате: 400"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t15
+          kind: io
+          title: "Граничный случай: 6 лет в субботу"
+          edge: true
+          stdin: "6\nсб\n"
+          expected: Бесплатно
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t16
+          kind: io
+          title: "Граничный случай: ровно 7 лет в воскресенье"
+          edge: true
+          stdin: "7\nвс\n"
+          expected: "К оплате: 250"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t17
+          kind: io
+          title: "Граничный случай: 17 лет в субботу"
+          edge: true
+          stdin: "17\nсб\n"
+          expected: "К оплате: 250"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t18
+          kind: io
+          title: "Граничный случай: 64 года в воскресенье"
+          edge: true
+          stdin: "64\nвс\n"
+          expected: "К оплате: 400"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+        - id: t19
+          kind: io
+          title: "Обычный случай: 70 лет, суббота"
+          stdin: "70\nсб\n"
+          expected: "К оплате: 250"
+          compare: {ignoreSpaces: true, ignoreBlankLines: true}
+      criteria:
+        - Возраст превращается в число до сравнения, день сравнивается со строками.
+        - Цена по возрасту верна не только для обычных возрастов, но и на границах групп.
+        - Надбавка 50 — только к платному билету и только в субботу и воскресенье.
+        - "Вывод — одна строка: `Бесплатно` или `К оплате: <цена>`."
+      hints:
+        - >-
+          Раздели работу на две части: сначала выбери цену по возрасту — групп три, — а потом
+          отдельно реши, нужна ли надбавка за выходной. Для каждой группы спроси себя, какие
+          возрасты стоят прямо на её границах и куда они относятся по правилу. И в каком порядке
+          проверять группы, чтобы общая проверка не перехватила частную, как в разминке? И
+          перечитай правило надбавки: к какому билету она относится?
+        - |-
+          Второе правило может поменять уже выбранную цену — и относиться не ко всем. Пример из
+          пиццерии: сначала цена по размеру, потом доплата 100 за доставку, но только для заказа
+          дешевле 600.
+          ```python
+          if size == "L":
+              price = 700
+          else:
+              price = 500
+          if delivery == "да" and price < 600:
+              price = price + 100
+          ```
+          Второй `if` — отдельный, не `elif`: он выполняется после того, как цена уже выбрана, и
+          меняет её. Условие после `and` ограничивает, к каким заказам относится доплата.
+        - |-
+          Каркас:
+          ```text
+          age = int(input(...))
+          day = input(...)
+          if age < 7:
+              price = 0
+          elif … or …:
+              price = 200
+          else:
+              price = …
+          if price > 0 and (… or …):
+              price = price + 50
+          если price == 0 — напечатать «Бесплатно», иначе — «К оплате:» и цену
+          ```
+      solution:
+        code: |
+          age = int(input("Возраст: "))
+          day = input("День недели: ")
+          if age < 7:
+              price = 0
+          elif age <= 17 or age >= 65:
+              price = 200
+          else:
+              price = 350
+          if price > 0 and (day == "сб" or day == "вс"):
+              price = price + 50
+          if price == 0:
+              print("Бесплатно")
+          else:
+              print(f"К оплате: {price}")
+        explanation: >-
+          Решение в три шага. Сначала цена по возрасту: бесплатная ветка стоит первой, иначе
+          условие `age <= 17` захватило бы и малышей. До `elif` доходит только возраст от 7 и
+          старше, поэтому `age >= 7` там писать не нужно. Потом отдельный `if` прибавляет 50 —
+          только к платному билету и только в субботу или воскресенье. Скобки нужны, чтобы `or`
+          выполнился раньше `and`. В конце — вывод: для нулевой цены слово «Бесплатно», для
+          остальных — цена.
+      altSolutions:
+        - code: |
+            age = int(input())
+            day = input()
+            weekend = day == "сб" or day == "вс"
+            if age < 7:
+                print("Бесплатно")
+            elif 7 <= age <= 17 or age >= 65:
+                if weekend:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 200")
+            elif weekend:
+                print("К оплате: 400")
+            else:
+                print("К оплате: 350")
+          note: Флаг выходного и вложенный if, готовые цены в каждой ветке.
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                print("Бесплатно")
+            else:
+                if age <= 17:
+                    price = 200
+                elif age <= 64:
+                    price = 350
+                else:
+                    price = 200
+                if day == "сб" or day == "вс":
+                    price = price + 50
+                print(f"К оплате: {price}")
+          note: Бесплатный билет отдельно, платные — внутри else; надбавка без проверки price > 0.
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День: ")
+            if age >= 65:
+                price = 200
+            elif age >= 18:
+                price = 350
+            elif age >= 7:
+                price = 200
+            else:
+                price = 0
+            if day == "сб" or day == "вс":
+                if price > 0:
+                    price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print("К оплате:", price)
+          note: Проверки от старших к младшим, вывод через запятую.
+        - code: |
+            age = int(input())
+            day = input()
+            extra = 0
+            if day == "сб" or day == "вс":
+                extra = 50
+            if age < 7:
+                print("Бесплатно")
+            elif 7 <= age <= 17 or age >= 65:
+                print(f"К оплате: {200 + extra}")
+            else:
+                print(f"К оплате: {350 + extra}")
+          note: Надбавка — отдельная переменная, прибавляется только в платных ветках.
+        - code: |
+            age = int(input())
+            day = input()
+            weekday = day != "сб" and day != "вс"
+            if age < 7:
+                price = 0
+            elif age < 18 or age > 64:
+                price = 200
+            else:
+                price = 350
+            if price != 0 and not weekday:
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print("К оплате: " + str(price))
+          note: Флаг будня через != и and, границы < 18 и > 64, склейка строк.
+        - code: |
+            age = int(input())
+            day = input()
+            if day == "сб" or day == "вс":
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            else:
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 200")
+                else:
+                    print("К оплате: 350")
+          note: Сначала день, потом возраст — две одинаковые цепочки с разными ценами.
+        - code: |
+            age = int(input())
+            day = input()
+            if age >= 0 and age < 7:
+                price = 0
+            elif age >= 7 and age <= 17:
+                price = 200
+            elif age >= 18 and age <= 64:
+                price = 350
+            else:
+                price = 200
+            if age >= 7 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if age < 7:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Каждая группа записана полным промежутком через and; платность проверяется по возрасту.
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            if 7 <= age <= 17:
+                price = 200
+            if 18 <= age <= 64:
+                price = 350
+            if age >= 65:
+                price = 200
+            if price != 0:
+                if day == "сб" or day == "вс":
+                    price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            if price != 0:
+                print(f"К оплате: {price}")
+          note: Отдельные if, но группы не пересекаются — поэтому ответ верный.
+        - code: |
+            vozrast = int(input("Сколько тебе лет? "))
+            den = input("Какой сегодня день? ")
+            if vozrast >= 65:
+                cena = 200
+            elif vozrast >= 18:
+                cena = 350
+            elif vozrast >= 7:
+                cena = 200
+            else:
+                cena = 0
+            if cena != 0 and (den == "вс" or den == "сб"):
+                cena = cena + 50
+            if cena == 0:
+                print("Бесплатно")
+            else:
+                print("К оплате:", cena)
+          note: "Другие имена, проверки от старших к младшим, != 0, дни в обратном порядке, print через запятую"
+        - code: |
+            age = int(input())
+            day = input()
+            free = age < 7
+            discount = 7 <= age <= 17 or age >= 65
+            weekend = day == "сб" or day == "вс"
+            if free:
+                print("Бесплатно")
+            elif discount and weekend:
+                print("К оплате:  250")
+            elif discount:
+                print("К оплате: 200 ")
+            elif weekend:
+                print("  К оплате: 400")
+            else:
+                print("К оплате: 350")
+          note: "Три флага bool, готовые строки с лишними пробелами (двойной внутри, в начале, в конце)"
+        - code: |
+            age = int(input())
+            day = input()
+            price = 200
+            if 18 <= age <= 64:
+                price = 350
+            if day == "сб" or day == "вс":
+                price = price + 50
+            if age < 7:
+                price = 0
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print("К оплате: " + str(price))
+          note: "Цена по умолчанию 200, отдельные if, бесплатность перезаписывает цену последней, склейка через str()"
+        - code: |
+            age = int(input())
+            day = input()
+            if age <= 6:
+                print("Бесплатно")
+            else:
+                if age > 17 and age < 65:
+                    price = 350
+                else:
+                    price = 200
+                if not ("сб" != day and "вс" != day):
+                    price = price + 50
+                print(f"К оплате: {price}")
+          note: "Граница age <= 6, взрослые через and, выходной через not и сравнения «наоборот»"
+        - code: |
+            # Касса бассейна
+            age = int(input("Возраст: "))
+
+            day = input("День недели: ")
+
+            extra = 0
+            if day == "сб" or day == "вс":
+                extra = 50
+
+            if age < 7:
+                answer = "Бесплатно"
+            elif age < 18 or age > 64:
+                answer = "К оплате: " + str(200 + extra)
+            else:
+                answer = f"К оплате: {350 + extra}"
+
+            print(answer)
+          note: "Надбавка отдельной переменной, текст ответа в переменной, пустые строки и комментарии в коде"
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                base = 0
+            elif age >= 7 and age <= 17:
+                base = 200
+            elif age >= 65:
+                base = 200
+            else:
+                base = 350
+            total = base
+            if base > 0:
+                if day == "сб":
+                    total = base + 50
+                elif day == "вс":
+                    total = base + 50
+            if total == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {total}")
+          note: "Переменные base и total, дни разобраны вложенной цепочкой сб/вс"
+        - code: |
+            age = float(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Возраст через float()"
+        - code: |
+            age = int(input())
+            day = input()
+            price = 350
+            if age <= 17 or age >= 65:
+                price = price - 150
+            if day == "сб" or day == "вс":
+                price = price + 50
+            if age < 7:
+                print("Бесплатно")
+            else:
+                print("К оплате:", price)
+          note: "Льгота как 350 - 150, надбавка ко всем, выбор вывода по возрасту"
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "сб" or price > 0 and day == "вс":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Без скобок, но and и or разложены верно: price > 0 and day == \"сб\" or price > 0 and day == \"вс\""
+        - code: |
+            age = int(input())
+            day = input()
+            weekend = False
+            if day == "сб":
+                weekend = True
+            if day == "вс":
+                weekend = True
+            if 7 > age:
+                print("Бесплатно")
+            elif 17 >= age or 65 <= age:
+                if weekend:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 200")
+            else:
+                if weekend == True:
+                    print("К оплате: 400")
+                else:
+                    print("К оплате: 350")
+          note: "Флаг выходного через два if и == True, сравнения «число слева»"
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+            print()
+          note: "Эталон + пустая строка после ответа (print())"
+        - code: |
+            age = int(input())
+            day = input()
+            print()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Эталон + пустая строка перед ответом, чтобы отделить его от ввода (print())"
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price and (day == "сб" or day == "вс"):
+                price += 50
+            if not price:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Запись price += 50 и проверка платности через истинность числа (if price / if not price)"
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age >= 7 and age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if day == "сб" and price > 0 or day == "вс" and price > 0:
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Без скобок, дни слева: day == \"сб\" and price > 0 or day == \"вс\" and price > 0"
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                print("Бесплатно")
+            else:
+                price = 200
+                if not (age < 18 or age >= 65):
+                    price = 350
+                if day == "сб" or day == "вс":
+                    price = price + 50
+                print("К оплате:", str(price))
+          note: "Льгота по умолчанию, взрослый через not (...), вывод print с str()"
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "сб":
+                price = price + 50
+            elif price > 0 and day == "вс":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Надбавка отдельной цепочкой if/elif по дням на верхнем уровне"
+      wrongSolutions:
+        - code: |
+            age = input("Возраст: ")
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Возраст не превращён в число — строка сравнивается с числом.
+          expectMistake: no-int
+        - code: |
+            day = input("День недели: ")
+            age = int(input("Возраст: "))
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: День читается первым, и в int() попадает «ср».
+          expectMistake: day-first
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == сб or day == вс):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Дни без кавычек — Python ищет переменную сб.
+          expectMistake: day-no-quotes
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                print("Бесплатно")
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if day == "сб" or day == "вс":
+                price = price + 50
+            print(f"К оплате: {price}")
+          note: Для малыша цена не задана, но программа доходит до надбавки и общего print.
+          expectMistake: free-then-price
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Справа от or — строка, а не сравнение; надбавка в любой день.
+          expectMistake: or-string
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "сб" and day == "вс":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: «В субботу и воскресенье» записано через and — надбавка не срабатывает никогда.
+          expectMistake: and-days
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                print("Бесплатно")
+            if 7 <= age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if day == "сб" or day == "вс":
+                price = price + 50
+            print(f"К оплате: {price}")
+          note: Отдельные if вместо цепочки — для малыша печатаются две строки.
+          expectMistake: two-lines
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if day == "сб" or day == "вс":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Надбавка прибавляется и к бесплатному билету.
+          expectMistake: free-surcharge
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "сб" or day == "вс":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Нет скобок — and выполняется раньше or, и в воскресенье надбавка идёт к бесплатному.
+          expectMistake: free-surcharge
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print(f"К оплате: {price}")
+          note: Для малышей печатается цена 0 вместо «Бесплатно».
+          expectMistake: free-as-zero
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                print("Бесплатно")
+            elif age <= 17 or age >= 65:
+                print("К оплате: 200")
+            else:
+                print("К оплате: 350")
+          note: Правило выходных забыто совсем.
+          expectMistake: weekend-missed
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "вс":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Проверено только воскресенье.
+          expectMistake: weekend-missed
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age >= 18:
+                price = 350
+            elif age >= 65:
+                price = 200
+            else:
+                price = 200
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Взрослая проверка стоит раньше пенсионной и перехватывает 70 лет.
+          expectMistake: adult-first
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "сб":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Проверена только суббота, воскресенье забыто.
+          expectMistake: sunday-forgotten
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age <= 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: «Младше 7» записано как <= 7 — семилетний проходит бесплатно.
+          expectMistake: boundary-7
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age < 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: «До 17 включительно» записано как < 17.
+          expectMistake: boundary-17
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age > 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: «От 65» записано как > 65.
+          expectMistake: boundary-65
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 66:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: «От 65» записано как >= 66 — знак верный, число сдвинуто.
+          expectMistake: boundary-65
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 and age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Школьники и пенсионеры соединены через and — льгота не срабатывает ни для кого.
+          expectMistake: discount-missed
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if day == "сб" or day == "вс" and price > 0:
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: and выполняется раньше or — в субботу надбавка идёт и к бесплатному билету.
+          expectMistake: free-surcharge-sat
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age <= 17 or age >= 65:
+                price = 200
+            elif age < 7:
+                price = 0
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Льготная проверка стоит раньше бесплатной и перехватывает малышей.
+          expectMistake: free-after-discount
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            price = 350
+            if age < 7:
+                price = 0
+            if age <= 17 or age >= 65:
+                price = 200
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Отдельные if — льгота перезаписывает бесплатную цену малыша.
+          expectMistake: free-after-discount
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 18 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Льгота до 18 включительно вместо 17.
+          expectMistake: boundary-18
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif 7 < age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: «От 7» записано как 7 < age — семилетний платит как взрослый.
+          expectMistake: boundary-7-paid
+        - code: |
+            age = int(input("Возраст: "))
+            day = input("День недели: ")
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"Цена: {price}")
+          note: Другой текст строки вывода.
+          expectMistake: format
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if age > 7 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Платность в надбавке через возраст, граница сдвинута: age > 7 — семилетний в выходной платит 200 вместо 250"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if age >= 6 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Платность в надбавке через возраст: age >= 6 — шестилетний в выходной получает «К оплате: 50»"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if day == "сб" or day == "вс":
+                if age <= 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            else:
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 200")
+                else:
+                    print("К оплате: 350")
+          note: "Сначала день, две цепочки; в выходной цепочке <= 7 — семилетний в выходной бесплатно"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if day == "сб" or day == "вс":
+                if age < 7:
+                    print("Бесплатно")
+                elif age < 17 or age >= 65:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            else:
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 200")
+                else:
+                    print("К оплате: 350")
+          note: "Сначала день; в выходной цепочке < 17 — семнадцатилетний в выходной платит 400"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if day == "сб" or day == "вс":
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 64:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            else:
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 200")
+                else:
+                    print("К оплате: 350")
+          note: "Сначала день; в выходной цепочке >= 64 — 64 года в выходной платит 250"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if day == "сб":
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            elif day == "вс":
+                if age < 7:
+                    print("Бесплатно")
+                elif age >= 65:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            else:
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 200")
+                else:
+                    print("К оплате: 350")
+          note: "Три цепочки сб/вс/будни; в воскресной забыты школьники — 10 лет в вс платит 400"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if day == "сб":
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            elif day == "вс":
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 250")
+                else:
+                    print("К оплате: 400")
+            else:
+                if age < 7:
+                    print("Бесплатно")
+                elif age <= 17 or age >= 65:
+                    print("К оплате: 200")
+                else:
+                    print("К оплате: 350")
+          note: "Три цепочки; в субботней забыты пенсионеры — 70 лет в сб платит 400"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+                if day == "сб" or day == "вс":
+                    price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "«Платный» понят как «взрослый»: надбавка только в ветке else"
+          expectMistake: weekend-missed
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+                if day == "сб" or day == "вс":
+                    price = price + 50
+            else:
+                price = 350
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Надбавка вложена в льготную ветку, во взрослую забыта — взрослый в вс платит 350"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            price = 350
+            if day == "сб" or day == "вс":
+                price = price + 50
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Надбавка стоит до цепочки, льготная ветка её затирает"
+          expectMistake: weekend-missed
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Результат прибавки не записан: price + 50 без price ="
+          expectMistake: sum-not-saved
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            elif day == "сб" or day == "вс":
+                price = 400
+            else:
+                price = 350
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Выходной — ветка той же цепочки после льготы (elif ... price = 400)"
+          expectMistake: weekend-in-chain
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif day == "сб" or day == "вс":
+                price = 400
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Выходной — ветка цепочки до льготы, перехватывает детей"
+          expectMistake: weekend-in-chain
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+                print("Бесплатно")
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print(f"К оплате: {price}")
+          note: "Цепочка + price = 0 в бесплатной ветке, print(\"Бесплатно\") оставлен, общий print в конце"
+          expectMistake: two-lines
+        - code: |
+            age = input()
+            day = input()
+            if 7 > age:
+                price = 0
+            elif 17 >= age or 65 <= age:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Возраст не превращён в число, сравнение «число слева»: 7 > age"
+          expectMistake: no-int
+        - code: |
+            age = input()
+            day = input()
+            if 0 <= age < 7:
+                price = 0
+            elif 7 <= age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Возраст не превращён в число, двойное сравнение 0 <= age < 7"
+          expectMistake: no-int
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = "Бесплатно"
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == "Бесплатно":
+                print(price)
+            else:
+                print(f"К оплате: {price}")
+          note: "Возраст — число, но в price записан текст «Бесплатно», дальше price > 0"
+          expectMistake: null
+        - code: |
+            age = input()
+            day = input()
+            if age < "7":
+                price = 0
+            elif age <= "17" or age >= "65":
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Возраст — строка, сравнивается со строками \"7\", \"17\", \"65\""
+          expectMistake: age-as-text
+        - code: |
+            age = int(input())
+            day = int(input())
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "День тоже через int()"
+          expectMistake: day-first
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print("К оплате:", price, "руб.")
+          note: "К цене дописано «руб.»"
+          expectMistake: format
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Слово «бесплатно» с маленькой буквы"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print("К оплате:" + str(price))
+          note: "Склейка без пробела после двоеточия"
+          expectMistake: format
+        - code: |
+            print("Введи возраст:")
+            age = int(input())
+            print("Введи день:")
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Подсказки ввода напечатаны через print"
+          expectMistake: format
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Вместо прибавки — присваивание price = 50"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "вс" or day == "сб":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Скобки не там: and связал цену только с воскресеньем"
+          expectMistake: free-surcharge-sat
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age >= 7 or age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "«От 7 до 17» записано через or — льгота всем от 7"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Справа от or — голое число: age <= 17 or 65 (льгота всем от 7)"
+          expectMistake: or-number
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price == price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "== вместо = в прибавке: price == price + 50"
+          expectMistake: sum-not-saved
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print("К оплате: " + price)
+          note: "Склейка строки с числом без str() — TypeError can only concatenate"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if day == "сб" or day == "вс":
+                price = price + 50
+            print(f"К оплате: {price}")
+          note: "Правило «младше 7 — бесплатно» забыто совсем"
+          expectMistake: free-after-discount
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Пенсионная льгота забыта"
+          expectMistake: adult-first
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 and age >= 65:
+                price = 200
+            else:
+                price = 350
+            if day == "сб" and price > 0 or day == "вс" and price > 0:
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Льгота через and (ошибка), а условие выходного записано верно без скобок"
+          expectMistake: discount-missed
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "Сб" or day == "Вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Дни с большой буквы"
+          expectMistake: weekend-missed
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 6:
+                price = 0
+            elif age <= 17 or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "«Младше 7» записано как < 6 — шестилетний платит"
+          expectMistake: null
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= 17 and age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and day == "сб":
+                price = price + 50
+            elif price > 0 and day == "вс":
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: "Льгота через and (ошибка), надбавка верной цепочкой if/elif по дням"
+          expectMistake: discount-missed
+        - code: |
+            age = input()
+            day = input()
+            if age >= "65":
+                price = 200
+            elif age >= "18":
+                price = 350
+            elif age >= "7":
+                price = 200
+            else:
+                price = 0
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Возраст — строка, проверки от старших к младшим со строками "65", "18", "7" — Пример 1 проходит
+          expectMistake: age-as-text
+        - code: |
+            age = int(input())
+            day = input()
+            if age < 7:
+                price = 0
+            elif age <= "17" or age >= 65:
+                price = 200
+            else:
+                price = 350
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            if price == 0:
+                print("Бесплатно")
+            else:
+                print(f"К оплате: {price}")
+          note: Возраст — число, но 17 в кавычках — TypeError (общий разбор ошибки)
+          expectMistake: null
+      mistakes:
+        - id: no-int
+          when:
+            errorIncludes: "not supported between instances of"
+            codeRegex: '(?<![\s\S])(?![\s\S]*\b(?:int|float)\s*\()'
+          where: Первое сравнение возраста
+          why: >-
+            Возраст остался строкой: `input()` всегда возвращает текст. Сравнить текст `"30"` с
+            числом `7` через `<` Python не может — отсюда TypeError.
+          try: Преврати возраст в число сразу при вводе — `int(input(...))`.
+          verify: 'Ошибка TypeError должна исчезнуть, а в «Примере 1» — появиться «К оплате: 350».'
+        - id: age-as-text
+          when:
+            codeRegex: '(?<![\s\S])(?![\s\S]*\b(?:int|float)\s*\()[\s\S]*?(?:(?:<|>)=?\s*["'']\d|["'']\d+["'']\s*(?:<|>))'
+          where: Сравнения возраста
+          why: >-
+            Возраст остался строкой, а числа в сравнениях взяты в кавычки, поэтому Python
+            сравнивает текст — по первому отличающемуся символу. `"30" < "7"` — True: символ «3»
+            идёт раньше «7». Ошибки Python не сообщает, но возраст попадает не в ту группу.
+          try: 'Сравнивай числа: `age = int(input(...))`, а 7, 17 и 65 пиши без кавычек.'
+          verify: 'В «Примере 1» должно получиться «К оплате: 350».'
+        - id: day-first
+          when:
+            errorType: ValueError
+          why: >-
+            В `int()` попал день недели, например `ср`, — а это не число, поэтому ValueError.
+            Первой строкой ввода приходит возраст, второй — день.
+          try: >-
+            Читай сначала возраст через `int(input(...))`, потом день через `input()` — без
+            `int()`: день остаётся строкой.
+          verify: В «Примере 1» программа не должна падать.
+        - id: day-no-quotes
+          when:
+            errorType: NameError
+            codeRegex: '==\s*(?:сб|вс)'
+          where: Условие надбавки за выходной
+          why: >-
+            Python не знает имени `сб`: без кавычек это имя переменной, а не текст. День из ввода —
+            строка, и сравнивать его нужно со строкой.
+          try: 'Возьми дни в кавычки: `day == "сб"`.'
+          verify: Ошибка NameError должна исчезнуть.
+        - id: free-then-price
+          when:
+            errorType: NameError
+            outputIncludes: Бесплатно
+          why: >-
+            Для малыша программа напечатала «Бесплатно», но не остановилась: дальше она дошла до
+            строки с ценой, а переменная с ценой в бесплатной ветке так и не появилась — отсюда
+            NameError.
+          try: >-
+            Сделай так, чтобы после «Бесплатно» программа не доходила до надбавки и второго
+            `print`: печатай цену внутри платных веток — или задай в бесплатной ветке цену 0 и в
+            конце выбирай, что печатать.
+          verify: В «Примере 3» должна быть одна строка — «Бесплатно».
+        - id: or-string
+          when:
+            failedTest: t1
+            codeRegex: '\bor\s+["''][^"''\n]*["''](?!\s*[=!<>])'
+          where: Условие надбавки за выходной
+          why: >-
+            В среду программа насчитала надбавку за выходной. Справа от `or` стоит не сравнение, а
+            просто строка `"вс"`, а непустая строка в условии считается истинной. Поэтому условие
+            верно в любой день.
+          try: 'Запиши обе части полностью: `day == "сб" or day == "вс"`.'
+          verify: 'В «Примере 1» (среда) должно получиться «К оплате: 350».'
+        - id: or-number
+          when:
+            failedTest: t1
+            codeRegex: '\bor\s+\d+\s*(?:\)|:|or\b|and\b)'
+          where: Условие льготного билета
+          why: >-
+            Справа от `or` стоит просто число, а не сравнение. Число, кроме 0, в условии считается
+            истинным, поэтому такое условие верно для всех, кто до него дошёл, — например, для
+            тридцатилетнего из «Примера 1».
+          try: 'Запиши обе части полностью: `age <= 17 or age >= 65`.'
+          verify: 'В «Примере 1» должно получиться «К оплате: 350».'
+        - id: and-days
+          when:
+            failedTest: t2
+            codeRegex: '["''](?:сб|вс)["'']\s*(?:==\s*\w+\s*)?and\s+(?:\w+\s*==\s*)?["''](?:сб|вс)["'']'
+          where: Условие надбавки за выходной
+          why: >-
+            Дни соединены через `and`: «день — суббота и одновременно воскресенье». Так не бывает,
+            поэтому надбавка не срабатывает никогда. В правиле «в субботу и воскресенье» по-русски
+            стоит «и», но значит оно «в субботу или в воскресенье».
+          try: Соедини проверки дней через `or`, а если рядом стоит ещё и `and` — возьми их в скобки.
+          verify: 'В «Примере 2» (суббота) должно получиться «К оплате: 250».'
+        - id: weekend-in-chain
+          when:
+            failedTest: t2
+            codeRegex: '^if\b(?![^\n]*["''](?:сб|вс)["''])[^\n]*\d[^\n]*\n(?:(?:[ \t][^\n]*|elif\b[^\n]*|else\b[^\n]*)?\n)*?elif\b[^\n]*["''](?:сб|вс)["'']'
+          where: Цепочка проверок возраста
+          why: >-
+            Выходной стоит веткой `elif` в той же цепочке, что и возраст. В цепочке выполняется
+            только одна ветка, поэтому школьник в субботу получает либо льготу, либо надбавку, но не
+            обе сразу.
+          try: >-
+            Убери выходной из цепочки: сначала цепочкой выбери цену по возрасту, потом отдельным
+            `if` прибавь 50, если билет платный и день — выходной.
+          verify: 'В «Примере 2» должно получиться «К оплате: 250».'
+        - id: discount-missed
+          when:
+            failedTest: t2
+            outputEquals: "К оплате: 400"
+          where: Условие льготного билета
+          why: >-
+            Десятилетний гость в субботу заплатил 400, как взрослый: льгота не сработала. Если в
+            её условии между «до 17» и «от 65» стоит `and`, оно не выполнится ни для кого: возраст
+            не может быть сразу не больше 17 и не меньше 65. «Школьники и пенсионеры» в правиле
+            значит «или школьник, или пенсионер».
+          try: Соедини две возрастные группы льготы через `or` и проверь, что обе в условии есть.
+          verify: 'В «Примере 2» должно получиться «К оплате: 250».'
+        - id: two-lines
+          when:
+            outputIncludes: "Бесплатно\nК оплате"
+          why: >-
+            Для малыша программа напечатала две строки: «Бесплатно» и цену. После ветки
+            «Бесплатно» программа дошла до второго `print`: он стоит в отдельном `if` или после
+            цепочки и выполняется для всех — и для малыша тоже.
+          try: >-
+            Печатай один раз в конце: если цена 0 — «Бесплатно», иначе — «К оплате:» и цену. Или
+            печатай цену внутри платных веток одной цепочки `if / elif / else`, а не после неё.
+          verify: В «Примере 3» должна быть одна строка — «Бесплатно».
+        - id: free-surcharge
+          when:
+            failedTest: t3
+            outputEquals: "К оплате: 50"
+          where: Условие надбавки за выходной
+          why: >-
+            Малыш в воскресенье получил «К оплате: 50» — надбавка прибавилась к бесплатному
+            билету. Причин две. Либо в условии надбавки нет проверки, что билет платный. Либо нет
+            скобок: когда `and` и `or` стоят рядом, `and` выполняется раньше. Например,
+            `price > 0 and day == "сб" or day == "вс"` Python читает как
+            `(price > 0 and day == "сб") or day == "вс"`.
+          try: >-
+            Прибавляй 50, только если билет платный и день — выходной: `price > 0 and (… or …)`.
+          verify: В «Примере 3» должно получиться «Бесплатно».
+        - id: free-surcharge-sat
+          when:
+            failedTest: t13
+            outputEquals: "К оплате: 50"
+          where: Условие надбавки за выходной
+          why: >-
+            Малыш в субботу получил «К оплате: 50» — надбавка прибавилась к бесплатному билету.
+            Похоже, не хватает скобок: когда `and` и `or` стоят рядом, `and` выполняется раньше.
+            Например, `day == "сб" or day == "вс" and price > 0` Python читает как
+            `day == "сб" or (day == "вс" and price > 0)`, и в субботу проверка цены не работает.
+          try: >-
+            Возьми дни в скобки: `price > 0 and (… or …)` — тогда проверка цены относится к обоим
+            дням.
+          verify: 'В тесте «Граничный случай: малыш до года в субботу» должно получиться «Бесплатно».'
+        - id: free-after-discount
+          when:
+            failedTest: t3
+            outputEquals: "К оплате: 250"
+          where: Порядок проверок возраста
+          why: >-
+            Пятилетний малыш получил льготный билет вместо бесплатного. Условие `age <= 17` верно и
+            для 5 лет: льготная проверка — общая, бесплатная — частная. Либо льготная стоит в
+            цепочке раньше бесплатной, либо проверки — отдельные `if`, и льготная перезаписывает
+            уже выбранную цену 0, либо бесплатной проверки в коде нет совсем.
+          try: >-
+            Поставь бесплатную проверку первой в цепочке `if / elif / else` — тогда до льготы
+            дойдут только те, кому уже есть 7.
+          verify: В «Примере 3» должно получиться «Бесплатно».
+        - id: free-as-zero
+          when:
+            outputEquals: "К оплате: 0"
+          why: >-
+            Для малыша программа печатает цену 0, а по условию нужно слово «Бесплатно». Цена
+            посчитана верно — не хватает выбора, что печатать.
+          try: >-
+            В конце проверь цену: если она равна 0 — печатай «Бесплатно», иначе — «К оплате:» и
+            цену.
+          verify: В «Примере 3» должно получиться «Бесплатно».
+        - id: sum-not-saved
+          when:
+            failedTest: t2
+            codeRegex: '^\s*(?:\w+\s*==\s*)?\w+\s*\+\s*50\s*$'
+          where: Строка с надбавкой
+          why: >-
+            Python посчитал сумму, но никуда её не записал: строка `price + 50` сама по себе цену не
+            меняет, а `==` — это сравнение, а не запись. После такой строки в `price` лежит прежнее
+            значение.
+          try: 'Запиши результат обратно в переменную: `price = price + 50`.'
+          verify: 'В «Примере 2» должно получиться «К оплате: 250».'
+        - id: weekend-missed
+          when:
+            failedTest: t2
+            outputEquals: "К оплате: 200"
+          why: >-
+            В субботу десятилетний гость должен заплатить 250: льготные 200 и 50 за выходной.
+            Программа насчитала 200 — надбавка до льготного билета не дошла. Проверь по порядку:
+            есть ли в коде правило выходных и написаны ли дни маленькими буквами (`"сб"`, а не
+            `"Сб"`); стоит ли надбавка после выбора цены, а не до цепочки, которая потом
+            перезапишет цену; не спрятана ли она только во взрослую ветку — льготный билет тоже
+            платный.
+          try: >-
+            Прибавляй надбавку отдельным `if` после всей цепочки возраста: если билет платный и
+            день — `"сб"` или `"вс"`, прибавь к цене 50.
+          verify: 'В «Примере 2» должно получиться «К оплате: 250».'
+        - id: adult-first
+          when:
+            failedTest: t4
+            outputEquals: "К оплате: 350"
+          where: Порядок проверок возраста
+          why: >-
+            70-летний гость получил взрослый билет — как в разминке. Либо проверка «от 18» стоит
+            раньше пенсионной и перехватывает всех старше 18, либо правила «от 65 лет — 200» в
+            коде нет.
+          try: >-
+            Поставь проверку «от 65» раньше общей взрослой ветки — или объедини её с детской
+            льготой через `or`: цена у них одна.
+          verify: 'В тесте «Обычный случай: 70 лет, понедельник» должно получиться «К оплате: 200».'
+        - id: sunday-forgotten
+          when:
+            failedTest: t5
+            codeRegex: '^(?<![\s\S])(?![\s\S]*(?:==\s*["'']вс["'']|["'']вс["'']\s*==))'
+            outputEquals: "К оплате: 350"
+          where: Условие надбавки за выходной
+          why: >-
+            В воскресенье взрослый заплатил 350, как в будний день. Похоже, надбавка проверяет
+            только субботу, а воскресенье — тоже выходной.
+          try: 'Проверяй оба дня: `day == "сб" or day == "вс"`.'
+          verify: 'В тесте «Обычный случай: 30 лет, воскресенье» должно получиться «К оплате: 400».'
+        - id: boundary-7
+          when:
+            failedTest: t7
+            outputEquals: Бесплатно
+          why: >-
+            «Младше 7 лет» — значит, 7 в эту группу не входит: семилетний уже платит. Сейчас
+            программа пускает его бесплатно — граница сдвинулась: например, стоит `<= 7` вместо
+            `< 7`.
+          try: Поправь условие так, чтобы 6 лет было бесплатно, а 7 — уже нет.
+          verify: >-
+            В тесте «Граничный случай: ровно 7 лет» должно получиться «К оплате: 200», а в тесте
+            «Граничный случай: 6 лет» — «Бесплатно».
+        - id: boundary-7-paid
+          when:
+            failedTest: t7
+            outputEquals: "К оплате: 350"
+          why: >-
+            Семилетний заплатил как взрослый. «От 7 лет» включает саму семёрку, а условие вроде
+            `7 < age` её не пропускает: `7 < 7` — False. Семилетний не попал ни в бесплатную, ни в
+            льготную группу.
+          try: Поправь условие так, чтобы 7 входило в льготную группу — `7 <= age` или `age >= 7`.
+          verify: 'В тесте «Граничный случай: ровно 7 лет» должно получиться «К оплате: 200».'
+        - id: boundary-17
+          when:
+            failedTest: t8
+            outputEquals: "К оплате: 350"
+          why: >-
+            «До 17 лет включительно» — значит, 17 входит в льготу. Сейчас семнадцатилетний платит
+            350 — граница сдвинулась: например, стоит `< 17`, а `17 < 17` — False.
+          try: Включи 17 в льготную группу — `<= 17` (или `< 18`).
+          verify: 'Для 17 лет должно получиться «К оплате: 200», для 18 — «К оплате: 350».'
+        - id: boundary-18
+          when:
+            failedTest: t9
+            codeRegex: '<=\s*18\b|<\s*19\b|\b18\s*>=|\b19\s*>(?!=)'
+            outputEquals: "К оплате: 200"
+          why: >-
+            Льгота — до 17 лет включительно, а восемнадцатилетний получил льготный билет. Похоже,
+            граница сдвинулась на год дальше: стоит `<= 18`, а 18 в льготу уже не входит.
+          try: Оставь в льготной группе возрасты до 17 включительно — `<= 17` (или `< 18`).
+          verify: 'Для 18 лет должно получиться «К оплате: 350», для 17 — «К оплате: 200».'
+        - id: boundary-65
+          when:
+            failedTest: t11
+            outputEquals: "К оплате: 350"
+          why: >-
+            «От 65 лет» включает саму границу: 65-летний уже получает льготный билет. Сейчас он
+            платит 350 — граница сдвинулась: например, стоит `> 65`, а `65 > 65` — False.
+          try: 'Сделай так, чтобы 65 входило в льготную группу: `age >= 65`.'
+          verify: 'Для 65 лет должно получиться «К оплате: 200», для 64 — «К оплате: 350».'
+        - id: format
+          when:
+            failedTest: t1
+            outputIncludes: "350"
+          why: >-
+            Число верное, но текст строки отличается от образца, а проверка сравнивает строку
+            целиком.
+          try: >-
+            Сравни свою строку с образцом посимвольно: `К оплате: 350` — «К оплате», двоеточие,
+            пробел, цена. Лишних строк быть не должно.
+          verify: Вывод «Примера 1» должен совпасть с образцом.
+      afterPass: >-
+        Касса учитывает все правила и все границы: 6 и 7, 17 и 18, 64 и 65 лет — и в будни, и в
+        выходные. Одно улучшение на будущее: первой веткой проверь неправдоподобный возраст — меньше
+        0 или больше 120, — выведи «Проверь возраст» и сделай так, чтобы после этого программа больше
+        ничего не печатала.
+      skills: [conditions, boolean-logic, boundary-checks, comparisons]
+      noHintsBeforeAttempt: true
+
+  - id: find-bug
+    type: exercise
+    title: Ошибка в чужой кассе
+    exercise:
+      id: m2-l6-e2
+      kind: read
+      title: Касса велопроката
+      statement: |-
+        В прокате велосипедов правила такие:
+
+        - до 30 минут включительно — бесплатно;
+        - от 31 до 120 минут включительно — 100;
+        - больше 120 минут — 250;
+        - в субботу и воскресенье платная поездка дороже на 50.
+
+        Коллега написал программу для кассы проката, но на одном значении минут она считает цену
+        неверно — в любой день. Ввода здесь нет: меняй `minutes` и `day` прямо в коде, нажимай
+        «Запустить» и сравнивай вывод с правилами. Найденное число минут запиши в `bad_minutes`.
+        Исправлять программу не нужно. Бесплатную поездку программа печатает как «К оплате: 0» —
+        так договорились, это не ошибка.
+
+        Не угадывай: сначала составь таблицу проверок — какие значения минут стоят у границ правил
+        и сколько по правилу стоит поездка для каждого.
+      input: "Ввода нет: значения `minutes` и `day` меняются прямо в коде."
+      output: Число в переменной `bad_minutes` — минуты, на которых программа ошибается.
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Минуты — целое число, 0 или больше.
+        - Программу исправлять не нужно — проверяется только `bad_minutes`.
+      starterCode: |
+        # Касса проката велосипедов (написал коллега)
+        minutes = 45   # меняй и запускай
+        day = "ср"     # "пн", "вт", "ср", "чт", "пт", "сб" или "вс" — в кавычках
+
+        if minutes <= 30:
+            price = 0
+        elif minutes < 120:
+            price = 100
+        else:
+            price = 250
+        if price > 0 and (day == "сб" or day == "вс"):
+            price = price + 50
+        print("К оплате:", price)
+
+        # Таблица проверок: минуты — ожидаю по правилу — получилось
+        #
+
+        bad_minutes = 0   # впиши сюда число минут, на котором программа ошибается
+      tests:
+        - id: t1
+          kind: assert
+          title: Найденное значение
+          example: true
+          code: assert bad_minutes == 120
+          message: >-
+            В `bad_minutes` должно быть число минут, на котором программа считает цену неверно.
+      criteria:
+        - В `bad_minutes` записано число без кавычек — минуты, на которых вывод программы расходится с правилами.
+        - Программу исправлять не обязательно — проверяется только `bad_minutes`.
+      hints:
+        - >-
+          Где программы с `<` и `<=` ошибаются чаще всего? Выпиши из правил числа, на которых
+          меняется цена, и для каждого запиши, сколько должна стоить поездка по правилу, — ещё до
+          запуска.
+        - >-
+          Пример из другой задачи: «посылка до 5 кг включительно — 200, тяжелее — 400». У границы
+          проверяют три точки: 4 кг — 200, 5 кг — 200, 6 кг — 400. Если программа на 5 кг печатает
+          400, ошибка найдена, даже когда на 4 и 6 кг всё верно. Так же проверь каждую границу
+          правил проката.
+        - >-
+          Проверь в будний день по три значения у каждой границы: 29, 30, 31 и 119, 120, 121. Для
+          каждого значения сравни вывод с ценой по правилу: где не совпало — там и ошибка.
+      solution:
+        code: |
+          # Касса проката велосипедов (написал коллега)
+          minutes = 120   # меняй и запускай
+          day = "ср"      # "пн", "вт", "ср", "чт", "пт", "сб" или "вс" — в кавычках
+
+          if minutes <= 30:
+              price = 0
+          elif minutes < 120:
+              price = 100
+          else:
+              price = 250
+          if price > 0 and (day == "сб" or day == "вс"):
+              price = price + 50
+          print("К оплате:", price)
+
+          # Таблица проверок: минуты — ожидаю по правилу — получилось
+          # 29  — 0   — 0
+          # 30  — 0   — 0
+          # 31  — 100 — 100
+          # 119 — 100 — 100
+          # 120 — 100 — 250  <- ошибка
+          # 121 — 250 — 250
+
+          bad_minutes = 120   # впиши сюда число минут, на котором программа ошибается
+        explanation: >-
+          При 120 минутах программа печатает «К оплате: 250», а по правилу поездка до 120 минут
+          включительно стоит 100. Виноват знак `<` во второй проверке: `120 < 120` — False, и
+          программа уходит в ветку «больше 120». При 29, 30, 31, 119 и 121 минуте программа права,
+          внутри промежутков — тоже. Исправление — `minutes <= 120`.
+      altSolutions:
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes <= 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 120
+          note: Программа заодно исправлена.
+        - code: |
+            minutes = 120
+            day = "сб"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = minutes
+          note: Найденное значение оставлено в minutes и скопировано в bad_minutes.
+        - code: |
+            bad_minutes = 120
+          note: "Только ответ, программа стёрта"
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 100 + 20
+          note: "Ответ выражением 100 + 20"
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes=120  # тут < вместо <=
+          note: "Без пробелов вокруг = и с комментарием"
+        - code: |
+            minutes = 45
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 0   # впиши сюда
+            bad_minutes = 120
+          note: "Стартовая строка bad_minutes = 0 оставлена, ответ дописан ниже"
+        - code: |
+            bad_minutes = 120
+
+            minutes = 120
+            day = "сб"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes <= 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+          note: "Ответ записан до программы, программа исправлена, день сб"
+        - code: |
+            minutes = 121
+            day = "вс"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            # 30 - 0 - 0
+            # 31 - 100 - 100
+            # 120 - 100 - 250 !!!
+            # 121 - 250 - 250
+
+            bad_minutes = 120
+          note: "Таблица проверок в комментариях, minutes оставлено 121"
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 120.0
+          note: "Ответ дробным числом 120.0"
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = int("120")
+          note: "Ответ через int(\"120\")"
+      wrongSolutions:
+        - code: |
+            minutes = 45
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 0
+          note: Ответ ещё не записан.
+          expectMistake: not-yet
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = "120"
+          note: Число записано в кавычках — это строка.
+          expectMistake: quotes
+        - code: |
+            minutes = 30
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 30
+          note: Первая граница — там программа права.
+          expectMistake: first-edge
+        - code: |
+            minutes = 31
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 31
+          note: Сразу за первой границей — программа права.
+          expectMistake: first-edge
+        - code: |
+            minutes = 121
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 121
+          note: Сразу за второй границей — программа права.
+          expectMistake: near-edge
+        - code: |
+            minutes = 119
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 119
+          note: Шаг до второй границы — программа права.
+          expectMistake: near-edge
+        - code: |
+            minutes = 60
+            day = "сб"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 60
+          note: Значение внутри промежутка.
+          expectMistake: inside
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 250
+          note: Записана цена из вывода, а не минуты.
+          expectMistake: price-not-minutes
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+          note: Строка с bad_minutes удалена.
+          expectMistake: no-variable
+        - code: |
+            minutes = 120
+            day = сб
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 120
+          note: "День без кавычек — NameError, хотя ответ 120 верный"
+          expectMistake: null
+        - code: |
+            minutes = "120"
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 120
+          note: "Минуты в кавычках — TypeError, хотя ответ 120 верный"
+          expectMistake: null
+        - code: |
+            minutes = 45
+            day = сб
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 0
+          note: "День без кавычек — NameError, ответ ещё 0"
+          expectMistake: null
+        - code: |
+            minutes = 31
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 0
+            bad_minutes = 31
+          note: "Стартовая строка bad_minutes = 0 оставлена, ниже записан 31"
+          expectMistake: first-edge
+        - code: |
+            minutes = 121
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 0
+            bad_minutes = 121
+          note: "Стартовая строка bad_minutes = 0 оставлена, ниже записан 121"
+          expectMistake: near-edge
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 100
+          note: "Записана ожидаемая цена по правилу (100), а не минуты"
+          expectMistake: price-not-minutes
+        - code: |
+            minutes = 120
+            day = "сб"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 300
+          note: "Записана цена в выходной (300)"
+          expectMistake: price-not-minutes
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 120 минут
+          note: "«120 минут» — SyntaxError"
+          expectMistake: null
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            Bad_minutes = 120
+          note: "Имя с большой буквы"
+          expectMistake: no-variable
+        - code: |
+            minutes = 150
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 150
+          note: "150 — значение внутри промежутка или цена в выходной"
+          expectMistake: price-not-minutes
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = "сто двадцать"
+          note: "Ответ-строка словами"
+          expectMistake: quotes
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes == 120
+          note: "== вместо = в строке ответа"
+          expectMistake: no-variable
+        - code: |
+            minutes = 121
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = minutes
+          note: "Приём bad_minutes = minutes, а в minutes — 121"
+          expectMistake: near-edge
+        - code: |
+            minutes = 120
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            # Таблица проверок: 120 — ожидаю 100 — получилось 250, ошибка
+            bad_minutes = 0   # впиши сюда число минут, на котором программа ошибается
+          note: "Ответ найден, но записан только в комментарии"
+          expectMistake: not-yet
+        - code: |
+            minutes = 45
+            day = "ср"
+
+            if minutes <= 30:
+                price = 0
+            elif minutes < 120:
+                price = 100
+            else:
+                price = 250
+            if price > 0 and (day == "сб" or day == "вс"):
+                price = price + 50
+            print("К оплате:", price)
+
+            bad_minutes = 45
+          note: Записано число из стартового кода — там программа права.
+          expectMistake: inside
+      mistakes:
+        - id: no-variable
+          when:
+            errorType: NameError
+            errorIncludes: bad_minutes
+          why: >-
+            Python не нашёл переменную `bad_minutes`: строку с ней удалили, имя написано иначе или
+            в строке стоит `==`. Два знака равенства — это сравнение, а не запись, и сравнивать
+            пока не с чем.
+          try: >-
+            Запиши в конце программы `bad_minutes = …` с одним знаком `=` и поставь найденное число
+            минут.
+          verify: Ошибка NameError должна исчезнуть.
+        - id: not-yet
+          when:
+            failedTest: t1
+            outputIncludes: "К оплате"
+            codeRegex: 'bad_minutes\s*=\s*0\b(?![\s\S]*bad_minutes\s*=)'
+          where: Последняя строка программы
+          why: >-
+            В `bad_minutes` пока стоит 0 — ответа ещё нет. Случайные запуски тут помогают плохо:
+            ошибка прячется на одном-единственном значении.
+          try: >-
+            Составь таблицу проверок: у каждой границы из правил — шаг до неё, она сама и шаг после.
+            Запиши цену по правилу и запусти программу для каждой строки.
+          verify: Найденное значение запиши в `bad_minutes` и нажми «Проверить».
+        - id: quotes
+          when:
+            failedTest: t1
+            outputIncludes: "К оплате"
+            codeRegex: 'bad_minutes\s*=\s*["''](?![\s\S]*bad_minutes\s*=)'
+          where: Строка с `bad_minutes`
+          why: >-
+            Значение записано в кавычках, а значит, это строка. Строка `"45"` и число 45 для Python
+            разные, поэтому проверка не пройдёт даже с верными минутами.
+          try: Запиши число минут без кавычек.
+          verify: Нажми «Проверить» ещё раз.
+        - id: first-edge
+          when:
+            failedTest: t1
+            outputIncludes: "К оплате"
+            codeRegex: 'bad_minutes\s*=\s*3[01]\b(?![\s\S]*bad_minutes\s*=)|^minutes\s*=\s*3[01]\b[\s\S]*^bad_minutes\s*=\s*minutes\b(?![\s\S]*bad_minutes\s*=)'
+          why: >-
+            На первой границе программа права: при 30 минутах печатает 0, при 31 — 100, как и в
+            правилах. Но у правил есть и вторая граница.
+          try: Проверь так же вторую границу — шаг до неё, её саму и шаг после.
+          verify: Найденное значение запиши в `bad_minutes` и нажми «Проверить».
+        - id: near-edge
+          when:
+            failedTest: t1
+            outputIncludes: "К оплате"
+            codeRegex: 'bad_minutes\s*=\s*1(?:19|21)\b(?![\s\S]*bad_minutes\s*=)|^minutes\s*=\s*1(?:19|21)\b[\s\S]*^bad_minutes\s*=\s*minutes\b(?![\s\S]*bad_minutes\s*=)'
+          why: >-
+            Рядом со второй границей программа права: при 119 минутах печатает 100, при 121 —
+            250, как и в правилах. Место ты выбрал верно, но проверил у этой границы не все
+            значения.
+          try: >-
+            Посмотри на свою таблицу: есть ли в ней само число из правила, а не только соседние с
+            ним? Запусти программу и с ним.
+          verify: Найденное значение запиши в `bad_minutes` и нажми «Проверить».
+        - id: price-not-minutes
+          when:
+            failedTest: t1
+            outputIncludes: "К оплате"
+            codeRegex: 'bad_minutes\s*=\s*(?:100|150|250|300)\b(?![\s\S]*bad_minutes\s*=)'
+          why: >-
+            Похоже, в `bad_minutes` записана цена — из вывода программы или из правил. А нужно
+            число минут, при котором программа считает цену неверно. Если это всё же минуты — на
+            этом значении программа права.
+          try: Найди значение минут, при котором вывод расходится с правилами, и запиши в `bad_minutes` его.
+          verify: Нажми «Проверить» ещё раз.
+        - id: inside
+          when:
+            failedTest: t1
+            outputIncludes: "К оплате"
+          why: >-
+            На этом значении программа считает верно — сверь вывод с правилами ещё раз. Внутри
+            промежутков такие программы обычно правы: ошибки прячутся там, где по правилу меняется
+            цена.
+          try: >-
+            Выпиши из правил числа, на которых меняется цена, и проверь у каждого шаг до него, его
+            самого и шаг после. Ожидаемую цену бери из правил, а не из вывода программы.
+          verify: Найденное значение запиши в `bad_minutes` и нажми «Проверить».
+      afterPass: >-
+        Ошибка пряталась ровно на границе 120 — такие находит таблица проверок, а не случайные
+        запуски. Исправление — один символ: `minutes <= 120`. Можешь поправить программу и
+        убедиться, что при 120 минутах она печатает «К оплате: 100».
+      skills: [boundary-checks, conditions]
+      noHintsBeforeAttempt: true
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - >-
+        Если обе задачи получились без подсказок и ты можешь ответить на вопрос ниже — модуль
+        освоен: ты раскладываешь правила на проверки, ставишь их в нужном порядке и проверяешь
+        границы. Дальше — циклы, модуль 3.
+      - >-
+        ValueError — в `int()` попал день недели: повтори урок 1.5 «Превращение типов». TypeError
+        при сравнении или странный результат со строками — урок 2.1 «Сравнения: True и False».
+        Ошибки `expected ':'`, IndentationError или «Maybe you meant '=='» — урок 2.2 «if и else:
+        программа выбирает».
+      - >-
+        Сработала не та ветка или напечатались две строки — урок 2.3 «elif: несколько вариантов».
+        `or "вс"`, `or 65`, `and` вместо `or`, надбавка к бесплатному билету — урок 2.4 «and, or,
+        not: сложные условия».
+      - >-
+        Ошибки на границах возраста (6 и 7, 17 и 18, 64 и 65 лет) или не получилось найти ошибку в
+        прокате — урок 2.5 «Границы: проверяем пороговые значения». У каждой границы проверяют три
+        точки: шаг до неё, её саму и шаг после. В прокате ошибка видна только на самой границе —
+        при 120 минутах, а ожидаемую цену берут из правил, а не из вывода программы.
+    question: >-
+      Что случится с пятилетним гостем, если в цепочке поставить льготную проверку
+      `age <= 17 or age >= 65` раньше бесплатной `age < 7`?
+    answer: >-
+      Он получит льготный билет вместо бесплатного. `5 <= 17` — True, а в цепочке выполняется
+      первая подходящая ветка, поэтому до бесплатной проверки дело не дойдёт. Льготное условие
+      здесь общее, «младше 7» — частное, и частное ставят раньше. Если записать льготу полным
+      промежутком `7 <= age <= 17 or age >= 65`, группы не пересекаются, и порядок уже не важен.

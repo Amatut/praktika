@@ -1,0 +1,1044 @@
+/* Владелец: lesson-steps; шаги урока, кроме заданий: история, идея, пример, прогноз, порядок, вопрос, чек-лист, итог
+   (спецификация редизайна, 4.5). Кадр урока — панели, их прокрутка, наставник, «Назад / Далее» — screens/lesson.css.
+   Шаг-«документ» — колонка .doc-col до 760 px слева, как документ; пример — панели «Пример» и код.
+   Только токены. Текст урока — --lesson-size / 1.6; интерфейс ≥ 13 px; между блоками ≥ 8 px. */
+
+/* ------------------------------------------------------------ шаг-«документ» */
+/* Ширина панели — для раскладки истории: на широком экране сведения об уроке справа от колонки. */
+.pane-doc {
+  container: docpane / inline-size;
+}
+
+.doc-col {
+  /* Мера строки учебного текста: ≈ 70 знаков кириллицы при любом размере шрифта урока из настроек. */
+  --measure: calc(var(--lesson-size) * 35.5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  width: 100%;
+  max-width: 760px;
+  padding: var(--sp-6) var(--gutter) var(--sp-8);
+  container: doc / inline-size;
+}
+
+/* Сплошной текст урока не длиннее меры; картинки, код, варианты и модели — на всю колонку. */
+.doc-col .prose,
+.doc-col .story,
+.step-body .prose,
+.recap-points,
+.recap-question-text,
+.option-text {
+  max-width: var(--measure);
+}
+
+/* Без висячих коротких строк («Шага / 1»?»). */
+.doc-col .prose,
+.step-body .prose,
+.recap-question-text,
+.option-text {
+  text-wrap: pretty;
+}
+
+/* Код только для чтения в блоке-«файле»: блок обрезает внешнее кольцо фокуса у pre (overflow: hidden),
+   поэтому кольцо — внутри pre, по его краю (у края нет текста: номера строк выровнены вправо в колонке 40). */
+.doc-col .code-file > .code-block:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* Заголовок шага и метки вида; до текста — 16 px (24 − 8). */
+.step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  margin-bottom: calc(-1 * var(--sp-2));
+}
+
+.doc-col .step-title {
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-22) / var(--lh-22) var(--font-sans);
+  letter-spacing: 0;
+}
+
+.step-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+/* Действия шага — ряд кнопок; результат — через 16 после них. */
+.step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.step-actions + .step-result {
+  margin-top: calc(-1 * var(--sp-2));
+}
+
+.step-actions .status-line {
+  flex: 1 1 12em;
+}
+
+/* Результат, на который после ответа переходит фокус. */
+.step-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.step-result:focus-visible {
+  outline-offset: 4px;
+}
+
+.step-result-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+/* ------------------------------------------------------------ история */
+.intro-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-6);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--line);
+}
+
+@container doc (min-width: 640px) {
+  .intro-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-8);
+  }
+}
+
+.intro-fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.intro-fact-title {
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-16) / var(--lh-16) var(--font-sans);
+}
+
+.kv.intro-kv {
+  align-items: baseline;
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-14);
+  line-height: var(--lh-14-wrap);
+}
+
+/* «Цель урока» — учебный текст: кеглем урока. «Время» и «Среда» — сведения интерфейса, 14. */
+.kv.intro-kv dd:first-of-type {
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+/* Узкая колонка: метка над значением — между ними 8 px, между парами 16. */
+@container doc (max-width: 479px) {
+  .kv.intro-kv {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--sp-2);
+  }
+
+  .kv.intro-kv dd:not(:last-child) {
+    margin-bottom: var(--sp-2);
+  }
+}
+
+/* Широкая панель без наставника: сведения об уроке — справа от колонки, на уровне заголовка, а не внизу
+   после всей истории. Колонка 760 + 32 + 300 + отступ справа. */
+@container docpane (min-width: 1140px) {
+  .intro-step .doc-col {
+    position: relative;
+  }
+
+  .kv.intro-kv {
+    position: absolute;
+    top: var(--sp-6);
+    left: 100%;
+    width: 300px;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--sp-2);
+    padding: 0 0 0 var(--sp-6);
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .kv.intro-kv dd:not(:last-child) {
+    margin-bottom: var(--sp-3);
+  }
+}
+
+/* Подписи полей шага — шрифт интерфейса 14 px (текст урока в самих полях и вопросах — крупнее). */
+.doc-col .field-label {
+  font-size: var(--fs-14);
+  line-height: var(--lh-14);
+}
+
+/* ------------------------------------------------------------ пример: панель «Пример» */
+.step-body {
+  --measure: calc(var(--lesson-size) * 35.5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  min-height: 0;
+  padding: var(--sp-5) var(--gutter) var(--sp-6);
+  overflow: auto;
+}
+
+.step-body .step-title {
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+  letter-spacing: 0;
+}
+
+.step-body > .step-title + .prose {
+  margin-top: calc(-1 * var(--sp-2));
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  container: notes / inline-size;
+}
+
+.notes-title {
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.notes-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Пояснение к строке — кнопка: наведение, фокус или нажатие подсвечивают строку в редакторе. */
+/* Своей подложки у ряда нет (только при наведении и выборе) — она выходит за колонку на 8 px с каждой стороны,
+   а текст стоит на левом краю колонки, как заголовки и абзацы. */
+.note-btn {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: baseline;
+  width: calc(100% + 2 * var(--sp-2));
+  min-height: 48px;
+  margin-inline: calc(-1 * var(--sp-2));
+  padding: var(--sp-3) var(--sp-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+.note-btn:hover {
+  background: var(--nav-hover);
+}
+
+.note-btn.is-active,
+.note-btn[aria-pressed='true'] {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent-edge);
+}
+
+.note-btn:focus-visible {
+  outline-offset: -2px;
+}
+
+.note-btn .line-tag {
+  white-space: nowrap;
+}
+
+.note-text {
+  min-width: 0;
+}
+
+/* Узкая панель: метка строки — над пояснением, тексту — вся ширина. */
+@container notes (max-width: 419px) {
+  .note-btn {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-2);
+  }
+
+  .note-btn .line-tag {
+    justify-self: start;
+  }
+}
+
+.try-note {
+  margin: 0;
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+/* ------------------------------------------------------------ пример: панель кода */
+.pane-code.example-bench {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) minmax(180px, 40%);
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-editor);
+}
+
+/* Полоса файла: вкладка example.py сливается с редактором под ней; действия справа не сжимаются. */
+.ex-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--head);
+  /* Справа — тот же отступ, что у «Запустить | Проверить» в задании (--gutter). */
+  padding-right: var(--gutter);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.ex-file {
+  display: inline-flex;
+  align-self: stretch;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  margin-right: auto;
+  margin-bottom: -1px;
+  padding: 0 var(--sp-4);
+  border-right: 1px solid var(--line);
+  background: var(--bg-editor);
+  box-shadow: inset 0 2px 0 var(--accent-edge);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-code);
+}
+
+.ex-file svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.ex-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* «Вернуть пример» (есть только после правки) — справа, рядом с «Запустить», а не у вкладки файла. */
+.ex-reset {
+  flex: none;
+}
+
+.ex-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* Кольцо фокуса редактора (--focus внутрь) рисует сам CodeEditor. */
+.ex-editor {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* «Вывод» — как панель результатов задания: фон терминала, текст на линии кода (колонка значков --gut). */
+.ex-output {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  background: var(--bg-sunken);
+}
+
+.ex-output-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--head);
+  padding: 0 var(--gutter);
+  border-bottom: 1px solid var(--line);
+}
+
+.ex-output-body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--sp-3) var(--gutter) var(--sp-4) var(--gut);
+  overflow: auto;
+}
+
+/* Значок строки статуса — в колонке значков, текст — на линии кода. */
+.ex-output-body .status-line,
+.ex-output-body .run-line {
+  margin-left: calc(-1 * (16px + var(--sp-2)));
+}
+
+.ex-output-body .console {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* ------------------------------------------------------------ запуск: строка ожидания, пусто, итог */
+.run-line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.run-empty {
+  padding-left: calc(16px + var(--sp-2));
+}
+
+/* Строка прогона над выводом: «Запуск example.py · ввод Катя · 12 мс» — 13, вторичным; файл и числа — основным. */
+.run-meta {
+  align-items: flex-start;
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.run-meta > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: calc((var(--lh-13) - 16px) / 2);
+}
+
+.run-meta .run-file,
+.run-meta .n {
+  color: var(--text);
+}
+
+.run-file {
+  font-family: var(--font-code);
+}
+
+.run-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+/* «Настоящий запуск» у прогноза: отдельный блок-терминал со своей шапкой. */
+.run-box {
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-sunken);
+}
+
+.run-box-head {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.run-box-body {
+  padding: var(--sp-3) var(--sp-4);
+  overflow-x: auto;
+}
+
+.run-box-body .console {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* ------------------------------------------------------------ прогноз */
+.predict-code {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.predict-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.predict-input-label {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.predict-input .n {
+  font-size: var(--code-size);
+}
+
+.predict-field .textarea {
+  min-height: calc(2 * var(--code-size) * 1.6 + 16px);
+  line-height: 1.6;
+}
+
+/* После показа запуска прогноз заперт: вид как у выключенных вариантов (без opacity, текст ≥ 7:1). */
+.predict-field .textarea:disabled {
+  border-color: var(--line);
+  background: var(--bg-panel);
+  color: var(--text-2);
+  cursor: default;
+  resize: none;
+}
+
+/* ------------------------------------------------------------ варианты ответа (прогноз, вопрос) */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-2) var(--sp-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+}
+
+.option:hover:not(:disabled) {
+  border-color: var(--text-2);
+  background: var(--nav-hover);
+}
+
+.option[aria-checked='true'] {
+  border-color: var(--accent-edge);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-edge);
+}
+
+/* Отметка-радио: выбранная — залитая точка (не только цвет фона). */
+.option-mark {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: calc((var(--lesson-size) * 1.6 - 18px) / 2);
+  border: 1.5px solid var(--line-control);
+  border-radius: 50%;
+  background: var(--bg-editor);
+}
+
+.option[aria-checked='true'] .option-mark {
+  border-color: var(--accent-edge);
+  background: var(--accent-edge);
+  box-shadow: inset 0 0 0 3px var(--bg-editor);
+}
+
+.option-text {
+  flex: 1 1 14em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Вывод программы в вариантах прогноза — моноширинным, как в консоли. */
+.option-code {
+  color: inherit;
+  font: 400 var(--code-size) / 1.6 var(--font-code);
+  white-space: pre-wrap;
+}
+
+.options-output .option-mark {
+  margin-top: calc((var(--code-size) * 1.6 - 18px) / 2);
+}
+
+.option[data-result='correct'] {
+  border-color: var(--ok-line);
+  background: var(--ok-soft);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+
+.option[data-result='wrong'] {
+  border-color: var(--err-line);
+  background: var(--err-soft);
+  box-shadow: inset 3px 0 0 var(--err);
+}
+
+/* После ответа варианты выключены: без opacity, текст вторичным цветом (≥ 7:1). */
+.option:disabled {
+  cursor: default;
+}
+
+.option:disabled:not([data-result]) {
+  border-color: var(--line);
+  background: var(--bg-panel);
+  color: var(--text-2);
+}
+
+.option:disabled .option-mark {
+  border-color: var(--line-strong);
+}
+
+.option:disabled[aria-checked='true'] .option-mark {
+  border-color: var(--text-2);
+  background: var(--text-2);
+}
+
+/* Пометка после проверки: значок и слово. Цвет — не единственный сигнал. */
+.verdict {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  margin-left: auto;
+  font: 600 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+.verdict svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.verdict[data-ok='true'] {
+  color: var(--ok);
+}
+
+.verdict[data-ok='false'] {
+  color: var(--err);
+}
+
+/* ------------------------------------------------------------ порядок: ряды на линиях */
+.order-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+  container: order / inline-size;
+}
+
+/* Колонка ручки — 16 px и у запертого списка (ручки уже нет): текст пунктов не прыгает после «Порядок верный». */
+.order-item {
+  display: grid;
+  grid-template-columns: 16px 24px minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: var(--sp-2);
+  row-gap: var(--sp-1);
+  min-height: 52px;
+  padding: var(--sp-2) var(--sp-1) var(--sp-2) var(--sp-2);
+  background: var(--bg-editor);
+  color: var(--text);
+}
+
+.order-item + .order-item {
+  border-top: 1px solid var(--line);
+}
+
+.order-item[draggable='true'] {
+  cursor: grab;
+}
+
+.order-grip {
+  grid-row: 1;
+  grid-column: 1;
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+}
+
+.order-num {
+  grid-row: 1;
+  grid-column: 2;
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  line-height: var(--lh-13);
+  text-align: right;
+}
+
+.order-text {
+  grid-row: 1;
+  grid-column: 3;
+  min-width: 0;
+  padding-left: var(--sp-1);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+}
+
+.order-item .verdict {
+  grid-row: 1;
+  grid-column: 4;
+  margin: 0 var(--sp-2);
+}
+
+.order-buttons {
+  display: flex;
+  grid-row: 1;
+  grid-column: 5;
+  gap: var(--sp-1);
+}
+
+/* Крайний пункт не поднять (не опустить): кнопка выключена, не выглядит нажатой и заметно бледнее рабочей
+   стрелки (значок, не текст — требования к контрасту на выключенное не распространяются). */
+.order-buttons .btn:disabled {
+  border-color: transparent;
+  background: transparent;
+  color: var(--line-strong);
+}
+
+/* Узкая колонка: пометка — под текстом пункта, чтобы текст не сжимался. */
+@container order (max-width: 479px) {
+  .order-item .verdict {
+    grid-row: 2;
+    grid-column: 3;
+    justify-self: start;
+    margin: 0 0 0 var(--sp-1);
+  }
+
+  /* «Поднять» над «Опустить»: тексту пункта остаётся больше места. */
+  .order-buttons {
+    flex-direction: column;
+    grid-row: 1 / span 2;
+  }
+}
+
+/* На сенсорном экране перетаскивание не работает — ручки нет (и колонки под неё), остаются кнопки. */
+@media (pointer: coarse) {
+  .order-item {
+    grid-template-columns: 0 24px minmax(0, 1fr) auto auto;
+  }
+
+  .order-grip {
+    display: none;
+  }
+
+  .order-item[draggable='true'] {
+    cursor: default;
+  }
+}
+
+/* Перетаскивание: пункт «в руке» — приглушённый фон, место вставки — черта сверху. */
+.order-item[data-dragging] {
+  background: var(--bg-raised);
+}
+
+.order-item[data-drop] {
+  box-shadow: inset 0 2px 0 var(--accent-edge);
+}
+
+.order-item[data-result='ok'] {
+  background: var(--ok-soft);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+
+.order-item[data-result='bad'] {
+  background: var(--err-soft);
+  box-shadow: inset 3px 0 0 var(--err);
+}
+
+/* ------------------------------------------------------------ чек-лист внешнего инструмента */
+.step-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.step-checklist .checklist {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.step-checklist .check {
+  gap: var(--sp-3);
+  min-height: 44px;
+}
+
+.step-checklist .check input {
+  margin-top: calc((var(--lesson-size) * 1.6 - 18px) / 2);
+}
+
+/* «Если не получается» — под текстом пункта (чекбокс 18 + промежуток 12). */
+.disclosure.check-help {
+  margin: var(--sp-1) 0 0 30px;
+  border-top: 0;
+}
+
+.disclosure.check-help > summary {
+  min-height: 44px;
+  padding: var(--sp-2) 0;
+}
+
+.checklist-count {
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.checklist-count .n {
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ итог */
+.recap-due {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.recap-due svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.recap-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recap-points li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: var(--sp-3);
+  color: var(--text);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+}
+
+.recap-points svg {
+  width: 16px;
+  height: 16px;
+  margin-top: calc((var(--lesson-size) * 1.6 - 16px) / 2);
+  color: var(--ok);
+}
+
+/* Секции итога разделены линией: вопрос, затем завершение урока. */
+.recap-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--line);
+}
+
+.recap-question .field-label {
+  font-weight: 600;
+}
+
+.recap-question-text {
+  color: var(--text);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+}
+
+.textarea.recap-answer {
+  min-height: calc(3 * var(--lesson-size) * 1.6 + 16px);
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+/* «Ответ наставника» — отдельный блок со своим фоном и чертой: не сливается с ответом ученика. */
+.recap-answer-card {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-edge);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+  background: var(--bg-editor);
+}
+
+.recap-answer-card:focus-visible {
+  outline-offset: 2px;
+}
+
+.recap-self {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* «Тема — в повторении · 6 октября» — под сегментом, через 4 (+8 зазора): статус выбора, а не новый блок. */
+.recap-self-status {
+  margin-top: var(--sp-1);
+}
+
+.recap-review-result:focus-visible {
+  outline-offset: 2px;
+}
+
+.recap-left {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.recap-left li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Как у пояснений примера: подложка наведения — за колонкой, квадрат номера — на её левом краю. */
+.recap-left-link {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 48px;
+  margin-inline: calc(-1 * var(--sp-2));
+  padding: var(--sp-2);
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+  text-decoration: none;
+  transition: background-color 0.12s;
+}
+
+.recap-left-link:hover {
+  background: var(--nav-hover);
+  color: var(--text);
+}
+
+.recap-left-link:focus-visible {
+  outline-offset: -2px;
+}
+
+.recap-left-num {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  color: var(--text-2);
+  font-size: var(--fs-13);
+}
+
+.recap-left-arrow {
+  width: 16px;
+  height: 16px;
+  color: var(--text-2);
+}
+
+/* ------------------------------------------------------------ телефон, планшет в портрете, режим «страницей» */
+@media (max-width: 899px) {
+  .doc-col {
+    gap: var(--sp-5);
+    padding: var(--sp-4) var(--gutter) var(--sp-6);
+  }
+
+  .step-head {
+    margin-bottom: calc(-1 * var(--sp-1));
+  }
+
+  .step-body {
+    padding: var(--sp-4) var(--gutter) var(--sp-5);
+    overflow: visible;
+  }
+
+  /* Пример одной колонкой: код, «Запустить», вывод — друг под другом, без своей прокрутки. */
+  .pane-code.example-bench {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ex-editor {
+    overflow: visible;
+  }
+
+  .example-bench > .ex-actions {
+    margin: 0;
+    padding: var(--sp-2) var(--gutter);
+    border-top: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+
+  .example-bench > .ex-actions .btn {
+    flex: 1;
+  }
+
+  .ex-output-body {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 599px) {
+  .doc-col .step-title {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .recap-answer-card {
+    padding: var(--sp-3);
+  }
+
+  /* Два ответа повторения — одинаковой ширины, без лесенки. */
+  .recap-review-actions .btn {
+    flex: 1 1 12em;
+  }
+}
+
+@media (max-height: 559px) {
+  .step-body,
+  .ex-editor,
+  .ex-output-body {
+    overflow: visible;
+  }
+
+  /* Полоса файла и редактор — по содержимому, лишняя высота панели — выводу (а не растянутой полосе файла). */
+  .pane-code.example-bench {
+    grid-template-rows: auto auto minmax(180px, 1fr);
+  }
+}
+
+:root[data-scroll='page'] .step-body,
+:root[data-scroll='page'] .ex-editor,
+:root[data-scroll='page'] .ex-output-body {
+  overflow: visible;
+}
+
+:root[data-scroll='page'] .pane-code.example-bench {
+  grid-template-rows: auto auto minmax(180px, 1fr);
+}

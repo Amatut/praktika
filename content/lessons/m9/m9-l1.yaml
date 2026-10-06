@@ -1,0 +1,2838 @@
+id: m9-l1
+module: m9
+number: "9.1"
+title: От ручной проверки к assert
+objective: >-
+  Превращать ручные проверки функции в автоматические assert, собирать их в тестовую функцию
+  test_… и понимать, что assert видит то, что функция вернула, а не то, что она напечатала.
+minutes: [25, 30]
+prerequisites: [m8-l6]
+skills: [assert-checks, functions]
+environment: python
+
+story:
+  title: Пять проверок в тетрадке
+  fictional: true
+  text: >-
+    Матвей, администратор велопроката «Круг», написал программу, которая считает стоимость
+    аренды. После каждой правки он запускал её и сверял пять примеров с тетрадкой: час — 200
+    рублей, три часа — 400 и так далее. Однажды он добавил скидку для студентов, проверил только
+    её и не заметил, что сломался расчёт долгих поездок. Ошибку нашёл клиент, которому насчитали
+    лишнее. Теперь пять проверок из тетрадки записаны прямо в коде и выполняются за долю секунды
+    после каждой правки.
+
+why: >-
+  Ручную проверку легко забыть или сделать наполовину, особенно после «маленькой» правки.
+  Автоматическая проверка — это строка вроде `assert rent_price(3) == 400`: она молчит, пока всё
+  верно, и сразу останавливает программу, если результат не совпал с ожиданием.
+
+usedIn: >-
+  В любом проекте, где код меняют больше одного раза. Разработчики обычно запускают тесты перед
+  коммитом, а на серверах, которые собирают проект, тесты запускаются сами при каждом изменении
+  кода. `assert` —
+  основа тестов pytest, с которым ты познакомишься в уроке 9.3.
+
+steps:
+  - id: assert-idea
+    type: theory
+    title: "assert: проверка, которая молчит, пока всё верно"
+    body: |-
+      В уроке 2.5 ты составлял таблицу проверок: что подаём на вход, что ожидаем, что получилось.
+      Это **ручная проверка**: запустил, посмотрел, сравнил в голове. Она работает, но медленно, и
+      после каждой правки её нужно повторять. А повторяют её редко.
+
+      **`assert`** (читается «ассерт», от английского «утверждать») превращает такую проверку
+      в строку кода:
+
+      ```python
+      assert rent_price(3) == 400
+      ```
+
+      После `assert` стоит условие. Если оно верно, ничего не происходит: программа молча идёт
+      дальше. Если неверно, Python останавливает программу с ошибкой **AssertionError** и в
+      traceback показывает строку с этой проверкой.
+
+      Обычная форма — `assert функция(вход) == ожидание`. Слева то, что функция **вернула**,
+      справа то, что должно получиться. **Ожидание считают сами, по условию задачи**, а не
+      переписывают из вывода программы: иначе проверка повторит ошибку кода.
+
+      После условия можно поставить запятую и сообщение. Его покажет AssertionError, а без
+      сообщения ты увидишь только слово `AssertionError`:
+
+      ```python
+      assert rent_price(5) == 600, "5 часов: 200 за первый час и 4 по 100"
+      ```
+
+      Не бери условие и сообщение в общие скобки: `assert(x == 1, "…")` проверяет кортеж из двух
+      значений (урок 4.5), а он всегда истинен. Такая проверка не упадёт никогда.
+
+      Если функция возвращает `True` или `False`, сравнение не нужно: `assert is_open(10)` и
+      `assert not is_open(23)` — «в 10 часов прокат открыт, а в 23 — нет».
+
+      **Тест** — код, который проверяет другой код. Проверки собирают в **тестовую функцию**. Её
+      имя начинается с `test_`: по этому началу тесты находит тренажёр, а в уроке 9.3 — pytest.
+      Параметров у теста нет, все данные — внутри него:
+
+      ```python
+      def test_rent_price():
+          assert rent_price(1) == 200
+          assert rent_price(3) == 400
+      ```
+
+      Как любую функцию, тест нужно вызвать: `test_rent_price()`. Без вызова проверки не
+      выполнятся. **Тест прошёл** — все assert верны. **Тест упал** — сработал AssertionError
+      (результат и ожидание разошлись) или внутри теста случилась другая ошибка, например
+      NameError из-за опечатки. Ошибиться мог и код, и тот, кто писал ожидание. Кто прав, решает
+      условие задачи.
+
+      `assert` сравнивает значения, а не текст на экране. Если `rent_price` будет печатать цену, а
+      не возвращать её, функция отдаст `None` (урок 5.3), и проверка `assert rent_price(3) == 400`
+      упадёт, хотя на экране будет 400. Поэтому функцию для проверки пиши с `return`.
+
+      `assert` — проверка для разработчика. Неверный ввод пользователя по-прежнему проверяют
+      через `if` и `try`/`except` (модуль 7).
+
+      В заданиях тренажёр запустит твой тест сначала на верной функции (тест должен пройти),
+      потом на версиях функции с подставленной ошибкой (на каждой он должен упасть).
+    simpler: >-
+      `assert` — это «я уверен, что…». Если прав — тишина, программа идёт дальше. Если не прав —
+      программа останавливается и показывает строку с проверкой. Тест — функция с именем
+      `test_…` без параметров, внутри которой несколько таких проверок. Её нужно вызвать, как
+      любую функцию.
+    coach: >-
+      Ожидание в тесте считай по условию задачи, на бумаге или в уме. Не подсматривай его в
+      вывод программы.
+
+  - id: rent-test
+    type: example
+    title: Тест для проката
+    body: >-
+      Правило проката из истории: первый час стоит 200 рублей, каждый следующий — 100. Функция
+      `rent_price` считает цену, а тест под ней проверяет три случая из тетрадки Матвея. Нажми
+      «Запустить».
+    code: |-
+      def rent_price(hours):
+          if hours <= 1:
+              return 200
+          return 200 + (hours - 1) * 100
+
+
+      def test_rent_price():
+          assert rent_price(1) == 200
+          assert rent_price(3) == 400
+          assert rent_price(5) == 600, "5 часов: 200 за первый час и 4 по 100"
+
+
+      test_rent_price()
+      print("Все тесты прошли")
+    notes:
+      - line: 7
+        text: Имя начинается с `test_`, внутри только проверки — это тестовая функция.
+      - line: 9
+        text: >-
+          Ожидание 400 посчитано вручную по правилу: 200 за первый час и ещё 2 часа по 100.
+          Из вывода программы его не брали.
+      - line: 10
+        text: Сообщение после запятой объясняет, откуда взялось 600. Его видно, только если проверка упадёт.
+      - line: 13
+        text: Тест нужно вызвать. Без этой строки ни один assert не выполнится.
+      - line: 14
+        text: Эта строка печатается, только если все проверки прошли. Упавший assert остановил бы программу раньше.
+    tryIt: >-
+      Поменяй в функции `100` на `150` и запусти. На какой строке остановилась программа и почему
+      «Все тесты прошли» не появилось? Потом допиши к этой проверке сообщение
+      `, f"3 часа: получили {rent_price(3)}"` и запусти снова: теперь в сообщении видно настоящее
+      значение. В конце верни `100`.
+    coach: >-
+      Верный assert ничего не печатает. Если тест прошёл, ты увидишь только «Все тесты прошли».
+
+  - id: silent-assert
+    type: predict
+    title: Что успеет появиться?
+    prompt: Как думаешь, какие строки напечатает эта программа?
+    code: |-
+      def to_minutes(hours):
+          return hours * 60
+
+      assert to_minutes(1) == 60
+      print("Проверка 1 пройдена")
+      assert to_minutes(2) == 100
+      print("Проверка 2 пройдена")
+    options:
+      - Проверка 1 пройдена
+      - |-
+        Проверка 1 пройдена
+        Проверка 2 пройдена
+      - |-
+        True
+        Проверка 1 пройдена
+    answer: Проверка 1 пройдена
+    explanation: >-
+      Первый assert верен: `to_minutes(1)` возвращает 60, и проверка молча пропускает программу
+      дальше. Сама она ничего не печатает, даже `True`. Второй assert ложен: функция вернула 120,
+      а ожидание — 100. Python остановил программу с AssertionError, и вторая строка не
+      напечаталась. И главное: ошибся здесь **тест**, а не функция. В двух часах 120 минут.
+      Упавший тест говорит только, что код и ожидание разошлись, а кто прав — решает условие.
+    coach: >-
+      Когда тест падает, не спеши чинить функцию. Сначала пересчитай ожидание по условию.
+
+  - id: practice-delivery
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m9-l1-e1
+      kind: repeat
+      title: Ручные проверки — в assert
+      statement: |-
+        Продуктовый магазин берёт за доставку 300 рублей, а заказ **от 1500 рублей
+        включительно** везёт бесплатно. Функция `delivery_cost` написана верно. Под ней ручные
+        проверки: `print` с вызовом функции и комментарий «ожидаю …». Первая проверка уже
+        переписана в `assert` внутри `test_delivery_cost`.
+
+        Что сделать:
+
+        1. Перенеси две оставшиеся ручные проверки в `test_delivery_cost` — тоже через `assert`.
+        2. Удали строки `print(delivery_cost(…))`.
+        3. Внизу вызови тест, а после вызова выведи `Все тесты прошли`.
+
+        Тренажёр запустит твой тест сначала на верной функции (тест должен пройти), потом на
+        версиях функции с подставленной ошибкой (на каждой он должен упасть).
+      input: "Ввода нет: тест вызывает функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Функцию `delivery_cost` не меняй — она верная.
+        - 'Ожидания бери из комментариев «ожидаю …»: они посчитаны по правилу доставки.'
+      starterCode: |
+        def delivery_cost(order_total):
+            if order_total >= 1500:
+                return 0
+            return 300
+
+
+        def test_delivery_cost():
+            assert delivery_cost(500) == 300
+            # Перенеси сюда две ручные проверки снизу — тоже через assert
+
+
+        # Ручные проверки: каждый раз приходится сверять глазами
+        print(delivery_cost(1500))   # ожидаю 0
+        print(delivery_cost(2400))   # ожидаю 0
+
+        # Вызови тест и выведи «Все тесты прошли»
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            ignoreCase: true
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-ref
+          kind: assert
+          title: Тест проходит на верной функции
+          example: true
+          code: |
+            def _reference(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("delivery_cost")
+            globals()["delivery_cost"] = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                globals()["delivery_cost"] = _saved
+          message: Твои проверки проходят на верной функции `delivery_cost`.
+        - id: t-order
+          kind: assert
+          title: Итог печатается после вызова теста
+          code: |
+            import ast as _ast
+
+            _statements = []
+            for _node in _ast.parse(open(__file__, encoding="utf-8").read()).body:
+                if isinstance(_node, _ast.If):
+                    _statements.extend(_node.body)
+                elif not isinstance(_node, (_ast.FunctionDef, _ast.ClassDef)):
+                    _statements.append(_node)
+            _call_line = None
+            _print_line = None
+            for _node in _statements:
+                for _sub in _ast.walk(_node):
+                    if not (isinstance(_sub, _ast.Call) and isinstance(_sub.func, _ast.Name)):
+                        continue
+                    if _sub.func.id.startswith("test_") and _call_line is None:
+                        _call_line = _node.lineno
+                    if _sub.func.id == "print" and _print_line is None:
+                        for _arg in _sub.args:
+                            if isinstance(_arg, _ast.Constant) and "тесты прошли" in str(_arg.value).lower():
+                                _print_line = _node.lineno
+            assert _call_line is None or _print_line is None or _call_line <= _print_line
+          message: Строка «Все тесты прошли» печатается после вызова теста, а не до него.
+        - id: t-m-threshold
+          kind: assert
+          title: Тест замечает ошибку на пороге 1500
+          edge: true
+          code: |
+            def _mutant(order_total):
+                if order_total > 1500:
+                    return 0
+                return 300
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("delivery_cost")
+            globals()["delivery_cost"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["delivery_cost"] = _saved
+            assert _caught
+          message: >-
+            Тест не заметил версию функции, где заказ ровно на 1500 рублей ещё платный. Нужна
+            проверка ровно на пороге.
+        - id: t-m-above
+          kind: assert
+          title: Тест замечает ошибку для заказа дороже 1500
+          code: |
+            def _mutant(order_total):
+                if order_total == 1500:
+                    return 0
+                return 300
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("delivery_cost")
+            globals()["delivery_cost"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["delivery_cost"] = _saved
+            assert _caught
+          message: >-
+            Тест не заметил версию функции, где бесплатна только доставка заказа ровно на 1500
+            рублей. Нужна проверка для заказа дороже порога.
+        - id: t-m-paid
+          kind: assert
+          title: Тест замечает бесплатную доставку для любого заказа
+          code: |
+            def _mutant(order_total):
+                return 0
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("delivery_cost")
+            globals()["delivery_cost"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["delivery_cost"] = _saved
+            assert _caught
+          message: >-
+            Тест не заметил версию функции, где доставка бесплатна для любого заказа. Нужна
+            проверка платной доставки.
+      rules:
+        - id: r-call
+          use: ["call:test_delivery_cost"]
+          message: >-
+            Вызови `test_delivery_cost()` в программе, со скобками. Без вызова проверки не
+            выполнятся при запуске.
+      criteria:
+        - Все три проверки — на 500, 1500 и 2400 — записаны как `assert` внутри `test_delivery_cost`.
+        - Строк `print(delivery_cost(…))` не осталось, программа печатает только «Все тесты прошли».
+        - Тест вызван в программе и на верной функции проходит; «Все тесты прошли» печатается после вызова.
+        - >-
+          Тест падает на версиях функции с ошибкой на пороге 1500, для заказа дороже порога и с
+          бесплатной доставкой для любого заказа.
+      hints:
+        - >-
+          Посмотри на готовый `assert` в тесте: что стоит слева от `==`, а что справа? Теперь
+          найди то же самое в ручной проверке: где там вызов функции, а где ожидание?
+        - >-
+          На другом примере: ручная проверка `print(square(4))   # ожидаю 16` превращается в
+          `assert square(4) == 16`. Вызов функции переходит влево от `==`, число из комментария —
+          вправо, а сама строка переезжает внутрь тестовой функции.
+        - |-
+          Каркас:
+          ```text
+          def test_delivery_cost():
+              assert delivery_cost(500) == 300
+              assert delivery_cost(…) == …
+              assert delivery_cost(…) == …
+
+
+          test_delivery_cost()
+          print(…)
+          ```
+      solution:
+        code: |
+          def delivery_cost(order_total):
+              if order_total >= 1500:
+                  return 0
+              return 300
+
+
+          def test_delivery_cost():
+              assert delivery_cost(500) == 300
+              assert delivery_cost(1500) == 0
+              assert delivery_cost(2400) == 0
+
+
+          test_delivery_cost()
+          print("Все тесты прошли")
+        explanation: >-
+          Каждая ручная проверка стала строкой `assert вызов == ожидание`: вызов из `print`
+          встал слева, число из комментария — справа. Проверки живут внутри `test_delivery_cost`,
+          поэтому их можно запустить одной строкой — вызовом теста. Если какая-то проверка не
+          пройдёт, AssertionError остановит программу, и «Все тесты прошли» не напечатается.
+          Проверка на 1500 ловит ошибку «больше вместо больше или равно», проверка на 2400 —
+          ошибку, при которой бесплатна только доставка заказа ровно на 1500, а проверка на 500 —
+          функцию, у которой доставка бесплатна всегда.
+      altSolutions:
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300, "до порога доставка платная"
+                assert delivery_cost(1500) == 0, "ровно 1500 — уже бесплатно"
+                assert delivery_cost(2400) == 0, f"2400: получили {delivery_cost(2400)}"
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Проверки с сообщениями.
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            if __name__ == "__main__":
+                test_delivery_cost()
+                print("Все тесты прошли")
+          note: Вызов теста в блоке запуска из урока 8.2.
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1499) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            # Ручные проверки больше не нужны:
+            # print(delivery_cost(1500))   # ожидаю 0
+            # print(delivery_cost(2400))   # ожидаю 0
+
+            test_delivery_cost()
+            print("все тесты прошли")
+          note: Лишняя проверка на 1499, ручные проверки закомментированы, фраза с маленькой буквы.
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+
+
+            def test_free_delivery():
+                assert 0 == delivery_cost(1500)
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            test_free_delivery()
+            print("Все тесты прошли")
+          note: Два теста вместо одного, ожидание слева от ==.
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0   # ожидаю 0
+                assert delivery_cost(2400) == 0   # ожидаю 0
+                print("Все тесты прошли")
+
+
+            test_delivery_cost()
+          note: Итог печатает сам тест после проверок, внизу только вызов.
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def check(order_total, expected):
+                assert delivery_cost(order_total) == expected, f"заказ на {order_total}"
+
+
+            def test_delivery_cost():
+                for order_total, expected in [(500, 300), (1500, 0), (2400, 0)]:
+                    check(order_total, expected)
+
+
+            def main():
+                test_delivery_cost()
+                print()
+                print("Все тесты прошли")
+
+
+            main()
+          note: Помощник без test_ в имени, цикл по парам, запуск через main(), пустая строка перед итогом.
+      wrongSolutions:
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            # Ручные проверки: каждый раз приходится сверять глазами
+            print(delivery_cost(1500))   # ожидаю 0
+            print(delivery_cost(2400))   # ожидаю 0
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Ручные проверки через print остались, программа печатает лишние числа.
+          expectMistake: prints-left
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 300
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Неверное ожидание на пороге — 1500 считают ещё платным.
+          expectMistake: wrong-expectation
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) = 0
+                assert delivery_cost(2400) = 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Один знак = вместо == внутри assert.
+          expectMistake: assign-in-assert
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Перенесена только проверка на 2400, порог не проверяется.
+          expectMistake: missed-threshold
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Перенесена только проверка на 1500, заказ дороже порога не проверяется.
+          expectMistake: missed-above
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            print("Все тесты прошли")
+          note: Тест не вызван — проверки при запуске не выполняются.
+          expectMistake: no-call
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost
+            print("Все тесты прошли")
+          note: Имя теста написано без скобок — это не вызов.
+          expectMistake: no-call
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                print(delivery_cost(1500))   # ожидаю 0
+                print(delivery_cost(2400))   # ожидаю 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Ручные проверки перенесены в тест, но остались print — тест не может на них упасть.
+          expectMistake: missed-threshold
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+
+
+            assert delivery_cost(1500) == 0
+            assert delivery_cost(2400) == 0
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Две проверки стоят на верхнем уровне, вне тестовой функции.
+          expectMistake: top-level-asserts
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 300
+                assert delivery_cost(2400) == 0
+
+
+            print("Все тесты прошли")
+          note: Неверное ожидание, и тест не вызван — программа не падает, но проверка на верной функции не проходит.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cst(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Опечатка в имени функции внутри теста — NameError. Нужен общий разбор ошибки, а не совет про порог.
+          expectMistake: null
+        - code: |
+            def delivery_cost(order_total):
+                if order_total > 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 300
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Функцию «починили» под неверное ожидание на пороге — тест проходит в программе, но падает на верной функции.
+          expectMistake: changed-function
+        - code: |
+            def delivery_cost(order_total):
+                if order_total > 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Функцию случайно испортили (> вместо >=), ожидания верные — программа падает с AssertionError.
+          expectMistake: wrong-expectation
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert(delivery_cost(1500) == 0, "ровно 1500 — бесплатно")
+                assert(delivery_cost(2400) == 0, "дороже порога — бесплатно")
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Условие и сообщение в общих скобках — кортеж, такой assert всегда истинен.
+          expectMistake: tuple-assert
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            print(test_delivery_cost())
+            print("Все тесты прошли")
+          note: Вызов теста обёрнут в print — в выводе лишняя строка None.
+          expectMistake: print-test-call
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Готовая проверка на 500 удалена — платную доставку тест не проверяет.
+          expectMistake: missed-paid
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            test_delivery()
+            print("Все тесты прошли")
+          note: Тест переименован и вызван под новым именем — вызова test_delivery_cost() нет.
+          expectMistake: no-call
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(order_total=1500) == 0
+                assert delivery_cost(order_total=2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли"))
+          note: Именованный аргумент в assert верен, SyntaxError из-за лишней скобки в другой строке — нужен общий разбор, а не совет про знак =.
+          expectMistake: null
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                assert delivery_cost(1500) == 0
+                assert delivery_cost(2400) == 0
+
+
+            print("Все тесты прошли")
+            test_delivery_cost()
+          note: Итог напечатан до вызова теста — он сообщит об успехе, даже если тест потом упадёт.
+          expectMistake: print-before-call
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_delivery_cost():
+                assert delivery_cost(500) == 300
+                delivery_cost(1500) == 0
+                delivery_cost(2400) == 0
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Сравнения без слова assert — результат вычисляется и забывается.
+          expectMistake: bare-compare
+        - code: |
+            def delivery_cost(order_total):
+                if order_total >= 1500:
+                    return 0
+                return 300
+
+
+            def test_order(order_total, expected):
+                assert delivery_cost(order_total) == expected
+
+
+            def test_delivery_cost():
+                test_order(500, 300)
+                test_order(1500, 0)
+                test_order(2400, 0)
+
+
+            test_delivery_cost()
+            print("Все тесты прошли")
+          note: Вспомогательная функция с параметрами названа test_… — тренажёр вызывает её без аргументов.
+          expectMistake: test-helper-params
+      mistakes:
+        - id: assign-in-assert
+          when:
+            errorType: SyntaxError
+            codeRegex: '^[ \t]*assert\s(?:[^\n#"=(!<>]|\([^()\n]*\))+=[^=]'
+          why: >-
+            Внутри `assert` стоит один знак `=`. Один `=` — это присваивание: «положи значение в
+            переменную». Внутри assert оно запрещено, поэтому Python не может даже запустить
+            программу.
+          try: Сравнивай двумя знаками — `==`, как в готовой проверке на 500.
+          verify: Программа должна запуститься без SyntaxError.
+        - id: tuple-assert
+          when:
+            codeRegex: '^[ \t]*assert\s*\((?:[^()\n]|\([^()\n]*\))*,\s*f?["'']'
+          why: >-
+            Условие и сообщение взяты в общие скобки: `assert(условие, "сообщение")`. Для Python
+            это одно значение — кортеж из двух частей, а непустой кортеж всегда истинен. Такая
+            проверка не упадёт никогда, даже на сломанной функции.
+          try: >-
+            Убери внешние скобки:
+            `assert delivery_cost(500) == 300, "до порога платно"`. assert — не функция, как
+            print, скобки ему не нужны.
+        - id: test-helper-params
+          when:
+            failedTest: t-ref
+            errorIncludes: required positional argument
+            codeRegex: '^def\s+test_\w*\(\s*[A-Za-z_]'
+          why: >-
+            Тренажёр (и pytest, с которым ты познакомишься в уроке 9.3) сам вызывает каждую
+            функцию, чьё имя начинается с `test_`, — без аргументов. У твоей функции `test_…` есть
+            параметры, поэтому такой вызов падает с TypeError.
+          try: >-
+            У самого теста параметров нет: все данные — внутри него. Вспомогательную функцию с
+            параметрами назови без `test_` в начале, например `check(order_total, expected)`.
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Тест упал при запуске: функция вернула одно число, а в assert справа записано другое.
+            Функция в стартовом коде верная, поэтому ошибка, скорее всего, в ожидании.
+          try: >-
+            Найди строку, на которой остановилась программа, и пересчитай ожидание по правилу
+            «от 1500 рублей включительно — бесплатно». Если ожидание верное, а функцию ты менял,
+            верни её из стартового кода.
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: wrong-expectation-silent
+          when:
+            failedTest: t-ref
+            failedRule: r-call
+          why: >-
+            Вызова `test_delivery_cost()` в программе нет, поэтому при запуске проверки не
+            выполнялись, а «Все тесты прошли» напечаталось просто так. Тренажёр вызвал тест сам, и
+            на верной функции одна из проверок упала: ожидание не совпадает с правилом доставки.
+          try: >-
+            Вызови тест перед `print` и запусти программу: Python сам покажет строку с неверным
+            ожиданием. Пересчитай его по правилу «от 1500 рублей включительно — бесплатно».
+        - id: changed-function
+          when:
+            failedTest: t-ref
+            outputIncludes: тесты прошли
+          why: >-
+            Твой тест проходит в твоей программе, но падает на верной функции `delivery_cost`. Так
+            бывает, когда функцию изменили под ожидание. Или в программе есть ещё одна функция
+            `test_…`, которую никто не вызывает: тренажёр проверяет все тесты.
+          try: >-
+            Верни `delivery_cost` как в стартовом коде: она верная. Потом сверь каждое ожидание с
+            правилом «от 1500 рублей включительно — бесплатно».
+        - id: top-level-asserts
+          when:
+            codeRegex: '^assert '
+            failedTest: t-m-threshold
+            outputIncludes: тесты прошли
+          why: >-
+            Часть проверок стоит вне тестовой функции, на верхнем уровне программы. Они
+            выполнятся один раз при запуске, но в тест не войдут: вызов `test_delivery_cost()`
+            их не запустит.
+          try: Перенеси эти строки внутрь `test_delivery_cost` — с отступом, под готовой проверкой.
+        - id: print-test-call
+          when:
+            failedTest: t-io
+            codeRegex: '^[ \t]*print\(\s*test_'
+          why: >-
+            Тест ничего не возвращает, поэтому `print(test_delivery_cost())` печатает `None` — как
+            любая функция без `return` (урок 5.3). В выводе появилась лишняя строка.
+          try: >-
+            Вызови тест без `print`, просто `test_delivery_cost()`. Что все проверки прошли, скажет
+            следующая строка — «Все тесты прошли».
+        - id: prints-left
+          when:
+            failedTest: t-io
+            codeRegex: '^print\(delivery_cost'
+          why: >-
+            Ручные проверки через `print` остались. Программа печатает лишние числа, и их снова
+            приходится сверять глазами. Эту работу должен делать тест.
+          try: >-
+            Перенеси каждую ручную проверку в `test_delivery_cost` как `assert`, а строки
+            `print(delivery_cost(…))` удали.
+        - id: bare-compare
+          when:
+            codeRegex: '^[ \t]*delivery_cost\([^\n]*=='
+            outputIncludes: тесты прошли
+          why: >-
+            В тесте есть сравнение без слова `assert`. Такая строка вычисляет `True` или `False`
+            и тут же забывает результат: упасть она не может, поэтому ошибку в функции не заметит.
+          try: Начни каждую такую строку со слова `assert`.
+        - id: missed-threshold
+          when:
+            failedTest: t-m-threshold
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где заказ ровно на 1500 рублей ещё платный. Значит,
+            среди assert нет проверки ровно на пороге. `print` такую ошибку не ловит: он только
+            показывает число.
+          try: Есть ли у тебя `assert` для заказа ровно на пороге? Посмотри на ручные проверки в стартовом коде.
+        - id: missed-above
+          when:
+            failedTest: t-m-above
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где бесплатна только доставка заказа ровно на 1500
+            рублей, а заказ дороже снова платный.
+          try: Проверь через `assert` и заказ больше порога — такой есть среди ручных проверок.
+        - id: missed-paid
+          when:
+            failedTest: t-m-paid
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где доставка бесплатна для любого заказа. Значит,
+            среди assert нет проверки заказа дешевле 1500 рублей, за который доставка платная.
+          try: Есть ли у тебя `assert` для платной доставки? Такая проверка была в стартовом коде.
+        - id: print-before-call
+          when:
+            failedTest: t-order
+            outputIncludes: тесты прошли
+          why: >-
+            Строка «Все тесты прошли» стоит раньше вызова теста. Она печатается до проверок,
+            поэтому сообщит об успехе, даже если тест потом упадёт.
+          try: Поставь `print` с «Все тесты прошли» ниже строки, где вызван тест.
+        - id: no-call
+          when:
+            failedRule: r-call
+          why: >-
+            В программе нет вызова `test_delivery_cost()`. Функция выполняется только при вызове,
+            поэтому при запуске ни одна проверка не сработала, а «Все тесты прошли» печатается в
+            любом случае.
+          try: >-
+            Проверь, что тест называется именно `test_delivery_cost`, и вызови его перед `print` —
+            с круглыми скобками.
+          verify: 'Нажми «Проверить»: требование к коду должно выполниться.'
+      afterPass: >-
+        Три проверки теперь выполняются сами при каждом запуске, и сверять числа глазами больше не
+        нужно. Одно улучшение: добавь к проверке на пороге сообщение через запятую, без общих
+        скобок: `assert delivery_cost(1500) == 0, "ровно 1500 — уже бесплатно"`. Если проверка
+        когда-нибудь упадёт, ты сразу поймёшь, какое правило нарушено.
+      skills: [assert-checks]
+
+  - id: practice-level
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m9-l1-e2
+      kind: modify
+      title: Вернуть, а не напечатать
+      statement: |-
+        В игре уровень зависит от очков: меньше 100 — «новичок», от 100 — «игрок», от 500 —
+        «мастер». Функция `level` печатает название уровня, а тест под ней падает, хотя на экране
+        верное слово. Запусти программу и убедись сам.
+
+        Что сделать:
+
+        1. Измени функцию так, чтобы она **возвращала** название уровня, а не печатала его.
+        2. Добавь в `test_level` по проверке для «игрока» и «мастера».
+
+        Названия уровней пишутся маленькими буквами, как в правилах. Вывод программы — одна
+        строка `Все тесты прошли`.
+      input: "Ввода нет: тест вызывает функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Правила уровней не меняй — меняется только то, как функция отдаёт результат.
+        - Названия уровней — маленькими буквами, как в правилах.
+      starterCode: |
+        def level(points):
+            if points >= 500:
+                print("мастер")
+            elif points >= 100:
+                print("игрок")
+            else:
+                print("новичок")
+
+
+        def test_level():
+            assert level(50) == "новичок"
+            # Добавь по проверке для «игрока» и «мастера»
+
+
+        test_level()
+        print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            ignoreCase: true
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-call-50
+          kind: call
+          title: 50 очков
+          example: true
+          call: level(50)
+          expected: "'новичок'"
+        - id: t-call-250
+          kind: call
+          title: 250 очков
+          example: true
+          call: level(250)
+          expected: "'игрок'"
+        - id: t-call-100
+          kind: call
+          title: "Граничный случай: ровно 100 очков"
+          edge: true
+          call: level(100)
+          expected: "'игрок'"
+        - id: t-call-500
+          kind: call
+          title: "Граничный случай: ровно 500 очков"
+          edge: true
+          call: level(500)
+          expected: "'мастер'"
+        - id: t-ref
+          kind: assert
+          title: Тест проходит на верной функции
+          code: |
+            def _reference(points):
+                if points >= 500:
+                    return "мастер"
+                if points >= 100:
+                    return "игрок"
+                return "новичок"
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("level")
+            globals()["level"] = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                globals()["level"] = _saved
+          message: Проверки в `test_level` должны проходить на верной функции.
+        - id: t-m-master
+          kind: assert
+          title: Тест замечает функцию без уровня «мастер»
+          code: |
+            def _mutant(points):
+                if points >= 100:
+                    return "игрок"
+                return "новичок"
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("level")
+            globals()["level"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["level"] = _saved
+            assert _caught
+          message: Тест не заметил версию функции, в которой нет уровня «мастер».
+        - id: t-m-player
+          kind: assert
+          title: Тест замечает функцию без уровня «игрок»
+          code: |
+            def _mutant(points):
+                if points >= 500:
+                    return "мастер"
+                return "новичок"
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("level")
+            globals()["level"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["level"] = _saved
+            assert _caught
+          message: Тест не заметил версию функции, в которой нет уровня «игрок».
+      rules:
+        - id: r-call
+          use: ["call:test_level"]
+          message: Оставь в программе вызов `test_level()` — без него проверки не выполнятся при запуске.
+      criteria:
+        - Функция возвращает название уровня через `return` и ничего не печатает.
+        - В `test_level` есть проверки для всех трёх уровней.
+        - Тест проходит на верной функции и падает на версиях без уровня «игрок» или «мастер».
+        - Программа печатает только «Все тесты прошли».
+      hints:
+        - >-
+          Нажми «Запустить»: слово «новичок» на экране есть, а проверка всё равно падает. Что
+          возвращает функция, в которой нет `return`? Вспомни урок 5.3.
+        - |-
+          Пример на другой функции:
+          ```python
+          def double(x):
+              print(x * 2)
+          ```
+          Проверка `assert double(3) == 6` здесь упадёт: функция печатает 6, а возвращает `None`.
+          Замени `print(x * 2)` на `return x * 2` — и та же проверка пройдёт.
+        - |-
+          Каркас:
+          ```text
+          def level(points):
+              if points >= 500:
+                  return …
+              elif …:
+                  return …
+              else:
+                  return …
+
+
+          def test_level():
+              assert level(50) == "новичок"
+              assert level(…) == "игрок"
+              assert level(…) == "мастер"
+          ```
+      solution:
+        code: |
+          def level(points):
+              if points >= 500:
+                  return "мастер"
+              elif points >= 100:
+                  return "игрок"
+              else:
+                  return "новичок"
+
+
+          def test_level():
+              assert level(50) == "новичок"
+              assert level(250) == "игрок"
+              assert level(700) == "мастер"
+
+
+          test_level()
+          print("Все тесты прошли")
+        explanation: >-
+          `print` показывает слово на экране, но функция при этом возвращает `None`, и
+          `None == "новичок"` ложно. С `return` в каждой ветке функция отдаёт название уровня, и
+          assert сравнивает именно его. Проверки для «игрока» и «мастера» нужны, чтобы тест
+          заметил ошибку в любой ветке: одна проверка на 50 очков проверяет только ветку
+          «новичок».
+      altSolutions:
+        - code: |
+            def level(points):
+                name = "новичок"
+                if points >= 100:
+                    name = "игрок"
+                if points >= 500:
+                    name = "мастер"
+                return name
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(100) == "игрок"
+                assert level(500) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Одна переменная и один return в конце; проверки ровно на порогах.
+        - code: |
+            def level(points):
+                if points < 100:
+                    return "новичок"
+                if points < 500:
+                    return "игрок"
+                return "мастер"
+
+
+            def test_level():
+                assert level(50) == "новичок", "50 очков"
+                assert level(250) == "игрок", f"250 очков: получили {level(250)}"
+                assert level(999) == "мастер", f"999 очков: получили {level(999)}"
+
+
+            if __name__ == "__main__":
+                test_level()
+                print("Все тесты прошли")
+          note: Ветки в другом порядке, сообщения в assert, блок запуска.
+        - code: |
+            def level(points):
+                if points >= 500:
+                    # print('мастер')
+                    return 'мастер'
+                elif points >= 100 and points < 500:
+                    return 'игрок'
+                else:
+                    return 'новичок'
+
+
+            def test_level():
+                assert level(50) == 'новичок'
+                assert level(100) == 'игрок'
+                assert level(499) == 'игрок'
+                assert level(500) == 'мастер'
+
+
+            test_level()
+            print('Все тесты прошли')
+          note: Одинарные кавычки, закомментированный print, лишнее условие в elif, проверки у порогов.
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                if points >= 100:
+                    return "игрок"
+                return "новичок"
+
+
+            def test_level():
+                expected_levels = {50: "новичок", 100: "игрок", 250: "игрок", 500: "мастер"}
+                for points, expected in expected_levels.items():
+                    assert level(points) == expected, f"{points} очков"
+
+
+            test_level()
+            print()
+            print("Все тесты прошли")
+          note: Ожидания в словаре, проверка циклом с сообщением, пустая строка перед итогом.
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            def test_level_borders():
+                assert level(99) == "новичок"
+                assert level(100) == "игрок"
+                assert level(499) == "игрок"
+                assert level(500) == "мастер"
+
+
+            test_level()
+            test_level_borders()
+            print("Все тесты прошли")
+          note: Второй тест для границ, оба вызваны.
+      wrongSolutions:
+        - code: |
+            def level(points):
+                if points >= 500:
+                    print("мастер")
+                elif points >= 100:
+                    print("игрок")
+                else:
+                    print("новичок")
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Проверки добавлены, но функция по-прежнему печатает.
+          expectMistake: still-prints
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return print("мастер")
+                elif points >= 100:
+                    return print("игрок")
+                else:
+                    return print("новичок")
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: return print(...) возвращает None — результат print.
+          expectMistake: still-prints
+        - code: |
+            def level(points):
+                if points >= 500:
+                    print("мастер")
+                elif points >= 100:
+                    print("игрок")
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: return только в ветке, которую проверял стартовый тест; две другие ветки печатают.
+          expectMistake: still-prints
+        - code: |
+            def level(points):
+                if points >= 500:
+                    print("мастер")
+                    return "мастер"
+                elif points >= 100:
+                    print("игрок")
+                    return "игрок"
+                else:
+                    print("новичок")
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Функция и печатает, и возвращает — в выводе лишние строки.
+          expectMistake: prints-and-returns
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "Игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Ожидание «Игрок» с большой буквы.
+          expectMistake: wrong-expectation
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "Мастер"
+                elif points >= 100:
+                    return "Игрок"
+                else:
+                    return "Новичок"
+
+
+            def test_level():
+                assert level(50) == "Новичок"
+                assert level(250) == "Игрок"
+                assert level(700) == "Мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Уровни с большой буквы и в функции, и в тесте — тест подогнан под функцию.
+          expectMistake: fitted-expectation
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Нет проверки для «мастера».
+          expectMistake: missed-master
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Нет проверки для «игрока».
+          expectMistake: missed-player
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            print("Все тесты прошли")
+          note: Вызов теста удалён.
+          expectMistake: no-call
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) = "игрок"
+                assert level(700) = "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Один знак = в assert.
+          expectMistake: assign-in-assert
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif point >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Опечатка в имени параметра — NameError. Нужен общий разбор ошибки, а не совет про «мастера».
+          expectMistake: null
+        - code: |
+            def level(points):
+                if points >= 500:
+                    print("мастер")
+                elif points >= 100:
+                    print("игрок")
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: return только в ветке «новичок», проверки ещё не добавлены — стартовый тест проходит, а две ветки возвращают None.
+          expectMistake: still-prints-250
+        - code: |
+            def level(points):
+                if points >= 500:
+                    print("мастер")
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "игрок"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Печатает только ветка «мастер», и для неё нет проверки.
+          expectMistake: still-prints-500
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                print(level(250))
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Отладочный print внутри теста, функция верная — нужен общий разбор лишней строки, а не совет убрать print из функции.
+          expectMistake: null
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(250) == "Игрок"
+                assert level(700) == "мастер"
+
+
+            print("Все тесты прошли")
+          note: Вызов теста удалён, и в ожидании ошибка — функция верная, тест ни разу не выполнялся.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points > 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert level(100) == "новичок"
+                assert level(250) == "игрок"
+                assert level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Граница 100 сломана в функции, и ожидание подогнано под неё.
+          expectMistake: fitted-expectation
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                assert(level(250) == "игрок", "250 очков")
+                assert(level(700) == "мастер", "700 очков")
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Условие и сообщение в общих скобках — кортеж, такой assert всегда истинен.
+          expectMistake: tuple-assert
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_level():
+                assert level(50) == "новичок"
+                level(250) == "игрок"
+                level(700) == "мастер"
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Новые проверки без слова assert.
+          expectMistake: bare-compare
+        - code: |
+            def level(points):
+                if points >= 500:
+                    return "мастер"
+                elif points >= 100:
+                    return "игрок"
+                else:
+                    return "новичок"
+
+
+            def test_one(points, expected):
+                assert level(points) == expected
+
+
+            def test_level():
+                test_one(50, "новичок")
+                test_one(250, "игрок")
+                test_one(700, "мастер")
+
+
+            test_level()
+            print("Все тесты прошли")
+          note: Вспомогательная функция с параметрами названа test_… — тренажёр вызывает её без аргументов.
+          expectMistake: test-helper-params
+      mistakes:
+        - id: assign-in-assert
+          when:
+            errorType: SyntaxError
+            codeRegex: '^[ \t]*assert\s(?:[^\n#"=(!<>]|\([^()\n]*\))+=[^=]'
+          why: >-
+            Внутри `assert` стоит один знак `=`. Один `=` — это присваивание, внутри assert оно
+            запрещено, поэтому Python не может даже запустить программу.
+          try: Сравнивай двумя знаками — `==`, как в готовой проверке на 50 очков.
+          verify: Программа должна запуститься без SyntaxError.
+        - id: tuple-assert
+          when:
+            codeRegex: '^[ \t]*assert\s*\((?:[^()\n]|\([^()\n]*\))*,\s*f?["'']'
+          why: >-
+            Условие и сообщение взяты в общие скобки: `assert(условие, "сообщение")`. Для Python
+            это одно значение — кортеж из двух частей, а непустой кортеж всегда истинен. Такая
+            проверка не упадёт никогда, даже на сломанной функции.
+          try: >-
+            Убери внешние скобки: `assert level(50) == "новичок", "50 очков"`. assert — не
+            функция, как print, скобки ему не нужны.
+        - id: test-helper-params
+          when:
+            failedTest: t-ref
+            errorIncludes: required positional argument
+            codeRegex: '^def\s+test_\w*\(\s*[A-Za-z_]'
+          why: >-
+            Тренажёр (и pytest, с которым ты познакомишься в уроке 9.3) сам вызывает каждую
+            функцию, чьё имя начинается с `test_`, — без аргументов. У твоей функции `test_…` есть
+            параметры, поэтому такой вызов падает с TypeError.
+          try: >-
+            У самого теста параметров нет: все данные — внутри него. Вспомогательную функцию с
+            параметрами назови без `test_` в начале, например `check(points, expected)`.
+        - id: still-prints
+          when:
+            failedTest: t-call-50
+            codeRegex: '^[ \t]+(return\s+)?print\(\s*["''](новичок|игрок|мастер)'
+          why: >-
+            В функции остался `print` с названием уровня. Такая ветка печатает слово, а возвращает
+            `None`. assert видит то, что функция вернула, а не то, что она напечатала, поэтому
+            проверка этой ветки падает, хотя слово на экране верное. `return print(…)` не
+            помогает: `print` сам возвращает `None`.
+          try: В каждой ветке функции замени `print(…)` на `return` с названием уровня.
+        - id: still-prints-250
+          when:
+            failedTest: t-call-250
+            codeRegex: '^[ \t]+(return\s+)?print\(\s*["'']игрок'
+          why: >-
+            Ветка «игрок» печатает слово, а возвращает `None`: в ней остался `print`. Твой тест эту
+            ветку пока не проверяет, поэтому не упал, а проверка тренажёра для 250 очков получила
+            `None`. assert видит то, что функция вернула, а не то, что она напечатала.
+          try: В каждой ветке функции замени `print(…)` на `return` с названием уровня.
+        - id: still-prints-500
+          when:
+            failedTest: t-call-500
+            codeRegex: '^[ \t]+(return\s+)?print\(\s*["'']мастер'
+          why: >-
+            Ветка «мастер» печатает слово, а возвращает `None`: в ней остался `print`. Твой тест эту
+            ветку пока не проверяет, поэтому не упал, а проверка тренажёра для 500 очков получила
+            `None`. assert видит то, что функция вернула, а не то, что она напечатала.
+          try: В каждой ветке функции замени `print(…)` на `return` с названием уровня.
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Одна из проверок в `test_level` упала: функция вернула не то, что записано в assert
+            справа. Ошибиться могли и функция, и ожидание.
+          try: >-
+            Найди строку, на которой остановилась программа. Посчитай по правилам уровней, что
+            должно получиться для этого числа очков, и сравни с ожиданием — буква в букву. Если
+            ожидание верное, ищи ошибку в ветке функции.
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: wrong-expectation-silent
+          when:
+            failedTest: t-ref
+            failedRule: r-call
+          why: >-
+            Вызова `test_level()` в программе нет, поэтому при запуске проверки не выполнялись.
+            Тренажёр вызвал тест сам, и на верной функции одна из проверок упала: ожидание не
+            совпадает с правилами уровней.
+          try: >-
+            Верни вызов `test_level()` перед строкой с «Все тесты прошли» и запусти программу:
+            Python сам покажет строку с неверным ожиданием. Сверь его с правилами — буква в букву.
+        - id: fitted-expectation
+          when:
+            failedTest: t-ref
+            outputIncludes: Все тесты прошли
+          why: >-
+            Твой тест проходит на твоей функции, но падает на верной. Значит, функция и ожидание
+            ошиблись одинаково: ожидание в тесте подогнано под то, что возвращает функция, а не
+            взято из правил.
+          try: >-
+            Сверь с правилами из условия и функцию, и тест: пороги (ровно 100 — уже «игрок», ровно
+            500 — уже «мастер») и названия уровней — буква в букву, маленькими буквами.
+        - id: prints-and-returns
+          when:
+            failedTest: t-io
+            codeRegex: '^[ \t]+print\(\s*["''](новичок|игрок|мастер)'
+          why: >-
+            Функция уже возвращает уровень, но в ней остался `print` с названием уровня. Он
+            печатает лишние строки, и вывод программы — уже не одна строка «Все тесты прошли».
+          try: Убери `print` из функции `level` — пусть она только возвращает название уровня.
+        - id: bare-compare
+          when:
+            codeRegex: '^[ \t]*level\([^\n]*=='
+            outputIncludes: тесты прошли
+          why: >-
+            В тесте есть сравнение без слова `assert`. Такая строка вычисляет `True` или `False`
+            и тут же забывает результат: упасть она не может, поэтому ошибку в функции не заметит.
+          try: Начни каждую такую строку со слова `assert`.
+        - id: missed-master
+          when:
+            failedTest: t-m-master
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, в которой уровня «мастер» нет вовсе. Значит, ни один
+            `assert` не заглядывает в эту ветку.
+          try: Добавь `assert` для числа очков, при котором уровень — уже «мастер».
+        - id: missed-player
+          when:
+            failedTest: t-m-player
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, в которой уровня «игрок» нет вовсе. Значит, ни один
+            `assert` не заглядывает в эту ветку.
+          try: Добавь `assert` для числа очков, при котором уровень — уже «игрок», но ещё не «мастер».
+        - id: no-call
+          when:
+            failedRule: r-call
+          why: >-
+            Вызова `test_level()` в программе нет. Функция выполняется только при вызове, поэтому
+            при запуске ни одна проверка не сработала.
+          try: Верни вызов `test_level()` перед строкой с «Все тесты прошли».
+          verify: 'Нажми «Проверить»: требование к коду должно выполниться.'
+      afterPass: >-
+        Функция отдаёт уровень, и с ним можно работать дальше: сохранить, сравнить, показать в
+        интерфейсе игры. Одно улучшение: проверь и сами пороги — ровно 100 и ровно 500 очков. На
+        таких границах ошибаются чаще всего, об этом следующий урок.
+      skills: [assert-checks, functions]
+
+  - id: practice-fine
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m9-l1-e3
+      kind: write
+      title: Тест по таблице
+      statement: |-
+        В библиотеке за каждый день просрочки берут 15 рублей, но не больше 300 за одну книгу.
+        Если книгу вернули в срок или раньше, штрафа нет. Функция `fine` уже написана и работает
+        верно. Библиотекарь проверял её вручную по такой таблице:
+
+        ```text
+        Просрочка, дней   Штраф, руб.   Что проверяем
+        0                 0             вернули в срок
+        4                 60            обычная просрочка
+        25                ?             долгая просрочка
+        -3                0             вернули раньше срока
+        ```
+
+        Отрицательная просрочка значит, что книгу вернули раньше срока: `-3` — на три дня раньше.
+        Штраф в строке со знаком `?` библиотекарь не успел записать — посчитай его сам по правилу.
+
+        Напиши тестовую функцию `test_fine()`, которая проверяет все строки таблицы. Вызови её, а
+        после вызова выведи `Все тесты прошли`.
+
+        Тренажёр запустит твой тест сначала на верной функции (тест должен пройти), потом на
+        версиях функции с подставленной ошибкой (на каждой он должен упасть).
+      input: "Ввода нет: тест вызывает функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Функцию `fine` не меняй — она верная.
+        - Тестовая функция называется `test_fine`.
+        - Штраф для строки со знаком `?` посчитай по правилу из условия, а не по выводу программы.
+      starterCode: |
+        def fine(days_late):
+            if days_late <= 0:
+                return 0
+            amount = days_late * 15
+            if amount > 300:
+                return 300
+            return amount
+
+
+        # Напиши test_fine() по таблице из условия,
+        # вызови её и выведи «Все тесты прошли»
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            ignoreCase: true
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-has
+          kind: assert
+          title: Есть тестовая функция
+          code: |
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            assert _tests
+          message: В программе есть функция, имя которой начинается с `test_`.
+        - id: t-ref
+          kind: assert
+          title: Тест проходит на верной функции
+          example: true
+          code: |
+            def _reference(days_late):
+                if days_late <= 0:
+                    return 0
+                return min(days_late * 15, 300)
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("fine")
+            globals()["fine"] = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                globals()["fine"] = _saved
+          message: Твои проверки проходят на верной функции `fine`.
+        - id: t-order
+          kind: assert
+          title: Итог печатается после вызова теста
+          code: |
+            import ast as _ast
+
+            _statements = []
+            for _node in _ast.parse(open(__file__, encoding="utf-8").read()).body:
+                if isinstance(_node, _ast.If):
+                    _statements.extend(_node.body)
+                elif not isinstance(_node, (_ast.FunctionDef, _ast.ClassDef)):
+                    _statements.append(_node)
+            _call_line = None
+            _print_line = None
+            for _node in _statements:
+                for _sub in _ast.walk(_node):
+                    if not (isinstance(_sub, _ast.Call) and isinstance(_sub.func, _ast.Name)):
+                        continue
+                    if _sub.func.id.startswith("test_") and _call_line is None:
+                        _call_line = _node.lineno
+                    if _sub.func.id == "print" and _print_line is None:
+                        for _arg in _sub.args:
+                            if isinstance(_arg, _ast.Constant) and "тесты прошли" in str(_arg.value).lower():
+                                _print_line = _node.lineno
+            assert _call_line is None or _print_line is None or _call_line <= _print_line
+          message: Строка «Все тесты прошли» печатается после вызова теста, а не до него.
+        - id: t-m-cap
+          kind: assert
+          title: Тест замечает штраф без потолка 300
+          edge: true
+          code: |
+            def _mutant(days_late):
+                if days_late <= 0:
+                    return 0
+                return days_late * 15
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("fine")
+            globals()["fine"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["fine"] = _saved
+            assert _caught
+          message: Тест не заметил версию функции, где штраф растёт без ограничения в 300 рублей.
+        - id: t-m-negative
+          kind: assert
+          title: Тест замечает отрицательный штраф
+          edge: true
+          code: |
+            def _mutant(days_late):
+                if days_late == 0:
+                    return 0
+                return min(days_late * 15, 300)
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("fine")
+            globals()["fine"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["fine"] = _saved
+            assert _caught
+          message: >-
+            Тест не заметил версию функции, где за книгу, возвращённую раньше срока, получается
+            отрицательный штраф.
+        - id: t-m-rate
+          kind: assert
+          title: Тест замечает неверную цену дня
+          code: |
+            def _mutant(days_late):
+                if days_late <= 0:
+                    return 0
+                return min(days_late * 20, 300)
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("fine")
+            globals()["fine"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["fine"] = _saved
+            assert _caught
+          message: Тест не заметил версию функции, где день просрочки стоит 20 рублей вместо 15.
+      rules:
+        - id: r-call
+          use: ["call:test_fine"]
+          message: >-
+            Вызови `test_fine()` в программе, со скобками. Без вызова проверки не выполнятся при
+            запуске.
+      criteria:
+        - >-
+          Есть функция `test_fine`, и в ней проверены все четыре строки таблицы через `assert`;
+          штраф для строки со знаком `?` посчитан по правилу.
+        - Тест вызван в программе и на верной функции проходит; «Все тесты прошли» печатается после вызова.
+        - Тест падает на версиях функции без потолка 300, с отрицательным штрафом и с другой ценой дня.
+        - Программа печатает только «Все тесты прошли».
+      hints:
+        - >-
+          Каждая строка таблицы — одна проверка. Что во второй колонке, когда там стоит `?`,
+          подскажет правило из первой фразы условия, все его части. Где должны жить эти проверки
+          и как назвать функцию, чтобы тренажёр её нашёл?
+        - |-
+          Пример на другой таблице. В музее дети до 7 лет проходят бесплатно, остальные платят
+          250 рублей. Таблица «5 лет → 0, 30 лет → 250» превращается в тест:
+          ```python
+          def test_ticket_price():
+              assert ticket_price(5) == 0
+              assert ticket_price(30) == 250
+
+
+          test_ticket_price()
+          ```
+          У теста нет параметров, его вызывают под ним. Отрицательное число пишется прямо в
+          вызове, с обычным минусом с клавиатуры: `-2`.
+        - |-
+          Каркас:
+          ```text
+          def test_fine():
+              assert fine(0) == 0
+              assert fine(…) == …
+              …   # по проверке на каждую строку таблицы
+
+
+          test_fine()
+          print(…)
+          ```
+      solution:
+        code: |
+          def fine(days_late):
+              if days_late <= 0:
+                  return 0
+              amount = days_late * 15
+              if amount > 300:
+                  return 300
+              return amount
+
+
+          def test_fine():
+              assert fine(0) == 0
+              assert fine(4) == 60
+              assert fine(25) == 300
+              assert fine(-3) == 0
+
+
+          test_fine()
+          print("Все тесты прошли")
+        explanation: >-
+          Каждая строка таблицы стала одним `assert`: вызов с числом дней слева, штраф справа.
+          Штраф за 25 дней посчитан по правилу: `25 * 15` — это 375, но больше 300 штраф не
+          бывает, значит, 300. У каждой строки своя работа. 4 дня проверяют цену дня, 25 — потолок
+          300, `-3` — что досрочный возврат не даёт отрицательного штрафа. Строка с нулём
+          проверяет возврат точно в срок. Все ожидания взяты из правил, а не из вывода программы.
+      altSolutions:
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                table = [(0, 0), (4, 60), (25, 300), (-3, 0)]
+                for days, expected in table:
+                    assert fine(days) == expected, f"просрочка {days} дн."
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Цикл по таблице пар — один assert с сообщением, поэтому число assert не проверяется.
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0, "вернули в срок"
+                assert fine(4) == 60, f"4 дня: получили {fine(4)}"
+                assert fine(25) == 300, "штраф не больше 300"
+                assert fine(-3) == 0, "вернули раньше срока"
+                assert fine(20) == 300, "ровно 300 — тоже потолок"
+
+
+            if __name__ == "__main__":
+                test_fine()
+                print("Все тесты прошли")
+          note: Сообщения, лишняя проверка ровно на потолке, блок запуска.
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(-3) == 0
+                assert fine(25) == 300
+                assert fine(1) == 15
+                assert fine(4) == 60
+                assert fine(0) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Строки таблицы в другом порядке и ещё одна своя проверка.
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def check_row(days, expected):
+                assert fine(days) == expected, f"{days} дн.: получили {fine(days)}"
+
+
+            def test_fine():
+                check_row(0, 0)
+                check_row(4, 60)
+                check_row(25, 300)
+                check_row(-3, 0)
+
+
+            test_fine()
+            print()
+            print("Все тесты прошли")
+          note: Помощник на строку таблицы без test_ в имени, пустая строка перед итогом.
+        - code: |
+            PRICE = 15
+            LIMIT = 300
+
+
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert not fine(0)
+                assert PRICE * 4 == fine(4)
+                assert fine(-3) == 0
+
+
+            def test_fine_cap():
+                assert fine(25) == LIMIT, "25 дней: не больше 300"
+
+
+            test_fine()
+            test_fine_cap()
+            print("Все тесты прошли")
+          note: Два теста, assert not, ожидания через константы, ожидание слева от ==.
+      wrongSolutions:
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 375
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Ожидание посчитано формулой 25 × 15 без учёта потолка.
+          expectMistake: wrong-expectation
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Проверены только удобные строки 0 и 4.
+          expectMistake: missed-cap
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 300
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Нет строки с отрицательной просрочкой.
+          expectMistake: missed-negative
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(25) == 300
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Нет обычной просрочки — цена дня не проверяется.
+          expectMistake: missed-rate
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            assert fine(0) == 0
+            assert fine(4) == 60
+            assert fine(25) == 300
+            assert fine(-3) == 0
+            print("Все тесты прошли")
+          note: Проверки на верхнем уровне, тестовой функции нет.
+          expectMistake: no-test-function
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def check_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 300
+                assert fine(-3) == 0
+
+
+            check_fine()
+            print("Все тесты прошли")
+          note: Функция с проверками названа не по правилу test_…
+          expectMistake: no-test-function
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 300
+                assert fine(-3) == 0
+
+
+            print("Все тесты прошли")
+          note: Тест не вызван.
+          expectMistake: no-call
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) = 60
+                assert fine(25) = 300
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Один знак = в assert.
+          expectMistake: assign-in-assert
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                print(fine(0) == 0)
+                print(fine(4) == 60)
+                print(fine(25) == 300)
+                print(fine(-3) == 0)
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Вместо assert — print сравнений; тест не может упасть.
+          expectMistake: no-assert
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 375
+                assert fine(-3) == 0
+
+
+            print("Все тесты прошли")
+          note: Неверное ожидание, и тест не вызван.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fien(25) == 300
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Опечатка в имени функции внутри теста — NameError. Нужен общий разбор ошибки, а не совет про имя теста.
+          expectMistake: null
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                return days_late * 15
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 375
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Потолок убран из функции под неверное ожидание 375 — тест проходит в программе, но падает на верной функции.
+          expectMistake: changed-function
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                return days_late * 15
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 300
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Функцию испортили (потолок убран), ожидания верные — программа падает с AssertionError.
+          expectMistake: wrong-expectation
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert(fine(0) == 0, "вернули в срок")
+                assert(fine(4) == 60, "обычная просрочка")
+                assert(fine(25) == 300, "долгая просрочка")
+                assert(fine(-3) == 0, "вернули раньше срока")
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Условие и сообщение в общих скобках — кортежи, все assert всегда истинны.
+          expectMistake: tuple-assert
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_row(days, expected):
+                assert fine(days) == expected
+
+
+            def test_fine():
+                test_row(0, 0)
+                test_row(4, 60)
+                test_row(25, 300)
+                test_row(-3, 0)
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Помощник на строку таблицы назван test_row — тренажёр вызывает его без аргументов.
+          expectMistake: test-helper-params
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine(days_late):
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 300
+                assert fine(-3) == 0
+
+
+            test_fine(0)
+            print("Все тесты прошли")
+          note: У теста параметр по образцу fine(days_late) — программа проходит, а вызов без аргументов падает.
+          expectMistake: test-helper-params
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 300
+                assert fine(-3) == 0
+
+
+            print(test_fine())
+            print("Все тесты прошли")
+          note: Вызов теста обёрнут в print — в выводе лишняя строка None.
+          expectMistake: print-test-call
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(25) == 300
+                assert fine(-3) == 0
+
+
+            print("Все тесты прошли")
+            test_fine()
+          note: Итог напечатан до вызова теста.
+          expectMistake: print-before-call
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                fine(25) == 300
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Проверка потолка без слова assert.
+          expectMistake: bare-compare
+        - code: |
+            def fine(days_late):
+                if days_late <= 0:
+                    return 0
+                amount = days_late * 15
+                if amount > 300:
+                    return 300
+                return amount
+
+
+            def test_fine():
+                assert fine(0) == 0
+                assert fine(4) == 60
+                assert fine(20) == 300
+                assert fine(-3) == 0
+
+
+            test_fine()
+            print("Все тесты прошли")
+          note: Потолок проверен на 20 днях — без потолка там тоже 300, ошибку не поймать.
+          expectMistake: missed-cap
+      mistakes:
+        - id: assign-in-assert
+          when:
+            errorType: SyntaxError
+            codeRegex: '^[ \t]*assert\s(?:[^\n#"=(!<>]|\([^()\n]*\))+=[^=]'
+          why: >-
+            Внутри `assert` стоит один знак `=`. Один `=` — это присваивание, внутри assert оно
+            запрещено, поэтому Python не может даже запустить программу.
+          try: Сравнивай двумя знаками — `==`.
+          verify: Программа должна запуститься без SyntaxError.
+        - id: tuple-assert
+          when:
+            codeRegex: '^[ \t]*assert\s*\((?:[^()\n]|\([^()\n]*\))*,\s*f?["'']'
+          why: >-
+            Условие и сообщение взяты в общие скобки: `assert(условие, "сообщение")`. Для Python
+            это одно значение — кортеж из двух частей, а непустой кортеж всегда истинен. Такая
+            проверка не упадёт никогда, даже на сломанной функции.
+          try: >-
+            Убери внешние скобки: `assert fine(0) == 0, "вернули в срок"`. assert — не функция,
+            как print, скобки ему не нужны.
+        - id: test-helper-params
+          when:
+            failedTest: t-ref
+            errorIncludes: required positional argument
+            codeRegex: '^def\s+test_\w*\(\s*[A-Za-z_]'
+          why: >-
+            Тренажёр (и pytest, с которым ты познакомишься в уроке 9.3) сам вызывает каждую
+            функцию, чьё имя начинается с `test_`, — без аргументов. У твоей функции `test_…` есть
+            параметры, поэтому такой вызов падает с TypeError.
+          try: >-
+            У самого теста параметров нет: все данные — внутри него, пусть будет
+            `def test_fine():`. Вспомогательную функцию с параметрами назови без `test_` в начале,
+            например `check_row(days, expected)`.
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Тест упал при запуске: функция вернула одно число, а в assert справа записано другое.
+            Функция в стартовом коде верная, поэтому ошибка, скорее всего, в ожидании.
+          try: >-
+            Найди строку, на которой остановилась программа. Ожидание бери из второй колонки
+            таблицы. Если считаешь сам, не забудь про потолок: больше 300 штраф не бывает. Если
+            ожидание верное, а функцию ты менял, верни её из стартового кода.
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: wrong-expectation-silent
+          when:
+            failedTest: t-ref
+            failedRule: r-call
+          why: >-
+            Вызова `test_fine()` в программе нет, поэтому при запуске проверки не выполнялись, а
+            «Все тесты прошли» напечаталось просто так. Тренажёр вызвал тест сам, и на верной
+            функции одна из проверок упала: ожидание не совпадает с правилом штрафа.
+          try: >-
+            Вызови тест перед `print` и запусти программу: Python сам покажет строку с неверным
+            ожиданием. Сверь его с таблицей и правилом — с потолком 300.
+        - id: changed-function
+          when:
+            failedTest: t-ref
+            outputIncludes: тесты прошли
+          why: >-
+            Твой тест проходит в твоей программе, но падает на верной функции `fine`. Так бывает,
+            когда функцию изменили под ожидание. Или в программе есть ещё одна функция `test_…`,
+            которую никто не вызывает: тренажёр проверяет все тесты.
+          try: >-
+            Верни `fine` как в стартовом коде: она верная. Потом сверь каждое ожидание с таблицей и
+            правилом из условия — про потолок 300 не забудь.
+        - id: no-test-function
+          when:
+            failedTest: t-has
+            codeRegex: '(?<![\s\S])(?![\s\S]*^def\s+test_)'
+          why: >-
+            Тренажёр ищет тесты по имени: это функции, чьё имя начинается с `test_`. Такой функции
+            в программе нет, поэтому проверять тренажёру нечего.
+          try: >-
+            Собери проверки в функцию `test_fine()` — с отступом внутри неё — и вызови её внизу.
+            Если проверки уже в функции, переименуй её в `test_fine`.
+        - id: no-assert
+          when:
+            codeRegex: '(?<![\s\S])(?![\s\S]*\bassert\b)'
+            failedTest: t-m-cap
+          why: >-
+            В программе нет ни одного `assert`. `print` только показывает результат сравнения, а
+            упасть тест может только на assert. Поэтому такой тест не замечает ни одной ошибки в
+            функции.
+          try: Замени каждое `print(вызов == ожидание)` на `assert вызов == ожидание`.
+        - id: print-test-call
+          when:
+            failedTest: t-io
+            codeRegex: '^[ \t]*print\(\s*test_'
+          why: >-
+            Тест ничего не возвращает, поэтому `print(test_fine())` печатает `None` — как любая
+            функция без `return` (урок 5.3). В выводе появилась лишняя строка.
+          try: >-
+            Вызови тест без `print`, просто `test_fine()`. Что все проверки прошли, скажет
+            следующая строка — «Все тесты прошли».
+        - id: bare-compare
+          when:
+            codeRegex: '^[ \t]*fine\([^\n]*=='
+            outputIncludes: тесты прошли
+          why: >-
+            В тесте есть сравнение без слова `assert`. Такая строка вычисляет `True` или `False`
+            и тут же забывает результат: упасть она не может, поэтому ошибку в функции не заметит.
+          try: Начни каждую такую строку со слова `assert`.
+        - id: missed-cap
+          when:
+            failedTest: t-m-cap
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где штраф растёт без ограничения. Значит, ни одна
+            проверка не берёт просрочку, при которой без потолка штраф был бы больше 300 рублей.
+          try: Какая строка таблицы проверяет долгую просрочку? Есть ли для неё `assert`?
+        - id: missed-negative
+          when:
+            failedTest: t-m-negative
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где за книгу, возвращённую раньше срока, получается
+            отрицательный штраф.
+          try: Какая строка таблицы проверяет возврат раньше срока? Добавь для неё `assert`.
+        - id: missed-rate
+          when:
+            failedTest: t-m-rate
+            outputIncludes: тесты прошли
+          why: >-
+            Тест не заметил версию функции, где день просрочки стоит 20 рублей вместо 15. Значит,
+            ни одна проверка не смотрит на обычную просрочку, где штраф ещё меньше потолка.
+          try: Какая строка таблицы проверяет обычную просрочку? Добавь для неё `assert`.
+        - id: print-before-call
+          when:
+            failedTest: t-order
+            outputIncludes: тесты прошли
+          why: >-
+            Строка «Все тесты прошли» стоит раньше вызова теста. Она печатается до проверок,
+            поэтому сообщит об успехе, даже если тест потом упадёт.
+          try: Поставь `print` с «Все тесты прошли» ниже строки, где вызван тест.
+        - id: no-call
+          when:
+            failedRule: r-call
+          why: >-
+            В программе нет вызова `test_fine()`. Функция выполняется только при вызове, поэтому
+            при запуске ни одна проверка не сработала.
+          try: >-
+            Проверь, что тестовая функция называется именно `test_fine`, и вызови её внизу
+            программы, перед `print`, — с круглыми скобками.
+          verify: 'Нажми «Проверить»: требование к коду должно выполниться.'
+      afterPass: >-
+        Таблица библиотекаря стала тестом: теперь её сверяет Python. Одно улучшение: добавь к
+        проверкам сообщения через запятую, без общих скобок, например
+        `assert fine(25) == 300, "25 дней: не больше 300"`. Тогда упавшая проверка сама скажет,
+        какая строка таблицы нарушена.
+      skills: [assert-checks]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "`assert условие` молчит, если условие верно, и останавливает программу с AssertionError, если нет. Сообщение после запятой объясняет, что пошло не так."
+      - "Тест — функция `test_…` без параметров: в ней assert сравнивают результат функции с ожиданием, посчитанным по условию. Тест нужно вызвать, а итог печатать после вызова."
+      - "assert видит то, что функция вернула, а не то, что она напечатала: функция, которая печатает результат вместо `return`, отдаёт `None`."
+      - Упавший тест значит, что код и ожидание разошлись. Кто прав, решает условие задачи.
+    question: >-
+      По условию заказ от 1500 рублей включительно доставляют бесплатно. Тест
+      `assert delivery_cost(1500) == 0` упал: функция вернула 300. Кого исправлять — функцию или
+      тест?
+    answer: >-
+      Функцию. По условию заказ ровно на 1500 рублей уже бесплатный, значит, ожидание 0 верное, а
+      функция ошиблась — скорее всего, в ней `>` вместо `>=`. В прогнозе было наоборот: там
+      ошибся тест. Кто прав, каждый раз решает условие задачи, а не то, что вернула функция.

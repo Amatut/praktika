@@ -13,6 +13,7 @@
 //     именно разбор из expectMistake (matchMistake из src/coach/feedback.ts), а при expectMistake: null —
 //     ни один. Если у задания есть разборы, expectMistake указывается у каждого неверного решения;
 // для шагов predict — ответ совпадает с настоящим выводом программы, для example — код работает без ошибок.
+// Всё запускается с окружением из материалов (учебные файлы, базы SQLite, seed, ответы сети), как в приложении.
 // Код выхода: 0 — ошибок нет, 1 — найдены ошибки, 2 — неверные аргументы.
 //
 // Безопасность: код из материалов выполняется на этом компьютере. Процесс с Python запускается
@@ -29,11 +30,13 @@ import { parseArgs } from 'node:util';
 import { ContentError, loadContent, type LoadedContent } from '../build/content-lib.ts';
 import { matchMistake, normalizeOutput, testLabel } from '../src/coach/feedback.ts';
 import type { ContentTest, ExampleStep, Exercise, Lesson, PredictStep } from '../src/content/schema.ts';
+import { exerciseEnvironment, stepEnvironment } from '../src/runner/environment.ts';
 import { DEFAULT_OUTPUT_LIMIT, DEFAULT_TEST_LIMIT_MS } from '../src/runner/runner.ts';
 import type {
   CheckPayload,
   CheckResult,
   PyError,
+  RunEnvironment,
   RunResult,
   TestResult,
   WorkerMessage,
@@ -62,7 +65,8 @@ export type CallOutcome<T> =
 
 /** Всё, что проверке нужно от Python. В тестах можно подставить свою реализацию. */
 export interface PythonExecutor {
-  run(code: string, stdin: string, limitMs: number): Promise<CallOutcome<RunResult>>;
+  /** environment — учебные файлы, базы, seed и ответы сети шага (необязательно). */
+  run(code: string, stdin: string, limitMs: number, environment?: RunEnvironment): Promise<CallOutcome<RunResult>>;
   check(payload: CheckPayload, limitMs: number): Promise<CallOutcome<CheckResult>>;
   /** Загрузить Python заранее (необязательно). */
   start?(): Promise<PythonInfo>;
@@ -84,7 +88,9 @@ export interface NodePythonOptions {
   loadTimeoutMs?: number;
 }
 
-type RequestBody = { type: 'run'; code: string; stdin: string; limit: number } | { type: 'check'; payload: string };
+type RequestBody =
+  | { type: 'run'; code: string; stdin: string; limit: number; environment?: RunEnvironment }
+  | { type: 'check'; payload: string };
 
 interface Pending {
   id: number;
@@ -151,10 +157,9 @@ export class NodePython implements PythonExecutor {
     return this.info;
   }
 
-  run(code: string, stdin: string, limitMs: number): Promise<CallOutcome<RunResult>> {
-    return this.#request({ type: 'run', code, stdin, limit: DEFAULT_OUTPUT_LIMIT }, limitMs) as Promise<
-      CallOutcome<RunResult>
-    >;
+  run(code: string, stdin: string, limitMs: number, environment?: RunEnvironment): Promise<CallOutcome<RunResult>> {
+    const body: RequestBody = { type: 'run', code, stdin, limit: DEFAULT_OUTPUT_LIMIT, ...(environment ? { environment } : {}) };
+    return this.#request(body, limitMs) as Promise<CallOutcome<RunResult>>;
   }
 
   check(payload: CheckPayload, limitMs: number): Promise<CallOutcome<CheckResult>> {
@@ -506,8 +511,10 @@ export async function checkCode(py: PythonExecutor, exercise: Exercise, code: st
       result.tests.every((test) => test.passed),
   });
 
+  // Окружение задания: файл кода, учебные файлы, базы, seed, ответы сети. Тест дополняет его своими полями.
+  const environment = exerciseEnvironment(exercise);
   // Сначала разбор кода и правила (без тестов).
-  const first = await py.check({ code, tests: [], rules: exercise.rules }, limitMs);
+  const first = await py.check({ code, tests: [], rules: exercise.rules, ...environment }, limitMs);
   if (first.status !== 'done') {
     failures.push({
       testId: null,
@@ -522,7 +529,7 @@ export async function checkCode(py: PythonExecutor, exercise: Exercise, code: st
   result.rules = first.result.rules;
 
   for (const [index, test] of exercise.tests.entries()) {
-    const outcome = await py.check({ code, tests: [test], rules: [] }, limitMs);
+    const outcome = await py.check({ code, tests: [test], rules: [], ...environment }, limitMs);
     if (outcome.status === 'timeout') {
       result.tests.push(placeholderTest(test, 'timeout'));
       for (const rest of exercise.tests.slice(index + 1)) result.tests.push(placeholderTest(rest, 'skipped'));
@@ -1068,7 +1075,7 @@ function consoleText(result: RunResult): string {
 export async function verifyPredict(ctx: StepContext, step: PredictStep): Promise<number> {
   const stdin = step.stdin ?? '';
   const inputLine = stdin ? [`ввод: ${inlineInput(stdin)}`] : [];
-  const outcome = await ctx.py.run(step.code, stdin, ctx.timeoutMs);
+  const outcome = await ctx.py.run(step.code, stdin, ctx.timeoutMs, stepEnvironment(step));
   const fail = (message: string, details: string[] = [], severity: Severity = 'error') =>
     report(ctx, { severity, subject: 'predict', message, details: [...inputLine, ...details] });
 
@@ -1153,7 +1160,7 @@ export async function verifyExample(ctx: StepContext, step: ExampleStep): Promis
   }
 
   const stdin = step.stdin ?? '';
-  const outcome = await ctx.py.run(step.code, stdin, ctx.timeoutMs);
+  const outcome = await ctx.py.run(step.code, stdin, ctx.timeoutMs, stepEnvironment(step));
   const fail = (message: string, details: string[] = []) =>
     report(ctx, {
       severity: 'error',

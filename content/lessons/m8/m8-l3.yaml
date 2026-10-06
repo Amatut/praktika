@@ -1,0 +1,2032 @@
+id: m8-l3
+module: m8
+number: "8.3"
+title: "Виртуальное окружение, pip и requirements.txt"
+objective: >-
+  Создать для проекта виртуальное окружение, установить в него пакет через pip и записать
+  зависимости в requirements.txt, чтобы проект можно было повторить на другом компьютере.
+minutes: [45, 60]
+prerequisites: [m8-l2, m0-l4]
+skills: [venv-deps, readme-docs]
+environment: external
+
+story:
+  title: Программки разъехались
+  fictional: true
+  text: >-
+    Ира и Олег, преподаватели музыкальной школы, собирают программки концертов маленьким
+    скриптом на Python: он берёт список номеров и печатает аккуратную таблицу. У Иры скрипт
+    работал, а у Олега падал с ModuleNotFoundError — библиотеку для таблиц Ира когда-то поставила
+    «на весь компьютер» и забыла об этом. Олег поставил библиотеку себе, а через месяц обновил её
+    ради другого своего проекта — и столбцы в программках разъехались. Теперь у скрипта своё
+    виртуальное окружение и файл requirements.txt со списком библиотек и версий: на новом
+    компьютере всё нужное ставится одной командой.
+
+why: >-
+  Чужие библиотеки экономят недели работы, но ставить их нужно так, чтобы проекты не мешали друг
+  другу. Например, команда `python -m pip install -r requirements.txt` за минуту ставит в новое
+  окружение ровно те версии, с которыми проект проверен.
+
+usedIn: >-
+  Так устроен любой проект с внешними библиотеками: сайты и веб-сервисы, анализ данных, боты,
+  игры. В модуле 9 так же поставишь pytest для автоматических тестов, в модуле 11 — библиотеку
+  requests для работы с сетью. Файл requirements.txt лежит в папках многих проектов с открытым
+  кодом: по нему сразу видно, что нужно проекту.
+
+steps:
+  - id: venv-why
+    type: theory
+    title: "Коробка для библиотек: окружение и pip"
+    body: |-
+      В стандартной библиотеке Python много готового: `random`, `json`, `datetime`. Но ещё больше
+      написано другими людьми. Такие наборы модулей называют **пакетами**, или библиотеками:
+      пакет устроен похоже на твой `todo` из урока 8.2, только написали его другие люди. Пакеты
+      лежат в общем каталоге **PyPI** — [pypi.org](https://pypi.org), а ставит их программа
+      **pip**, которая обычно приходит вместе с Python. Пакеты, без которых проект не работает,
+      называют его **зависимостями**.
+
+      Запускай pip так: `python -m pip install tabulate`. Ключ `-m` значит «запусти модуль как
+      программу»: pip — тоже модуль Python, как и venv, которым создают окружения. Запись
+      `python -m pip` значит «pip того самого Python, которым я запускаю программы». На одном
+      компьютере бывает несколько Python, и пакеты у каждого свои.
+
+      **Почему не ставить пакеты «на весь компьютер».** Разным проектам нужны разные версии одной
+      библиотеки: обновишь её ради одного — сломается другой, как программки Олега. А через
+      полгода уже не вспомнить, какие пакеты нужны именно этому проекту.
+
+      **Виртуальное окружение** — папка внутри проекта, обычно `.venv`, со своим Python и своими
+      пакетами. Одно окружение — один проект. Пока окружение **включено** (активировано),
+      команды `python` и `pip` в этом окне терминала работают с ним. Признак — `(.venv)` в начале
+      строки.
+
+      Команды для «Командной строки» Windows:
+
+      ```text
+      python -m venv .venv             создать окружение
+      .venv\Scripts\activate           включить: в начале строки появится (.venv)
+      python -m pip install tabulate   поставить пакет в окружение
+      python -m pip list               посмотреть, что стоит
+      deactivate                       выключить
+      ```
+
+      На macOS и Linux окружение создают командой `python3 -m venv .venv`, а включают —
+      `source .venv/bin/activate`.
+
+      **Почему «Командная строка», а не PowerShell.** PowerShell в Windows по умолчанию запрещает
+      запускать сценарии, и команда включения окружения там заканчивается ошибкой. В «Командной
+      строке» (cmd) такого запрета нет.
+
+      **Осторожно с именами.** Ставь только пакеты, про которые знаешь, зачем они нужны, и сверяй
+      имя на pypi.org: пакет с похожим именем может оказаться чужим и вредным.
+
+      Частое заблуждение: «pip написал Successfully installed — значит, программа увидит пакет».
+      Не увидит, если пакет ушёл в другой Python — например, окружение не было включено.
+
+      В тренажёре pip нет: пакеты ставят на компьютере, по чек-листам в конце урока. А задания
+      про файл requirements.txt работают и здесь, в том числе с телефона.
+    simpler: >-
+      Окружение — отдельная коробка с библиотеками для одного проекта. Включил её — и всё, что
+      ставишь через `python -m pip install`, попадает в эту коробку, а не в общий Python
+      компьютера. Признак, что коробка открыта, — `(.venv)` в начале строки терминала.
+    coach: >-
+      Урок удобно пройти двумя заходами: теория и задания — в тренажёре, около получаса;
+      чек-листы в конце — на компьютере с интернетом, ещё 20–25 минут, хоть в другой день.
+
+  - id: missing-package
+    type: predict
+    title: Пакета нет
+    prompt: >-
+      В тренажёре никто не ставил пакет tabulate. Как думаешь, что произойдёт, если запустить
+      программу?
+    code: |-
+      import tabulate
+      print("Таблица готова")
+    options:
+      - Таблица готова
+      - Ошибка ModuleNotFoundError
+      - Python сам скачает пакет, а потом напечатает «Таблица готова»
+    answer: Ошибка ModuleNotFoundError
+    answerIsNotOutput: true
+    explanation: >-
+      Python ищет модуль в папке программы, в стандартной библиотеке и среди установленных
+      пакетов — и нигде не находит tabulate. Сам он ничего не скачивает: пакеты ставит pip, и
+      только туда, куда его попросили. В тренажёре есть стандартная библиотека и учебная
+      симуляция requests для модуля 11, а других пакетов нет — как в свежем окружении, куда ещё
+      ничего не ставили. До `print` дело не дошло: ошибка в первой строке остановила программу.
+    coach: >-
+      Увидишь `ModuleNotFoundError` у себя на компьютере — первым делом проверь, включено ли
+      окружение и стоит ли в нём пакет.
+
+  - id: requirements
+    type: theory
+    title: "requirements.txt: опись окружения"
+    body: |-
+      Окружение живёт только на твоём компьютере. Чтобы другой человек — или ты сам на новом
+      ноутбуке — собрал такое же, нужна опись: файл **requirements.txt** в папке проекта. В нём
+      по строке на пакет:
+
+      ```text
+      # Зависимости проекта «Список задач»
+      tabulate==0.9.0
+      ```
+
+      - `имя==версия` — нужна ровно эта версия. Номер в примере условный: у тебя он может быть
+        другим.
+      - Строка, которая начинается с `#`, — комментарий, pip её пропускает. Пустые строки тоже.
+      - Можно написать одно имя без версии — тогда pip поставит самую новую. Проект с такой
+        строкой однажды может сломаться после обновления пакета, поэтому версии обычно
+        закрепляют. Бывают и другие знаки, например `>=`, но в этом уроке они не нужны.
+
+      Такой файл можно прочитать и своей программой — в практике этим и займёмся. Узнать,
+      комментарий ли строка, поможет метод строк **`startswith`** («начинается с»):
+      `"# заметка".startswith("#")` даёт `True`, а `"tabulate==0.9.0".startswith("#")` — `False`.
+
+      Набирать опись с нуля не нужно — её составляет pip, а комментарий или строку потом можно
+      дописать руками:
+
+      ```text
+      python -m pip freeze > requirements.txt     записать, что стоит в окружении
+      python -m pip install -r requirements.txt   поставить всё по списку
+      ```
+
+      `freeze` печатает список пакетов окружения, а знак `>` отправляет этот вывод в файл. В
+      список попадают и **зависимости зависимостей** — пакеты, которые твой пакет потянул за
+      собой. Поэтому в окружении держат только то, что нужно проекту: иначе в опись попадёт
+      лишнее.
+
+      **Папку `.venv` не копируют, не отправляют другу и не кладут в Git.** Внутри неё пути и
+      программы для твоего компьютера и твоей версии Python, а весит она много. Окружение не
+      переносят, а пересоздают: новое окружение плюс `python -m pip install -r requirements.txt`.
+      Как это сделать, пишут в README, в разделе «Установка».
+    simpler: >-
+      requirements.txt — список покупок для окружения: какие пакеты и каких версий нужны.
+      `pip freeze` составляет список по тому, что уже стоит, а `pip install -r` покупает всё по
+      списку. Саму коробку `.venv` никуда не носят — по списку её легко собрать заново.
+    coach: >-
+      Сделал freeze — открой requirements.txt и посмотри глазами: там должно быть только то, что
+      нужно проекту.
+
+  - id: venv-steps
+    type: order
+    title: Порядок команд
+    prompt: >-
+      Ты начинаешь работу с проектом, которому нужна библиотека tabulate. Расставь действия в том
+      порядке, в каком их выполнишь.
+    items:
+      - id: create
+        text: 'python -m venv .venv — создать окружение'
+      - id: activate
+        text: '.venv\Scripts\activate — включить окружение'
+      - id: check
+        text: 'Убедиться, что в начале строки видно (.venv)'
+      - id: install
+        text: 'python -m pip install tabulate — поставить пакет'
+      - id: freeze
+        text: 'python -m pip freeze > requirements.txt — записать опись'
+      - id: run
+        text: 'python main.py — запустить программу'
+    before:
+      - [create, activate]
+      - [activate, check]
+      - [check, install]
+      - [install, freeze]
+      - [install, run]
+    explanation: >-
+      Сначала окружение должно появиться и включиться — только потом в него что-то ставят: пакет,
+      поставленный до включения, уйдёт в другой Python. Проверка `(.venv)` стоит перед установкой:
+      это самый дешёвый способ не ошибиться. `freeze` записывает то, что уже стоит, поэтому идёт
+      после установки. А запустить программу можно и до `freeze`, и после — главное, после
+      установки пакета.
+
+  - id: practice-read-req
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m8-l3-e1
+      kind: write
+      title: Что в requirements.txt
+      statement: |-
+        Олег получил от Иры скрипт для программок вместе с файлом `requirements.txt`. Прежде чем
+        что-то ставить, он хочет увидеть список: какие пакеты нужны и закреплены ли их версии.
+
+        Напиши программу, которая читает `requirements.txt` из папки программы и для каждого
+        пакета печатает строку:
+
+        - `имя: версия` — если в строке есть `==`;
+        - `имя: версия не закреплена` — если версии нет.
+
+        Пустые строки и комментарии пропускай. Комментарий — строка, которая начинается с `#`
+        (пробелы перед ним не в счёт); проверить это поможет метод `startswith` из теории.
+        Если пакетов в файле нет совсем, выведи `Зависимостей нет`.
+
+        Для файла из блока «Файлы задания»
+
+        ```text
+        # Скрипт концертных программок
+        tabulate==0.9.0
+        colorama==0.4.6
+
+        requests
+        ```
+
+        вывод такой:
+
+        ```text
+        tabulate: 0.9.0
+        colorama: 0.4.6
+        requests: версия не закреплена
+        ```
+      input: >-
+        Файл `requirements.txt` в папке программы. У каждого теста своя версия файла — её видно в
+        карточке примера.
+      output: >-
+        По строке на каждый пакет — `имя: версия` или `имя: версия не закреплена`; если пакетов
+        нет — `Зависимостей нет`.
+      constraints:
+        - Вокруг имени, версии и `==` могут стоять пробелы — в выводе их быть не должно.
+        - Из знаков версий в файлах встречается только `==`.
+        - 'Открывай файл с `encoding="utf-8"`: в нём бывают русские комментарии.'
+      files:
+        requirements.txt: |
+          # Скрипт концертных программок
+          tabulate==0.9.0
+          colorama==0.4.6
+
+          requests
+      starterCode: |
+        # Прочитай requirements.txt построчно.
+        # Пустые строки и комментарии (#) пропусти.
+        # Для пакета выведи «имя: версия» или «имя: версия не закреплена».
+        # Если пакетов нет — «Зависимостей нет».
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: опись из «Файлов задания»"
+          example: true
+          expected: |-
+            tabulate: 0.9.0
+            colorama: 0.4.6
+            requests: версия не закреплена
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t2
+          kind: io
+          title: "Пример 2: другая опись"
+          example: true
+          files:
+            requirements.txt: |-
+              requests==2.32.3
+              tabulate
+          expected: |-
+            requests: 2.32.3
+            tabulate: версия не закреплена
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: пробелы вокруг == и в начале строк"
+          edge: true
+          files:
+            requirements.txt: "  tabulate == 0.9.0  \n   \n  # для таблиц\ncolorama ==0.4.6\n"
+          expected: |-
+            tabulate: 0.9.0
+            colorama: 0.4.6
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: только комментарии и пустые строки"
+          edge: true
+          files:
+            requirements.txt: |
+              # Пакеты пока не нужны
+
+              # tabulate==0.9.0
+          expected: Зависимостей нет
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: пустой файл"
+          edge: true
+          files:
+            requirements.txt: ""
+          expected: Зависимостей нет
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+            tree = ast.parse(open(__file__, encoding="utf-8").read())
+            # Свои функции ученика с такими именами (def read_text...) не в счёт: проверяем open внутри них.
+            own = {n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+                     and ((getattr(n.func, "id", None) in names and n.func.id not in own)
+                          or getattr(n.func, "attr", None) in names)]
+
+
+            def has_encoding(call):
+                if any(k.arg == "encoding" for k in call.keywords):
+                    return True
+                name = getattr(call.func, "id", None) or call.func.attr
+                # Кодировка по позиции: open(file, mode, buffering, encoding),
+                # Path.open(mode, buffering, encoding), read_text(encoding), write_text(data, encoding).
+                position = {"open": 3 if isinstance(call.func, ast.Attribute) else 4, "read_text": 1, "write_text": 2}[name]
+                return len(call.args) >= position
+
+
+            assert all(has_encoding(c) for c in calls)
+          message: >-
+            В `open()` не указана кодировка. Добавь `encoding="utf-8"`: в requirements.txt бывают
+            русские комментарии, и на Windows со старым Python (до 3.15) без кодировки они
+            превратятся в кракозябры или в ошибку.
+      criteria:
+        - Каждая строка файла очищается от пробелов по краям и `\n`.
+        - Пустые строки и комментарии (строки, которые после очистки начинаются с `#`) пропускаются.
+        - Для строки с `==` печатаются имя и версия без лишних пробелов, для строки без `==` — «версия не закреплена».
+        - Если пакетов нет (пустой файл или одни комментарии), выводится `Зависимостей нет`.
+      hints:
+        - >-
+          Каждая строка файла — один из трёх случаев: её надо пропустить, в ней пакет с версией
+          или пакет без версии. По какому признаку в самой строке их различить? И как после
+          цикла узнать, встретился ли хоть один пакет?
+        - |-
+          Те же приёмы на расписании репетиций:
+
+          ```python
+          line = "  хор == 18:00  \n"
+          clean = line.strip()
+          print(clean)                  # хор == 18:00
+          print("==" in clean)          # True
+          group, start = clean.split("==")
+          print(group.strip(), start.strip())   # хор 18:00
+          print("#хор".startswith("#")) # True
+          ```
+
+          `split("==")` режет строку по двум знакам сразу, а `strip()` убирает пробелы по краям —
+          и `\n`, с которым строка приходит из файла. Счётчик, который растёт только на нужных
+          строках, после цикла скажет, были ли они вообще.
+        - |-
+          Каркас:
+
+          ```text
+          count = 0
+          with open("requirements.txt", encoding="utf-8") as file:
+              for line in file:
+                  line = строка без пробелов по краям
+                  если строка пустая или начинается с "#": continue
+                  если "==" в строке:
+                      имя, версия = строка, разрезанная по "=="
+                      вывести имя и версию, каждую без пробелов по краям
+                  иначе:
+                      вывести «<строка>: версия не закреплена»
+                  count += 1
+          если count == 0: вывести «Зависимостей нет»
+          ```
+      solution:
+        code: |
+          count = 0
+          with open("requirements.txt", encoding="utf-8") as file:
+              for line in file:
+                  line = line.strip()
+                  if line == "" or line.startswith("#"):
+                      continue
+                  if "==" in line:
+                      name, version = line.split("==")
+                      print(f"{name.strip()}: {version.strip()}")
+                  else:
+                      print(f"{line}: версия не закреплена")
+                  count += 1
+          if count == 0:
+              print("Зависимостей нет")
+        explanation: >-
+          Каждая строка сначала очищается `strip()` — уходят пробелы по краям и `\n`. Пустые
+          строки и комментарии пропускает `continue`. Если в строке есть `==`, `split("==")` делит
+          её ровно на две части — имя и версию, и каждую ещё раз очищаем от пробелов, которые
+          стояли вокруг `==`. Иначе это пакет без версии. Счётчик `count` растёт только на
+          пакетах, поэтому после цикла по нему видно, печатать ли «Зависимостей нет». Если
+          проверяешь комментарий через первый символ, `line[0] == "#"`, сначала убедись, что строка
+          не пустая: у пустой строки нет символа с индексом 0, и будет IndexError. `startswith` и
+          срез `line[:1]` с пустой строкой работают спокойно.
+      altSolutions:
+        - code: |
+            with open("requirements.txt", encoding="utf-8") as file:
+                lines = file.read().splitlines()
+            packages = 0
+            for line in lines:
+                line = line.strip()
+                if line == "" or line[0] == "#":
+                    continue
+                parts = line.split("==")
+                if len(parts) == 2:
+                    print(parts[0].strip() + ": " + parts[1].strip())
+                else:
+                    print(line + ": версия не закреплена")
+                packages += 1
+            if packages == 0:
+                print("Зависимостей нет")
+          note: Весь файл через read().splitlines(), комментарий по первому символу, части по индексам.
+        - code: |
+            def describe(line):
+                if "==" in line:
+                    name, version = line.split("==")
+                    return f"{name.strip()}: {version.strip()}"
+                return f"{line}: версия не закреплена"
+
+
+            result = []
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line != "" and not line.startswith("#"):
+                        result.append(describe(line))
+            if len(result) == 0:
+                print("Зависимостей нет")
+            else:
+                print("\n".join(result))
+          note: Разбор строки вынесен в функцию, строки вывода собираются в список и печатаются в конце.
+        - code: |
+            from pathlib import Path
+
+            text = Path("requirements.txt").read_text(encoding="utf-8")
+            found = False
+            for line in text.splitlines():
+                line = line.strip()
+                if line[:1] == "#" or line == "":
+                    continue
+                name, sep, version = line.partition("==")
+                if sep == "":
+                    print(f"{name}: версия не закреплена")
+                else:
+                    print(f"{name.strip()}: {version.strip()}")
+                found = True
+            if not found:
+                print("Зависимостей нет")
+          note: pathlib и read_text, срез line[:1] вместо startswith, partition вместо split, флаг вместо счётчика.
+        - code: |
+            packages = []
+            file = open("requirements.txt", encoding="utf-8")
+            for line in file:
+                line = line.replace(" ", "").strip()
+                if line.startswith("#") or len(line) == 0:
+                    continue
+                packages.append(line)
+            file.close()
+
+            if len(packages) == 0:
+                print("Зависимостей нет")
+            for item in packages:
+                if "==" in item:
+                    parts = item.split("==")
+                    print(parts[0] + ":", parts[1])
+                else:
+                    print(item + ":", "версия не закреплена")
+          note: >-
+            Пробелы убраны через replace, open без with, пакеты сначала собираются в список; print
+            через запятую, но двоеточие приклеено к имени — лишнего пробела нет.
+        - code: |
+            def read_text(name):
+                with open(name, encoding="utf-8") as file:
+                    return file.read()
+
+
+            count = 0
+            for line in read_text("requirements.txt").splitlines():
+                line = line.strip()
+                if line == "" or line.startswith("#"):
+                    continue
+                if "==" in line:
+                    name, version = line.split("==")
+                    print(f"{name.strip()}: {version.strip()}")
+                else:
+                    print(f"{line}: версия не закреплена")
+                count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: >-
+            Своя функция-помощник с именем read_text — проверка кодировки смотрит на open внутри
+            неё и не путает её с Path.read_text.
+      wrongSolutions:
+        - code: |
+            count = 0
+            with open("requirement.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name.strip()}: {version.strip()}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Опечатка в имени файла — нет буквы s.
+          expectMistake: wrong-file
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    name, version = line.split("==")
+                    print(f"{name.strip()}: {version.strip()}")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Строку режут по == без проверки — пакет без версии даёт одну часть вместо двух.
+          expectMistake: no-unpinned-check
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "=" in line:
+                        name, version = line.split("=")
+                        print(f"{name.strip()}: {version.strip()}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Разделитель — один знак =, строка распадается на три части.
+          expectMistake: split-one
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "":
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name.strip()}: {version.strip()}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Комментарии не пропускаются и печатаются как пакеты без версии.
+          expectMistake: comment-printed
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name.strip()}: {version.strip()}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Пустая строка не пропускается и превращается в «пакет» без имени.
+          expectMistake: blank-as-package
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    if line.startswith("#") or line == "\n":
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name}: {version}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Строки файла не очищены strip() — у имени пакета без версии остаётся \n на конце.
+          expectMistake: no-strip-line
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name}: {version}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Части после split не очищены — пробелы вокруг == остаются в имени и версии.
+          expectMistake: no-strip
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(name.strip(), ":", version.strip())
+                    else:
+                        print(line, ": версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: 'print через запятую ставит пробел перед двоеточием — «tabulate : 0.9.0».'
+          expectMistake: comma-print
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line[0] == "#" or line == "":
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name.strip()}: {version.strip()}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: Первый символ проверяется раньше, чем пустота строки, — у пустой строки нет line[0].
+          expectMistake: empty-index
+        - code: |
+            count = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    if line.startswith("#") or line.strip() == "":
+                        continue
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name.strip()}: {version.strip()}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: 'Комментарий ищется в неочищенной строке — «  # для таблиц» с отступом печатается как пакет.'
+          expectMistake: comment-printed
+        - code: |
+            count = 0
+            with open("requirements.txt") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        print(f"{name.strip()}: {version.strip()}")
+                    else:
+                        print(f"{line}: версия не закреплена")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+          note: open без encoding — в тренажёре файл читается, но на Windows со старым Python русские комментарии сломаются.
+          expectMistake: no-encoding
+      mistakes:
+        - id: wrong-file
+          when:
+            errorType: FileNotFoundError
+          where: Строка с `open(...)`
+          why: >-
+            Файла с таким именем в папке программы нет. Файл задания называется
+            `requirements.txt` — с `s` на конце и с точкой перед `txt`; его видно в блоке «Файлы
+            задания».
+          try: Сравни имя в `open()` с именем файла буква в букву.
+          verify: Ошибка FileNotFoundError должна исчезнуть, а в «Примере 1» появится список пакетов.
+        - id: no-unpinned-check
+          when:
+            errorIncludes: not enough values to unpack
+          where: Строка с `split("==")`
+          why: >-
+            В строке `requests` нет `==`, поэтому `split("==")` возвращает список из одной части
+            — `['requests']`, а разложить его на имя и версию нельзя.
+          try: >-
+            Сначала проверь, есть ли в строке `==`: `if "==" in line:` — режь только такие строки,
+            а остальные печатай как пакеты без версии.
+          verify: 'В «Примере 1» последней строкой должно стать «requests: версия не закреплена».'
+        - id: split-one
+          when:
+            errorIncludes: too many values to unpack
+          where: Строка со `split`
+          why: >-
+            Разделитель — один знак `=`, а в `tabulate==0.9.0` их два подряд. Поэтому строка
+            распадается на три части: `['tabulate', '', '0.9.0']`, и в две переменные они не
+            помещаются.
+          try: Режь по двум знакам сразу — `split("==")`.
+          verify: 'В «Примере 1» первой строкой должно стать «tabulate: 0.9.0».'
+        - id: empty-index
+          when:
+            errorType: IndexError
+            errorIncludes: string index out of range
+          where: Проверка комментария по первому символу — `line[0]`
+          why: >-
+            После `strip()` пустая строка файла становится `""`, а у пустой строки нет символа с
+            индексом 0 — Python останавливает программу ошибкой IndexError.
+          try: >-
+            Проверяй комментарий через `line.startswith("#")` — с пустой строкой он просто вернёт
+            `False`. Или сначала проверь пустоту, а потом первый символ:
+            `if line == "" or line[0] == "#":` — если строка пустая, до `line[0]` дело не дойдёт.
+          verify: 'В «Примере 1» должны появиться три строки, первая — «tabulate: 0.9.0».'
+        - id: comment-printed
+          when:
+            outputIncludes: "#"
+          why: >-
+            В выводе видна строка-комментарий: программа приняла её за пакет без версии. pip такие
+            строки пропускает — и программа должна. Комментарий может стоять и с отступом:
+            `  # для таблиц`.
+          try: >-
+            Проверяй уже очищенную строку: сначала `line = line.strip()`, потом вместе с проверкой
+            пустой строки — `line.startswith("#")` (или `line[:1] == "#"`).
+          verify: В выводе не должно остаться строк с «#».
+        - id: no-strip-line
+          when:
+            outputIncludes: "requests\n: версия не закреплена"
+          where: Начало цикла `for line in file`
+          why: >-
+            Имя пакета и «: версия не закреплена» оказались на разных строках. Строка из файла
+            приходит с `\n` на конце (урок 7.1), и f-строка вставила этот перевод строки прямо
+            после имени.
+          try: Первым делом в цикле очисти строку — `line = line.strip()`, и дальше работай с ней.
+          verify: 'В «Примере 1» последней строкой должно стать «requests: версия не закреплена».'
+        - id: blank-as-package
+          when:
+            outputIncludes: "\n: версия не закреплена"
+          why: >-
+            В выводе строка `: версия не закреплена` без имени — её дала пустая строка файла.
+            После `strip()` она становится `""`, в ней нет `==`, и программа считает её пакетом.
+          try: 'Пропускай пустую строку так же, как комментарий: `if line == "":` → `continue`.'
+          verify: 'В выводе не должно остаться строк «: версия не закреплена» без имени пакета.'
+        - id: comma-print
+          when:
+            failedTest: t1
+            outputIncludes: " :"
+          where: Строка с `print` для пакета
+          why: >-
+            Перед двоеточием лишний пробел: «tabulate : 0.9.0». В «Примере 1» пробелов вокруг `==`
+            нет — пробел добавляет сама программа. Так бывает, когда части перечислены в `print`
+            через запятую: `print(name, ":", version)` печатает их через пробел.
+          try: >-
+            Собери строку целиком: f-строкой `print(f"{name}: {version}")` или склейкой
+            `print(name + ": " + version)`. То же — для строки «версия не закреплена».
+          verify: 'В «Примере 1» первой строкой должно стать «tabulate: 0.9.0».'
+        - id: no-strip
+          when:
+            outputIncludes: "tabulate :"
+          where: Строка с `print` для пакета с версией
+          why: >-
+            Пробелы, которые стояли вокруг `==`, попали в вывод. `split("==")` режет строку ровно
+            по знакам, и пробелы остаются в частях: из `tabulate == 0.9.0` получаются
+            `"tabulate "` и `" 0.9.0"`.
+          try: Очисти каждую часть отдельно — `name.strip()` и `version.strip()`.
+          verify: 'В граничном случае с пробелами должно получиться «tabulate: 0.9.0».'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            codeRegex: '(?:open|read_text)\((?![^)\n]*encoding)'
+          where: Строка с `open(...)`
+          why: >-
+            В `open()` не указана кодировка. Здесь, в тренажёре, файл всё равно прочитается, а на
+            Windows со старым Python (до 3.15) русские комментарии превратятся в кракозябры или в
+            ошибку UnicodeDecodeError. Поэтому кодировку проверяет отдельный тест.
+          try: 'Допиши в `open()` именованный аргумент: `open("requirements.txt", encoding="utf-8")`.'
+          verify: Тест «Кодировка указана» должен стать зелёным.
+      afterPass: >-
+        Программа читает опись так же, как pip: пропускает комментарии и пустые строки и отличает
+        закреплённую версию от незакреплённой. Улучшение: в конце выведи, сколько пакетов без
+        версии, — такие строки могут сломать проект после очередного обновления.
+      skills: [venv-deps, files-paths, string-methods]
+
+  - id: practice-check-env
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m8-l3-e2
+      kind: modify
+      title: Сверка окружения
+      statement: |-
+        Олег сохранил список пакетов своего окружения в файл командой
+        `python -m pip freeze > installed.txt`. Прежде чем запускать скрипт программок, он хочет
+        сверить этот список с описью `requirements.txt`.
+
+        Измени программу из прошлого задания — она уже в редакторе. Для каждого пакета из
+        `requirements.txt` печатай одну строку:
+
+        - `имя: не установлен` — пакета нет в `installed.txt`;
+        - `имя: нужна X, стоит Y` — версия в описи закреплена, а в окружении стоит другая;
+        - `имя: в порядке` — пакет стоит нужной версии. Если версия в описи не закреплена,
+          подходит любая.
+
+        Последняя строка — итог: `Всё на месте`, если все пакеты в порядке, иначе
+        `Выполни: python -m pip install -r requirements.txt`. Если в описи нет ни одного пакета,
+        проверять нечего — выведи только `Всё на месте`.
+
+        В `installed.txt` каждая строка — `имя==версия`, как их пишет `pip freeze`. Там бывают и
+        пакеты, которых нет в описи, — например, зависимости других пакетов. Их не печатай.
+
+        Для файлов из блока «Файлы задания» вывод такой:
+
+        ```text
+        tabulate: не установлен
+        colorama: в порядке
+        requests: в порядке
+        Выполни: python -m pip install -r requirements.txt
+        ```
+      input: >-
+        Два файла в папке программы: `requirements.txt` (опись проекта) и `installed.txt` (что
+        стоит в окружении). В карточке примера видны только файлы, которые в нём свои; если
+        какого-то файла там нет, он берётся из блока «Файлы задания».
+      output: По строке на каждый пакет из описи — в том же порядке — и строка-итог.
+      constraints:
+        - Имена пакетов в обоих файлах записаны одинаково, маленькими буквами.
+        - В `installed.txt` нет пустых строк и комментариев, а в `requirements.txt` они бывают — их по-прежнему пропускай.
+        - Вокруг имени и `==` в описи могут стоять пробелы.
+      files:
+        requirements.txt: |
+          # Скрипт концертных программок
+          tabulate==0.9.0
+          colorama==0.4.6
+          requests
+        installed.txt: |
+          certifi==2024.8.30
+          charset-normalizer==3.4.0
+          colorama==0.4.6
+          idna==3.10
+          requests==2.31.0
+          urllib3==2.2.3
+      starterCode: |
+        count = 0
+        with open("requirements.txt", encoding="utf-8") as file:
+            for line in file:
+                line = line.strip()
+                if line == "" or line.startswith("#"):
+                    continue
+                if "==" in line:
+                    name, version = line.split("==")
+                    print(f"{name.strip()}: {version.strip()}")
+                else:
+                    print(f"{line}: версия не закреплена")
+                count += 1
+        if count == 0:
+            print("Зависимостей нет")
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: пакета не хватает"
+          example: true
+          expected: |-
+            tabulate: не установлен
+            colorama: в порядке
+            requests: в порядке
+            Выполни: python -m pip install -r requirements.txt
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t2
+          kind: io
+          title: "Пример 2: всё совпало"
+          example: true
+          files:
+            requirements.txt: |
+              tabulate==0.9.0
+              colorama==0.4.6
+            installed.txt: |
+              colorama==0.4.6
+              tabulate==0.9.0
+          expected: |-
+            tabulate: в порядке
+            colorama: в порядке
+            Всё на месте
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t3
+          kind: io
+          title: "Пример 3: стоит другая версия"
+          example: true
+          files:
+            requirements.txt: |
+              requests==2.32.3
+          expected: |-
+            requests: нужна 2.32.3, стоит 2.31.0
+            Выполни: python -m pip install -r requirements.txt
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: пустое окружение"
+          edge: true
+          files:
+            installed.txt: ""
+          expected: |-
+            tabulate: не установлен
+            colorama: не установлен
+            requests: не установлен
+            Выполни: python -m pip install -r requirements.txt
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: в описи нет пакетов"
+          edge: true
+          files:
+            requirements.txt: |
+              # Пока без библиотек
+          expected: Всё на месте
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t6
+          kind: io
+          title: "Граничный случай: пробелы вокруг =="
+          edge: true
+          files:
+            requirements.txt: "  colorama == 0.4.6  \n"
+          expected: |-
+            colorama: в порядке
+            Всё на месте
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t7
+          kind: io
+          title: "Граничный случай: версии похожи, но не равны"
+          edge: true
+          files:
+            requirements.txt: |
+              idna==3.1
+          expected: |-
+            idna: нужна 3.1, стоит 3.10
+            Выполни: python -m pip install -r requirements.txt
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+            tree = ast.parse(open(__file__, encoding="utf-8").read())
+            # Свои функции ученика с такими именами (def read_text...) не в счёт: проверяем open внутри них.
+            own = {n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+                     and ((getattr(n.func, "id", None) in names and n.func.id not in own)
+                          or getattr(n.func, "attr", None) in names)]
+
+
+            def has_encoding(call):
+                if any(k.arg == "encoding" for k in call.keywords):
+                    return True
+                name = getattr(call.func, "id", None) or call.func.attr
+                # Кодировка по позиции: open(file, mode, buffering, encoding),
+                # Path.open(mode, buffering, encoding), read_text(encoding), write_text(data, encoding).
+                position = {"open": 3 if isinstance(call.func, ast.Attribute) else 4, "read_text": 1, "write_text": 2}[name]
+                return len(call.args) >= position
+
+
+            assert all(has_encoding(c) for c in calls)
+          message: >-
+            В одном из `open()` не указана кодировка. Добавь `encoding="utf-8"` и при чтении
+            installed.txt — привычка, которая бережёт русский текст на Windows со старым Python
+            (до 3.15).
+      criteria:
+        - Для каждого пакета из описи находится установленная версия (удобнее всего — словарь «имя → версия» из installed.txt).
+        - Незакреплённый пакет в порядке при любой установленной версии, закреплённый — только при точном совпадении.
+        - Пакеты из installed.txt, которых нет в описи, не печатаются.
+        - Итоговая строка печатается один раз, после проверки всех пакетов.
+      hints:
+        - >-
+          Сначала реши, в каком виде держать содержимое installed.txt, чтобы по имени пакета сразу
+          узнать, есть ли он и какой версии. Какая структура из модуля 4 отвечает на вопрос «что
+          лежит под этим ключом?»
+        - |-
+          Тот же приём на складе музыкальной школы:
+
+          ```python
+          stock = {}
+          for line in ["гитара=3", "скрипка=5"]:
+              item, count = line.split("=")
+              stock[item] = count
+          print("скрипка" in stock)      # True
+          print(stock["скрипка"])        # 5
+          print("флейта" in stock)       # False
+          ```
+
+          Прежде чем брать значение по ключу, проверь через `in`, что ключ есть: `stock["флейта"]`
+          остановит программу ошибкой KeyError.
+        - |-
+          Каркас:
+
+          ```text
+          installed = {}
+          открыть installed.txt; для каждой строки:
+              имя, версия = очищенная строка, разрезанная по "=="
+              installed[имя] = версия
+
+          problems = 0
+          открыть requirements.txt; для каждой строки (пустые и # пропускать):
+              имя и нужная версия ("" — если версия не закреплена)
+              если имени нет в installed: «не установлен», problems += 1
+              иначе если версия закреплена и не равна installed[имя]:
+                  «нужна …, стоит …», problems += 1
+              иначе: «в порядке»
+          после цикла: problems == 0 → «Всё на месте», иначе → «Выполни: …»
+          ```
+      solution:
+        code: |
+          installed = {}
+          with open("installed.txt", encoding="utf-8") as file:
+              for line in file:
+                  line = line.strip()
+                  if "==" in line:
+                      name, version = line.split("==")
+                      installed[name] = version
+
+          problems = 0
+          with open("requirements.txt", encoding="utf-8") as file:
+              for line in file:
+                  line = line.strip()
+                  if line == "" or line.startswith("#"):
+                      continue
+                  if "==" in line:
+                      name, version = line.split("==")
+                      name = name.strip()
+                      version = version.strip()
+                  else:
+                      name = line
+                      version = ""
+                  if name not in installed:
+                      print(f"{name}: не установлен")
+                      problems += 1
+                  elif version != "" and installed[name] != version:
+                      print(f"{name}: нужна {version}, стоит {installed[name]}")
+                      problems += 1
+                  else:
+                      print(f"{name}: в порядке")
+          if problems == 0:
+              print("Всё на месте")
+          else:
+              print("Выполни: python -m pip install -r requirements.txt")
+        explanation: >-
+          Сначала installed.txt превращается в словарь «имя → версия»: по имени сразу видно, есть
+          ли пакет (`in`) и какой он версии (`installed[name]`). Потом, как и раньше, читаем опись,
+          но вместо печати версии сравниваем её со словарём. У незакреплённого пакета версия —
+          пустая строка: такой пакет в порядке при любой установленной версии. Версии сравниваются
+          как строки целиком, поэтому `3.1` и `3.10` — разные версии, как и должно быть. Счётчик
+          `problems` растёт на каждой проблеме, а итог печатается один раз — после цикла.
+      altSolutions:
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    parts = line.strip().split("==")
+                    if len(parts) == 2:
+                        installed[parts[0]] = parts[1]
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = None
+                    have = installed.get(name)
+                    if have is None:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version is None or have == version:
+                        print(f"{name}: в порядке")
+                    else:
+                        print(f"{name}: нужна {version}, стоит {have}")
+                        problems += 1
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Установленная версия через get, незакреплённая версия — None.
+        - code: |
+            def read_packages(path):
+                packages = {}
+                with open(path, encoding="utf-8") as file:
+                    for line in file:
+                        line = line.strip()
+                        if line == "" or line.startswith("#"):
+                            continue
+                        if "==" in line:
+                            name, version = line.split("==")
+                            packages[name.strip()] = version.strip()
+                        else:
+                            packages[line] = ""
+                return packages
+
+
+            needed = read_packages("requirements.txt")
+            installed = read_packages("installed.txt")
+            all_ok = True
+            for name in needed:
+                version = needed[name]
+                if name not in installed:
+                    print(name + ": не установлен")
+                    all_ok = False
+                elif version != "" and version != installed[name]:
+                    print(name + ": нужна " + version + ", стоит " + installed[name])
+                    all_ok = False
+                else:
+                    print(name + ": в порядке")
+            if all_ok:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Одна функция читает оба файла в словари, флаг вместо счётчика.
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file.read().splitlines():
+                    name, version = line.split("==")
+                    installed[name] = version
+
+            lines_out = []
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line[0] == "#":
+                        continue
+                    if "==" not in line:
+                        if line in installed:
+                            lines_out.append(line + ": в порядке")
+                        else:
+                            lines_out.append(line + ": не установлен")
+                            problems += 1
+                        continue
+                    name, version = line.split("==")
+                    name = name.strip()
+                    version = version.strip()
+                    if name not in installed:
+                        lines_out.append(name + ": не установлен")
+                        problems += 1
+                    elif installed[name] == version:
+                        lines_out.append(name + ": в порядке")
+                    else:
+                        lines_out.append(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+            for text in lines_out:
+                print(text)
+            if problems > 0:
+                print("Выполни: python -m pip install -r requirements.txt")
+            else:
+                print("Всё на месте")
+          note: Незакреплённые пакеты разобраны отдельной веткой с continue, строки копятся в списке.
+        - code: |
+            pairs = []
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    pairs.append(line.strip().split("=="))
+
+            missing = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    want = ""
+                    name = line
+                    if "==" in line:
+                        name, want = line.split("==")
+                        name = name.strip()
+                        want = want.strip()
+                    found = ""
+                    for pair in pairs:
+                        if pair[0] == name:
+                            found = pair[1]
+                    if found == "":
+                        print(f"{name}: не установлен")
+                        missing += 1
+                    elif want != "" and want != found:
+                        print(f"{name}: нужна {want}, стоит {found}")
+                        missing += 1
+                    else:
+                        print(f"{name}: в порядке")
+            if missing == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Без словаря — список пар и поиск перебором по нему (приёмы модулей 3–4).
+      wrongSolutions:
+        - code: |
+            installed = {}
+            with open("instaled.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Опечатка в имени файла installed.txt.
+          expectMistake: wrong-file
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    name, version = line.strip().split("==")
+                    installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                        if installed[name] == version:
+                            print(f"{name}: в порядке")
+                        else:
+                            print(f"{name}: нужна {version}, стоит {installed[name]}")
+                            problems += 1
+                    elif line in installed:
+                        print(f"{line}: в порядке")
+                    else:
+                        print(f"{line}: не установлен")
+                        problems += 1
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Версия берётся из словаря без проверки, что пакет вообще установлен.
+          expectMistake: key-error
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    name, version = line.split("==")
+                    installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Строки installed.txt не очищены — версия приходит вместе с \n и не совпадает.
+          expectMistake: no-strip-installed
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Незакреплённый пакет сравнивается с пустой версией и считается несовпадающим.
+          expectMistake: unpinned-mismatch
+        - code: |
+            with open("installed.txt", encoding="utf-8") as file:
+                installed = file.read().splitlines()
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if line in installed:
+                        print(f"{line.split('==')[0]}: в порядке")
+                    else:
+                        print(f"{line.split('==')[0]}: не установлен")
+                        problems += 1
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Установленное хранится списком строк и сравнивается целиком — пакет без версии и пакет другой версии «не установлены».
+          expectMistake: list-not-dict
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+                    if problems == 0:
+                        print("Всё на месте")
+                    else:
+                        print("Выполни: python -m pip install -r requirements.txt")
+          note: Итоговая строка печатается внутри цикла — после каждого пакета.
+          expectMistake: summary-in-loop
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                        if name not in installed:
+                            print(f"{name}: не установлен")
+                            problems += 1
+                        elif installed[name] != version:
+                            print(f"{name}: нужна {version}, стоит {installed[name]}")
+                            problems += 1
+                        else:
+                            print(f"{name}: в порядке")
+                    else:
+                        print(f"{line}: не установлен")
+                        problems += 1
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Словарь есть, но пакет без версии в нём не ищут — ветка «версия не закреплена» превратилась в «не установлен».
+          expectMistake: list-not-dict
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                    else:
+                        print(f"{name}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: В ветке «нужна …, стоит …» забыт problems += 1 — итог «Всё на месте» при чужой версии.
+          expectMistake: mismatch-not-counted
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, а стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: >-
+            Лишнее слово в формате — «нужна X, а стоит Y». Своего разбора нет: общий показывает
+            строку расхождения, а разбор про незакреплённую версию срабатывать не должен.
+          expectMistake: null
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            count = 0
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+                    count += 1
+            if count == 0:
+                print("Зависимостей нет")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Из прошлой программы осталась печать «Зависимостей нет».
+          expectMistake: leftover-empty
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name.strip()}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name.strip()}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name.strip()}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: Имя очищено только в print, а в словаре ищется «colorama » с пробелом.
+          expectMistake: name-spaces
+        - code: |
+            installed = {}
+            with open("installed.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: 'Имя из описи не очищено вовсе — «colorama : не установлен».'
+          expectMistake: name-spaces
+        - code: |
+            installed = {}
+            with open("installed.txt") as file:
+                for line in file:
+                    line = line.strip()
+                    if "==" in line:
+                        name, version = line.split("==")
+                        installed[name] = version
+
+            problems = 0
+            with open("requirements.txt", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if line == "" or line.startswith("#"):
+                        continue
+                    if "==" in line:
+                        name, version = line.split("==")
+                        name = name.strip()
+                        version = version.strip()
+                    else:
+                        name = line
+                        version = ""
+                    if name not in installed:
+                        print(f"{name}: не установлен")
+                        problems += 1
+                    elif version != "" and installed[name] != version:
+                        print(f"{name}: нужна {version}, стоит {installed[name]}")
+                        problems += 1
+                    else:
+                        print(f"{name}: в порядке")
+            if problems == 0:
+                print("Всё на месте")
+            else:
+                print("Выполни: python -m pip install -r requirements.txt")
+          note: installed.txt открыт без encoding.
+          expectMistake: no-encoding
+      mistakes:
+        - id: wrong-file
+          when:
+            errorType: FileNotFoundError
+          where: Строка с `open(...)`
+          why: >-
+            Файла с таким именем в папке программы нет. Файлы задания называются
+            `requirements.txt` и `installed.txt` — их видно в блоке «Файлы задания».
+          try: Сравни имя в каждом `open()` с именем файла буква в букву.
+          verify: Ошибка FileNotFoundError должна исчезнуть.
+        - id: key-error
+          when:
+            errorType: KeyError
+          where: Строка, где версия берётся из словаря по имени пакета
+          why: >-
+            Пакета нет в installed.txt, а значит, и в словаре. Взять значение по ключу, которого
+            нет, нельзя — Python останавливает программу ошибкой KeyError.
+          try: >-
+            Сначала проверь, что пакет установлен: `if name not in installed:` → «не установлен».
+            Сравнивай версии только в следующей ветке, `elif`. Другой путь — `installed.get(name)`:
+            он вернёт `None` вместо ошибки.
+          verify: 'В «Примере 1» первой строкой должно стать «tabulate: не установлен».'
+        - id: no-strip-installed
+          when:
+            outputIncludes: "нужна 0.4.6, стоит 0.4.6"
+          where: Цикл, который читает installed.txt
+          why: >-
+            Версии выглядят одинаково, но не совпадают: строки из installed.txt приходят с `\n` на
+            конце, и в словаре лежит `"0.4.6\n"`, а не `"0.4.6"`.
+          try: Очисти строку `strip()`, прежде чем резать её по `==`.
+          verify: 'В «Примере 1» должно стать «colorama: в порядке».'
+        - id: unpinned-mismatch
+          when:
+            failedTest: t1
+            outputIncludes: "requests: нужна"
+          why: >-
+            В «Примере 1» версия `requests` в описи не закреплена, а программа всё равно сравнивает
+            её с установленной — и «версии нет» никогда не совпадёт с `2.31.0`.
+          try: >-
+            Сравнивай версии, только если версия в описи есть: например,
+            `elif version != "" and installed[name] != version:`. Незакреплённый пакет в порядке,
+            если он просто установлен.
+          verify: 'В «Примере 1» должно стать «requests: в порядке».'
+        - id: mismatch-not-counted
+          when:
+            outputIncludes: "стоит 2.31.0\nВсё на месте"
+          where: Ветка, которая печатает «нужна …, стоит …»
+          why: >-
+            Программа заметила, что стоит не та версия, но итог всё равно «Всё на месте»: в этой
+            ветке проблема не засчитывается.
+          try: >-
+            Добавь в ветку «нужна …, стоит …» то же, что в ветке «не установлен»: `problems += 1`
+            (или то, чем у тебя отмечается проблема).
+          verify: 'В «Примере 3» последней строкой должно стать «Выполни: python -m pip install -r requirements.txt».'
+        - id: list-not-dict
+          when:
+            outputIncludes: "colorama: в порядке\nrequests: не установлен"
+          why: >-
+            `requests` стоит в окружении — в installed.txt есть строка `requests==2.31.0`, — а
+            программа написала «не установлен». Так бывает, если пакет без версии вообще не ищут
+            среди установленных или сравнивают строку описи со строками installed.txt целиком:
+            `requests` не равно `requests==2.31.0`.
+          try: >-
+            Ищи пакет по имени: разложи installed.txt в словарь `{имя: версия}` (выбор структуры,
+            как в уроке 4.6) и проверяй `if name in installed:` — и для пакета с версией, и для
+            пакета без неё.
+          verify: 'В «Примере 1» должно стать «requests: в порядке».'
+        - id: leftover-empty
+          when:
+            outputIncludes: Зависимостей нет
+          where: Строки с «Зависимостей нет» из прошлой программы
+          why: >-
+            «Зависимостей нет» — строка из прошлого задания. Здесь для описи без пакетов нужен
+            только итог «Всё на месте».
+          try: >-
+            Убери печать «Зависимостей нет» — и счётчик `count`, если он больше ни для чего не
+            нужен.
+          verify: 'В граничном случае «в описи нет пакетов» должна остаться одна строка — «Всё на месте».'
+        - id: summary-in-loop
+          when:
+            outputIncludes: "requirements.txt\ncolorama"
+          where: Строки с итогом «Всё на месте» / «Выполни…»
+          why: >-
+            Итог печатается после каждого пакета: строки с ним стоят внутри цикла. А итог можно
+            подвести, только когда проверены все пакеты.
+          try: Убери отступ у `if problems == 0:` и его веток, чтобы они выполнялись один раз — после цикла.
+          verify: 'В «Примере 1» строка «Выполни: …» должна остаться одна, последней.'
+        - id: name-spaces
+          when:
+            failedTest: t6
+            outputIncludes: "не установлен\nВыполни"
+          where: Строки, где из строки описи получаются имя и версия
+          why: >-
+            colorama стоит в окружении, но программа её не нашла. В описи вокруг `==` стоят
+            пробелы, и после `split("==")` имя — `"colorama "` с пробелом на конце. Пакета с таким
+            именем среди установленных нет. Если очистить имя только внутри `print`, на экране
+            пробела не видно, но ищется по-прежнему неочищенное имя.
+          try: 'Очисти имя сразу после `split`, до поиска: `name = name.strip()`.'
+          verify: 'В граничном случае с пробелами должно стать «colorama: в порядке».'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            codeRegex: '(?:open|read_text)\((?![^)\n]*encoding)'
+          where: Строка с `open(...)`
+          why: >-
+            В одном из `open()` не указана кодировка. Здесь, в тренажёре, файл всё равно
+            прочитается, а на Windows со старым Python (до 3.15) русский текст превратится в
+            кракозябры или в ошибку UnicodeDecodeError. Поэтому кодировку проверяет отдельный тест.
+          try: 'Допиши `encoding="utf-8"` в каждый `open()` — и для installed.txt тоже.'
+          verify: Тест «Кодировка указана» должен стать зелёным.
+      afterPass: >-
+        Программа сверяет опись с окружением — похожую проверку делает и pip при
+        `install -r`: для пакетов, которые уже стоят нужной версии, он пишет `Requirement
+        already satisfied`. Улучшение: перед итогом выведи, сколько пакетов нужно поставить или
+        обновить, например `Проблем: 2`.
+      skills: [venv-deps, dicts, files-paths]
+
+  - id: wrong-env
+    type: quiz
+    title: Установил, а не видит
+    question: |-
+      Ты набрал `pip install tabulate`, и pip ответил `Successfully installed tabulate-0.9.0`. Но
+      `python main.py` падает:
+
+      ```text
+      ModuleNotFoundError: No module named 'tabulate'
+      ```
+
+      Что вероятнее всего?
+    options:
+      - Пакет скачался повреждённым — нужно переустановить Python
+      - "Пакет попал в другой Python: окружение не было включено или эта команда pip относится к другому Python"
+      - В main.py опечатка в print
+      - tabulate не работает на Windows
+    correct: 1
+    explanation: >-
+      pip честно поставил пакет — но в тот Python, к которому относится сам. А `python main.py`
+      запустил другой Python, где tabulate нет. Проверь `(.venv)` в начале строки и путь в ответе
+      `python -m pip --version`, а ставь всегда через `python -m pip`: тогда пакет попадёт ровно в
+      тот Python, который запускает программу. Опечатка в print дала бы другую ошибку, да и до
+      print дело не дошло — упал import.
+
+  - id: make-venv
+    type: checklist
+    title: Окружение для списка задач
+    body: >-
+      Дальше — работа на компьютере с проектом «Список задач», который ты разложил по модулям в
+      уроке 8.2 (или с учебным мини-проектом оттуда). Её можно сделать отдельным заходом, в другой
+      день: два блока займут 20–25 минут. Для установки пакета нужен интернет: без него дойди до
+      пункта «Проверь, чей pip» и продолжи, когда сеть появится. Если под рукой только телефон,
+      вернись к этому блоку позже.
+    items:
+      - id: cmd
+        text: >-
+          **Открой «Командную строку» в папке проекта.** Путь слева от курсора должен
+          заканчиваться именем папки проекта, а команда `dir` — показать `main.py` и папку
+          `todo`.
+        help: |-
+          Самый короткий путь — открой папку проекта в Проводнике, щёлкни по адресной строке
+          вверху, сотри текст, набери `cmd` и нажми Enter.
+
+          Другой способ: открой терминал в папке проекта, как в уроке 0.4 (правый щелчок →
+          «Открыть в терминале»), набери `cmd` и нажми Enter. «Командная строка» запустится прямо
+          в этом окне и в этой же папке.
+
+          Путь не тот — закрой окно и открой «Командную строку» одним из этих способов заново,
+          начиная с папки проекта.
+
+          macOS и Linux: подойдёт обычный терминал, вместо `dir` — `ls`.
+      - id: create
+        text: >-
+          **Создай окружение:** `python -m venv .venv` (или `py -m venv .venv`). Команда
+          работает несколько секунд и ничего не пишет — это нормально. `dir` покажет новую папку
+          `.venv`.
+        help: >-
+          macOS и Linux: `python3 -m venv .venv`, а проверить — командой `ls -a`: папки, имя
+          которых начинается с точки, обычный `ls` не показывает. На некоторых Linux модуль venv
+          ставится отдельным системным пакетом — об этом скажет сообщение об ошибке. Ответ
+          «не является внутренней или внешней командой» или сообщение про Microsoft Store —
+          Windows не нашла `python`: попробуй `py -m venv .venv`, а если и это не помогло, вернись
+          к пункту «Проверь установку» урока 0.4.
+      - id: activate
+        text: >-
+          **Включи окружение:** `.venv\Scripts\activate`. В начале строки появится `(.venv)`.
+        help: |-
+          macOS и Linux: `source .venv/bin/activate`.
+
+          Если раньше у тебя работала только команда `py`: во включённом окружении работает и
+          `python` — это Python окружения.
+
+          Если ты всё-таки в PowerShell, та же команда запускает файл `Activate.ps1`, и сообщение
+          «…выполнение сценариев отключено в этой системе» значит, что PowerShell запрещает
+          сценарии. Проще всего набрать в этом же окне `cmd` и Enter — дальше работай в «Командной
+          строке» (первый пункт).
+
+          Можно обойтись и без включения: вместо `python` писать полный путь к Python окружения —
+          `.venv\Scripts\python main.py`, `.venv\Scripts\python -m pip install tabulate`.
+
+          Окружение включается только в том окне, где ты набрал команду. Открыл новое окно
+          терминала — включи окружение снова.
+      - id: which-pip
+        text: >-
+          **Проверь, чей pip:** `python -m pip --version`. В ответе должен быть путь, в котором
+          есть папка твоего проекта и `.venv`.
+        help: >-
+          Ответ выглядит примерно так:
+          `pip … from C:\…\python-practice\todo-json\.venv\Lib\site-packages\pip (python 3.…)` —
+          версии и путь у тебя свои, главное — в пути есть `.venv`. Нет `.venv` в пути — окружение не
+          включено: вернись к предыдущему пункту и проверь, что видно `(.venv)`.
+      - id: install
+        text: >-
+          **Поставь пакет:** `python -m pip install tabulate`. В конце ответа —
+          строка `Successfully installed tabulate-…`.
+        help: >-
+          Нужен интернет. Без сети pip несколько раз напишет `WARNING: Retrying …` со словами про
+          соединение (connection), а в конце — `Could not find a version that satisfies the
+          requirement` и `No matching distribution found`: продолжи, когда сеть появится. Те же
+          две строки без предупреждений о соединении — чаще всего опечатка в имени пакета: сверь
+          его на pypi.org. Строку `[notice] A new release of pip is available` можно пропустить —
+          это предложение обновить pip, а не ошибка.
+    coach: >-
+      Перед каждой установкой смотри на начало строки: есть `(.venv)` — ставишь в окружение
+      проекта.
+
+  - id: use-package
+    type: checklist
+    title: Библиотека в деле и requirements.txt
+    body: >-
+      Продолжаем в той же «Командной строке» с включённым окружением — в начале строки видно
+      `(.venv)`. Если открыл новое окно, включи окружение снова: `.venv\Scripts\activate`.
+    items:
+      - id: use
+        text: >-
+          **Покажи список задач таблицей.** В `todo/tasks.py` добавь в начало строку
+          `from tabulate import tabulate` и перепиши `show_tasks` по образцу из «Если не
+          получается». Запусти `python main.py` и выбери команду «список».
+        help: |-
+          Образец:
+
+          ```python
+          from tabulate import tabulate
+
+
+          def show_tasks(tasks):
+              if len(tasks) == 0:
+                  print("Задач пока нет.")
+                  return
+              rows = []
+              number = 1
+              for task in tasks:
+                  if task["done"]:
+                      done = "да"
+                  else:
+                      done = "нет"
+                  rows.append([number, task["title"], done])
+                  number += 1
+              print(tabulate(rows, headers=["№", "Задача", "Готово"]))
+          ```
+
+          Модуль и функция в нём называются одинаково — отсюда странная на вид строка
+          `from tabulate import tabulate`. Функция принимает список списков — по списку на строку
+          таблицы — и возвращает текст таблицы: сверху заголовки, под ними линия из дефисов,
+          столбцы выровнены. Если твой список задач устроен иначе, собери строки таблицы из
+          своих данных — идея та же.
+
+          Ошибка `No module named 'tabulate'` — в этом окне окружение не включено или пакет
+          ставили в другое окружение: проверь `(.venv)` и повтори установку.
+      - id: freeze
+        text: >-
+          **Запиши опись:** `python -m pip freeze > requirements.txt`. Открой файл в редакторе:
+          в нём строка вида `tabulate==0.9.0`.
+        help: >-
+          Номер версии у тебя может быть другим. Файл пустой или в нём много незнакомых пакетов —
+          команду выполнили при выключенном окружении: включи его и повтори, файл перезапишется.
+          Если ты работал в Windows PowerShell, знак `>` мог сохранить файл в кодировке UTF-16, и
+          Git потом покажет его как двоичный. Сделай файл заново в «Командной строке» или впиши
+          строку из вывода `python -m pip freeze` вручную.
+      - id: isolation
+        text: >-
+          **Проверь, что пакет живёт только в окружении.** Выполни `deactivate` — `(.venv)`
+          пропадёт — и снова запусти программу: `python main.py` (если раньше работала только
+          `py` — `py main.py`). Программа упадёт сразу, ещё до меню:
+          `ModuleNotFoundError: No module named 'tabulate'`. Затем включи окружение обратно.
+        help: >-
+          Программа падает до меню, потому что строка `from tabulate import tabulate` выполняется
+          при импорте модуля tasks — ещё до того, как main.py спросит команду (урок 8.2). Ошибки
+          нет и таблица показалась — значит, tabulate стоит ещё и в общем Python компьютера,
+          например с прошлых экспериментов. Это не страшно: главное, что в окружении он тоже есть
+          и записан в requirements.txt. Включить окружение снова: `.venv\Scripts\activate`
+          (macOS и Linux: `source .venv/bin/activate`).
+      - id: readme
+        text: >-
+          **Допиши в README.md раздел «Установка»** — по нему человек без твоих объяснений
+          должен запустить проект на своём компьютере.
+        help: |-
+          Образец раздела:
+
+          ```text
+          ## Установка
+
+          1. Открой «Командную строку» в папке проекта.
+          2. Создай окружение: python -m venv .venv
+             (macOS и Linux: python3 -m venv .venv)
+          3. Включи его: .venv\Scripts\activate
+             (macOS и Linux: source .venv/bin/activate)
+          4. Поставь зависимости: python -m pip install -r requirements.txt
+          5. Запусти программу: python main.py
+          ```
+
+          README ещё нет — создай `README.md` рядом с `main.py`, как в уроке 5.6. Перечитай
+          раздел глазами новичка: хватит ли этих шагов тому, кто видит проект впервые? В уроке
+          8.6 ты сам пройдёшь по ним в чистой папке.
+      - id: wait-commit
+        text: >-
+          **Пока не коммить.** Команда `git add .` сейчас утащила бы в репозиторий лишнее: кеш
+          `__pycache__` из урока 8.2, личный `tasks.json`, а на Python 3.12 и раньше — ещё и всю
+          папку `.venv` с сотнями файлов. В уроке 8.4 мы сначала настроим `.gitignore`, а потом
+          аккуратно закоммитим код, requirements.txt и README.
+        help: >-
+          Python 3.13 и новее кладёт внутрь `.venv` свой маленький `.gitignore`, и Git эту папку не
+          замечает; Python 3.12 и раньше так не делает. Уже закоммитил лишнее? Не страшно: в уроке 8.4
+          разберём, как попросить Git перестать следить за такими файлами. Сами файлы на диске при
+          этом останутся.
+    coach: >-
+      requirements.txt и раздел «Установка» — это письмо будущему себе: через полгода проект
+      поднимется по ним за пару минут.
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - 'Одно окружение `.venv` на проект: создать — `python -m venv .venv`, включить — `.venv\Scripts\activate`; признак — `(.venv)` в начале строки.'
+      - Пакеты ставь через `python -m pip install …` — так они попадут в тот Python, которым ты запускаешь программу.
+      - 'requirements.txt — опись окружения: `python -m pip freeze > requirements.txt` записывает её, `python -m pip install -r requirements.txt` ставит всё по ней.'
+      - Папку `.venv` не копируют и не кладут в Git — её пересоздают по requirements.txt и шагам из README.
+    question: >-
+      Почему папку .venv не отправляют другу и не кладут в Git, а отправляют requirements.txt?
+    answer: >-
+      Папка .venv привязана к твоему компьютеру и твоей версии Python: внутри лежат пути и
+      программы именно для твоей системы, и весит она много. У друга такая папка может просто не
+      заработать. requirements.txt — короткая опись, по которой окружение пересоздаётся на любом
+      компьютере одной командой: `python -m pip install -r requirements.txt`.

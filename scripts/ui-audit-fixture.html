@@ -1,0 +1,159 @@
+<!doctype html>
+<!-- Специально испорченная страница для самопроверки аудита: node scripts/ui-audit.ts --self-test
+     data-expect="правило …" — аудит обязан найти эти нарушения у элемента (или внутри него);
+     data-clean — ловушки для ложных срабатываний (скрытое, visually-hidden, aria-hidden, свёрнутое): находок быть не должно. -->
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Самопроверка аудита</title>
+    <style>
+      :root {
+        --text: #1b1916;
+        --text-2: #3d3934;
+        --text-3: #57524a;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #f3f1ec;
+        color: var(--text);
+        font: 14px/21px 'Segoe UI', system-ui, sans-serif;
+      }
+      section {
+        margin: 0 0 24px;
+      }
+      p {
+        margin: 0;
+      }
+      button,
+      summary {
+        min-width: 44px;
+        min-height: 44px;
+      }
+      :focus-visible {
+        outline: 2px solid #1a5a9c;
+        outline-offset: 2px;
+      }
+      #bad-focus:focus-visible {
+        outline: none;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="cases">
+      <section id="low-contrast" data-expect="contrast">
+        <p style="color: #bbb">Бледный текст почти не виден</p>
+      </section>
+
+      <section><button id="bad-focus" type="button">Фокус без кольца</button></section>
+
+      <section id="overlap" data-expect="overlap" style="position: relative; height: 48px">
+        <span style="position: absolute; left: 0; top: 0">Первая надпись</span>
+        <span style="position: absolute; left: 10px; top: 6px">Вторая надпись</span>
+      </section>
+
+      <section id="clipped" data-expect="clip">
+        <div style="width: 120px; overflow: hidden; white-space: nowrap">Очень длинная строка, обрезанная без многоточия</div>
+      </section>
+
+      <section id="scroll-edge" data-expect="scroll-edge">
+        <div style="width: 120px; overflow-x: auto; scrollbar-width: none; white-space: nowrap">Полоса без прокрутки: Оформление, Прогресс</div>
+      </section>
+
+      <section id="ellipsis" data-expect="clip">
+        <div style="width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">Длинная строка с многоточием без подсказки</div>
+      </section>
+
+      <section id="tiny" data-expect="font-size">
+        <p style="font-size: 11px; line-height: 16px">Слишком мелкий текст</p>
+      </section>
+
+      <section id="caps" data-expect="caps">
+        <p style="text-transform: uppercase; font-size: 13px">Длинная фраза капсом из многих слов</p>
+      </section>
+
+      <section id="tertiary" data-expect="tertiary-phrase">
+        <p style="color: var(--text-3)">Целая фраза третичным цветом</p>
+      </section>
+
+      <section id="tight" data-expect="line-height">
+        <p style="width: 150px; line-height: 1.1">Длинный абзац в узкой колонке переносится на несколько строк</p>
+      </section>
+
+      <section><button id="small-button" data-expect="touch" type="button" style="min-width: 0; min-height: 0; width: 24px; height: 24px">+</button></section>
+
+      <section id="badge" data-expect="status-color-only"><span class="badge badge-ok">Решено</span></section>
+
+      <section id="forbidden" data-expect="forbidden-text"><p>Можно идти дальше — задание подождёт</p></section>
+
+      <section id="media" data-expect="text-over-media" style="position: relative; height: 60px">
+        <img
+          alt=""
+          width="200"
+          height="60"
+          style="position: absolute; left: 0; top: 0"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Crect width='200' height='60' fill='%23c8b89a'/%3E%3C/svg%3E"
+        />
+        <span style="position: absolute; left: 8px; top: 20px">Надпись на картинке</span>
+      </section>
+
+      <section id="gradient" data-expect="text-over-media">
+        <p style="background: linear-gradient(#ffffff, #000000); color: #000">Текст на градиенте</p>
+      </section>
+
+      <!-- Ловушки: всё это не должно давать находок. -->
+      <section id="clean-sr" data-clean><span class="sr-only" style="color: #eee">Скрытая подпись для скринридера из многих слов</span>Видимый текст</section>
+      <section id="clean-tip" data-clean>
+        Узел <span aria-hidden="true" style="visibility: hidden; color: #eee; font-size: 9px">Подсказка скрыта до наведения</span>
+      </section>
+      <section id="clean-none" data-clean><div style="display: none; color: #eee; font-size: 9px">Скрыто через display none</div>Текст</section>
+      <section id="clean-hidden" data-clean><div hidden style="color: #eee">Скрыто атрибутом hidden</div>Текст</section>
+      <section id="clean-opacity" data-clean><div style="opacity: 0; color: #eee; font-size: 9px">Прозрачный текст</div></section>
+      <section id="clean-details" data-clean>
+        <details>
+          <summary>Раскрыть</summary>
+          <p style="color: #eee; font-size: 9px">Свёрнутое содержимое мелко и бледно</p>
+        </details>
+      </section>
+      <section id="clean-collapsed" data-clean><div style="height: 0; overflow: hidden; color: #eee">Свёрнуто по высоте</div>Текст</section>
+      <section id="clean-ellipsis" data-clean>
+        <div title="Длинная строка с многоточием и подсказкой" style="width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">
+          Длинная строка с многоточием и подсказкой
+        </div>
+      </section>
+      <section id="clean-scroll" data-clean>
+        <div style="width: 120px; overflow-x: auto; white-space: nowrap">Длинная строка в прокручиваемой области</div>
+      </section>
+      <section id="clean-aria-visible" data-clean><span aria-hidden="true">01</span> Основы</section>
+      <section id="clean-short-tertiary" data-clean><span style="color: var(--text-3)">12 мин</span></section>
+      <section id="clean-badge" data-clean>
+        <span class="badge badge-ok"
+          ><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" /></svg>Решено</span
+        >
+      </section>
+      <section id="clean-button" data-clean><button type="button" style="width: 120px; height: 44px">Кнопка</button></section>
+      <section id="clean-paragraph" data-clean>
+        <p style="width: 200px">Обычный абзац основного цвета с межстрочным полтора переносится на строки</p>
+      </section>
+
+      <div id="wide" style="width: 600px; height: 4px; background: #ccc"></div>
+    </div>
+
+    <main>
+      <p id="under-foot" data-expect="bars-overlap covered" style="position: fixed; top: 8px; right: 8px">Под подвалом</p>
+      <div style="height: 900px"></div>
+      <p id="covered-text" data-expect="covered">Последняя строка под нижней панелью</p>
+    </main>
+    <div class="coach-foot" style="position: fixed; top: 0; right: 0; width: 140px; height: 40px; background: #dfdcd5"></div>
+    <nav class="bottombar" style="position: fixed; left: 0; right: 0; bottom: 0; height: 56px; background: #dfdcd5"></nav>
+  </body>
+</html>

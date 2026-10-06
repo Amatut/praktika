@@ -9,8 +9,11 @@ import { z } from 'zod';
 import {
   courseSourceSchema,
   lessonSchema,
+  type ContentTest,
   type Course,
   type CourseSource,
+  type Exercise,
+  type HttpMock,
   type Lesson,
   type LessonSummary,
   type ModuleSummary,
@@ -64,6 +67,66 @@ function sentenceCount(text: string): number {
 
 function exercisesOf(lesson: Lesson) {
   return lesson.steps.flatMap((step) => (step.type === 'exercise' ? [step.exercise] : []));
+}
+
+/** Ключ ответа сети: метод, адрес без query и query-параметры без учёта порядка — как в harness.py. */
+export function httpKey(mock: HttpMock): string {
+  const url = new URL(mock.url);
+  const query = [...url.searchParams].sort(([a, x], [b, y]) => (a === b ? x.localeCompare(y) : a.localeCompare(b)));
+  return `${mock.method ?? 'GET'} ${url.protocol}//${url.host}${url.pathname}${query.length > 0 ? `?${new URLSearchParams(query)}` : ''}`;
+}
+
+interface EnvironmentSource {
+  files?: Record<string, string | null>;
+  databases?: Record<string, string | null>;
+  http?: HttpMock[];
+}
+
+/** Имена с непустым значением (null в тесте убирает файл задания). */
+function presentNames(record: Record<string, string | null> | undefined): string[] {
+  return Object.entries(record ?? {})
+    .filter(([, value]) => value !== null)
+    .map(([name]) => name);
+}
+
+/**
+ * Окружение запуска: файл задания не перекрыт учебным файлом, файл не служит папкой для другого,
+ * у одного адреса и метода — один ответ сети.
+ */
+function checkEnvironment(at: string, source: EnvironmentSource, filename: string, errors: string[]) {
+  const files = presentNames(source.files);
+  const databases = presentNames(source.databases);
+  for (const name of [...files, ...databases]) {
+    if (name === filename) {
+      errors.push(`${at}: учебный файл ${name} совпадает с файлом кода (${filename}) — код ученика записывается под этим именем`);
+    }
+  }
+  for (const name of databases) {
+    if (files.includes(name)) errors.push(`${at}: ${name} указан и в files, и в databases`);
+  }
+  const paths = [...new Set([...files, ...databases, filename])];
+  for (const a of paths) {
+    for (const b of paths) {
+      if (b.startsWith(`${a}/`)) errors.push(`${at}: ${a} — файл, а ${b} лежит в нём, как в папке`);
+    }
+  }
+  const seen = new Set<string>();
+  for (const mock of source.http ?? []) {
+    const key = httpKey(mock);
+    if (seen.has(key)) errors.push(`${at}: два ответа сети на ${key}`);
+    seen.add(key);
+  }
+}
+
+/** Окружение теста: поля задания, дополненные полями теста (как в harness.py). */
+function testEnvironment(exercise: Exercise, test: ContentTest): EnvironmentSource {
+  const http = new Map<string, HttpMock>();
+  for (const mock of [...(exercise.http ?? []), ...(test.http ?? [])]) http.set(httpKey(mock), mock);
+  return {
+    files: { ...exercise.files, ...test.files },
+    databases: { ...exercise.databases, ...test.databases },
+    http: [...http.values()],
+  };
 }
 
 /** Читает и проверяет все материалы. Ошибки формата останавливают сборку. */
@@ -123,9 +186,24 @@ export async function loadContent(root: string): Promise<LoadedContent> {
       seenExercises.add(exercise.id);
       for (const skill of exercise.skills) if (!skillIds.has(skill)) errors.push(`${at}: неизвестный навык ${skill}`);
       const testIds = new Set<string>();
+      checkEnvironment(at, exercise, exercise.filename, errors);
       for (const test of exercise.tests) {
         if (testIds.has(test.id)) errors.push(`${at}: повторяющийся id теста ${test.id}`);
         testIds.add(test.id);
+        const own = `${at}, тест ${test.id}`;
+        // Сначала — ответы самого теста (повтор внутри него), потом — окружение теста вместе с заданием.
+        checkEnvironment(own, { http: test.http }, exercise.filename, errors);
+        if (test.files || test.databases) checkEnvironment(own, { ...testEnvironment(exercise, test), http: [] }, exercise.filename, errors);
+        for (const [kind, record, base] of [
+          ['files', test.files, exercise.files],
+          ['databases', test.databases, exercise.databases],
+        ] as const) {
+          for (const [name, value] of Object.entries(record ?? {})) {
+            if (value === null && !(base && name in base)) {
+              errors.push(`${own}: ${kind}.${name}: null убирает файл задания, но у задания такого нет`);
+            }
+          }
+        }
       }
       const mistakeIds = new Set(exercise.mistakes.map((mistake) => mistake.id));
       const ruleIds = new Set(exercise.rules.map((rule) => rule.id));
@@ -202,6 +280,10 @@ function checkStep(step: Step, where: string, stepIds: Set<string>, errors: stri
       if (step.options && !step.options.includes(step.answer)) {
         errors.push(`${at}: ответ не входит в варианты`);
       }
+      checkEnvironment(at, step, 'main.py', errors);
+      break;
+    case 'example':
+      checkEnvironment(at, step, 'main.py', errors);
       break;
     case 'order': {
       const ids = new Set(step.items.map((item) => item.id));

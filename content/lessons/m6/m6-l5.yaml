@@ -1,0 +1,2269 @@
+id: m6-l5
+module: m6
+number: "6.5"
+title: "Понятный код: имена, короткие функции, единый стиль"
+objective: >-
+  Делать код понятнее, не меняя его поведения: давать говорящие имена, заменять «магические числа»
+  константами, выносить повторяющиеся шаги в короткие функции, соблюдать единый стиль — и после
+  каждого шага проверять, что вывод не изменился.
+minutes: [20, 30]
+prerequisites: [m6-l3, m5-l7]
+skills: [clean-code]
+environment: python
+
+story:
+  title: Тройки в пяти местах
+  fictional: true
+  text: >-
+    Егор месяц назад написал программу для дворового футбольного турнира: она считала очки команд.
+    Теперь организаторы решили давать за победу 2 очка вместо 3, а Егор открыл код и увидел функцию
+    `f(a, b)`, переменные `x`, `y` и тройки в пяти местах. Полчаса ушло на то, чтобы понять, какая
+    тройка — очки за победу, а какая — что-то другое. Тогда он дал всему понятные имена, вынес очки
+    в константы и после каждого шага запускал программу на прошлых матчах: таблица не менялась. Новое
+    правило он поменял в одной строке.
+
+why: >-
+  Код читают гораздо чаще, чем пишут, — и чаще всего это ты сам через месяц. Понятные имена и
+  короткие функции делают ошибки заметнее, а правило вроде «за победу теперь 2 очка» меняется в
+  одной строке, а не в пяти.
+
+usedIn: >-
+  В командах код, прежде чем добавить в общий проект, читают коллеги — это называется code review,
+  и понятность — одно из главного, на что там смотрят. Для стиля Python есть общее соглашение PEP 8 и
+  программы, которые проверяют его автоматически, — с ними удобно работать, когда начнёшь ставить
+  пакеты (модуль 8).
+
+steps:
+  - id: clean
+    type: theory
+    title: Код, который читается
+    body: |-
+      **Рефакторинг** — изменение устройства кода без изменения его поведения. Ты уже делал его в
+      уроке 5.7: разложил калькулятор на функции, а вывод на тех же вводах остался прежним.
+      Рефакторинг — не «переписать всё заново»: меняешь по кусочку, и программа всё время работает.
+      Ритм такой: маленький шаг → запуск на тех же данных → сравнение вывода → следующий шаг. Если
+      вывод разошёлся, виноват последний шаг.
+
+      Что делает код понятнее:
+
+      1. **Говорящие имена.** Переменная называется по тому, что хранит: `distance_km`, а не `a`.
+         Функция — по тому, что делает или возвращает (урок 5.5): `count_points`, `format_row`.
+         Для «да/нет» подходят `is_…` и `has_…`, например `is_winner`. Короткое `i` для счётчика
+         цикла — нормально.
+      2. **Константы вместо магических чисел.** **Магическое число** — число в коде без
+         объяснения: что значит `3` в `return 3` — очки, голы, номер тура? Вынеси его в
+         **константу** в начале программы: `WIN_POINTS = 3`. Имя ЗАГЛАВНЫМИ буквами (такие ты
+         видел в уроке 5.4) — договорённость между людьми: «это значение программа не меняет».
+         Python такую переменную не защищает. Главное — правило теперь меняется в одной строке.
+      3. **Повтор — в функцию; одна функция — одно дело.** Одна и та же формула в трёх местах — это
+         одна функция, которую вызывают три раза. А функцию, которая и читает ввод, и считает, и
+         печатает, раздели: расчёт отдельно, оформление строки отдельно.
+      4. **Единый стиль — PEP 8.** Так называется общее соглашение программистов на Python об
+         оформлении кода. Главное из него:
+         - функции и переменные — `snake_case` (он знаком тебе с урока 1.2): маленькие буквы,
+           слова через `_`; константы — `UPPER_CASE`;
+         - отступ — 4 пробела;
+         - пробелы вокруг `=` в присваивании и вокруг знаков действий: `total = price * count`
+           (но в скобках вызова — без пробелов: `sep="."`);
+         - две пустые строки между функциями;
+         - строка кода не длиннее 79 символов.
+      5. **Переименовывай везде.** Пропустишь место, где значение читают (справа от `=`, в
+         вызове, в f-строке), — Python остановится с NameError, когда дойдёт до этой строки.
+         Пропустишь слева от `=` — ошибки не будет: появится лишняя переменная со старым именем,
+         а вывод изменится. Поэтому после переименования сравнивай вывод, а не жди только ошибки.
+      6. **Комментарий объясняет «почему»**, а не пересказывает код:
+         `# с 5 часов дневной тариф выгоднее` полезнее, чем `# сравниваем часы с 5`.
+    simpler: >-
+      Рефакторинг — как уборка на кухне: посуда та же, продукты те же, просто всё подписано и лежит
+      на своих местах. После уборки ужин должен получаться точно таким же — это и проверяешь:
+      готовишь то же блюдо и сравниваешь. Понятные имена — подписи на банках, а константа — рецепт
+      на холодильнике: поменял его в одном месте, и все готовят по-новому.
+    coach: >-
+      Меняй по одному: переименовал — запустил — сравнил вывод. Тогда, если что-то сломалось, сразу
+      ясно, что именно.
+
+  - id: football
+    type: example
+    title: Таблица турнира после уборки
+    body: |-
+      Так выглядел кусок программы Егора до уборки. Он работает, но попробуй быстро сказать, что
+      значит каждая тройка:
+
+      ```text
+      def f(a, b):
+          if a > b:
+              return 3
+          elif a == b:
+              return 1
+          else:
+              return 0
+      x = f(2, 1)
+      y = f(0, 0)
+      z = f(1, 3)
+      print("Лисы: " + str(x) + " очк.")
+      print("Совы: " + str(y) + " очк.")
+      print("Ежи: " + str(z) + " очк.")
+      ```
+
+      Тройка в `return 3` — очки за победу, а тройка в `f(1, 3)` — голы соперника «Ежей». Этот код
+      выводит три строки: `Лисы: 3 очк.`, `Совы: 1 очк.` и `Ежи: 0 очк.`. Ниже — тот же кусок после
+      уборки. Запусти его и сравни: вывод тот же, строка в строку.
+    code: |-
+      WIN_POINTS = 3
+      DRAW_POINTS = 1
+
+
+      def count_points(scored, conceded):
+          if scored > conceded:
+              return WIN_POINTS
+          elif scored == conceded:
+              return DRAW_POINTS
+          else:
+              return 0
+
+
+      def format_row(team, points):
+          return f"{team}: {points} очк."
+
+
+      print(format_row("Лисы", count_points(2, 1)))
+      print(format_row("Совы", count_points(0, 0)))
+      print(format_row("Ежи", count_points(1, 3)))
+    notes:
+      - line: 1
+        text: >-
+          У числа появилось имя: сразу видно, что это очки за победу. Новое правило «за победу 2
+          очка» — правка только в этой строке.
+      - line: 5
+        text: >-
+          `f(a, b)` стала `count_points(scored, conceded)`: имя функции говорит, что она делает, а
+          параметры — что в них лежит: забитые и пропущенные мячи.
+      - line: 11
+        text: >-
+          Ноль остался числом: «за поражение очков нет» понятно и без имени. Константа нужна там,
+          где число приходится объяснять или оно может поменяться.
+      - line: 14
+        text: >-
+          Оформление строки таблицы — отдельная маленькая функция. Раньше склейка
+          `"Лисы: " + str(x) + " очк."` повторялась трижды. Перед каждой функцией — две пустые
+          строки, как советует PEP 8.
+      - line: 20
+        text: >-
+          Тройка здесь — голы соперника. После уборки её уже не спутать с очками.
+    tryIt: >-
+      Поменяй в строке 1 `3` на `2` и запусти: «Лисы» получат 2 очка — правило изменилось одной
+      правкой. А теперь переименуй `team` в `name` только в строке 14, в скобках после имени
+      функции, и запусти. Какую ошибку и какую строку назовёт Python? Потом верни как было.
+    coach: >-
+      Поведение не изменилось ни на символ — поменялось только то, как быстро код читается.
+
+  - id: boundary-refactor
+    type: predict
+    title: Уборка без последствий?
+    prompt: |-
+      Интернет-магазин считал доставку так — бесплатно от 1000 руб.:
+
+      ```text
+      def d(t):
+          if t >= 1000:
+              return 0
+          return 199
+      ```
+
+      После «уборки» имена стали понятными, а числа — константами. Как думаешь, что выведет новая
+      версия?
+    code: |-
+      FREE_DELIVERY_FROM = 1000
+      DELIVERY_PRICE = 199
+
+
+      def delivery_price(order_total):
+          if order_total > FREE_DELIVERY_FROM:
+              return 0
+          return DELIVERY_PRICE
+
+
+      print(delivery_price(999), delivery_price(1000), delivery_price(1500))
+    options:
+      - "199 0 0"
+      - "199 199 0"
+      - "0 0 0"
+    answer: "199 199 0"
+    explanation: >-
+      При уборке `>=` незаметно превратилось в `>`: заказ ровно на 1000 руб. перестал получать
+      бесплатную доставку, хотя раньше получал. Старая версия вывела бы `199 0 0`. Имена стали
+      лучше, а поведение изменилось — это уже не рефакторинг, а новая ошибка. Поэтому после уборки
+      программу запускают на тех же данных, что и раньше, и обязательно на границе: 999, 1000, 1001.
+    coach: >-
+      Уборка тоже может сломать программу. Заметить это помогает только запуск на старых данных.
+
+  - id: replace-all
+    type: quiz
+    title: «Заменить всё»
+    question: >-
+      Егор решил переименовать переменную `n` в `teams` и нажал в редакторе на компьютере «Найти и
+      заменить» → «Заменить всё». Во что превратится строка `print(n)`?
+    options:
+      - "`print(teams)`"
+      - "`priteamst(teams)`"
+      - Не изменится — `print` не переменная
+    correct: 1
+    explanation: >-
+      «Заменить всё» ищет буквы, а не имена: `n` есть и внутри `print`. А если выше стоит
+      `n = int(input())`, она станет `teams = iteamst(iteamsput())`, и программа остановится уже
+      на ней с NameError. На компьютере в VS Code ставь курсор на имя и нажимай F2 —
+      переименуется только эта переменная (нужно расширение Python). В окне замены VS Code и IDLE
+      есть поиск слова целиком (Whole word). В тренажёре замены нет: переименовывай вручную.
+    coach: >-
+      Переименовал — запусти и сравни вывод с прежним. Пропущенное место выдаст себя ошибкой
+      NameError или изменившимся выводом.
+
+  - id: practice-names
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m6-l5-e1
+      kind: repeat
+      title: Карты на 10 поездок
+      statement: |-
+        Школьник ездит на тренировки на автобусе. Карты продают только на 10 поездок. Программа
+        получает, сколько поездок нужно за месяц и сколько стоит одна карта, и считает, сколько
+        денег уйдёт на карты. Она работает верно, но прочитать её трудно: `a`, `b` и `c` ничего не
+        говорят.
+
+        Сначала нажми «Запустить» на программе как есть — в поле «Ввод для „Запустить“» уже стоят
+        `25` и `450` — и запомни вывод. Потом переименуй переменные по таблице:
+
+        ```text
+        a  →  trips        сколько поездок нужно
+        b  →  card_price   цена одной карты
+        c  →  cost         сколько стоят все карты
+        ```
+
+        Меняй имя во всех местах, где оно встречается, и запусти снова: вывод должен совпасть с
+        первым.
+      input: Две строки — сколько нужно поездок и цена одной карты (целые числа).
+      output: "Одна строка: `На карты уйдёт <сумма> руб.` — как до переименования."
+      constraints:
+        - Меняй только имена переменных — формулы, условие и текст вывода остаются прежними.
+        - Имена бери ровно из таблицы.
+      starterCode: |
+        a = int(input())
+        b = int(input())
+        c = a // 10 * b
+        if a % 10 > 0:
+            c = c + b
+        print(f"На карты уйдёт {c} руб.")
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: 25 поездок"
+          example: true
+          stdin: "25\n450\n"
+          expected: На карты уйдёт 1350 руб.
+        - id: t2
+          kind: io
+          title: "Пример 2: ровно 40 поездок"
+          example: true
+          stdin: "40\n500\n"
+          expected: На карты уйдёт 2000 руб.
+        - id: t3
+          kind: io
+          title: "Граничный случай: поездок нет"
+          edge: true
+          stdin: "0\n450\n"
+          expected: На карты уйдёт 0 руб.
+        - id: t4
+          kind: io
+          title: "Граничный случай: меньше 10 поездок"
+          edge: true
+          stdin: "7\n480\n"
+          expected: На карты уйдёт 480 руб.
+        - id: t5
+          kind: assert
+          title: Старых имён не осталось
+          stdin: "25\n450\n"
+          code: |-
+            import ast
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _names = {_node.id for _node in ast.walk(_tree) if isinstance(_node, ast.Name)}
+            assert not _names & {"a", "b", "c"}
+          message: В коде остались имена a, b или c — переименуй их по таблице.
+        - id: t6
+          kind: assert
+          title: Новые имена из таблицы
+          stdin: "25\n450\n"
+          code: |-
+            import ast
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _names = {_node.id for _node in ast.walk(_tree) if isinstance(_node, ast.Name)}
+            assert {"trips", "card_price", "cost"} <= _names
+          message: "Используй имена из таблицы: trips, card_price и cost."
+        - id: t7
+          kind: assert
+          title: Имена на своих местах
+          stdin: "25\n450\n"
+          code: |-
+            _ns = globals()
+            if {"trips", "card_price"} <= _ns.keys():
+                assert (_ns["trips"], _ns["card_price"]) == (25, 450)
+          message: >-
+            Имена из таблицы перепутаны местами: в trips должно лежать число поездок, в card_price —
+            цена карты.
+      criteria:
+        - На тех же вводах программа выводит то же, что и до переименования.
+        - Имён `a`, `b`, `c` в коде нет — вместо них `trips`, `card_price`, `cost`, каждое на своём месте по таблице.
+        - Формулы и условие не изменились — поменялись только имена.
+      hints:
+        - >-
+          Сколько раз в программе встречается каждое старое имя? Посчитай для `a`, `b` и `c` —
+          заменить нужно каждое место. Пропущенное в f-строке или справа от `=` Python не узнает,
+          а пропущенное слева от `=` молча создаст лишнюю переменную — и вывод изменится.
+        - >-
+          На другом примере: было `x = 5` и `print(x * 2)`, стало `apples = 5` и
+          `print(apples * 2)`. Имя поменялось в обеих строках, а вывод остался тем же — `10`.
+        - |-
+          Каркас — заполни пропуски новыми именами:
+          ```text
+          trips = int(input())
+          card_price = …
+          cost = trips // 10 * …
+          if … % 10 > 0:
+              cost = … + …
+          print(f"На карты уйдёт {…} руб.")
+          ```
+      solution:
+        code: |
+          trips = int(input())
+          card_price = int(input())
+          cost = trips // 10 * card_price
+          if trips % 10 > 0:
+              cost = cost + card_price
+          print(f"На карты уйдёт {cost} руб.")
+        explanation: >-
+          Каждое старое имя заменено во всех местах, включая `{c}` внутри f-строки. Формулы не
+          менялись, поэтому вывод тот же. Зато теперь строка `cost = trips // 10 * card_price`
+          читается сама: полные десятки поездок — это полные карты, каждая по цене карты, а если
+          поездки остались — нужна ещё одна карта.
+      altSolutions:
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cost = trips // 10 * card_price
+            if trips % 10 > 0:
+                cost += card_price
+            print(f"На карты уйдёт {cost} руб.")
+          note: Короткая запись += — поведение то же.
+        - code: |
+            TRIPS_PER_CARD = 10
+
+            trips = int(input())
+            card_price = int(input())
+            cost = trips // TRIPS_PER_CARD * card_price
+            if trips % TRIPS_PER_CARD > 0:
+                cost = cost + card_price
+            print(f"На карты уйдёт {cost} руб.")
+          note: Вдобавок 10 вынесено в константу — проверка это не запрещает.
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cards = trips // 10
+            if trips % 10 > 0:
+                cards = cards + 1
+            cost = cards * card_price
+            print(f"На карты уйдёт {cost} руб.")
+          note: Сначала число карт, потом цена — устройство другое, вывод тот же.
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cost = card_price * (trips // 10)
+            if trips % 10 != 0:
+                cost += card_price
+            print("На карты уйдёт", cost, "руб.")
+          note: print через запятую, != 0 и множители в другом порядке — вывод тот же.
+      wrongSolutions:
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cost = a // 10 * card_price
+            if trips % 10 > 0:
+                cost = cost + card_price
+            print(f"На карты уйдёт {cost} руб.")
+          note: В третьей строке осталось старое имя a.
+          expectMistake: missed-rename
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cost = trips // 10 * card_prise
+            if trips % 10 > 0:
+                cost = cost + card_price
+            print(f"На карты уйдёт {cost} руб.")
+          note: Опечатка в новом имени.
+          expectMistake: missed-rename
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            c = trips // 10 * card_price
+            if trips % 10 > 0:
+                c = c + card_price
+            print(f"На карты уйдёт {c} руб.")
+          note: Имя c не переименовано совсем — программа работает, но читать всё ещё трудно.
+          expectMistake: old-name-left
+        - code: |
+            count = int(input())
+            price = int(input())
+            total = count // 10 * price
+            if count % 10 > 0:
+                total = total + price
+            print(f"На карты уйдёт {total} руб.")
+          note: Свои имена вместо имён из таблицы.
+          expectMistake: names-differ
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cost = trips // 10 * card_price + card_price
+            print(f"На карты уйдёт {cost} руб.")
+          note: «Заодно упростил» — убрал условие, и лишняя карта добавляется всегда.
+          expectMistake: behavior-changed
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cost = trips // 10 * card_price
+            if trips % 10 > 0:
+                cost = cost + card_price
+            print(f"На карты уйдёт cost руб.")
+          note: Вместо {c} в f-строке написано просто cost — без фигурных скобок.
+          expectMistake: name-as-text
+        - code: |
+            trips = int(input())
+            card_price = int(input())
+            cost = trips // 10 * card_price
+            if trips % 10 > 0:
+                c = cost + card_price
+            print(f"На карты уйдёт {cost} руб.")
+          note: >-
+            В ветке слева от = осталось старое c — ошибки нет, лишняя карта кладётся в c, а
+            печатается cost (900 вместо 1350).
+          expectMistake: old-name-assigned
+        - code: |
+            card_price = int(input())
+            trips = int(input())
+            cost = card_price // 10 * trips
+            if card_price % 10 > 0:
+                cost = cost + trips
+            print(f"На карты уйдёт {cost} руб.")
+          note: Имена перепутаны местами, но везде одинаково — вывод верный, а код врёт.
+          expectMistake: names-swapped
+      mistakes:
+        - id: missed-rename
+          when:
+            errorType: NameError
+          why: >-
+            Python не знает имя из сообщения. Значит, переименование сделано не везде: в одной
+            строке имя уже новое, а в другой ещё старое — или новое написано с опечаткой. Python
+            сверяет имена посимвольно.
+          try: >-
+            Открой строку из сообщения и поправь имя по таблице. Потом пробегись по всем строкам:
+            где ещё встречается старое имя?
+          verify: 'Запусти с вводом 25 и 450 — должно получиться «На карты уйдёт 1350 руб.».'
+        - id: name-as-text
+          when:
+            outputIncludes: уйдёт cost
+          why: >-
+            На экране слово «cost», а не сумма. В f-строке значение подставляется, только если имя
+            стоит в фигурных скобках, — без них это обычный текст.
+          try: Верни фигурные скобки вокруг имени в f-строке — там, где раньше было `{c}`.
+          verify: 'Запусти с вводом 25 и 450 — должно получиться «На карты уйдёт 1350 руб.».'
+        - id: behavior-changed
+          when:
+            failedTest: t2
+            outputIncludes: На карты уйдёт 2500 руб.
+          why: >-
+            Вывод изменился: на ровно 40 поездок программа насчитала пять карт вместо четырёх.
+            Переименование не должно менять поведение — формулы и условие остаются как были.
+          try: >-
+            Верни формулу и условие из исходной программы и поменяй в них только имена. Лишняя
+            карта нужна, только если после полных десятков остались поездки.
+          verify: 'В «Примере 2» должно получиться «На карты уйдёт 2000 руб.».'
+        - id: old-name-assigned
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]*[abc][ \t]*=(?!=)'
+          why: >-
+            Вывод изменился, а в коде осталось старое имя слева от `=`. Python не остановился:
+            присвоить значение можно любому имени — так просто появилась лишняя переменная.
+            Значение кладётся в старую, а печатается новая.
+          try: >-
+            Найди строку, где слева от `=` стоит `a`, `b` или `c`, и замени имя по таблице. Потом
+            запусти с вводом 25 и 450 и сравни вывод с тем, что программа выводила до
+            переименования.
+          verify: 'Должно получиться «На карты уйдёт 1350 руб.».'
+        - id: old-name-left
+          when:
+            failedTest: t5
+            codeRegex: '\b[abc]\b'
+          why: >-
+            В коде осталось старое однобуквенное имя. Даже если вывод верный, читать такой код
+            по-прежнему трудно — а задача была как раз в этом.
+          try: Найди, где ещё встречаются `a`, `b` или `c`, и замени их по таблице — во всех местах.
+          verify: Нажми «Проверить» — проверка «Старых имён не осталось» должна пройти.
+        - id: names-differ
+          when:
+            failedTest: t6
+            codeRegex: '(?<![\s\S])(?!(?=[\s\S]*\btrips\b)(?=[\s\S]*\bcard_price\b)(?=[\s\S]*\bcost\b))'
+          why: >-
+            Имена понятные, и программа работает. Но в этом задании нужны имена из таблицы — так
+            проверка узнаёт, что переименование сделано.
+          try: Переименуй переменные ещё раз — в `trips`, `card_price` и `cost`.
+          verify: Нажми «Проверить» — проверка «Новые имена из таблицы» должна пройти.
+        - id: names-swapped
+          when:
+            failedTest: t7
+          why: >-
+            Имена из таблицы есть, но стоят не на своих местах. Вывод совпал, потому что имена
+            перепутаны везде одинаково, — но теперь код говорит неправду: в имени написано одно, а
+            лежит в переменной другое.
+          try: >-
+            Сверь с таблицей каждую строку: первое `input()` — поездки, `trips`; второе — цена
+            карты, `card_price`; итог — `cost`.
+          verify: Нажми «Проверить» — проверка «Имена на своих местах» должна пройти.
+      afterPass: >-
+        Программа ведёт себя так же, а читается сама: `cost = trips // 10 * card_price` понятно без
+        комментариев. Следующий шаг уборки — вынести 10 в константу, например `TRIPS_PER_CARD = 10`,
+        как `WIN_POINTS` в примере.
+      skills: [clean-code, variables]
+
+  - id: practice-constants
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m6-l5-e2
+      kind: modify
+      title: "Репетиционная база: числа в одном месте"
+      statement: |-
+        Группа снимает репетиционную комнату. За каждую репетицию платят 150 руб. за аппаратуру и
+        ещё 400 руб. за каждый час. Программа считает цены трёх репетиций недели и итог, но
+        формула `150 + часы * 400` записана в ней шесть раз. Если база поднимет цену часа,
+        исправлять придётся шесть мест — и одно легко пропустить.
+
+        Наведи порядок, не меняя вывод:
+
+        1. Вынеси 150 и 400 в **константы** в начале программы — с понятными именами ЗАГЛАВНЫМИ
+           буквами.
+        2. Напиши функцию `rehearsal_price(hours)`: она **возвращает** цену одной репетиции.
+        3. Цену каждой из трёх репетиций получай вызовом этой функции, а «Всего» — как сумму трёх
+           цен. Формула цены должна остаться в программе одна — внутри функции.
+      input: Три строки — сколько часов длилась каждая репетиция.
+      output: Четыре строки, как у исходной программы, — цена каждой репетиции и «Всего».
+      constraints:
+        - Числа 150 и 400 записаны в коде по одному разу — в константах.
+        - "`rehearsal_price(hours)` возвращает цену через `return`, а не печатает её."
+        - Текст вывода не меняется.
+      starterCode: |
+        first_hours = int(input())
+        second_hours = int(input())
+        third_hours = int(input())
+        print("Первая репетиция:", 150 + first_hours * 400)
+        print("Вторая репетиция:", 150 + second_hours * 400)
+        print("Третья репетиция:", 150 + third_hours * 400)
+        print("Всего:", 150 + first_hours * 400 + 150 + second_hours * 400 + 150 + third_hours * 400)
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "2\n3\n1\n"
+          expected: |-
+            Первая репетиция: 950
+            Вторая репетиция: 1350
+            Третья репетиция: 550
+            Всего: 2850
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "4\n2\n5\n"
+          expected: |-
+            Первая репетиция: 1750
+            Вторая репетиция: 950
+            Третья репетиция: 2150
+            Всего: 4850
+        - id: t3
+          kind: call
+          title: "Граничный случай: 0 часов — только аппаратура"
+          edge: true
+          stdin: "0\n0\n0\n"
+          call: rehearsal_price(0)
+          expected: "150"
+        - id: t4
+          kind: call
+          title: Функция для трёх часов
+          example: true
+          stdin: "0\n0\n0\n"
+          call: rehearsal_price(3)
+          expected: "1350"
+        - id: t5
+          kind: assert
+          title: Числа — в константах
+          stdin: "0\n0\n0\n"
+          code: |-
+            import ast
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+
+
+            def _written(number):
+                count = 0
+                for node in ast.walk(_tree):
+                    if isinstance(node, ast.Constant) and type(node.value) is int and node.value == number:
+                        count += 1
+                return count
+
+
+            def _pairs(node):
+                pairs = []
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        pairs.append((target, node.value))
+                    elif isinstance(target, ast.Tuple) and isinstance(node.value, ast.Tuple):
+                        pairs.extend(zip(target.elts, node.value.elts))
+                return pairs
+
+
+            def _in_constant(number):
+                for node in _tree.body:
+                    if isinstance(node, ast.Assign):
+                        for target, value in _pairs(node):
+                            if (isinstance(target, ast.Name) and target.id.isupper()
+                                    and isinstance(value, ast.Constant) and value.value == number):
+                                return True
+                return False
+
+
+            assert _written(150) == 1 and _written(400) == 1
+            assert _in_constant(150) and _in_constant(400)
+          message: >-
+            Числа 150 и 400 должны встречаться в коде по одному разу — в константах с именами
+            ЗАГЛАВНЫМИ буквами в начале программы.
+      rules:
+        - id: one-formula
+          max:
+            Mult: 1
+          message: >-
+            Формула цены записана в программе несколько раз. Оставь одну — в функции
+            rehearsal_price, а в остальных местах вызывай функцию.
+      criteria:
+        - Вывод на тех же вводах совпадает с выводом исходной программы.
+        - 150 и 400 записаны по одному разу — в константах с понятными именами ЗАГЛАВНЫМИ буквами.
+        - "`rehearsal_price(hours)` возвращает цену одной репетиции; три цены — её вызовы, «Всего» — их сумма."
+      hints:
+        - >-
+          Сравни три строки с ценами: что в них меняется, а что повторяется слово в слово?
+          Повторяющаяся часть — кандидат в функцию, а числа в ней — кандидаты в константы.
+        - |-
+          На другом примере. Было — цена булочки 40 записана дважды:
+          ```text
+          print(40 * 3)
+          print(40 * 5)
+          ```
+          Стало:
+          ```text
+          BUN_PRICE = 40
+
+
+          def order_cost(count):
+              return count * BUN_PRICE
+
+
+          print(order_cost(3))
+          print(order_cost(5))
+          ```
+        - |-
+          Каркас:
+          ```text
+          ??? = 150      # понятные имена латиницей, ЗАГЛАВНЫМИ
+          ??? = 400
+
+
+          def rehearsal_price(hours):
+              return …
+
+
+          first = rehearsal_price(int(input()))
+          … ещё две репетиции
+          print("Первая репетиция:", first)
+          … ещё три print, «Всего» — сумма трёх готовых цен
+          ```
+      solution:
+        code: |
+          EQUIPMENT_FEE = 150
+          HOUR_PRICE = 400
+
+
+          def rehearsal_price(hours):
+              return EQUIPMENT_FEE + hours * HOUR_PRICE
+
+
+          first = rehearsal_price(int(input()))
+          second = rehearsal_price(int(input()))
+          third = rehearsal_price(int(input()))
+          print("Первая репетиция:", first)
+          print("Вторая репетиция:", second)
+          print("Третья репетиция:", third)
+          print("Всего:", first + second + third)
+        explanation: >-
+          Каждое число записано один раз и получило имя: теперь видно, что 150 — плата за
+          аппаратуру, а 400 — цена часа. Формула живёт в одной функции, и три цены получаются тремя
+          её вызовами. «Всего» складывается из готовых цен, поэтому итог не может разойтись с
+          отдельными строками. Подойдут и другие понятные имена констант, и итог из трёх вызовов
+          функции.
+      altSolutions:
+        - code: |
+            BASE_PRICE = 150
+            PRICE_PER_HOUR = 400
+
+
+            def rehearsal_price(hours):
+                return BASE_PRICE + PRICE_PER_HOUR * hours
+
+
+            first_hours = int(input())
+            second_hours = int(input())
+            third_hours = int(input())
+            print("Первая репетиция:", rehearsal_price(first_hours))
+            print("Вторая репетиция:", rehearsal_price(second_hours))
+            print("Третья репетиция:", rehearsal_price(third_hours))
+            total = rehearsal_price(first_hours) + rehearsal_price(second_hours) + rehearsal_price(third_hours)
+            print("Всего:", total)
+          note: Другие имена констант; итог — из трёх вызовов функции.
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                price = EQUIPMENT_FEE + hours * HOUR_PRICE
+                return price
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print(f"Первая репетиция: {first}")
+            print(f"Вторая репетиция: {second}")
+            print(f"Третья репетиция: {third}")
+            print(f"Всего: {first + second + third}")
+          note: Вывод через f-строки и промежуточная переменная в функции.
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                return EQUIPMENT_FEE + hours * HOUR_PRICE
+
+
+            total = 0
+            for label in ["Первая", "Вторая", "Третья"]:
+                price = rehearsal_price(int(input()))
+                print(label + " репетиция:", price)
+                total += price
+            print("Всего:", total)
+          note: Три репетиции в цикле — функция вызывается один раз в теле цикла.
+        - code: |
+            EQUIPMENT_FEE, HOUR_PRICE = 150, 400
+
+
+            def rehearsal_price(hours):
+                return HOUR_PRICE * hours + EQUIPMENT_FEE
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция: " + str(first))
+            print("Вторая репетиция: " + str(second))
+            print("Третья репетиция: " + str(third))
+            print("Всего: " + str(first + second + third))
+          note: Константы одной строкой через кортеж, склейка строк вместо запятых.
+      wrongSolutions:
+        - code: |
+            def rehearsal_price(hours):
+                return 150 + hours * 400
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Функция есть, а числа остались магическими — констант нет.
+          expectMistake: magic-left
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                print(EQUIPMENT_FEE + hours * HOUR_PRICE)
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Функция печатает цену вместо return — вызов даёт None.
+          expectMistake: print-not-return
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+            first_hours = int(input())
+            second_hours = int(input())
+            third_hours = int(input())
+            first = EQUIPMENT_FEE + first_hours * HOUR_PRICE
+            second = EQUIPMENT_FEE + second_hours * HOUR_PRICE
+            third = EQUIPMENT_FEE + third_hours * HOUR_PRICE
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Константы есть, а функции нет — формула повторяется трижды.
+          expectMistake: no-function
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                return EQUIPMENT_FEE + hours * HOUR_PRICE
+
+
+            first_hours = int(input())
+            second_hours = int(input())
+            third_hours = int(input())
+            print("Первая репетиция:", EQUIPMENT_FEE + first_hours * HOUR_PRICE)
+            print("Вторая репетиция:", EQUIPMENT_FEE + second_hours * HOUR_PRICE)
+            print("Третья репетиция:", EQUIPMENT_FEE + third_hours * HOUR_PRICE)
+            print("Всего:", rehearsal_price(first_hours) + rehearsal_price(second_hours) + rehearsal_price(third_hours))
+          note: Функция написана, но строки с ценами считают в обход неё — она нужна только для итога.
+          expectMistake: function-unused
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                return EQUIPMENT_FEE + hours * HOUR_PRICE
+
+
+            first_hours = int(input())
+            second_hours = int(input())
+            third_hours = int(input())
+            print("Первая репетиция:", rehearsal_price(first_hours))
+            print("Вторая репетиция:", rehearsal_price(second_hours))
+            print("Третья репетиция:", rehearsal_price(third_hours))
+            print("Всего:", rehearsal_price(first_hours + second_hours + third_hours))
+          note: Итог посчитан как одна длинная репетиция — плата за аппаратуру учтена один раз.
+          expectMistake: total-changed
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                return EQUIPMENT_FEE + hours * HOURS_PRICE
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Имя константы в функции написано иначе, чем при создании.
+          expectMistake: name-mismatch
+        - code: |
+            equipment_fee = 150
+            hour_price = 400
+
+
+            def rehearsal_price(hours):
+                return equipment_fee + hours * hour_price
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Числа вынесены в переменные, но имена маленькими буквами — по PEP 8 это не константы.
+          expectMistake: lower-constant
+        - code: |
+            def rehearsal_price(hours):
+                EQUIPMENT_FEE = 150
+                HOUR_PRICE = 400
+                return EQUIPMENT_FEE + hours * HOUR_PRICE
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Константы объявлены внутри функции, а не в начале программы.
+          expectMistake: constants-inside
+        - code: |
+            EquipmentFee = 150
+            HourPrice = 400
+
+
+            def rehearsal_price(hours):
+                return EquipmentFee + hours * HourPrice
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Константы с большой буквы (CamelCase), а не ЗАГЛАВНЫМИ — чисел в формулах уже нет.
+          expectMistake: lower-constant
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                price = EQUIPMENT_FEE + hours * HOUR_PRICE
+                print(f"ОТЛАДКА: {price=}")
+                return price
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Забытый отладочный print из урока 6.3; return на месте — лишние строки в выводе.
+          expectMistake: debug-left
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                print("часы:", hours)
+                return EQUIPMENT_FEE + hours * HOUR_PRICE
+
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+          note: Отладочный print без метки внутри функции; return на месте.
+          expectMistake: debug-left
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+            first = rehearsal_price(int(input()))
+            second = rehearsal_price(int(input()))
+            third = rehearsal_price(int(input()))
+            print("Первая репетиция:", first)
+            print("Вторая репетиция:", second)
+            print("Третья репетиция:", third)
+            print("Всего:", first + second + third)
+
+
+            def rehearsal_price(hours):
+                return EQUIPMENT_FEE + hours * HOUR_PRICE
+          note: Функция дописана в самый конец — ниже строк, которые её вызывают.
+          expectMistake: defined-below
+        - code: |
+            EQUIPMENT_FEE = 150
+            HOUR_PRICE = 400
+
+
+            def rehearsal_price(hours):
+                return EQUIPMENT_FEE + hours * HOUR_PRICE
+
+
+            first = int(input())
+            second = int(input())
+            third = int(input())
+            print("Первая репетиция:", rehearsal_price(first))
+            print("Вторая репетиция:", rehearsal_price(second))
+            print("Третья репетиция:", rehearsal_price(third))
+            print("Всего:", first + second + third)
+          note: В «Всего» сложены часы, а не цены.
+          expectMistake: total-changed
+      mistakes:
+        - id: defined-below
+          when:
+            errorIncludes: "'rehearsal_price' is not defined"
+            codeRegex: '^def rehearsal_price\b'
+          why: >-
+            Функция `rehearsal_price` в программе есть, но объявлена ниже строк, которые её
+            вызывают. Python выполняет программу сверху вниз: в момент вызова `def` ещё не
+            выполнился, и такого имени пока нет.
+          try: >-
+            Перенеси `def rehearsal_price(hours):` вместе с телом выше первого вызова — сразу после
+            констант.
+          verify: 'Запусти с вводом из примера 1 — должна появиться строка «Первая репетиция: 950».'
+        - id: no-function
+          when:
+            errorIncludes: "'rehearsal_price' is not defined"
+          why: >-
+            Проверка вызывает `rehearsal_price(0)` и `rehearsal_price(3)`, а функции с таким именем в
+            программе нет. Пока формула повторяется в нескольких строках, её придётся менять в
+            нескольких местах.
+          try: >-
+            Напиши после констант функцию `rehearsal_price(hours)` — имя ровно такое, один параметр —
+            и верни из неё цену одной репетиции через `return`. Потом замени формулы вызовами.
+          verify: Проверки с вызовом rehearsal_price должны стать зелёными.
+        - id: name-mismatch
+          when:
+            errorType: NameError
+          why: >-
+            Python не знает имя из сообщения. Скорее всего, константа или функция в одном месте
+            названа иначе, чем при создании: `HOUR_PRICE` и `HOURS_PRICE` для Python — разные имена.
+          try: >-
+            Сравни имя из сообщения с тем, как ты его создал в начале программы, и сделай их
+            одинаковыми. Подсказка `Did you mean` в конце сообщения часто называет верное имя.
+          verify: 'Запусти с вводом из примера 1 — должна появиться строка «Первая репетиция: 950».'
+        - id: print-not-return
+          when:
+            failedTest: t4
+            codeRegex: 'def rehearsal_price\b[^\n]*\n(?:[ \t]+[^\n]*\n)*?[ \t]+print\('
+          why: >-
+            `rehearsal_price` печатает цену, но не возвращает её, а функция без `return` отдаёт
+            `None`. Поэтому цена появляется на экране отдельной строкой, в строке репетиции
+            печатается `None`, а сложить `None` в «Всего» Python не может — отсюда TypeError.
+          try: >-
+            Замени `print(...)` внутри функции на `return ...`, а печатай там, где функцию
+            вызываешь.
+          verify: 'Проверка «Функция для трёх часов» должна получить 1350.'
+        - id: debug-left
+          when:
+            failedTest: t1
+            codeRegex: 'def rehearsal_price\b[^\n]*\n(?:[ \t]+[^\n]*\n)*?[ \t]+print\(|^[ \t]*print\([^\n]*(?:ОТЛАДКА|=\s*\})'
+          where: Лишний `print` — внутри `rehearsal_price` или отладочный
+          why: >-
+            В выводе лишние строки: остался `print` внутри функции или отладочный вывод. Проверка
+            сравнивает вывод строка в строку — у исходной программы было ровно четыре строки.
+          try: >-
+            Удали лишний `print` или поставь перед ним `#`. Функция только возвращает цену, а
+            печатают её строки внизу программы.
+          verify: 'Запусти с вводом из примера 1 — первой строкой должна быть «Первая репетиция: 950».'
+        - id: total-changed
+          when:
+            failedTest: t1
+            outputIncludes: "Первая репетиция: 950\nВторая репетиция: 1350\nТретья репетиция: 550"
+          why: >-
+            Цены репетиций верные, а «Всего» изменилось. Рефакторинг не меняет вывод: итог — это
+            сумма трёх цен, и у каждой репетиции своя плата за аппаратуру. Если сложить часы и
+            посчитать одну цену, аппаратура учтётся один раз.
+          try: Сложи три готовые цены — те же, что печатаешь в строках выше.
+          verify: 'В «Примере 1» должно получиться «Всего: 2850».'
+        - id: lower-constant
+          when:
+            failedTest: t5
+            codeRegex: '^[A-Z0-9_]*[a-z][A-Za-z0-9_]*[ \t]*=[ \t]*(?:150|400)[ \t]*(?:#.*)?$'
+          why: >-
+            Числа получили имена — это главное. Но по PEP 8 константы пишут ЗАГЛАВНЫМИ буквами: так
+            с первого взгляда видно, что значение программа не меняет, а `hours` или `total` —
+            обычные переменные.
+          try: >-
+            Переименуй константы заглавными буквами, например `hour_price` или `HourPrice` →
+            `HOUR_PRICE`, — во всех местах, где они встречаются.
+          verify: Нажми «Проверить» — проверка «Числа — в константах» должна пройти.
+        - id: constants-inside
+          when:
+            failedTest: t5
+            codeRegex: '^[ \t]+[A-Z_][A-Z0-9_]*[ \t]*=[ \t]*(?:150|400)\b'
+          why: >-
+            Константы объявлены внутри функции. Их место — в самом начале программы, до функций:
+            там их сразу видно, и новую цену ищут именно там.
+          try: Перенеси строки с константами из функции в начало программы — без отступа.
+          verify: Нажми «Проверить» — проверка «Числа — в константах» должна пройти.
+        - id: magic-left
+          when:
+            failedTest: t5
+            codeRegex: '^[ \t]*(?![A-Z_][A-Z0-9_]*[ \t]*=[ \t]*(?:150|400)[ \t]*(?:#.*)?$)[^\n#]*\b(?:150|400)\b'
+          why: >-
+            Где-то осталось число 150 или 400 — в функции, в формуле или в «Всего». Пока число
+            записано само по себе, непонятно, что оно значит, а при новой цене его легко пропустить.
+          try: >-
+            Объяви константы в начале программы, например `EQUIPMENT_FEE = 150`, и замени каждое 150
+            и 400 в формулах их именами.
+          verify: Нажми «Проверить» — проверка «Числа — в константах» должна пройти.
+        - id: function-unused
+          when:
+            failedRule: one-formula
+          why: >-
+            Функция есть, но формула цены всё ещё записана в нескольких местах: часть строк считает
+            цену в обход функции. Поменяется правило — эти строки придётся править отдельно.
+          try: >-
+            Везде, где нужна цена репетиции, вызывай `rehearsal_price(...)` — и в трёх строках с
+            ценами, и в «Всего».
+          verify: Нажми «Проверить» — требование про одну формулу должно выполниться.
+      afterPass: >-
+        Поднимет база цену часа — поменяешь одну строку, и все четыре строки вывода пересчитаются
+        сами. А «Всего» из готовых цен не может разойтись с отдельными репетициями.
+      skills: [clean-code, functions]
+
+  - id: practice-split
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m6-l5-e3
+      kind: write
+      title: "Лодочная станция: разбери длинную функцию"
+      statement: |-
+        Программа лодочной станции считает выручку за день. Тариф: первый час — 400 руб., каждый
+        следующий — 200 руб., а от 5 часов — дневной тариф 1100 руб. Первая строка ввода — сколько
+        было клиентов, дальше по строке на клиента: имя и часы через `;`.
+
+        Программа работает, но одна функция `processAll` делает всё сразу: читает, считает,
+        оформляет и печатает. Имена `processAll` и `Total` написаны не в стиле PEP 8, а `n`, `s`,
+        `p`, `h`, `c` ничего не говорят. Разбери её, не меняя вывод:
+
+        1. `rental_cost(hours)` — **возвращает** стоимость проката за столько часов.
+        2. `format_line(name, cost)` — **возвращает** строку чека, например `Аня: 600 руб.`
+        3. Чтение, сумму и печать оставь в отдельной функции или внизу программы — как тебе удобнее.
+        4. Все имена — в стиле PEP 8: функции и переменные в `snake_case`, константы (если
+           заведёшь) — ЗАГЛАВНЫМИ. И пусть имена говорят, что хранят: одной буквой можно назвать
+           только счётчик цикла `i`.
+
+        Переноси по одному куску и после каждого нажимай «Запустить» с вводом из примера.
+      input: "Первая строка — число клиентов, затем по строке на клиента: `имя;часы`."
+      output: >-
+        Строка чека на каждого клиента и последняя строка `Выручка: <сумма> руб.` — как у исходной
+        программы.
+      constraints:
+        - "`rental_cost` и `format_line` возвращают результат через `return` и ничего не печатают."
+        - Программа вызывает обе функции — тариф и строка чека не повторяются в цикле.
+        - Тариф и текст строк не меняются.
+      starterCode: |
+        def processAll(n):
+            Total = 0
+            for i in range(n):
+                s = input()
+                p = s.split(";")
+                h = int(p[1])
+                if h >= 5:
+                    c = 1100
+                else:
+                    c = 400 + (h - 1) * 200
+                Total = Total + c
+                print(p[0] + ": " + str(c) + " руб.")
+            print("Выручка: " + str(Total) + " руб.")
+
+
+        processAll(int(input()))
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "3\nАня;2\nБоря;5\nВика;1\n"
+          expected: |-
+            Аня: 600 руб.
+            Боря: 1100 руб.
+            Вика: 400 руб.
+            Выручка: 2100 руб.
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "2\nГлеб;3\nДина;8\n"
+          expected: |-
+            Глеб: 800 руб.
+            Дина: 1100 руб.
+            Выручка: 1900 руб.
+        - id: t3
+          kind: io
+          title: "Граничный случай: клиентов не было"
+          edge: true
+          stdin: "0\n"
+          expected: "Выручка: 0 руб."
+        - id: t4
+          kind: call
+          title: "Граничный случай: один час"
+          edge: true
+          stdin: "0\n"
+          call: rental_cost(1)
+          expected: "400"
+        - id: t5
+          kind: call
+          title: Четыре часа — ещё почасовой тариф
+          example: true
+          stdin: "0\n"
+          call: rental_cost(4)
+          expected: "1000"
+        - id: t6
+          kind: call
+          title: "Граничный случай: ровно 5 часов"
+          edge: true
+          stdin: "0\n"
+          call: rental_cost(5)
+          expected: "1100"
+        - id: t7
+          kind: call
+          title: Строка чека
+          example: true
+          stdin: "0\n"
+          call: format_line("Ева", 1000)
+          expected: "'Ева: 1000 руб.'"
+        - id: t8
+          kind: assert
+          title: Имена в стиле PEP 8
+          stdin: "0\n"
+          code: |-
+            import ast
+            import re
+
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _snake = re.compile(r"[a-z_][a-z0-9_]*")
+            _upper = re.compile(r"[A-Z_][A-Z0-9_]*")
+            _constants = set()
+            for _node in _tree.body:
+                if isinstance(_node, ast.Assign):
+                    for _target in _node.targets:
+                        _names = _target.elts if isinstance(_target, ast.Tuple) else [_target]
+                        for _name in _names:
+                            if isinstance(_name, ast.Name) and _upper.fullmatch(_name.id):
+                                _constants.add(_name.id)
+            _stores = {}
+            for _node in ast.walk(_tree):
+                if isinstance(_node, ast.Name) and isinstance(_node.ctx, ast.Store):
+                    _stores[_node.id] = _stores.get(_node.id, 0) + 1
+            _bad = []
+            for _node in ast.walk(_tree):
+                if isinstance(_node, ast.FunctionDef) and not _snake.fullmatch(_node.name):
+                    _bad.append(_node.name)
+                elif isinstance(_node, ast.arg) and not _snake.fullmatch(_node.arg):
+                    _bad.append(_node.arg)
+                elif isinstance(_node, ast.Name) and isinstance(_node.ctx, ast.Store):
+                    _constant = _node.id in _constants and _stores[_node.id] == 1
+                    if not _snake.fullmatch(_node.id) and not _constant:
+                        _bad.append(_node.id)
+            assert not _bad, _bad
+          message: >-
+            Остались имена не в стиле PEP 8. Функции и переменные — snake_case: маленькие буквы и
+            «_». ЗАГЛАВНЫМИ пишут только константы — их задают один раз в начале программы.
+        - id: t9
+          kind: assert
+          title: Говорящие имена
+          stdin: "0\n"
+          code: |-
+            import ast
+
+            _tree = ast.parse(open(__file__, encoding="utf-8").read())
+            _short = set()
+            for _node in ast.walk(_tree):
+                if isinstance(_node, ast.Name) and len(_node.id) == 1:
+                    _short.add(_node.id)
+                elif isinstance(_node, ast.arg) and len(_node.arg) == 1:
+                    _short.add(_node.arg)
+            assert not (_short - {"i", "j", "k", "_"}), _short
+          message: >-
+            В коде остались однобуквенные имена вроде n, c, h или p — назови их по тому, что они
+            хранят. Короткое i можно оставить для счётчика цикла.
+      rules:
+        - id: use-functions
+          use: [call:rental_cost, call:format_line]
+          message: >-
+            Функции rental_cost и format_line написаны, но программа их не вызывает: стоимость и
+            строка чека по-прежнему собираются в цикле. Вызывай функции там, где нужен их
+            результат.
+      criteria:
+        - На тех же вводах вывод совпадает с выводом исходной программы строка в строку.
+        - "`rental_cost(hours)` возвращает стоимость, `format_line(name, cost)` — строку чека; обе ничего не печатают."
+        - Все имена — в стиле PEP 8 (snake_case, константы ЗАГЛАВНЫМИ) и говорят, что хранят.
+      hints:
+        - >-
+          Найди в `processAll` три разных дела: прочитать запись клиента, посчитать стоимость,
+          собрать строку чека. Какое из них зависит только от числа часов, а какое — только от
+          имени и суммы?
+        - |-
+          На другом примере. Было — расчёт и строка прямо в цикле:
+          ```text
+          for i in range(orders_count):
+              pieces = int(input())
+              price = pieces * 30
+              print(str(pieces) + " шт.: " + str(price) + " руб.")
+          ```
+          Стало — у каждого дела своя функция, а цикл их только вызывает и печатает результат:
+          ```text
+          PIECE_PRICE = 30
+
+
+          def order_price(pieces):
+              return pieces * PIECE_PRICE
+
+
+          def format_order(pieces, price):
+              return f"{pieces} шт.: {price} руб."
+
+
+          for i in range(orders_count):
+              pieces = int(input())
+              price = order_price(pieces)
+              print(format_order(pieces, price))
+          ```
+        - |-
+          Каркас:
+          ```text
+          def rental_cost(hours):
+              if hours >= 5:
+                  return …
+              return …
+
+
+          def format_line(name, cost):
+              return …
+
+
+          def print_report(clients_count):      # бывшая processAll
+              revenue = 0
+              for i in range(clients_count):
+                  … прочитать строку и разделить по ";"
+                  cost = rental_cost(…)
+                  revenue = revenue + cost
+                  print(format_line(…, cost))
+              print(…)
+
+
+          print_report(int(input()))
+          ```
+      solution:
+        code: |
+          DAY_RATE = 1100
+          DAY_RATE_HOURS = 5  # с 5 часов дневной тариф выгоднее почасового
+          FIRST_HOUR_PRICE = 400
+          NEXT_HOUR_PRICE = 200
+
+
+          def rental_cost(hours):
+              if hours >= DAY_RATE_HOURS:
+                  return DAY_RATE
+              return FIRST_HOUR_PRICE + (hours - 1) * NEXT_HOUR_PRICE
+
+
+          def format_line(name, cost):
+              return f"{name}: {cost} руб."
+
+
+          def print_report(clients_count):
+              revenue = 0
+              for i in range(clients_count):
+                  record = input().split(";")
+                  name = record[0]
+                  cost = rental_cost(int(record[1]))
+                  revenue = revenue + cost
+                  print(format_line(name, cost))
+              print(f"Выручка: {revenue} руб.")
+
+
+          print_report(int(input()))
+        explanation: >-
+          Каждая функция делает одно дело: `rental_cost` знает только тариф, `format_line` — только
+          вид строки чека, а `print_report` читает записи, складывает выручку и печатает. Числа
+          тарифа стали константами, а `processAll`, `Total`, `n`, `p`, `h`, `c` — понятными именами
+          в `snake_case`.
+          Формула и условие `>=` перенесены как есть, поэтому вывод не изменился. Подойдёт и цикл
+          внизу программы без `print_report`. Проверка примет и тариф числами внутри
+          `rental_cost` — они хотя бы собраны в одном месте. Но с константами, как здесь, сразу
+          видно, что значит каждое число.
+      altSolutions:
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                else:
+                    return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            clients = int(input())
+            revenue = 0
+            for i in range(clients):
+                parts = input().split(";")
+                cost = rental_cost(int(parts[1]))
+                revenue += cost
+                print(format_line(parts[0], cost))
+            print("Выручка: " + str(revenue) + " руб.")
+          note: Без функции-обёртки — цикл внизу программы, тариф числами в одной функции.
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def read_client():
+                name, hours = input().split(";")
+                return name, int(hours)
+
+
+            def main():
+                revenue = 0
+                clients_count = int(input())
+                for i in range(clients_count):
+                    name, hours = read_client()
+                    cost = rental_cost(hours)
+                    revenue = revenue + cost
+                    print(format_line(name, cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            main()
+          note: Чтение записи — ещё одна функция, распаковка name, hours; всё собрано в main().
+        - code: |
+            DAY_RATE = 1100
+            FIRST_HOUR = 400
+            NEXT_HOUR = 200
+
+
+            def rental_cost(hours):
+                hourly = FIRST_HOUR + (hours - 1) * NEXT_HOUR
+                return min(hourly, DAY_RATE)
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(count):
+                total = 0
+                for i in range(count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    total = total + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {total} руб.")
+
+
+            print_report(int(input()))
+          note: Дневной тариф через min — устройство другое, но на всех часах результат тот же.
+        - code: |
+            FIRST_HOUR_PRICE, NEXT_HOUR_PRICE = 400, 200
+            DAY_RATE = 1100
+            DAY_RATE_HOURS = 5
+
+
+            def rental_cost(hours):
+                if hours >= DAY_RATE_HOURS:
+                    return DAY_RATE
+                return FIRST_HOUR_PRICE + (hours - 1) * NEXT_HOUR_PRICE
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(int(input()))
+          note: Две константы одной строкой через кортеж — так же, как разрешено в задании 2.
+        - code: |
+            def rental_cost(hours):
+                if hours > 4:
+                    return 1100
+                else:
+                    return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            clients_count = int(input())
+            revenue = 0
+            for _ in range(clients_count):
+                client = input().split(";")
+                cost = rental_cost(int(client[1]))
+                revenue += cost
+                print(format_line(client[0], cost))
+            print("Выручка:", revenue, "руб.")
+          note: "> 4 вместо >= 5, цикл внизу, _ как счётчик, print через запятую."
+      wrongSolutions:
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            def processAll(n):
+                Total = 0
+                for i in range(n):
+                    p = input().split(";")
+                    c = rental_cost(int(p[1]))
+                    Total = Total + c
+                    print(format_line(p[0], c))
+                print("Выручка: " + str(Total) + " руб.")
+
+
+            processAll(int(input()))
+          note: Функции вынесены, но processAll и Total остались не в стиле snake_case.
+          expectMistake: not-snake
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                print(name + ": " + str(cost) + " руб.")
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    format_line(record[0], cost)
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: format_line печатает строку вместо return — вывод тот же, но функция возвращает None.
+          expectMistake: print-not-return
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + hours * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: При переносе потерялось «- 1» — первый час считается дважды.
+          expectMistake: cost-changed
+        - code: |
+            def rental_cost(hours):
+                if hours > 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: ">= превратилось в > — ровно 5 часов стоят 1200 вместо 1100."
+          expectMistake: boundary-changed
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб"
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: В строке чека пропала точка после «руб».
+          expectMistake: format-changed
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(Total) + " руб.")
+
+
+            print_report(int(input()))
+          note: Total переименована в revenue не везде.
+          expectMistake: missed-rename
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    Total = Total + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: В строке сложения осталось старое имя Total — внутри функции это UnboundLocalError.
+          expectMistake: missed-rename-local
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + cost + " руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: При переносе в format_line потерялось str() — строку склеивают с числом.
+          expectMistake: str-plus-int
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(record[0] + ": " + str(cost) + " руб.")
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: Функции format_line нет — строка по-прежнему собирается внутри цикла.
+          expectMistake: no-function
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(revenue) + " руб.")
+          note: Функции объявлены, но вызов главной функции внизу потерялся — программа ничего не выводит.
+          expectMistake: not-called
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return name + ": " + str(cost) + " руб."
+
+
+            def print_report(clients_count):
+                Total = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print("Выручка: " + str(revenue) + " руб.")
+
+
+            print_report(int(input()))
+          note: Всё переименовано в revenue, кроме начального Total = 0 — UnboundLocalError.
+          expectMistake: missed-rename-local
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(clients_count):
+                for i in range(clients_count):
+                    revenue = 0
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(int(input()))
+          note: revenue = 0 перенесено внутрь цикла — при 0 клиентов UnboundLocalError, иначе неверная сумма.
+          expectMistake: accumulator-in-loop
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            clients_count = int(input())
+            for i in range(clients_count):
+                revenue = 0
+                record = input().split(";")
+                cost = rental_cost(int(record[1]))
+                revenue = revenue + cost
+                print(format_line(record[0], cost))
+            print(f"Выручка: {revenue} руб.")
+          note: Накопитель обнуляется в цикле на верхнем уровне — при 0 клиентов NameError.
+          expectMistake: accumulator-in-loop
+        - code: |
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(int(input()))
+
+
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+          note: Новые функции дописаны внизу, после вызова print_report.
+          expectMistake: defined-below
+        - code: |
+            def rental_cost(hours):
+                print(f"ОТЛАДКА: {hours=}")
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(int(input()))
+          note: Забытый отладочный print в rental_cost; return на месте.
+          expectMistake: debug-left
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    print(1100)
+                else:
+                    print(400 + (hours - 1) * 200)
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(int(input()))
+          note: rental_cost печатает вместо return — None в сумме.
+          expectMistake: print-not-return-cost
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            clients_count = input()
+            revenue = 0
+            for i in range(clients_count):
+                record = input().split(";")
+                cost = rental_cost(int(record[1]))
+                revenue = revenue + cost
+                print(format_line(record[0], cost))
+            print(f"Выручка: {revenue} руб.")
+          note: Число клиентов без int() — TypeError в range уже при вводе 0, падают и проверки функций.
+          expectMistake: crash-on-empty
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(input())
+          note: Потерялся int() при вызове — TypeError в range, падают и проверки функций.
+          expectMistake: crash-on-empty
+        - code: |
+            DAY_RATE = 1100
+
+
+            def rental_cost(hours):
+                FIRST_HOUR_PRICE = 400
+                NEXT_HOUR_PRICE = 200
+                if hours >= 5:
+                    return DAY_RATE
+                return FIRST_HOUR_PRICE + (hours - 1) * NEXT_HOUR_PRICE
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(int(input()))
+          note: Часть «констант» внутри функции — processAll и Total уже исправлены.
+          expectMistake: constants-inside
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def printReport(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    cost = rental_cost(int(record[1]))
+                    revenue = revenue + cost
+                    print(format_line(record[0], cost))
+                print(f"Выручка: {revenue} руб.")
+
+
+            printReport(int(input()))
+          note: processAll переименована в printReport — большая буква в середине, не snake_case.
+          expectMistake: not-snake
+        - code: |
+            def rental_cost(h):
+                if h >= 5:
+                    return 1100
+                return 400 + (h - 1) * 200
+
+
+            def format_line(name, c):
+                return name + ": " + str(c) + " руб."
+
+
+            def process_all(n):
+                total = 0
+                for i in range(n):
+                    s = input()
+                    p = s.split(";")
+                    c = rental_cost(int(p[1]))
+                    total = total + c
+                    print(format_line(p[0], c))
+                print("Выручка: " + str(total) + " руб.")
+
+
+            process_all(int(input()))
+          note: Стиль PEP 8 соблюдён, но n, s, p, h, c остались — имена ничего не говорят.
+          expectMistake: short-names
+        - code: |
+            def rental_cost(hours):
+                if hours >= 5:
+                    return 1100
+                return 400 + (hours - 1) * 200
+
+
+            def format_line(name, cost):
+                return f"{name}: {cost} руб."
+
+
+            def print_report(clients_count):
+                revenue = 0
+                for i in range(clients_count):
+                    record = input().split(";")
+                    hours = int(record[1])
+                    if hours >= 5:
+                        cost = 1100
+                    else:
+                        cost = 400 + (hours - 1) * 200
+                    revenue = revenue + cost
+                    print(record[0] + ": " + str(cost) + " руб.")
+                print(f"Выручка: {revenue} руб.")
+
+
+            print_report(int(input()))
+          note: Функции написаны, но цикл их не вызывает — расчёт и строка по-старому; ловит правило.
+          expectMistake: null
+      mistakes:
+        - id: defined-below
+          when:
+            errorType: NameError
+            codeRegex: '^(?:[A-Za-z_]\w*\(|[^\s#][^\n]*\b(?:input|range)\()[^\n]*$(?=[\s\S]*^def (?:rental_cost|format_line)\b)'
+          why: >-
+            Функции есть, но объявлены ниже строки, которая запускает программу. Python выполняет
+            файл сверху вниз: когда код вызывает функцию из сообщения, её `def` ещё не выполнился.
+          try: >-
+            Перенеси вызов главной функции (или цикл) в самый конец — после всех `def`. Сначала
+            объявляют функции, потом запускают программу.
+          verify: 'Запусти с вводом из примера 1 — последней строкой должна быть «Выручка: 2100 руб.».'
+        - id: no-function
+          when:
+            errorType: NameError
+            codeRegex: '(?<![\s\S])(?!(?=[\s\S]*^def rental_cost\b)(?=[\s\S]*^def format_line\b))'
+          why: >-
+            Проверка вызывает `rental_cost(...)` и `format_line(...)`, а одной из этих функций в
+            программе нет — или она названа по-другому.
+          try: >-
+            Создай обе функции с именами ровно как в условии — `rental_cost(hours)` и
+            `format_line(name, cost)` — и верни из каждой результат через `return`.
+          verify: Проверки «Строка чека» и «Четыре часа — ещё почасовой тариф» должны пройти.
+        - id: accumulator-in-loop
+          when:
+            failedTest: t3
+            codeRegex: '^([ \t]*)for\b[^\n]*:[ \t]*\n(?:\1[ \t]+[^\n]*\n)*?\1[ \t]+[A-Za-z_]\w*[ \t]*=[ \t]*0[ \t]*$'
+          why: >-
+            Накопитель обнуляется внутри цикла: строка `… = 0` стоит в теле `for`. На каждом круге
+            сумма начинается заново, а если клиентов нет, цикл не выполняется ни разу — и у
+            переменной вовсе нет значения.
+          try: >-
+            Перенеси строку с `= 0` на уровень выше — перед `for`, как `Total = 0` в исходной
+            программе. Внутри цикла только прибавляй.
+          verify: 'Запусти с вводом из примера 1 — последней строкой должна быть «Выручка: 2100 руб.».'
+        - id: missed-rename
+          when:
+            errorType: NameError
+          why: >-
+            Python не знает имя из сообщения: где-то осталось старое имя, а переменной с ним больше
+            нет, — или новое имя написано с опечаткой.
+          try: >-
+            Открой строку из сообщения и замени имя на новое. Потом проверь, не встречается ли
+            старое имя ещё где-нибудь.
+          verify: 'Запусти с вводом из примера 1 — последней строкой должна быть «Выручка: 2100 руб.».'
+        - id: missed-rename-local
+          when:
+            errorType: UnboundLocalError
+          why: >-
+            Внутри функции этому имени присваивают значение, поэтому Python считает его локальным
+            (как в уроке 5.4). Но в строке из сообщения его читают раньше, чем оно получило
+            значение. При переименовании так бывает, если в строке сложения осталось старое имя
+            (`Total = Total + cost`) или не переименована строка с начальным значением (`Total = 0`).
+          try: >-
+            Найди, где переменная получает первое значение — строку `… = 0` перед циклом, — и сделай
+            имя одинаковым везде: там, в строке сложения и в последнем `print`.
+          verify: 'Запусти с вводом из примера 1 — последней строкой должна быть «Выручка: 2100 руб.».'
+        - id: str-plus-int
+          when:
+            errorIncludes: can only concatenate str (not "int") to str
+          why: >-
+            При переносе строки чека потерялось `str(...)`: склеить через `+` можно только строки, а
+            стоимость — число.
+          try: >-
+            В строке из сообщения оберни число в `str(...)`, как было в исходной программе, или
+            собери строку f-строкой: `f"{name}: {cost} руб."`.
+          verify: 'Проверка «Строка чека» должна получить «Ева: 1000 руб.».'
+        - id: print-not-return-cost
+          when:
+            failedTest: t5
+            codeRegex: 'def rental_cost\b[^\n]*\n(?:[ \t]+[^\n]*\n)*?[ \t]+print\('
+          why: >-
+            `rental_cost` печатает, но не возвращает стоимость, а функция без `return` отдаёт
+            `None`. Поэтому проверка получает `None` вместо числа, а в программе `None` не
+            прибавить к выручке — отсюда TypeError.
+          try: >-
+            Сделай так, чтобы `rental_cost` возвращала стоимость: замени `print(...)` со
+            стоимостью на `return ...`, а лишние `print` убери. Печатает строку чека тот, кто
+            вызывает функции: `print(format_line(name, cost))`.
+          verify: Проверка «Четыре часа — ещё почасовой тариф» должна получить 1000.
+        - id: print-not-return
+          when:
+            failedTest: t7
+            codeRegex: 'def format_line\b[^\n]*\n(?:[ \t]+[^\n]*\n)*?[ \t]+print\('
+          why: >-
+            `format_line` печатает строку чека вместо того, чтобы вернуть её. Вывод может совпасть,
+            но вызов такой функции даёт `None`: её результат не сохранить, не проверить и не
+            напечатать в другом месте.
+          try: >-
+            Внутри `format_line` замени `print(...)` на `return ...`, а печатай там, где функцию
+            вызываешь: `print(format_line(name, cost))`.
+          verify: 'Проверка «Строка чека» должна получить «Ева: 1000 руб.».'
+        - id: debug-left
+          when:
+            failedTest: t1
+            codeRegex: 'def (?:rental_cost|format_line)\b[^\n]*\n(?:[ \t]+[^\n]*\n)*?[ \t]+print\(|^[ \t]*print\([^\n]*(?:ОТЛАДКА|=\s*\})'
+          where: Лишний `print` — в `rental_cost`, `format_line` или отладочный
+          why: >-
+            В выводе лишние строки: остался `print` внутри `rental_cost` или `format_line` или
+            отладочный вывод. Эти функции только возвращают результат, а проверка сравнивает вывод
+            строка в строку, как у исходной программы.
+          try: Удали лишний `print` или поставь перед ним `#`.
+          verify: 'Запусти с вводом из примера 1 — первой строкой должна быть «Аня: 600 руб.».'
+        - id: not-called
+          when:
+            failedTest: t1
+            outputEquals: ""
+          why: >-
+            Программа ничего не вывела. Функции объявлены, но `def` только создаёт функцию, а
+            выполняется она, когда её вызывают. В исходной программе внизу был вызов
+            `processAll(int(input()))` — при переделке он потерялся.
+          try: >-
+            Допиши внизу программы, без отступа, вызов главной функции с числом клиентов из
+            ввода — с новым именем функции.
+          verify: 'Запусти с вводом из примера 1 — должны появиться три строки чека и «Выручка: 2100 руб.».'
+        - id: crash-on-empty
+          when:
+            failedTest: t3
+            errorIncludes: Error
+          why: >-
+            Программа останавливается с ошибкой уже при вводе `0`, когда клиентов нет. Проверки
+            функций запускают программу с этим же вводом, поэтому не проходят и они — даже если
+            сами `rental_cost` и `format_line` верны.
+          try: >-
+            Запусти программу с вводом `0` и разберись с ошибкой из сообщения: на какой она строке
+            и какое значение там не то. Сначала исправь её — остальные проверки, скорее всего,
+            позеленеют сами.
+          verify: 'Запуск с вводом 0 должен вывести «Выручка: 0 руб.».'
+        - id: cost-changed
+          when:
+            failedTest: t5
+          why: >-
+            Стоимость изменилась при переносе: 4 часа — это 400 + 3 * 200 = 1000 руб. Рефакторинг
+            переносит формулу как есть, ничего не «улучшая» по дороге.
+          try: >-
+            Сравни формулу в `rental_cost` с исходной: первый час — 400, каждый следующий — 200, то
+            есть `(часы - 1)` раз по 200.
+          verify: Проверка «Четыре часа — ещё почасовой тариф» должна получить 1000.
+        - id: boundary-changed
+          when:
+            failedTest: t6
+          why: >-
+            На границе тариф изменился: ровно 5 часов должны стоить 1100 по дневному тарифу, как в
+            исходной программе. Скорее всего, `>=` при переносе превратилось в `>`.
+          try: Сравни условие дневного тарифа с исходным `h >= 5`.
+          verify: 'Проверка «Граничный случай: ровно 5 часов» должна получить 1100.'
+        - id: format-changed
+          when:
+            failedTest: t7
+          why: >-
+            Строка чека изменилась. Рефакторинг не меняет вывод: было «имя: сумма руб.» — с
+            двоеточием, пробелами и точкой в конце.
+          try: >-
+            Сравни то, что возвращает `format_line("Ева", 1000)`, со строкой `Ева: 1000 руб.`
+            символ за символом.
+          verify: 'Проверка «Строка чека» должна получить «Ева: 1000 руб.».'
+        - id: constants-inside
+          when:
+            failedTest: t8
+            codeRegex: '^[ \t]+[A-Z_][A-Z0-9_]*[ \t]*=(?!=)'
+          why: >-
+            Имена ЗАГЛАВНЫМИ стоят внутри функции. По PEP 8 так пишут только константы, а их место —
+            в начале программы, до функций: там их видно сразу, и новый тариф ищут именно там.
+            Внутри функции имена пишут в `snake_case`.
+          try: Перенеси строки с константами из функции в начало программы — без отступа.
+          verify: Нажми «Проверить» — проверка «Имена в стиле PEP 8» должна пройти.
+        - id: not-snake
+          when:
+            failedTest: t8
+          why: >-
+            Остались имена не в стиле PEP 8 — например, `processAll`, `printReport` или `Total`:
+            большая буква в начале или в середине имени — уже не `snake_case`. Функции и переменные
+            пишут маленькими буквами через `_`, а ЗАГЛАВНЫМИ — только константы, которые задают
+            один раз в начале программы.
+          try: >-
+            Переименуй такие имена: `processAll` → `print_report`, `Total` → `revenue` (или свои
+            понятные имена) — во всех местах. После переименования запусти программу.
+          verify: Нажми «Проверить» — проверка «Имена в стиле PEP 8» должна пройти.
+        - id: short-names
+          when:
+            failedTest: t9
+          why: >-
+            Стиль PEP 8 соблюдён, но однобуквенные имена вроде `n`, `c`, `h` или `p` по-прежнему
+            ничего не говорят: чтобы понять, что в них лежит, приходится читать весь код. Короткое
+            `i` для счётчика цикла — нормально, а для числа клиентов, часов, стоимости и частей
+            записи нужны слова.
+          try: >-
+            Переименуй их по смыслу, например `n` → `clients_count`, `h` → `hours`, `c` → `cost`,
+            `p` → `record`, — во всех местах и запусти программу.
+          verify: Нажми «Проверить» — проверка «Говорящие имена» должна пройти.
+      afterPass: >-
+        Теперь стоимость можно проверить отдельно от чтения и печати — например, на границе в 5
+        часов: `rental_cost(4)` и `rental_cost(5)`. Именно так в модуле 9 пишут автоматические
+        тесты.
+      skills: [clean-code, function-design]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - >-
+        Рефакторинг меняет устройство кода, но не поведение: после каждого маленького шага запускай
+        программу на тех же данных — и на границах тоже.
+      - Говорящие имена, константы вместо магических чисел, одна функция — одно дело.
+      - >-
+        PEP 8: `snake_case` для функций и переменных, ЗАГЛАВНЫЕ буквы для констант, отступ 4
+        пробела, пробелы вокруг `=` в присваивании и вокруг знаков действий, две пустые строки
+        между функциями.
+      - >-
+        Переименовывай везде. Пропуск там, где значение читают, даёт NameError, а пропуск слева от
+        `=` молча меняет вывод — поэтому сравнивай вывод. «Заменить всё» задевает чужие слова: на
+        компьютере переименовывай командой редактора (F2 в VS Code) или заменой слова целиком.
+    question: >-
+      Ты переименовал переменную и вынес расчёт в функцию. Как убедиться, что поведение программы
+      не изменилось?
+    answer: >-
+      Запустить её на тех же входных данных, что и до изменений, — включая граничные — и сравнить
+      вывод строка за строкой. Лучше менять по одному и проверять после каждого шага: если вывод
+      разошёлся, виноват последний шаг.

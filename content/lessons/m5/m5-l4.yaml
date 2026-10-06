@@ -1,0 +1,1857 @@
+id: m5-l4
+module: m5
+number: "5.4"
+title: "Область видимости: где живут переменные"
+objective: >-
+  Объяснять, чем локальная переменная отличается от глобальной, передавать данные в функцию
+  через параметры, а обратно — через return, не трогая из функции переменные основной программы;
+  понимать, что список передаётся в функцию тем же самым, а не копией, и не ставить список
+  значением по умолчанию.
+minutes: [25, 30]
+prerequisites: [m5-l3]
+skills: [scope]
+environment: python
+
+story:
+  title: Табло, которое не считает
+  fictional: true
+  text: >-
+    Никита ведёт школьную викторину и написал программу-табло: функция `add_points` должна
+    прибавлять очки команде. Первая версия падала с непонятной ошибкой UnboundLocalError, а во
+    второй, «исправленной», табло после каждого верного ответа по-прежнему показывало ноль.
+    Оказалось, у функции свои, внутренние переменные: они появляются при вызове и исчезают, когда
+    функция заканчивает работу. Никита переделал функцию: теперь она получает текущий счёт и
+    возвращает новый — и одна функция считает очки обеих команд.
+
+why: >-
+  Переменные внутри функции — её черновик: они не видны снаружи и не портят остальную программу.
+  Данные передают в функцию параметрами, а результат забирают через `return`:
+  `score = add_points(score, 10)`.
+
+usedIn: >-
+  В больших программах тысячи функций, и в каждой может быть своя переменная `total` или
+  `count` — они не мешают друг другу. Функции, которые ничего не меняют снаружи, легко проверять
+  тестами (им посвящён модуль 9) и использовать повторно в других программах.
+
+steps:
+  - id: local
+    type: theory
+    title: У функции свой черновик
+    body: |-
+      Переменные бывают двух видов — смотря где их создали.
+
+      **Локальная переменная** создаётся внутри функции. Она существует только во время вызова:
+      функция закончила работу — её переменные исчезли. Параметры — тоже локальные переменные:
+      они получают значения при вызове и пропадают вместе с ним. Попробуешь прочитать такую
+      переменную снаружи — получишь знакомую NameError.
+
+      **Глобальная переменная** создана в основной программе, вне функций. Функция может её
+      прочитать, но тогда она тайно зависит от чужих данных: по вызову не видно, откуда берётся
+      результат. Исключение — **константы**: значения, которые не меняются, пока программа
+      работает. Их имена пишут ЗАГЛАВНЫМИ буквами, например `PRICE = 200`, и читать их в функциях
+      можно. Это договорённость: Python сам не запретит поменять `PRICE`.
+
+      **Область видимости** — часть программы, где известно имя. У каждого вызова функции своя
+      область, и в ней может быть своя `count`, никак не связанная с `count` снаружи. Отсюда два
+      правила:
+
+      - **Присваивание внутри функции создаёт локальную переменную**, даже если снаружи есть
+        одноимённая. `count = 1` внутри функции внешнюю `count` не меняет.
+      - **Прочитать локальную переменную до присваивания нельзя.** Python заранее просматривает
+        всю функцию: раз `score` где-то в ней получает значение, это имя локальное во всей
+        функции. Поэтому `score = score + 10` падает с ошибкой:
+
+      ```text
+      UnboundLocalError: cannot access local variable 'score' where it is not associated with a value
+      ```
+
+      По-русски: «нельзя обратиться к локальной переменной score — у неё ещё нет значения». То же
+      будет с `score += 10`: это тоже присваивание.
+
+      Можно написать в начале функции `global score` — тогда функция будет менять внешнюю
+      переменную. Но такая функция тайком меняет чужие данные и годится только для одной
+      переменной, поэтому в курсе так не делаем.
+
+      Правильная схема — вход и выход: данные приходят в параметрах, результат уходит через
+      `return`, а снаружи его присваивают: `savings = deposit(savings, 50)`.
+    simpler: >-
+      Функция работает в своей комнате. Всё, что она пишет на своей доске, стирается, когда она
+      выходит, — снаружи этих записей никто не видит. И чужую доску в коридоре она не
+      переписывает: пишет на своей, даже если запись на ней называется так же. Хочешь что-то
+      получить от функции — пусть отдаст через `return`, а ты сохрани результат в переменную.
+    coach: Вошло через параметр — вышло через `return`.
+
+  - id: piggy-bank
+    type: example
+    title: Копилка
+    body: >-
+      Функция `deposit` кладёт деньги в копилку. `print` внутри функции — отладочный: через него
+      видно, что происходит во время вызова. Когда программа готова, такой `print` убирают. Нажми
+      «Запустить» и сравни две строки, которые печатаются снаружи.
+    code: |-
+      def deposit(balance, amount):
+          balance = balance + amount
+          print("внутри:", balance)
+          return balance
+
+      savings = 100
+      deposit(savings, 50)
+      print("без присваивания:", savings)
+      savings = deposit(savings, 50)
+      print("с присваиванием:", savings)
+    notes:
+      - line: 2
+        text: >-
+          `balance` — параметр, то есть локальная переменная. Меняется только она, а `savings`
+          снаружи остаётся прежней. Ошибки UnboundLocalError здесь нет: параметр получил значение
+          при вызове. А `score` в теории параметром не была — поэтому `score = score + 10` и
+          падала.
+      - line: 3
+        text: Отладочный `print` заглядывает внутрь вызова — там 150.
+      - line: 4
+        text: "`return` отдаёт новое значение туда, где функцию вызвали."
+      - line: 7
+        text: Результат вызова никуда не сохранён и пропадает. `savings` по-прежнему 100.
+      - line: 9
+        text: Результат сохранён в `savings` — теперь и снаружи 150.
+    tryIt: >-
+      Убери строку `return balance` и запусти: последняя строка покажет `None` — функция ничего
+      не вернула. Потом верни `return` и допиши в конце `print(balance)`: получишь NameError —
+      снаружи переменной `balance` нет.
+    coach: Передал — получил — сохранил. На этой схеме держится весь урок.
+
+  - id: inside-outside
+    type: predict
+    title: Внутри и снаружи
+    prompt: >-
+      Внутри функции переменной `score` присваивают значение параметра. Как думаешь, что выведет
+      программа?
+    code: |-
+      score = 0
+
+      def add_points(points):
+          score = points
+          print("внутри:", score)
+
+      add_points(10)
+      print("снаружи:", score)
+    options:
+      - |-
+        внутри: 10
+        снаружи: 10
+      - |-
+        внутри: 10
+        снаружи: 0
+      - Ошибка UnboundLocalError
+    answer: |-
+      внутри: 10
+      снаружи: 0
+    explanation: >-
+      Присваивание `score = points` создало внутри функции свою, локальную `score` — её и
+      напечатал первый `print`. Внешняя `score` осталась нулём. Ошибки нет: локальную `score` не
+      читали до присваивания. Если бы в функции было `score = score + points`, Python попытался бы
+      прочитать локальную `score` раньше, чем она получила значение, — вот тогда появилась бы
+      UnboundLocalError.
+    coach: Одинаковые имена внутри и снаружи функции — это две разные переменные.
+
+  - id: practice-greeting
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m5-l4-e1
+      kind: fix
+      title: Приветствие потерялось
+      statement: |-
+        Клуб настольных игр встречает новичков приветствием. Функция `make_greeting(name)`
+        собирает текст, но программа падает с NameError. Исправь программу: пусть функция
+        **возвращает** приветствие, а основная программа сохранит результат вызова и напечатает
+        его.
+
+        Вывод программы:
+
+        ```text
+        Привет, Оля! Рады видеть тебя в клубе.
+        ```
+      input: Ввода нет — имя передаётся в вызове функции.
+      output: >-
+        Функция `make_greeting(name)` возвращает строку-приветствие, программа печатает
+        приветствие для Оли.
+      constraints:
+        - Не используй `global`.
+        - Функция только собирает и возвращает текст, печатает основная программа.
+      starterCode: |
+        def make_greeting(name):
+            greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+
+        make_greeting("Оля")
+        print(greeting)
+      tests:
+        - id: c1
+          kind: call
+          title: Приветствие для Оли
+          example: true
+          call: make_greeting("Оля")
+          expected: "'Привет, Оля! Рады видеть тебя в клубе.'"
+        - id: t1
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Привет, Оля! Рады видеть тебя в клубе.
+        - id: c2
+          kind: call
+          title: Другое имя
+          call: make_greeting("Макс")
+          expected: "'Привет, Макс! Рады видеть тебя в клубе.'"
+        - id: c3
+          kind: call
+          title: "Граничный случай: имя из двух слов"
+          edge: true
+          call: make_greeting("Анна Мария")
+          expected: "'Привет, Анна Мария! Рады видеть тебя в клубе.'"
+        - id: t2
+          kind: assert
+          title: Функция только возвращает приветствие
+          code: |-
+            import contextlib, io
+            screen = io.StringIO()
+            with contextlib.redirect_stdout(screen):
+                make_greeting("Макс")
+            assert screen.getvalue() == ""
+          message: >-
+            Функция только собирает и возвращает приветствие, а печатает его основная программа:
+            сам вызов `make_greeting("Макс")` ничего не выводит на экран.
+      rules:
+        - id: r-no-global
+          avoid: [Global]
+          message: >-
+            Не используй `global`: пусть функция вернёт приветствие через `return`, а программа
+            сохранит результат вызова.
+        - id: r-print-result
+          dependsOn:
+            print: [make_greeting]
+          message: >-
+            Напечатай то, что вернула `make_greeting`, — результат вызова, а не готовый текст.
+      criteria:
+        - "Функция возвращает приветствие, например `make_greeting(\"Оля\")` → `'Привет, Оля! Рады видеть тебя в клубе.'`"
+        - Функция сама ничего не печатает.
+        - Программа сохраняет результат вызова (или сразу передаёт его в `print`) и печатает приветствие.
+        - В коде нет `global`.
+      hints:
+        - >-
+          Где создаётся `greeting` и где её пытаются напечатать? Вспомни, что происходит с
+          переменными функции, когда вызов закончился, — и каким способом значение может выйти
+          из функции наружу.
+        - |-
+          Тот же приём на другом примере:
+          ```python
+          def square(x):
+              result = x * x
+              return result
+
+          s = square(4)
+          print(s)
+          ```
+          `result` живёт только внутри `square`, а наружу уходит её значение — и сохраняется в `s`.
+        - |-
+          Каркас:
+          ```text
+          def make_greeting(name):
+              greeting = ...
+              ... greeting          # отдай значение наружу
+
+          ... = make_greeting("Оля")   # сохрани то, что вернула функция
+          print(...)
+          ```
+      solution:
+        code: |
+          def make_greeting(name):
+              greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+              return greeting
+
+          greeting = make_greeting("Оля")
+          print(greeting)
+        explanation: >-
+          `greeting` внутри функции — локальная переменная: она исчезает, когда вызов
+          заканчивается. `return greeting` отдаёт её значение наружу, а
+          `greeting = make_greeting("Оля")` сохраняет его в новой переменной — уже глобальной. Это
+          две разные переменные, и имя снаружи может быть любым: важно сохранить результат вызова.
+          Можно и короче: `print(make_greeting("Оля"))`.
+      altSolutions:
+        - code: |
+            def make_greeting(name):
+                return f"Привет, {name}! Рады видеть тебя в клубе."
+
+            print(make_greeting("Оля"))
+          note: Функция сразу возвращает f-строку, результат вызова сразу печатается.
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                return greeting
+
+            message = make_greeting("Оля")
+            print(message)
+          note: Снаружи результат сохранён под другим именем.
+        - code: |
+            def make_greeting(name):
+                text = "Привет, " + name + "! Рады видеть тебя в клубе."
+                return text
+
+            text = make_greeting("Оля")
+            print(text)
+          note: Строка собрана склейкой, а не f-строкой.
+        - code: |
+            CLUB_TEXT = "Рады видеть тебя в клубе."
+
+            def make_greeting(guest):
+                hello = f"Привет, {guest}!"
+                return f"{hello} {CLUB_TEXT}"
+
+            print(make_greeting("Оля"))
+          note: Функция читает константу (это можно), параметр назван guest.
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                return greeting
+
+            make_greeting("Оля")
+            greeting = make_greeting("Оля")
+            print(greeting)
+          note: «Голый» вызов из стартового кода остался — он лишний, но не мешает; результат второго вызова сохранён.
+      wrongSolutions:
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+
+            make_greeting("Оля")
+            print(greeting)
+          note: Ничего не исправлено — greeting есть только внутри функции.
+          expectMistake: local-outside
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                return greeting
+
+            make_greeting("Оля")
+            print(greeting)
+          note: return добавлен, но результат вызова не сохранён.
+          expectMistake: not-saved
+        - code: |
+            def make_greeting(name):
+                global greeting
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+
+            make_greeting("Оля")
+            print(greeting)
+          note: Вместо return — global.
+          expectMistake: global
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+
+            greeting = make_greeting("Оля")
+            print(greeting)
+          note: Результат сохранён, но функция ничего не возвращает — печатается None.
+          expectMistake: no-return
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                return greeting
+
+            print(make_greeting)
+          note: Функция напечатана без вызова.
+          expectMistake: function-object
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                print(greeting)
+
+            make_greeting("Оля")
+          note: Функция печатает вместо return — вывод верный, но проверка вызова получает None (общий разбор движка).
+          expectMistake: null
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                return greeting
+
+            result = make_greeting("Оля")
+            print(greeting)
+          note: Результат сохранён под другим именем, а печатается greeting (как s в подсказке 2).
+          expectMistake: other-name
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                return greeting
+
+            greeting = make_greeting(name)
+            print(greeting)
+          note: В вызов передано имя параметра — снаружи его нет.
+          expectMistake: param-outside
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                print(greeting)
+                return greeting
+
+            make_greeting("Оля")
+          note: Функция и печатает, и возвращает, результат вызова не используется — вывод верный, но печатает функция.
+          expectMistake: prints-inside
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                print(greeting)
+                return greeting
+
+            greeting = make_greeting("Оля")
+            print(greeting)
+          note: print остался и в функции, и снаружи — приветствие дважды.
+          expectMistake: prints-inside
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                return greeting
+
+            make_greeting("Оля")
+            print("Привет, Оля! Рады видеть тебя в клубе.")
+          note: Функция верная, вызов «голый», а приветствие напечатано готовым текстом.
+          expectMistake: hardcoded-text
+        - code: |
+            def make_greeting(name):
+                greeting = f"Привет, {name}! Рады видеть тебя в клубе."
+                print(greeting)
+
+            greeting = make_greeting("Оля")
+            print(greeting)
+          note: print вместо return, результат сохранён и напечатан — на экране приветствие и None (общий разбор движка точный).
+          expectMistake: null
+      mistakes:
+        - id: global
+          when:
+            failedRule: r-no-global
+          why: >-
+            `global` заставляет функцию менять переменную снаружи: функция тайком распоряжается
+            данными остальной программы. Нужно другое — чтобы функция отдавала приветствие через
+            `return`, а программа сама решала, куда его положить.
+          try: >-
+            Убери строку с `global`, допиши в функцию `return greeting`, а снаружи сохрани
+            результат вызова: `greeting = make_greeting("Оля")`.
+        - id: not-saved
+          when:
+            errorType: NameError
+            errorIncludes: "'greeting' is not defined"
+            codeRegex: '^[ \t]+return\b[\s\S]*^make_greeting\('
+          why: >-
+            `return` уже отдаёт приветствие, но результат вызова никуда не сохранён и пропадает.
+            А переменная `greeting` снаружи так и не появилась: та, что внутри функции, —
+            локальная и исчезла после вызова.
+          try: >-
+            Сохрани то, что вернула функция: `greeting = make_greeting("Оля")`. Или сразу
+            напечатай: `print(make_greeting("Оля"))`.
+          verify: NameError должна исчезнуть, а на экране появится приветствие.
+        - id: other-name
+          when:
+            errorType: NameError
+            errorIncludes: "'greeting' is not defined"
+            codeRegex: '^[ \t]+return\b[\s\S]*^\w+(?<!^greeting)[ \t]*=[ \t]*make_greeting\('
+          why: >-
+            Результат вызова ты сохранил, но в другой переменной, а `print` печатает `greeting`.
+            Снаружи функции такого имени нет: `greeting` была только внутри функции и исчезла
+            после вызова. Имя снаружи может быть любым — печатать нужно именно его.
+          try: Напечатай ту переменную, в которую сохранил результат вызова.
+          verify: NameError должна исчезнуть, а на экране появится приветствие.
+        - id: param-outside
+          when:
+            errorType: NameError
+            errorIncludes: "'name' is not defined"
+          why: >-
+            `name` — параметр, то есть локальная переменная функции: она появляется только во
+            время вызова и получает то значение, которое ты передал. Снаружи такого имени нет.
+          try: 'В вызове передай само имя гостя — текст в кавычках: `make_greeting("Оля")`.'
+          verify: NameError должна исчезнуть, а на экране появится приветствие.
+        - id: local-outside
+          when:
+            errorType: NameError
+            errorIncludes: "'greeting' is not defined"
+          why: >-
+            `greeting` создана внутри функции — это её локальная переменная. Когда вызов
+            закончился, она исчезла, поэтому в строке с `print` Python такого имени не знает.
+          try: >-
+            Верни приветствие из функции — `return greeting` в конце её тела — и сохрани результат
+            вызова: `greeting = make_greeting("Оля")`.
+          verify: NameError должна исчезнуть, а на экране появится приветствие.
+        - id: no-return
+          when:
+            outputEquals: None
+          why: >-
+            На экране `None`: функция ничего не возвращает, поэтому результат её вызова — `None`.
+            Внутренняя `greeting` так и осталась внутри функции.
+          try: Допиши в конец тела функции `return greeting`.
+          verify: Вместо `None` на экране должно появиться приветствие.
+        - id: function-object
+          when:
+            outputIncludes: "<function"
+          why: >-
+            Без скобок имя функции — это сама функция, а не результат её работы. `print`
+            показывает, что это функция и где она лежит в памяти.
+          try: 'Вызови функцию — со скобками и именем: `make_greeting("Оля")`.'
+          verify: Вместо `<function …>` на экране должно появиться приветствие.
+        - id: prints-inside
+          when:
+            failedTest: t2
+            codeRegex: '^[ \t]+print\([\s\S]*^[ \t]+return\b'
+          why: >-
+            Функция возвращает приветствие, но ещё и сама его печатает. По условию она только
+            собирает текст, а что с ним делать — напечатать, сохранить, изменить — решает
+            основная программа. Иначе, например, `print(make_greeting("Макс").upper())` покажет
+            приветствие дважды.
+          try: >-
+            Убери `print` из тела функции, а приветствие напечатай снаружи:
+            `print(make_greeting("Оля"))`.
+        - id: hardcoded-text
+          when:
+            failedRule: r-print-result
+            codeRegex: '^print\(\s*f?["'']'
+          why: >-
+            Приветствие напечатано готовым текстом, а то, что вернула функция, не используется.
+            Поменяешь имя в вызове — на экране всё равно останется Оля.
+          try: >-
+            Сохрани результат вызова и напечатай его: `greeting = make_greeting("Оля")`, потом
+            `print(greeting)`.
+      afterPass: >-
+        Приветствие вышло из функции через `return`, и программа сама решила, что с ним делать.
+        Теперь результат можно использовать дальше, например `print(make_greeting("Макс").upper())` —
+        приветствие заглавными буквами.
+      skills: [scope, functions]
+
+  - id: practice-quiz
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m5-l4-e2
+      kind: modify
+      title: Табло викторины
+      statement: |-
+        Табло Никиты падает с UnboundLocalError, да и считать умеет только очки Сов. Переделай
+        функцию `add_points`: пусть она получает **текущий счёт** команды и **число очков** и
+        возвращает новый счёт. Сам счёт храни снаружи, в `owls` и `foxes`, и обновляй его
+        результатом вызова.
+
+        В этом раунде Совы дважды ответили верно и получили 10 и 5 очков, а Лисы — один раз,
+        5 очков. Программа выводит:
+
+        ```text
+        Совы: 15, Лисы: 5
+        ```
+      input: Ввода нет — очки записаны в программе.
+      output: >-
+        `add_points(score, points)` возвращает новый счёт; программа печатает строку
+        `Совы: 15, Лисы: 5`.
+      constraints:
+        - Не используй `global`.
+        - Очки обеих команд считает одна и та же функция `add_points`.
+        - Функция ничего не печатает, печатает только последняя строка программы.
+      starterCode: |
+        owls = 0
+        foxes = 0
+
+        def add_points(points):
+            owls = owls + points
+
+        add_points(10)   # Совы ответили верно
+        add_points(5)    # Совы ответили ещё раз
+        # Лисам тоже нужно 5 очков — но функция умеет только про Сов
+        print(f"Совы: {owls}, Лисы: {foxes}")
+      tests:
+        - id: c1
+          kind: call
+          title: "Первый верный ответ: 0 + 10"
+          example: true
+          call: add_points(0, 10)
+          expected: "10"
+        - id: c2
+          kind: call
+          title: "Ещё очки к счёту: 15 + 5"
+          example: true
+          call: add_points(15, 5)
+          expected: "20"
+        - id: c3
+          kind: call
+          title: "Граничный случай: ноль очков"
+          edge: true
+          call: add_points(7, 0)
+          expected: "7"
+        - id: t1
+          kind: io
+          title: Табло после раунда
+          example: true
+          expected: "Совы: 15, Лисы: 5"
+          compare:
+            ignoreSpaces: true
+      rules:
+        - id: r-no-global
+          avoid: [Global]
+          message: >-
+            Не используй `global`: пусть `add_points` получает счёт параметром и возвращает новый,
+            а программа присваивает результат вызова.
+        - id: r-use-function
+          use: [call:add_points]
+          dependsOn:
+            print: [add_points]
+          message: >-
+            Табло печатает последняя строка программы: `print` со счётом `owls` и `foxes`,
+            посчитанным вызовами `add_points`, а не готовыми числами.
+        - id: r-both-teams
+          dependsOn:
+            owls: [add_points]
+            foxes: [add_points]
+          message: >-
+            Счёт обеих команд храни в `owls` и `foxes` и обновляй результатом вызова
+            `add_points`: `owls = add_points(owls, …)`, `foxes = add_points(foxes, …)`.
+      criteria:
+        - "`add_points(score, points)` возвращает новый счёт: `add_points(15, 5)` даёт 20."
+        - "Программа выводит `Совы: 15, Лисы: 5`."
+        - Счёт обеих команд обновляется вызовами одной функции и присваиванием снаружи, без `global`.
+      hints:
+        - >-
+          Почему функция, внутри которой написано `owls`, не может посчитать очки Лис? Что ей нужно
+          получать при вызове, чтобы работать для любой команды, — и что отдавать обратно?
+        - >-
+          Вспомни копилку из примера: `deposit(balance, amount)` получает баланс и сумму и
+          возвращает новый баланс, а снаружи стоит `savings = deposit(savings, 50)`. Без
+          присваивания `savings` не меняется.
+        - |-
+          Каркас:
+          ```text
+          def add_points(score, points):
+              вернуть score + points
+
+          owls = add_points(owls, 10)
+          owls = ...        # ещё 5 очков Совам
+          foxes = ...       # 5 очков Лисам
+          print(...)
+          ```
+      solution:
+        code: |
+          owls = 0
+          foxes = 0
+
+          def add_points(score, points):
+              return score + points
+
+          owls = add_points(owls, 10)    # Совы ответили верно
+          owls = add_points(owls, 5)     # Совы ответили ещё раз
+          foxes = add_points(foxes, 5)   # Лисы ответили верно
+          print(f"Совы: {owls}, Лисы: {foxes}")
+        explanation: >-
+          Функция больше не лезет во внешние переменные: текущий счёт приходит в параметре
+          `score`, новый уходит через `return`. Снаружи результат присваивается той же переменной:
+          `owls = add_points(owls, 10)` — «новый счёт Сов равен старому плюс 10». Поэтому одна
+          функция годится для любой команды: для Лис в неё просто передают `foxes`.
+      altSolutions:
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                score = score + points
+                return score
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Новый счёт сначала записан в параметр, потом возвращён.
+        - code: |
+            def add_points(total, points):
+                new_total = total + points
+                return new_total
+
+            owls = 0
+            foxes = 0
+            for points in [10, 5]:
+                owls = add_points(owls, points)
+            foxes = add_points(foxes, 5)
+            print("Совы:", str(owls) + ",", "Лисы:", foxes)
+          note: Функция объявлена в начале, очки Сов начислены в цикле, строка собрана без f-строки.
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(owls, points):
+                return owls + points
+
+            owls = add_points(add_points(owls, 10), 5)
+            foxes = add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Параметр назван так же, как внешняя переменная, — это разные переменные; вызовы вложены.
+        - code: |
+            def add_points(score, points):
+                return points + score
+
+            owls = 0
+            foxes = 0
+            owls = add_points(points=10, score=owls)
+            owls = add_points(score=owls, points=5)
+            foxes = add_points(foxes, points=5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Именованные аргументы в разном порядке, points + score.
+        - code: |
+            def add_points(score, points):
+                score += points
+                return score
+
+            owls = add_points(0, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(0, 5)
+            print(f"Совы:  {owls},   Лисы: {foxes}")
+          note: += к параметру, начальный счёт числом в первом вызове, лишние пробелы в выводе.
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            for answer in [("Совы", 10), ("Совы", 5), ("Лисы", 5)]:
+                team = answer[0]
+                points = answer[1]
+                if team == "Совы":
+                    owls = add_points(owls, points)
+                else:
+                    foxes = add_points(foxes, points)
+
+            print("Совы: ", owls, ", Лисы: ", foxes, sep="")
+          note: Ответы раунда в списке кортежей, команда выбирается через if, print с sep="".
+      wrongSolutions:
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(points):
+                owls = owls + points
+
+            add_points(10)
+            add_points(5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Ничего не исправлено — UnboundLocalError.
+          expectMistake: unbound
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(points):
+                global owls
+                owls = owls + points
+
+            add_points(10)
+            add_points(5)
+            foxes = foxes + 5
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Исправлено через global, Лисам очки прибавлены вручную.
+          expectMistake: global
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(points):
+                owls = 0
+                owls = owls + points
+
+            add_points(10)
+            add_points(5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: "«Исправленная» версия из истории: ошибки нет, но функция не получает счёт и ничего не возвращает."
+          expectMistake: one-param
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(points):
+                return owls + points
+
+            owls = add_points(10)
+            owls = add_points(5)
+            foxes = foxes + 5
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: >-
+            Функция читает внешнюю owls: табло верное, но функция не принимает счёт и годится
+            только для Сов — падают проверки вызова.
+          expectMistake: one-param
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                score = score + points
+
+            add_points(owls, 10)
+            add_points(owls, 5)
+            add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Счёт меняется только в параметре, return нет.
+          expectMistake: local-only
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            add_points(owls, 10)
+            add_points(owls, 5)
+            add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: return есть, но результаты вызовов не сохранены.
+          expectMistake: not-assigned
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Лисам очки не начислены.
+          expectMistake: foxes-missing
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls += add_points(owls, 10)
+            owls += add_points(owls, 5)
+            foxes += add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: += вместо = — старый счёт прибавляется дважды.
+          expectMistake: double-count
+        - code: |
+            def add_points(score, points):
+                return score + points
+
+            print("Совы: 15, Лисы: 5")
+          note: Функция верная, но табло записано готовыми числами.
+          expectMistake: hardcoded
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(foxes, 5)
+            print("Совы: 15, Лисы: 5")
+          note: Вызовы верные, но табло всё равно напечатано готовыми числами.
+          expectMistake: hardcoded
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                score = score + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: return нет, но результат присвоен — в owls попадает None, TypeError.
+          expectMistake: none-score
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                print(score + points)
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: print вместо return, результат присвоен — TypeError со словом NoneType.
+          expectMistake: none-score
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(owls, points):
+                owls = owls + points
+
+            add_points(owls, 10)
+            add_points(owls, 5)
+            add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: UnboundLocalError «починен» параметром owls, return нет.
+          expectMistake: local-only
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return owls + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Параметр score есть, но функция по привычке считает от внешней owls.
+          expectMistake: reads-global
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(score, 10)
+            owls = add_points(score, 5)
+            foxes = add_points(score, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: В вызов передано имя параметра score — снаружи его нет.
+          expectMistake: param-outside
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, points)
+            owls = add_points(owls, points)
+            foxes = add_points(foxes, points)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: В вызов передано имя параметра points.
+          expectMistake: param-outside
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, 10)
+            add_points(owls, 5)
+            foxes = add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: "Во втором вызове забыто owls = — на табло «Совы: 10»."
+          expectMistake: not-assigned
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Вызов для Лис есть, но результат не сохранён.
+          expectMistake: not-assigned
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = owls + add_points(owls, 10)
+            owls = owls + add_points(owls, 5)
+            foxes = foxes + add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: owls = owls + add_points(...) — тот же двойной счёт, что с +=.
+          expectMistake: double-count
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                score = score + points
+                print("внутри:", score)
+                return score
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(foxes, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Оставлен отладочный print, как в копилке, — лишние строки над табло.
+          expectMistake: debug-print
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = foxes + 5
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Совам очки через функцию, Лисам — вручную; табло верное.
+          expectMistake: team-by-hand
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            print(f"Совы: {owls}, Лисы: {add_points(foxes, 5)}")
+          note: Счёт Лис посчитан вызовом прямо в print, в foxes не сохранён.
+          expectMistake: team-by-hand
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            print(f"Совы: {add_points(owls, 15)}, Лисы: {add_points(foxes, 5)}")
+          note: Вызовы прямо в f-строке, 10 и 5 сложены в уме, owls и foxes не обновляются.
+          expectMistake: team-by-hand
+        - code: |
+            owls = 0
+            foxes = 0
+
+            def add_points(score, points):
+                return score + points
+
+            owls = add_points(owls, 10)
+            owls = add_points(owls, 5)
+            foxes = add_points(owls, 5)
+            print(f"Совы: {owls}, Лисы: {foxes}")
+          note: Копипаст — Лисам передан счёт Сов (общий разбор «другое число» точный).
+          expectMistake: null
+      mistakes:
+        - id: global
+          when:
+            failedRule: r-no-global
+          why: >-
+            С `global` функция тайком меняет внешнюю переменную и привязана к ней: для Лис
+            понадобилась бы вторая функция. Внешние переменные функции трогать не нужно — счёт
+            приходит в параметре, а новый уходит через `return`.
+          try: >-
+            Убери `global`. Пусть функция получает счёт и очки — `def add_points(score, points)` — и
+            возвращает `score + points`.
+        - id: unbound
+          when:
+            errorType: UnboundLocalError
+          why: >-
+            Внутри функции есть присваивание `owls = …`, поэтому для Python `owls` здесь —
+            локальная переменная во всей функции. А справа от `=` её нужно прочитать, хотя
+            значения у неё ещё нет. Внешнюю `owls` функция под этим именем не видит.
+          try: >-
+            Передавай текущий счёт в функцию параметром и возвращай новый:
+            `def add_points(score, points)` и `return score + points`.
+        - id: param-outside
+          when:
+            errorType: NameError
+            codeRegex: '(?<!def\s)\badd_points\([^)\n]*\b(?:score|points)\b'
+          why: >-
+            Имена из скобок `def` — параметры, то есть локальные переменные функции. Они
+            появляются только во время вызова, а снаружи функции, где стоит вызов, таких имён нет.
+          try: >-
+            В вызов передавай то, что есть в программе: счёт команды и число очков, например
+            `owls = add_points(owls, 10)`. При вызове эти значения и попадут в параметры.
+        - id: one-param
+          when:
+            errorIncludes: takes 1 positional argument but 2 were given
+          why: >-
+            Проверка вызывает `add_points(0, 10)` — с текущим счётом и очками, а функция принимает
+            одно значение. Без счёта в параметре функция не знает, чей счёт менять, — и годится
+            самое большее для одной команды.
+          try: Добавь параметр для текущего счёта — `def add_points(score, points)` — и верни `score + points`.
+          verify: 'Нажми «Проверить»: проверка «Первый верный ответ: 0 + 10» должна стать зелёной.'
+        - id: none-score
+          when:
+            errorIncludes: "'NoneType' and 'int'"
+          why: >-
+            В функции нет `return` с новым счётом, поэтому её вызов даёт `None`. После
+            `owls = add_points(owls, 10)` в `owls` лежит `None`, и следующий вызов прибавляет очки к
+            `None` — отсюда TypeError со словом NoneType.
+          try: >-
+            Допиши в конец функции `return` с новым счётом. Если там стоит `print`, замени его на
+            `return`.
+          verify: 'На табло должно получиться «Совы: 15, Лисы: 5».'
+        - id: local-only
+          when:
+            failedTest: c1
+            codeRegex: '(?<![\s\S])(?![\s\S]*\breturn\b)'
+          why: >-
+            Функция меняет счёт у себя внутри, но ничего не возвращает. Параметр — локальная
+            переменная, даже если он назван так же, как переменная снаружи: когда вызов
+            закончился, новое значение пропало, а счёт команды снаружи так и остался нулём.
+          try: >-
+            Верни новый счёт через `return`, а при вызове сохрани его:
+            `owls = add_points(owls, 10)`.
+        - id: reads-global
+          when:
+            failedTest: c1
+            codeRegex: '^def add_points\((?![^)]*\bowls\b)[^)]*\)[\s\S]*?^[ \t]+return\b[^\n]*\b(?:owls|foxes)\b'
+          why: >-
+            Функция получает счёт параметром, но считает от внешней переменной команды. Поэтому
+            `add_points(0, 10)` дал не 10: функция взяла счёт из программы, а не тот, что ей
+            передали. Это та самая тайная зависимость от чужих данных из теории.
+          try: >-
+            Считай от параметра: если он называется `score`, верни `score + points`.
+        - id: not-assigned
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]*add_points\('
+          why: >-
+            Функция возвращает новый счёт, но результат вызова, который стоит отдельной строкой,
+            никуда не сохранён и пропадает — счёт команды снаружи не меняется.
+          try: >-
+            Присваивай результат каждого вызова той же переменной: `owls = add_points(owls, 10)` —
+            и так же в остальных вызовах.
+          verify: 'На табло должно получиться «Совы: 15, Лисы: 5».'
+        - id: double-count
+          when:
+            failedTest: t1
+            codeRegex: '\+=\s*add_points\(|\b(\w+)\s*=\s*\1\s*\+\s*add_points\('
+          why: >-
+            `add_points` уже возвращает новый счёт целиком — старый плюс очки. А `+=` (или
+            `owls = owls + add_points(...)`) прибавляет этот счёт к старому ещё раз, и очки
+            считаются дважды.
+          try: 'Присваивай результат обычным `=`: `owls = add_points(owls, 10)`.'
+          verify: 'На табло должно получиться «Совы: 15, Лисы: 5».'
+        - id: debug-print
+          when:
+            failedTest: t1
+            codeRegex: '^def add_points\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+print\('
+          why: >-
+            Внутри `add_points` остался `print`: при каждом вызове он печатает лишнюю строку, и
+            над табло появляются числа. Такой `print`, как в копилке, нужен, только чтобы
+            заглянуть внутрь вызова, — в готовой программе его убирают.
+          try: >-
+            Убери `print` из функции: пусть она только возвращает новый счёт, а табло печатает
+            последняя строка программы.
+          verify: 'На экране должна остаться одна строка: «Совы: 15, Лисы: 5».'
+        - id: foxes-missing
+          when:
+            outputEquals: "Совы: 15, Лисы: 0"
+          why: >-
+            Счёт Сов верный, а у Лис по-прежнему 0: для них нет вызова `add_points` или его
+            результат не сохранён в `foxes`.
+          try: 'Начисли Лисам 5 очков той же функцией, передав ей их счёт: `foxes = add_points(foxes, 5)`.'
+          verify: 'На табло должно получиться «Совы: 15, Лисы: 5».'
+        - id: hardcoded
+          when:
+            failedRule: r-use-function
+            codeRegex: '^print\(\s*f?["''][^\n]*\d'
+          why: >-
+            Табло записано готовыми числами. Для этого раунда они верны, но после следующего
+            ответа табло придётся переписывать вручную.
+          try: >-
+            Начисляй очки вызовами: `owls = add_points(owls, 10)` и так далее, а печатай
+            переменные `owls` и `foxes`.
+        - id: team-by-hand
+          when:
+            failedRule: r-both-teams
+          why: >-
+            Счёт одной из команд не обновлён результатом `add_points`: очки прибавлены вручную
+            или вызов стоит прямо в `print`, а в переменной счёт так и не записан. По условию счёт хранится в `owls` и `foxes`, и весь смысл новой функции — в
+            том, что она считает очки любой команды.
+          try: >-
+            Присвой обеим переменным результат вызова: `owls = add_points(owls, 10)`,
+            `foxes = add_points(foxes, 5)`. А в `print` передавай уже `owls` и `foxes`.
+      afterPass: >-
+        Одна функция обслуживает любую команду — хоть третью: `bears = add_points(bears, 10)`. И
+        проверять её легко: `add_points(15, 5)` всегда даёт 20, что бы ни происходило в остальной
+        программе.
+      skills: [scope, functions]
+
+  - id: lists
+    type: theory
+    title: "Особый случай: списки"
+    body: |-
+      Из урока 4.2 ты знаешь: `today = plan` не копирует список, а даёт тому же списку второе имя.
+      С параметрами так же: функция получает **тот же самый список**, а не копию. Поэтому
+      `append` внутри функции меняет список и снаружи. А если присвоить параметру новый список,
+      например `items = []`, имя `items` внутри функции просто начнёт означать другой список —
+      тот, что снаружи, не изменится.
+
+      **Значение по умолчанию** вычисляется один раз — когда Python выполняет строку `def`, а не
+      при каждом вызове. С числами и строками это незаметно. А список по умолчанию — один на все
+      вызовы, и он копит данные:
+
+      ```python
+      def add_mark(mark, marks=[]):
+          marks.append(mark)
+          return marks
+
+      print(add_mark(5))   # [5]
+      print(add_mark(4))   # [5, 4] — пятёрка из прошлого вызова!
+      ```
+
+      Поэтому список по умолчанию не ставят. Ставят `None` — особое значение «ничего» из урока
+      5.3, — а новый список создают внутри функции:
+
+      ```python
+      def add_mark(mark, marks=None):
+          if marks is None:
+              marks = []
+          marks.append(mark)
+          return marks
+      ```
+
+      `marks is None` читается как «marks — это None», то есть «список не передали». `is`
+      проверяет, что это *тот же самый* объект, — как «тот же самый список» выше. `None` в
+      программе один, поэтому его сравнивают через `is`. Словарь и множество по умолчанию тоже не
+      ставят — по той же причине, что и список.
+    simpler: >-
+      Список, переданный в функцию, — не копия, а тот же самый список: функция может дописать в
+      него, и это будет видно снаружи. А список «по умолчанию» создаётся один раз на всю
+      программу и копит всё, что в него положили. Поэтому по умолчанию ставят `None`, а новый
+      список создают внутри функции, если список не передали.
+    coach: >-
+      Меняешь список внутри функции — меняешь его и снаружи. Если так и задумано, пусть это будет
+      видно из имени: `add_guest`, а не `make_list`.
+
+  - id: same-list
+    type: predict
+    title: Пригласили и отменили
+    prompt: >-
+      Одна функция добавляет гостя в список, другая пытается список очистить. Как думаешь, что
+      выведет программа?
+    code: |-
+      def invite(guests, name):
+          guests.append(name)
+
+      def cancel_all(guests):
+          guests = []
+
+      party = ["Аня"]
+      invite(party, "Борис")
+      cancel_all(party)
+      print(party)
+    options:
+      - "['Аня']"
+      - "['Аня', 'Борис']"
+      - "[]"
+    answer: "['Аня', 'Борис']"
+    explanation: >-
+      `invite` получила тот же список, что лежит в `party`, и `append` дописал Бориса прямо в
+      него. А в `cancel_all` строка `guests = []` только изменила, что означает локальное имя
+      `guests`: теперь это новый пустой список. Список в `party` она не тронула. Нужен пустой
+      список снаружи — присвой его снаружи: `party = []`.
+    coach: "`append` меняет сам список, а `=` меняет только то, что означает имя. В этом вся разница."
+
+  - id: practice-basket
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m5-l4-e3
+      kind: fix
+      title: Корзина с сюрпризом
+      statement: |-
+        В интернет-магазине функция `add_to_basket(item, basket)` кладёт товар в корзину и
+        возвращает корзину. Если корзину не передали, функция должна завести новую. Но Борис
+        открыл сайт и увидел в своей корзине хлеб Анны.
+
+        Исправь функцию:
+
+        - если корзину не передали — каждый раз создаётся новая, пустая;
+        - если корзину передали — товар добавляется в неё саму, и функция возвращает эту корзину.
+          Пустая корзина, которую передали, — тоже переданная корзина.
+
+        Вызовы в программе не меняй. Вывод должен быть таким:
+
+        ```text
+        Анна: ['хлеб']
+        Борис: ['молоко']
+        ```
+      input: Ввода нет — товары передаются в вызовах функции.
+      output: Две строки — корзина Анны и корзина Бориса, у каждого только свой товар.
+      constraints:
+        - Вызовы `add_to_basket` в программе не меняй — исправлять нужно функцию.
+        - Корзину, которую передали в функцию, не заменяй копией — товар добавляется в неё.
+      starterCode: |
+        def add_to_basket(item, basket=[]):
+            basket.append(item)
+            return basket
+
+        anna = add_to_basket("хлеб")
+        boris = add_to_basket("молоко")
+        print(f"Анна: {anna}")
+        print(f"Борис: {boris}")
+      tests:
+        - id: t1
+          kind: io
+          title: Корзины Анны и Бориса
+          example: true
+          expected: |-
+            Анна: ['хлеб']
+            Борис: ['молоко']
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: assert
+          title: Корзины разных покупателей не смешиваются
+          example: true
+          code: |-
+            first = add_to_basket("яблоки")
+            second = add_to_basket("груши")
+            assert first == ["яблоки"]
+            assert second == ["груши"]
+          message: >-
+            Два вызова без корзины должны дать две разные корзины: `add_to_basket("яблоки")` →
+            `['яблоки']`, затем `add_to_basket("груши")` → `['груши']`.
+        - id: t3
+          kind: assert
+          title: "Граничный случай: корзину передали"
+          edge: true
+          code: |-
+            mine = ["сыр"]
+            add_to_basket("мёд", mine)
+            assert mine == ["сыр", "мёд"]
+          message: >-
+            Если корзину передали, товар добавляется в неё саму: после
+            `add_to_basket("мёд", mine)` в `mine` лежат `['сыр', 'мёд']`.
+        - id: t4
+          kind: assert
+          title: "Граничный случай: функция возвращает переданную корзину"
+          edge: true
+          code: |-
+            mine = ["сыр"]
+            result = add_to_basket("мёд", mine)
+            assert result == ["сыр", "мёд"]
+          message: >-
+            Если корзину передали, функция возвращает эту корзину: `add_to_basket("мёд", ["сыр"])`
+            → `['сыр', 'мёд']`.
+        - id: t5
+          kind: call
+          title: "Граничный случай: третий покупатель"
+          edge: true
+          call: add_to_basket("чай")
+          expected: "['чай']"
+        - id: t6
+          kind: assert
+          title: "Граничный случай: передали пустую корзину"
+          edge: true
+          code: |-
+            empty = []
+            result = add_to_basket("мёд", empty)
+            assert empty == ["мёд"]
+            assert result == ["мёд"]
+          message: >-
+            Пустая корзина — тоже переданная корзина: после `add_to_basket("мёд", empty)` в
+            `empty` должен лежать `['мёд']`, и функция возвращает эту корзину.
+      criteria:
+        - "Программа выводит `Анна: ['хлеб']` и `Борис: ['молоко']` — у каждого своя корзина."
+        - Каждый вызов без корзины получает новую пустую корзину, сколько бы вызовов ни было до него.
+        - Переданная корзина — даже пустая — пополняется, и функция возвращает её.
+      hints:
+        - >-
+          Когда создаётся список из `basket=[]` — при каждом вызове или один раз, когда Python
+          выполняет строку `def`? Сколько на самом деле корзин у Анны и Бориса?
+        - |-
+          Тот же приём на другом примере — журнал сообщений:
+          ```python
+          def log(message, lines=None):
+              if lines is None:
+                  lines = []
+              lines.append(message)
+              return lines
+          ```
+          Вызов `log("старт")` каждый раз получает новый журнал, а `log("стоп", my_lines)`
+          дописывает в переданный.
+        - |-
+          Каркас функции:
+          ```text
+          def add_to_basket(item, basket=...):   # не список!
+              если basket — это None:
+                  basket = новый пустой список
+              добавить item в basket
+              вернуть basket
+          ```
+      solution:
+        code: |
+          def add_to_basket(item, basket=None):
+              if basket is None:
+                  basket = []
+              basket.append(item)
+              return basket
+
+          anna = add_to_basket("хлеб")
+          boris = add_to_basket("молоко")
+          print(f"Анна: {anna}")
+          print(f"Борис: {boris}")
+        explanation: >-
+          Значение по умолчанию теперь `None`, а `None` данные не копит. Каждый вызов без корзины
+          проходит через `if` и получает свой новый список — у Анны и Бориса разные корзины. Если
+          корзину передали, условие `basket is None` ложно, и товар добавляется прямо в
+          переданный список: он пополняется и снаружи, как список гостей в прогнозе.
+      altSolutions:
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket == None:
+                    basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Сравнение через == вместо is — работает так же, хотя для None принято is.
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    return [item]
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Без корзины функция сразу возвращает новый список из одного товара.
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    new_basket = []
+                    new_basket.append(item)
+                    return new_basket
+                else:
+                    basket.append(item)
+                    return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Две ветки if/else, у каждой свой return.
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = [item]
+                else:
+                    basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Новая корзина сразу с товаром, переданная пополняется в else, один return.
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = []
+                basket += [item]
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: basket += [item] меняет сам список (в отличие от basket = basket + [item]).
+      wrongSolutions:
+        - code: |
+            def add_to_basket(item, basket=[]):
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Ничего не исправлено — одна корзина на всех.
+          expectMistake: shared-default
+        - code: |
+            def add_to_basket(item, basket=None):
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: None по умолчанию, но без проверки — AttributeError.
+          expectMistake: none-no-check
+        - code: |
+            def add_to_basket(item, basket=[]):
+                if basket is None:
+                    basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Проверка is None есть, а по умолчанию всё ещё список.
+          expectMistake: default-still-list
+        - code: |
+            def add_to_basket(item, basket=[]):
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб", [])
+            boris = add_to_basket("молоко", [])
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Заплатка в вызовах — функция осталась опасной.
+          expectMistake: patched-calls
+        - code: |
+            basket = []
+
+            def add_to_basket(item):
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Общий список вынесен наружу — корзина по-прежнему одна на всех.
+          expectMistake: shared-list
+        - code: |
+            def add_to_basket(item, basket=[]):
+                basket = basket.copy()
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Копия спасает от общей корзины, но переданная корзина не пополняется.
+          expectMistake: copy-instead
+        - code: |
+            def add_to_basket(item, basket=None):
+                basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Новая корзина создаётся всегда, даже когда корзину передали.
+          expectMistake: always-new
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = []
+                basket.append(item)
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Потерян return — функция возвращает None.
+          expectMistake: lost-return
+        - code: |
+            def add_to_basket(item, basket=[]):
+                if basket == []:
+                    basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: «Если корзина пустая — новая», basket=[] остался; переданная пустая корзина подменяется.
+          expectMistake: empty-check
+        - code: |
+            def add_to_basket(item, basket=[]):
+                if len(basket) == 0:
+                    basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: То же через len — переданная пустая корзина подменяется новой.
+          expectMistake: empty-check
+        - code: |
+            def add_to_basket(item, basket=None):
+                if not basket:
+                    basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: if not basket — пустая переданная корзина тоже «не передана».
+          expectMistake: empty-check
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = []
+                    basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: append с отступом попал внутрь if — переданная корзина не пополняется.
+          expectMistake: append-inside-if
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = []
+                    basket.append(item)
+                    return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: append и return уехали внутрь if.
+          expectMistake: append-inside-if
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = []
+                    basket.append(item)
+                    return basket
+                basket.append(item)
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: return только в ветке «корзину не передали» — для переданной корзины вызов даёт None.
+          expectMistake: branch-no-return
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = []
+                basket = basket + [item]
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: basket + [item] — новый список вместо переданного.
+          expectMistake: copy-instead
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket == []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Опечатка == вместо = — список не создаётся, AttributeError.
+          expectMistake: compare-not-assign
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket == []:
+                    basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Проверка == [] вместо is None — при None падает append.
+          expectMistake: none-no-check
+        - code: |
+            def add_to_basket(item, basket=None):
+                if basket is None:
+                    basket = []
+                return basket.append(item)
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: return basket.append(item) — append возвращает None.
+          expectMistake: return-append
+        - code: |
+            def add_to_basket(item, basket=[]):
+                basket.clear()
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Общий список очищается в начале — у обоих «молоко».
+          expectMistake: shared-default
+        - code: |
+            def add_to_basket(item, basket=[]):
+                basket = []
+                basket.append(item)
+                return basket
+
+            anna = add_to_basket("хлеб")
+            boris = add_to_basket("молоко")
+            print(f"Анна: {anna}")
+            print(f"Борис: {boris}")
+          note: Новая корзина в первой строке функции — переданная корзина не пополняется.
+          expectMistake: always-new
+      mistakes:
+        - id: compare-not-assign
+          when:
+            errorIncludes: "'NoneType' object has no attribute 'append'"
+            codeRegex: '^[ \t]+\w+[ \t]*==[ \t]*\['
+          why: >-
+            Проверка на `None` есть, но в строке под ней стоит `==` — это сравнение, а не
+            присваивание. Новый список не создаётся, `basket` остаётся `None`, а у `None` нет
+            метода `append`.
+          try: 'Поставь одно `=`: `basket = []`.'
+          verify: Ошибка AttributeError должна исчезнуть, а у Анны и Бориса появятся свои корзины.
+        - id: none-no-check
+          when:
+            errorIncludes: "'NoneType' object has no attribute 'append'"
+          why: >-
+            Когда корзину не передали, `basket` равна `None`, а `None` — не список, у него нет
+            метода `append`. Прежде чем класть товар, нужно проверить, передали ли корзину, и если
+            нет — создать новый список.
+          try: 'До строки с `append` проверь: `if basket is None:` — и тогда создай пустой список `basket = []`.'
+          verify: Ошибка AttributeError должна исчезнуть, а у Анны и Бориса появятся свои корзины.
+        - id: return-append
+          when:
+            outputIncludes: ": None"
+            codeRegex: '\breturn\s+\w+\.append\('
+          why: >-
+            `append` меняет список, но сам ничего не возвращает — его результат `None`. Поэтому
+            `return basket.append(item)` отдаёт `None`, хотя товар в корзину попал.
+          try: 'Раздели на две строки: сначала `basket.append(item)`, потом `return basket`.'
+          verify: "Вместо `None` в выводе должны появиться списки: `Анна: ['хлеб']`."
+        - id: lost-return
+          when:
+            outputIncludes: ": None"
+          why: >-
+            В `anna` и `boris` попал `None`: функция кладёт товар в корзину, но саму корзину не
+            возвращает.
+          try: Верни корзину в конце функции — `return basket`.
+          verify: "Вместо `None` в выводе должны появиться списки: `Анна: ['хлеб']`."
+        - id: default-still-list
+          when:
+            failedTest: t2
+            codeRegex: '=\s*\[\s*\]\s*\)[\s\S]*(?:\bis|==)\s*None'
+          why: >-
+            Проверка на `None` есть, но значение по умолчанию всё ещё `[]`. Когда корзину не
+            передали, `basket` — это общий список из строки `def`, а не `None`, поэтому проверка
+            не срабатывает никогда.
+          try: 'Поменяй значение по умолчанию: `basket=None`.'
+        - id: patched-calls
+          when:
+            failedTest: t2
+            codeRegex: '^[ \t]*\w+[ \t]*=[ \t]*add_to_basket\([^)\n]*,[ \t]*\[[ \t]*\][ \t]*\)'
+          why: >-
+            С пустыми списками в вызовах Анна и Борис получили свои корзины, но функция осталась
+            прежней: следующий покупатель без корзины снова получит общий список. Чинить нужно
+            функцию, а не вызовы.
+          try: >-
+            Верни вызовы как были, поставь в функции значение по умолчанию `None`, а новый список
+            создавай внутри функции.
+        - id: shared-default
+          when:
+            failedTest: t2
+            codeRegex: '=\s*\[\s*\]\s*\)'
+          why: >-
+            Список из `basket=[]` создаётся один раз — когда Python выполняет строку `def`. Все
+            вызовы без корзины получают этот же список: у Анны и Бориса одна корзина на двоих, и
+            всё, что с ней делает один вызов, видно в корзине другого.
+          try: >-
+            Поставь по умолчанию `basket=None`, а в начале функции: если `basket is None`, создай
+            новый пустой список.
+        - id: shared-list
+          when:
+            failedTest: t2
+            outputIncludes: "Анна: ['хлеб', 'молоко']"
+          why: >-
+            Все покупатели получают один и тот же список, поэтому товары смешиваются. Список,
+            созданный один раз — снаружи функции или в значении по умолчанию, — общий для всех
+            вызовов.
+          try: >-
+            Корзина — параметр функции со значением по умолчанию `None`. Новую корзину создавай
+            внутри функции, когда `basket is None`.
+        - id: copy-instead
+          when:
+            failedTest: t3
+            codeRegex: '\.copy\(\)|\[\s*:\s*\]|\blist\(\s*\w+\s*\)|=\s*\w+\s*\+\s*\['
+          why: >-
+            Копия (или `basket + [item]` — это тоже новый список) спасает от общей корзины, но
+            теперь товар попадает в новый список, а переданная корзина не пополняется: после
+            вызова в `mine` мёда нет.
+          try: >-
+            Не копируй. Новый список нужен, только когда корзину не передали: поставь по
+            умолчанию `None` и создавай список, если `basket is None`. Переданную корзину пополняй
+            напрямую — `basket.append(item)`.
+        - id: append-inside-if
+          when:
+            failedTest: t3
+            codeRegex: '^[ \t]*if\b[^\n]*:[ \t]*\n([ \t]+)\w+[ \t]*=[ \t]*\[[^\n]*\n\1\w+\.append\('
+          why: >-
+            Строка с `append` стоит внутри `if` — у неё такой же отступ, как у `basket = []`.
+            Поэтому товар добавляется, только когда корзину не передали, а в переданную корзину он
+            не попадает.
+          try: >-
+            Сдвинь `basket.append(item)` влево, на уровень `if`: товар нужно добавить в любом
+            случае — и в новую корзину, и в переданную. `return basket` тоже пиши после `if`.
+        - id: always-new
+          when:
+            failedTest: t3
+            codeRegex: 'def add_to_basket\([^)]*\):[ \t]*\n[ \t]+\w+[ \t]*=[ \t]*\['
+          why: >-
+            Функция создаёт новую корзину всегда — даже когда корзину передали. Товар уходит в
+            новый список, а переданная корзина остаётся без изменений.
+          try: 'Создавай пустой список, только если корзину не передали: `if basket is None:`.'
+        - id: branch-no-return
+          when:
+            failedTest: t4
+          why: >-
+            Переданная корзина пополняется, но функция её не возвращает — вызов отдаёт `None`.
+            Так бывает, когда `return` стоит только внутри `if`, в ветке «корзину не передали».
+          try: >-
+            Поставь `return basket` в конце функции, после `if`, — тогда корзина вернётся в обоих
+            случаях.
+        - id: empty-check
+          when:
+            failedTest: t6
+            codeRegex: '\bnot\s+\w+\s*:|==\s*\[\s*\]|\blen\(\s*\w+\s*\)\s*(?:==|<)'
+          why: >-
+            Условие проверяет, пустая ли корзина, а не передали ли её. Но покупатель может
+            передать и пустую корзину — тогда функция подменяет её новой, и товар в переданную
+            корзину не попадает. `if not basket` проверяет то же самое: для `if` и `None`, и
+            пустой список считаются «ложью».
+          try: 'Проверяй именно «корзину не передали»: `basket=None` в строке `def` и `if basket is None:`.'
+      afterPass: >-
+        Теперь у каждого покупателя своя корзина, а переданная корзина пополняется. Запомни
+        правило: список, словарь или множество по умолчанию не ставят — ставят `None` и создают
+        новый внутри функции.
+      skills: [scope, lists]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - Переменные, созданные внутри функции, и её параметры — локальные. Они живут только во время вызова и снаружи не видны.
+      - Присваивание внутри функции (и `+=` тоже) создаёт свою переменную и не меняет одноимённую снаружи. Прочитать её до присваивания нельзя — UnboundLocalError.
+      - "Данные — через параметры, результат — через `return`, снаружи — присваивание: `x = f(x)`. `global` для этого не нужен."
+      - Список, переданный в функцию, — тот же самый список. Список по умолчанию создаётся один раз, поэтому по умолчанию ставят `None`.
+    question: >-
+      Значение по умолчанию вычисляется один раз — и у `fragile=False` из урока 5.2, и у
+      `marks=[]`. Почему же `marks=[]` копит оценки от вызова к вызову, а `fragile` никаких следов
+      прошлых вызовов не хранит?
+    answer: >-
+      `False` функция не меняет, она его только читает. Даже `fragile = True` внутри функции лишь
+      дало бы локальному имени новое значение. А `marks.append(mark)` меняет сам список — тот
+      единственный, что создан в строке `def`, — и следующий вызов без списка получает его уже с
+      оценками. Поэтому для списка по умолчанию ставят `None`, а новый список создают внутри
+      функции.

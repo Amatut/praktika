@@ -1,0 +1,3307 @@
+id: m9-l5
+module: m9
+number: "9.5"
+title: "Регрессия: тест, который помнит ошибку"
+objective: >-
+  Получив сообщение об ошибке, сначала написать тест, который её воспроизводит и падает, затем
+  исправить код и оставить тест в наборе, чтобы ошибка не вернулась.
+minutes: [25, 30]
+prerequisites: [m9-l4, m6-l2]
+skills: [regression-tests, debugging, edge-cases]
+environment: python
+
+story:
+  title: "3:5 вместо 3:05"
+  fictional: true
+  text: >-
+    Лера делает музыкальный плеер. Слушатель написал в отзыве, что трек длиной три минуты пять
+    секунд показывается как «3:5». Прежде чем чинить, Лера записала этот пример в тест и
+    запустила его: тест упал, значит, ошибка поймана. Потом она исправила функцию, и тест прошёл.
+    Через полгода коллега «упростил» вывод времени, и тот же тест упал раньше, чем новая версия
+    дошла до слушателей.
+
+why: >-
+  Исправленные ошибки любят возвращаться: при переделке кода, при «упрощении», при слиянии
+  веток. Тест, написанный на конкретную ошибку, не даст ей вернуться незаметно. Например,
+  проверка `format_time(185) == "3:05"` упадёт, как только кто-то снова потеряет ноль.
+
+usedIn: >-
+  Во многих командах действует правило «исправил ошибку — добавь тест». К сообщению об ошибке
+  прикладывают пример, на котором она повторяется, а исправление и тест сохраняют одним коммитом.
+  Тестировщики превращают найденные ошибки в автотесты, чтобы проверять их при каждой новой
+  версии программы.
+
+steps:
+  - id: regression
+    type: theory
+    title: Регрессия и тест, который её помнит
+    body: |-
+      **Регрессия** — когда исправленная ошибка появляется снова или новое изменение ломает то,
+      что раньше работало. Код переделывают, «упрощают», сливают ветки — и старая ошибка тихо
+      возвращается.
+
+      **Регрессионный тест** — тест на конкретную найденную ошибку. Его оставляют в наборе
+      навсегда, а имя или комментарий рядом объясняет, что это за ошибка:
+      `test_seconds_below_ten` — «секунд меньше десяти».
+
+      **Порядок «красный → зелёный».** Красный тест падает, зелёный проходит — такими цветами их
+      показывают pytest и редакторы кода. Пришло сообщение об ошибке:
+
+      1. Воспроизведи ошибку на маленьком примере (урок 6.2): трек в 185 секунд показывается как
+         «3:5».
+      2. Запиши пример в тест и запусти. Тест **должен упасть**, и именно на этой ошибке: в
+         сообщении AssertionError видно `3:5`, как в отзыве. Тогда ясно, что тест ловит её, а не
+         что-то другое.
+      3. Исправь код.
+      4. Запусти тест снова — он зелёный.
+      5. Запусти все тесты: исправление могло сломать что-то другое.
+      6. Сохрани исправление и тест одним коммитом (урок 8.4).
+
+      **Почему тест пишут до исправления.** Если написать его после, неизвестно, упал бы он на
+      старом коде. Может быть, он проверяет не то, и ошибка вернётся незаметно.
+
+      **Ожидание — из требований, а не из вывода.** Когда тест падает, хочется переписать
+      ожидание под то, что выдала программа. Тест позеленеет, но ошибку он узаконит: теперь он
+      сторожит неверное поведение.
+
+      **Как это проверяет тренажёр.** Старую версию функции тренажёр хранит у себя. Он
+      проверит, что твой регрессионный тест на ней падает, а на исправленной — проходит. Пока
+      тест красный, «Запустить» останавливает программу с AssertionError: на шаге 2 так и
+      должно быть. Если на этом шаге нажать «Проверить», красными будут все проверки:
+      программа останавливается на твоём тесте раньше, чем тренажёр до них доходит.
+      «Проверить» засчитает задание, когда всё станет зелёным.
+    simpler: >-
+      Сначала поймай ошибку тестом — он красный. Потом почини код — тест зелёный. И оставь тест
+      в наборе: он сторожит, чтобы ошибка не вернулась. Ожидание в тесте бери из требований, а не
+      из того, что вывела программа.
+    coach: >-
+      Красный тест до исправления — не неудача, а доказательство, что ты поймал именно ту
+      ошибку.
+
+  - id: time-test
+    type: example
+    title: Тест на ошибку «3:5»
+    body: |-
+      Раньше функция заканчивалась строкой `return f"{minutes}:{rest}"`, и трек в 185 секунд
+      показывался как `3:5`. Лера сначала написала `test_seconds_below_ten`, запустила и увидела
+      AssertionError. Только после этого она исправила функцию. Ниже код после исправления.
+      Нажми «Запустить».
+    code: |-
+      def format_time(seconds):
+          minutes = seconds // 60
+          rest = seconds % 60
+          if rest < 10:
+              return f"{minutes}:0{rest}"
+          return f"{minutes}:{rest}"
+
+
+      # Ошибка из отзыва: трек длиной 185 секунд показывался как «3:5»
+      def test_seconds_below_ten():
+          assert format_time(185) == "3:05", f"получили {format_time(185)}"
+
+
+      def test_regular_time():
+          assert format_time(250) == "4:10"
+
+
+      def test_whole_minutes():
+          assert format_time(120) == "2:00"
+
+
+      if __name__ == "__main__":
+          test_seconds_below_ten()
+          test_regular_time()
+          test_whole_minutes()
+          print("Все тесты прошли")
+    notes:
+      - line: 4
+        text: Исправление. Если секунд меньше десяти, перед ними дописывается ноль.
+      - line: 9
+        text: >-
+          Комментарий говорит, какую ошибку сторожит тест. Через полгода никто не вспомнит, зачем
+          он нужен, а комментарий напомнит.
+      - line: 11
+        text: >-
+          Ожидание `"3:05"` взято из требования: так время должно выглядеть. Старая версия
+          возвращала `"3:5"`, но подгонять ожидание под неё никто не стал. Сообщение после
+          запятой показывает, что вернула функция: на красном шаге там было `получили 3:5`.
+      - line: 19
+        text: >-
+          Этот тест Лера добавила вместе с исправлением: проверяя код, она заметила, что ноль
+          терялся и у целых минут — выходило `2:0`.
+      - line: 22
+        text: >-
+          Блок запуска из урока 9.3 вызывает тесты, когда файл запускают. pytest вызвал бы их
+          сам.
+    tryIt: >-
+      Замени строки 4–6 одной старой строкой `return f"{minutes}:{rest}"` и запусти. Какой тест
+      упал первым и что написано в сообщении? Там `получили 3:5` — та самая ошибка из отзыва.
+      Это и есть регрессионный тест: он сторожит ошибку «3:5». Потом верни исправление.
+    coach: >-
+      Регрессионный тест ничем не отличается от обычного. Особенный у него только повод: он
+      появился из настоящей ошибки.
+
+  - id: fitted-test
+    type: predict
+    title: Сколько заплатят трое?
+    prompt: >-
+      Функция делит счёт за ужин между друзьями в целых рублях. Счёт — 100 рублей, друзей трое.
+      Как думаешь, что напечатает программа?
+    code: |-
+      def split_bill(total, people):
+          share = total // people
+          result = []
+          for i in range(people):
+              result.append(share)
+          return result
+
+
+      def test_three_people():
+          assert split_bill(100, 3) == [33, 33, 33]
+
+
+      test_three_people()
+      print("Тест прошёл, сумма долей:", sum(split_bill(100, 3)))
+    options:
+      - "Тест прошёл, сумма долей: 99"
+      - "Тест прошёл, сумма долей: 100"
+      - "AssertionError — тест упадёт"
+    answer: "Тест прошёл, сумма долей: 99"
+    explanation: >-
+      Функция отдаёт каждому по `100 // 3`, то есть по 33 рубля, а остаток — 1 рубль — теряется.
+      Тест ждёт ровно `[33, 33, 33]`, поэтому он зелёный. Но сумма долей — 99, а не 100: за ужин
+      недоплатят рубль. Такое ожидание списали с вывода программы, и тест теперь сторожит ошибку,
+      а не требование. Зелёный тест доказывает только одно: код совпадает с ожиданием. Верно ли
+      само ожидание, решают требования.
+    coach: >-
+      Прежде чем вписать число в ожидание, спроси себя: откуда я его взял — из требований или
+      из вывода программы?
+
+  - id: practice-section
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m9-l5-e1
+      kind: repeat
+      title: Сначала красный тест
+      statement: |-
+        Спортивная секция берёт детей **от 7 до 12 лет включительно**. Функция `can_join`
+        решает, можно ли записать ребёнка. Родитель пишет в поддержку: «Сыну 12 лет, а программа
+        не записывает».
+
+        Что сделать:
+
+        1. Напиши регрессионный тест — отдельную функцию `test_…` со случаем из сообщения.
+           Вызови его в блоке `if __name__ == "__main__":` **перед** `print` и нажми
+           «Запустить». Тест должен упасть с AssertionError, и именно на случае из сообщения:
+           это красный шаг, ошибка поймана.
+        2. Исправь условие в функции и запусти снова. Должно появиться `Все тесты прошли`.
+
+        Тренажёр проверит, что твой тест падает на старой версии функции и проходит на
+        исправленной.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Старый тест `test_regular_ages` не удаляй и не меняй.
+        - Ожидание в регрессионном тесте бери из правила секции, а не из вывода программы.
+      starterCode: |
+        def can_join(age):
+            # В секцию берут детей от 7 до 12 лет включительно
+            return age >= 7 and age < 12
+
+
+        def test_regular_ages():
+            assert can_join(9), "9 лет — можно"
+            assert not can_join(5), "5 лет — ещё рано"
+
+
+        # Сообщение от родителя: «Сыну 12 лет, а программа не записывает».
+        # 1) Напиши здесь регрессионный тест с этим случаем и вызови его ниже.
+        #    Запусти: тест должен упасть.
+        # 2) Исправь функцию и запусти снова.
+
+
+        if __name__ == "__main__":
+            test_regular_ages()
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            ignoreCase: true
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-catches
+          kind: assert
+          title: Регрессионный тест падает на старой версии
+          example: true
+          code: |
+            def _old(age):
+                return age >= 7 and age < 12
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("can_join")
+            globals()["can_join"] = _old
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["can_join"] = _saved
+            assert _caught
+          message: >-
+            Хотя бы один твой тест падает на старой версии `can_join` — той, что не пускает
+            двенадцатилетних.
+        - id: t-c12
+          kind: call
+          title: 12 лет — можно (случай из сообщения)
+          example: true
+          call: can_join(12)
+          expected: "True"
+        - id: t-c7
+          kind: call
+          title: 7 лет — можно
+          example: true
+          call: can_join(7)
+          expected: "True"
+        - id: t-c13
+          kind: call
+          title: 13 лет — уже нельзя
+          edge: true
+          call: can_join(13)
+          expected: "False"
+        - id: t-c6
+          kind: call
+          title: 6 лет — ещё нельзя
+          edge: true
+          call: can_join(6)
+          expected: "False"
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на исправленной функции
+          code: |
+            def _reference(age):
+                return age >= 7 and age <= 12
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("can_join")
+            globals()["can_join"] = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                globals()["can_join"] = _saved
+          message: >-
+            Один из твоих тестов падает на верной функции. Значит, ожидание в нём не совпадает с
+            правилом секции: от 7 до 12 лет включительно.
+        - id: t-kept
+          kind: assert
+          title: Старый тест по-прежнему сторожит нижнюю границу
+          code: |
+            def _mutant(age):
+                return age <= 12
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("can_join")
+            globals()["can_join"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["can_join"] = _saved
+            assert _caught
+          message: >-
+            Тесты не заметили версию функции, которая пускает детей младше 7 лет. Раньше её ловил
+            `test_regular_ages`.
+        - id: t-called
+          kind: assert
+          title: Каждый тест вызывается при запуске
+          code: |
+            import ast as _ast
+
+            with open(__file__, encoding="utf-8") as _file:
+                _tree = _ast.parse(_file.read())
+            _defined = [node.name for node in _tree.body
+                        if isinstance(node, _ast.FunctionDef) and node.name.startswith("test_")]
+            # Тест засчитан как вызванный, если его имя стоит в вызове test_…()
+            # или в списке/кортеже (вариант «for test in [...]: test()»).
+            _used = []
+            for _node in _ast.walk(_tree):
+                if isinstance(_node, _ast.Call) and isinstance(_node.func, _ast.Name):
+                    _used.append(_node.func.id)
+                if isinstance(_node, (_ast.List, _ast.Tuple)):
+                    _used += [_item.id for _item in _node.elts if isinstance(_item, _ast.Name)]
+            assert all(name in _used for name in _defined)
+          message: >-
+            Каждая функция `test_…` вызывается при запуске программы — например, в блоке
+            `if __name__ == "__main__":`.
+      criteria:
+        - Есть отдельный тест со случаем из сообщения родителя (12 лет), его имя или комментарий говорит, что за ошибка.
+        - Этот тест падает на старой версии функции и проходит на исправленной.
+        - Функция пускает детей от 7 до 12 лет включительно, старый тест не тронут.
+        - Все тесты вызываются в блоке запуска, программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          Какой возраст из сообщения родителя должен стать проверкой? Что по правилу секции
+          функция обязана ответить для него — «можно» или «нельзя»?
+        - |-
+          На другом примере. Пользователь пишет: «Пароль из 8 символов не принимается», а по
+          правилу пароль должен быть не короче 8 символов. Регрессионный тест:
+          ```python
+          def test_password_of_eight():
+              assert is_valid("abcdefgh"), "8 символов — пароль подходит"
+          ```
+          Пока ошибка не исправлена, он падает, после исправления проходит.
+        - |-
+          Каркас:
+          ```text
+          def test_…():
+              # Сообщение родителя: …
+              assert …
+
+          if __name__ == "__main__":
+              test_regular_ages()
+              вызов нового теста
+              print("Все тесты прошли")
+          ```
+          Запусти — новый тест упадёт. Потом посмотри на сравнение с 12 в функции: включает ли
+          оно само число 12?
+      solution:
+        code: |
+          def can_join(age):
+              # В секцию берут детей от 7 до 12 лет включительно
+              return age >= 7 and age <= 12
+
+
+          def test_regular_ages():
+              assert can_join(9), "9 лет — можно"
+              assert not can_join(5), "5 лет — ещё рано"
+
+
+          # Ошибка из сообщения родителя: двенадцатилетнего не записывали
+          def test_twelve_years_old():
+              assert can_join(12), "12 лет — можно по правилу секции"
+
+
+          if __name__ == "__main__":
+              test_regular_ages()
+              test_twelve_years_old()
+              print("Все тесты прошли")
+        explanation: >-
+          Сначала появляется `test_twelve_years_old` с возрастом из сообщения. На старой функции
+          он падает: `age < 12` не включает само 12. Это красный шаг — ошибка воспроизведена.
+          Потом `<` меняется на `<=`, и тест зеленеет. Старый `test_regular_ages` тоже проходит:
+          нижняя граница не пострадала. Условие можно записать и цепочкой `7 <= age <= 12`.
+          Регрессионный тест остаётся в файле: если кто-то снова напишет `< 12`, этот тест упадёт
+          первым.
+      altSolutions:
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return 7 <= age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_age_12_from_parent():
+                # «Сыну 12 лет, а программа не записывает»
+                assert can_join(12) == True
+                assert not can_join(13)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_age_12_from_parent()
+                print("Все тесты прошли")
+          note: Цепочка сравнений, ожидание через == True и заодно проверка на 13.
+        - code: |
+            def can_join(age):
+                return age > 6 and age < 13
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_edges_from_message():
+                for age in [7, 12]:
+                    assert can_join(age), f"{age} лет — можно"
+
+
+            if __name__ == "__main__":
+                for test in [test_regular_ages, test_edges_from_message]:
+                    test()
+                print("Все тесты прошли")
+          note: Границы через соседние числа, проверка обеих границ в цикле, тесты вызываются из списка.
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                if age < 7:
+                    return False
+                if age > 12:
+                    return False
+                return True
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_bug_twelve():
+                assert can_join(12), f"12 лет: получили {can_join(12)}"
+
+
+            test_regular_ages()
+            test_bug_twelve()
+            print("все тесты прошли")
+          note: Условия через if, тесты вызваны без блока запуска, фраза с маленькой буквы.
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age in range(7, 13)
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+                assert can_join(12), "12 лет — тоже можно (сообщение родителя)"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                print("Все тесты прошли")
+          note: >-
+            Условие через range. Проверка на 12 дописана в старый тест, а не в отдельный — проверка
+            это принимает (тест всё равно падает на старой версии), хотя отдельный тест с понятным
+            именем лучше.
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return not (age < 7 or age > 12)
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            # Регрессия: сообщение родителя «Сыну 12 лет, а программа не записывает»
+            def test_upper_bound_included():
+                age = 12
+                assert can_join(age), f"{age} лет — должны записать"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+
+                test_upper_bound_included()
+
+                print()
+                print("Все тесты прошли")
+          note: >-
+            Условие через not и or, возраст в переменной, пустые строки в блоке запуска и пустая
+            строка перед итоговой фразой (рецензия: проверка вывода не придирается к пустым строкам).
+        - code: |
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_parent_message_twelve():
+                cases = [(12, True), (13, False), (7, True), (6, False)]
+                for age, expected in cases:
+                    assert can_join(age) == expected, f"{age} лет: ждали {expected}"
+
+
+            def can_join(age):
+                if 7 <= age <= 12:
+                    return True
+                else:
+                    return False
+
+
+            if __name__ == "__main__":
+                test_parent_message_twelve()
+                test_regular_ages()
+                print("Все тесты прошли")
+          note: Тесты объявлены раньше функции, таблица случаев из пар, if/else, другой порядок вызовов.
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return (age >= 7) and (age < 13)
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve():
+                # было: 12 лет не записывали (сравнение было строгим)
+                assert can_join(12) is True
+
+
+            def test_every_allowed_age():
+                for age in range(7, 13):
+                    assert can_join(age), f"{age} лет — можно"
+
+
+            if __name__ == "__main__":
+                tests = [test_regular_ages, test_twelve, test_every_allowed_age]
+                for t in tests:
+                    t()
+                print("Все тесты   прошли")
+          note: Граница через < 13, проверка через is True, цикл по всем возрастам, тесты из списка в переменной, лишние пробелы в выводе.
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                if age == 12:
+                    return True
+                return age >= 7 and age < 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: Заплатка — отдельная ветка для 12. Некрасиво, но для целых возрастов верно.
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            # Сообщение от родителя: «Сыну 12 лет, а программа не записывает».
+            def test_parent_12():
+                assert can_join(12) == True, "12 лет — должны записать"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                print("Все тесты прошли")
+                test_parent_12()
+          note: Новый тест вызван после print — на красном шаге это сбивает с толку, но после исправления решение верное.
+      wrongSolutions:
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age < 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: Красный шаг сделан, функция не исправлена.
+          expectMistake: red-now-fix
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                print("Все тесты прошли")
+          note: Функция исправлена, регрессионного теста нет.
+          expectMistake: no-regression
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age < 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert not can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: Тест подогнан под ошибку — «12 лет нельзя».
+          expectMistake: fitted
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: При исправлении пропала нижняя граница — старый тест это ловит.
+          expectMistake: broke-lower
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 13
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: Верхнюю границу сдвинули слишком далеко — 13 лет тоже пускают.
+          expectMistake: over-fix
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                print("Все тесты прошли")
+          note: Регрессионный тест написан, но не вызывается — красного шага не было видно.
+          expectMistake: not-called
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: Нижняя граница потеряна, а мешавшая проверка на 5 лет удалена из старого теста.
+          expectMistake: lost-lower
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: Функция верная, но из старого теста убрана проверка на 5 лет.
+          expectMistake: old-test-removed
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_edges():
+                assert can_join(12)
+                assert not can_join(7)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_edges()
+                print("Все тесты прошли")
+          note: Неверное ожидание на нижней границе — «от 7» прочитано как «старше 7».
+          expectMistake: wrong-expectation
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def check_twelve():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                check_twelve()
+                print("Все тесты прошли")
+          note: Регрессионная проверка есть, но имя функции не начинается с test_.
+          expectMistake: misnamed-test
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                assert can_join(12)
+                print("Все тесты прошли")
+          note: >-
+            Проверка на 12 стоит прямо в блоке запуска, без тестовой функции: тренажёр (и pytest)
+            её не найдёт, на старой версии проверять нечего.
+          expectMistake: no-regression
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 13
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            # Сообщение родителя: 12 лет не записывали
+            def test_twelve_years_old():
+                assert can_join(12), "12 лет — можно"
+                assert not can_join(13), "13 лет — уже нельзя"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: >-
+            Перелёт <= 13, а регрессионный тест верно проверяет и 13 — разбор не должен
+            советовать править тест.
+          expectMistake: over-fix-red
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age > 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            # Сообщение родителя: 12 лет не записывали
+            def test_boundaries():
+                assert can_join(12), "12 лет — можно"
+                assert can_join(7), "7 лет — можно"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_boundaries()
+                print("Все тесты прошли")
+          note: Верхняя граница исправлена, нижняя стала строгой; тест верный — ошибка в функции.
+          expectMistake: wrong-expectation
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age < 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve():
+                age = 12
+                assert not can_join(age), "12 лет — нельзя"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve()
+                print("Все тесты прошли")
+          note: Подогнанный тест через переменную — регулярное выражение fitted его не видит.
+          expectMistake: fitted-unfixed
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                if age >= 7 and age <= 12:
+                    return True
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: if без else — для 6 и 13 лет функция возвращает None вместо False.
+          expectMistake: returns-none
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 6 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: Нижняя граница сдвинута на 6 лет, старый тест цел — проверка на 5 лет этого не видит.
+          expectMistake: six-allowed
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return 7 < age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            # Сообщение от родителя: «Сыну 12 лет, а программа не записывает».
+            def test_parent_12():
+                assert can_join(12) == True, "12 лет — должны записать"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_parent_12()
+                print("Все тесты прошли")
+          note: Условие переписано цепочкой, и семилетних больше не пускают; тесты этого не заметили.
+          expectMistake: lost-seven
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_age_allowed(age):
+                assert can_join(age), f"{age} лет — можно"
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_age_allowed(12)
+                print("Все тесты прошли")
+          note: У теста есть параметр — тренажёр (и pytest) вызывает тесты без аргументов.
+          expectMistake: test-with-params
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age <= 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_join(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old
+                print("Все тесты прошли")
+          note: Тест упомянут без скобок — при запуске он не выполняется.
+          expectMistake: no-parens
+        - code: |
+            def can_join(age):
+                # В секцию берут детей от 7 до 12 лет включительно
+                return age >= 7 and age < 12
+
+
+            def test_regular_ages():
+                assert can_join(9), "9 лет — можно"
+                assert not can_join(5), "5 лет — ещё рано"
+
+
+            def test_twelve_years_old():
+                assert can_jion(12)
+
+
+            if __name__ == "__main__":
+                test_regular_ages()
+                test_twelve_years_old()
+                print("Все тесты прошли")
+          note: >-
+            Опечатка в имени функции внутри теста — NameError. Логические разборы по failedTest не
+            должны перехватывать её: ученик видит общий разбор NameError.
+          expectMistake: null
+      mistakes:
+        - id: fitted
+          when:
+            codeRegex: '^[^#\n]*(not\s+can_join\(\s*12\s*\)|can_join\(\s*12\s*\)\s*(==|is)\s*False)'
+          why: >-
+            Тест подогнан под ошибку: он утверждает, что в 12 лет записаться нельзя. Так
+            работает сломанная функция, но правило секции другое — от 7 до 12 лет
+            **включительно**. Такой тест зелёный на ошибке и упадёт на исправленной функции.
+          try: Запиши в тест то, что должно быть по правилу секции для двенадцатилетнего.
+          verify: >-
+            Пока функция не исправлена, тест должен падать. После исправления — проходить.
+        - id: broke-lower
+          when:
+            errorIncludes: 5 лет — ещё рано
+          why: >-
+            Упал старый тест `test_regular_ages`: после исправления функция пускает в секцию
+            пятилетних. Верхнюю границу ты починил, а нижняя пропала. Вот зачем после исправления
+            запускают все тесты, а не только новый.
+          try: Верни в условие проверку нижней границы — от 7 лет — и оставь исправленную верхнюю.
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: red-now-fix
+          when:
+            errorType: AssertionError
+            codeRegex: 'age\s*<\s*12\b'
+          why: >-
+            Регрессионный тест падает — это красный шаг: ошибка из сообщения воспроизведена.
+            Функция по-прежнему не пускает двенадцатилетних.
+          try: >-
+            Проверь по traceback, что упал именно новый тест — на `can_join(12)`. Потом исправь
+            условие в `can_join`: включает ли сравнение с 12 само число 12?
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: over-fix-red
+          when:
+            errorType: AssertionError
+            codeRegex: 'age\s*<=\s*13\b|age\s*<\s*14\b'
+          why: >-
+            В условии граница 13: функция пускает и тринадцатилетних, а по правилу — до 12 лет
+            включительно. Если упала проверка на 13 лет, она права, и тест менять не нужно.
+          try: 'Исправь условие в функции: 12 лет — можно, 13 — уже нельзя.'
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Условие `< 12` уже изменено, но один из тестов всё равно падает. Ошибка может быть и в
+            тесте, и в функции.
+          try: >-
+            Найди в traceback упавший assert и сверь его с правилом: от 7 до 12 лет включительно.
+            Ожидание противоречит правилу — поправь тест. Ожидание верное — ищи ошибку в условии
+            функции: включает ли оно и 7, и 12?
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: test-with-params
+          when:
+            codeRegex: '^def\s+test_\w*\(\s*\w'
+          why: >-
+            У тестовой функции есть параметр. Тренажёр и pytest вызывают тесты без аргументов,
+            поэтому такой тест у них не запустится — проверка на старой версии ничего не даст.
+          try: >-
+            Убери параметр: пусть тест сам вызывает `can_join(12)`, а в блоке запуска вызывай его
+            без аргументов.
+        - id: fitted-unfixed
+          when:
+            failedTest: t-ref
+            codeRegex: 'age\s*<\s*12\b'
+            outputIncludes: прошли
+          why: >-
+            Твой тест проходит на сломанной функции и падает на исправленной: ожидание в нём
+            подогнано под ошибку. По правилу секции двенадцатилетнего записывают.
+          try: Запиши в тест то, что должно быть по правилу секции для двенадцатилетнего.
+          verify: Пока функция не исправлена, тест должен падать. После исправления — проходить.
+        - id: returns-none
+          when:
+            failedTest: t-c6
+            codeRegex: '(?<![\s\S])(?![\s\S]*return\s+False)(?=[\s\S]*return\s+True)'
+            outputIncludes: прошли
+          why: >-
+            Для 6 и 13 лет функция возвращает `None`, а не `False`: у `if` нет ветки «нельзя», и
+            функция заканчивается без `return`. `None` похоже на «нельзя», но это не `False`.
+          try: >-
+            Добавь в конец функции `return False` или верни само условие:
+            `return age >= 7 and age <= 12`.
+        - id: lost-lower
+          when:
+            failedTest: t-c6
+            codeRegex: '(?<![\s\S])(?![\s\S]*not\s+can_join\(\s*5\s*\))'
+            outputIncludes: прошли
+          why: >-
+            Функция пускает в секцию детей младше 7 лет: при исправлении пропала нижняя граница.
+            Раньше такую ошибку ловил `test_regular_ages`, но из него убрали проверку на 5 лет.
+          try: Верни `test_regular_ages` в исходный вид и восстанови в функции условие «от 7 лет».
+        - id: six-allowed
+          when:
+            failedTest: t-c6
+            outputIncludes: прошли
+          why: >-
+            Функция пускает шестилетних, а по правилу — от 7 лет. Старый тест этого не заметил:
+            он проверяет 5 лет, а граница проходит между 6 и 7.
+          try: >-
+            Поправь нижнюю границу: 7 лет — можно, 6 — нельзя. Для уверенности добавь в
+            регрессионный тест `assert not can_join(6)`.
+        - id: lost-seven
+          when:
+            failedTest: t-c7
+            outputIncludes: прошли
+          why: >-
+            «От 7 лет» включает само 7, а функция семилетних не пускает: в нижней границе стоит
+            строгое сравнение. Твои тесты этого не заметили — в них нет проверки на 7.
+          try: >-
+            Сделай нижнюю границу нестрогой — `>=` или `<=`, смотря как записано условие. И добавь
+            в регрессионный тест `assert can_join(7)`.
+        - id: over-fix
+          when:
+            failedTest: t-c13
+            outputIncludes: прошли
+          why: >-
+            Теперь функция пускает и тринадцатилетних: верхнюю границу сдвинули дальше, чем
+            нужно. В правиле — до 12 лет включительно.
+          try: >-
+            Подбери условие, при котором 12 — можно, а 13 — нельзя. Для уверенности добавь в
+            регрессионный тест и проверку на 13.
+        - id: misnamed-test
+          when:
+            codeRegex: '^def\s+(?!test_|can_join\b)\w+'
+            failedTest: t-catches
+            outputIncludes: прошли
+          why: >-
+            Новая функция похожа на тест, но её имя не начинается с `test_`. Тренажёр находит
+            тесты по такому имени — так их принято называть и для pytest. Поэтому на старой версии
+            функции он её не вызвал.
+          try: Переименуй функцию так, чтобы имя начиналось с `test_`, и поправь её вызов.
+        - id: no-regression
+          when:
+            failedTest: t-catches
+            outputIncludes: прошли
+          why: >-
+            Нет теста, который упал бы на старой версии функции: тренажёр вызвал твои тесты со
+            старым условием, и все они прошли. Если кто-то снова внесёт эту ошибку, тесты
+            промолчат.
+          try: >-
+            Напиши отдельный тест с возрастом из сообщения родителя и вызови его в блоке запуска.
+            Пока функция не исправлена, он должен падать.
+        - id: old-test-removed
+          when:
+            failedTest: t-kept
+            outputIncludes: прошли
+          why: >-
+            Из `test_regular_ages` убрали проверку на 5 лет. Теперь тесты не заметят, если
+            функция начнёт пускать детей младше 7. Старые тесты сторожат старые правила — их не
+            удаляют, когда добавляют новый.
+          try: Верни `test_regular_ages` в исходный вид.
+        - id: no-parens
+          when:
+            failedTest: t-called
+            codeRegex: '^[ \t]*test_\w+[ \t]*$'
+          why: >-
+            Имя теста без скобок только упоминает функцию, но не вызывает её. Поэтому при запуске
+            тест не выполняется, и красного шага не видно.
+          try: Поставь после имени скобки, например `test_twelve_years_old()`.
+          verify: Пока функция не исправлена, «Запустить» должен остановиться с AssertionError.
+        - id: not-called
+          when:
+            failedTest: t-called
+            outputIncludes: прошли
+          why: >-
+            Тест объявлен, но при запуске не вызывается. Поэтому «Запустить» не показал бы
+            красный шаг, а после правок тест ничего не сторожит.
+          try: Добавь вызов теста в блок `if __name__ == "__main__":` перед `print`.
+      afterPass: >-
+        Ошибка из сообщения поймана тестом и исправлена. Если кто-то снова напишет `< 12`, твой
+        регрессионный тест упадёт первым и покажет, что сломалось. Одно улучшение: добавь в
+        регрессионный тест проверку на 13 лет — она поймает исправление, которое зашло слишком
+        далеко.
+      skills: [regression-tests, edge-cases]
+
+  - id: practice-bill
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m9-l5-e2
+      kind: fix
+      title: Тест подогнан под ошибку
+      statement: |-
+        Семья делит общий счёт на всех в целых рублях. Требования к функции `split_bill`
+        записаны в её комментарии:
+
+        - сумма долей равна счёту;
+        - доли отличаются не больше чем на 1 рубль;
+        - лишние рубли платят первые по списку.
+
+        Например, 10 рублей на троих — это `[4, 3, 3]`, а 8 рублей на троих — `[3, 3, 2]`:
+        лишних рублей два, и они достаются первым двоим по одному.
+
+        Когда-то тест `test_uneven_split` упал, и его «починили»: вписали в ожидание то, что
+        выдала функция. Теперь всё зелёное, но рубль теряется — ты видел это в прогнозе.
+
+        Что сделать:
+
+        1. Верни в `test_uneven_split` честное ожидание по требованиям и запусти. Тест должен
+           упасть.
+        2. Исправь функцию так, чтобы все тесты прошли.
+
+        Тренажёр проверит функцию на разных счетах и убедится, что твои тесты падают на старой
+        версии.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Тесты не удаляй — исправь ожидание в `test_uneven_split`.
+        - Функция возвращает список долей по порядку людей.
+        - Людей всегда хотя бы один, счёт — целое число не меньше нуля.
+      starterCode: |
+        def split_bill(total, people):
+            # Делит счёт на людей в целых рублях.
+            # Требования: сумма долей равна счёту, доли отличаются
+            # не больше чем на 1 рубль, лишние рубли платят первые по списку.
+            share = total // people
+            result = []
+            for i in range(people):
+                result.append(share)
+            return result
+
+
+        def test_even_split():
+            assert split_bill(90, 3) == [30, 30, 30]
+
+
+        def test_uneven_split():
+            # тест падал — ожидание поменяли, чтобы он «позеленел»
+            assert split_bill(100, 3) == [33, 33, 33]
+
+
+        if __name__ == "__main__":
+            test_even_split()
+            test_uneven_split()
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            ignoreCase: true
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-c100
+          kind: call
+          title: 100 рублей на троих
+          example: true
+          call: split_bill(100, 3)
+          expected: "[34, 33, 33]"
+        - id: t-c5
+          kind: call
+          title: 5 рублей на двоих
+          example: true
+          call: split_bill(5, 2)
+          expected: "[3, 2]"
+        - id: t-c90
+          kind: call
+          title: Делится поровну
+          call: split_bill(90, 3)
+          expected: "[30, 30, 30]"
+        - id: t-c8
+          kind: call
+          title: "Остаток 2 рубля: 8 на троих"
+          edge: true
+          call: split_bill(8, 3)
+          expected: "[3, 3, 2]"
+        - id: t-c1
+          kind: call
+          title: Счёт меньше числа людей
+          edge: true
+          call: split_bill(1, 3)
+          expected: "[1, 0, 0]"
+        - id: t-c11
+          kind: call
+          title: "Остаток 3 рубля: 11 на четверых"
+          edge: true
+          call: split_bill(11, 4)
+          expected: "[3, 3, 3, 2]"
+        - id: t-c7
+          kind: call
+          title: Один человек
+          edge: true
+          call: split_bill(7, 1)
+          expected: "[7]"
+        - id: t-catches
+          kind: assert
+          title: Тесты падают на старой версии
+          code: |
+            def _old(total, people):
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                return result
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("split_bill")
+            globals()["split_bill"] = _old
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["split_bill"] = _saved
+            assert _caught
+          message: >-
+            Тренажёр вызвал твои тесты со старой функцией, которая теряет рубль, и ни один не
+            упал. Нужен тест с неровным делением и честным ожиданием.
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на верной функции
+          code: |
+            def _reference(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("split_bill")
+            globals()["split_bill"] = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                globals()["split_bill"] = _saved
+          message: >-
+            Один из твоих тестов падает на верной функции. Значит, ожидание в нём расходится с
+            требованиями из комментария.
+      criteria:
+        - Ожидание в `test_uneven_split` посчитано по требованиям, а не списано с вывода.
+        - Сумма долей всегда равна счёту, доли отличаются не больше чем на 1 рубль.
+        - Лишние рубли платят первые по списку.
+        - Тесты падают на старой версии функции и проходят на исправленной.
+      hints:
+        - >-
+          Прочитай требования в комментарии функции и проверь по ним ожидание в
+          `test_uneven_split`: какое требование оно нарушает? А в функции посмотри, что
+          происходит с рублями, которые остались после деления поровну: кому они достаются?
+        - >-
+          На другом примере: 11 конфет делят на троих детей по тем же правилам. Поровну — по 3,
+          остаются 2 конфеты. Их раздают по одной первым двоим: `[4, 4, 3]`. Сколько осталось,
+          подсказывает `%`: `11 % 3` равно 2.
+        - |-
+          Каркас функции:
+          ```text
+          share = total // people
+          extra = остаток от деления total на people
+          result = []
+          для каждого i от 0 до people - 1:
+              если i < extra — добавить share + 1
+              иначе — добавить share
+          вернуть result
+          ```
+          И не забудь про ожидание в `test_uneven_split`.
+      solution:
+        code: |
+          def split_bill(total, people):
+              # Делит счёт на людей в целых рублях.
+              # Требования: сумма долей равна счёту, доли отличаются
+              # не больше чем на 1 рубль, лишние рубли платят первые по списку.
+              share = total // people
+              extra = total % people
+              result = []
+              for i in range(people):
+                  if i < extra:
+                      result.append(share + 1)
+                  else:
+                      result.append(share)
+              return result
+
+
+          def test_even_split():
+              assert split_bill(90, 3) == [30, 30, 30]
+
+
+          def test_uneven_split():
+              # Раньше функция теряла рубль: [33, 33, 33] в сумме давало 99
+              assert split_bill(100, 3) == [34, 33, 33]
+
+
+          if __name__ == "__main__":
+              test_even_split()
+              test_uneven_split()
+              print("Все тесты прошли")
+        explanation: >-
+          Честное ожидание для 100 рублей на троих — `[34, 33, 33]`: по 33 каждому, и лишний рубль
+          платит первый. С этим ожиданием тест на старой функции красный. `total % people` —
+          сколько рублей осталось после деления поровну. Первые `extra` человек получают на рубль
+          больше, поэтому сумма долей равна счёту, а доли отличаются не больше чем на 1. Для 8
+          рублей на троих это `[3, 3, 2]`: остаток 2 рубля раздаётся по одному, а не целиком
+          первому.
+      altSolutions:
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                for i in range(total % people):
+                    result[i] = result[i] + 1
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33], "лишний рубль платит первый"
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Сначала поровну, потом вторым циклом по рублю первым людям.
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                left = total - share * people
+                result = []
+                for i in range(people):
+                    if left > 0:
+                        result.append(share + 1)
+                        left -= 1
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert sum(split_bill(100, 3)) == 100
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            def test_remainder_two():
+                assert split_bill(8, 3) == [3, 3, 2]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                test_remainder_two()
+                print("Все тесты прошли")
+          note: Остаток без %, счётчик оставшихся рублей, проверка суммы и ещё один тест.
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                # тест проверяет требование, а не конкретный список
+                assert sum(split_bill(100, 3)) == 100
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Тест проверяет свойство «сумма долей равна счёту» — он тоже падает на старой версии.
+        - code: |
+            def split_bill(total, people):
+                result = []
+                i = 0
+                while i < people:
+                    if i < total % people:
+                        result.append(total // people + 1)
+                    else:
+                        result.append(total // people)
+                    i += 1
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                # было: assert split_bill(100, 3) == [33, 33, 33] — подогнано под ошибку
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Цикл while без лишних переменных, подогнанное ожидание оставлено в комментарии.
+        - code: |
+            def split_bill(total, people):
+                # Делит счёт на людей в целых рублях.
+                base = total // people
+                shares = [base] * people
+                for i in range(total % people):
+                    shares[i] += 1
+                return shares
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                # Ожидание по требованиям: 100 = 34 + 33 + 33, лишний рубль у первого
+                got = split_bill(100, 3)
+                assert got == [34, 33, 33], f"получили {got}"
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Список повторением [base] * people, остаток по рублю, результат в переменной и f-строка в assert.
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(extra):
+                    result.append(share + 1)
+                for i in range(people - extra):
+                    result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                shares = split_bill(100, 3)
+                assert sum(shares) == 100, "сумма долей равна счёту"
+                assert max(shares) - min(shares) <= 1, "доли отличаются не больше чем на 1"
+                assert shares[0] >= shares[-1], "лишние рубли платят первые"
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Сначала доли с лишним рублём, потом остальные; тест проверяет три требования, а не готовый список.
+        - code: |
+            def split_bill(total, people):
+                result = []
+                for i in range(people):
+                    result.append(0)
+                left = total
+                i = 0
+                while left > 0:
+                    result[i] = result[i] + 1
+                    left = left - 1
+                    i = i + 1
+                    if i == people:
+                        i = 0
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [33 + 1, 33, 33]
+
+
+            def test_zero_bill():
+                assert split_bill(0, 4) == [0, 0, 0, 0]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                test_zero_bill()
+                print("Все тесты прошли")
+          note: Раздача по рублю по кругу через while, ожидание записано как 33 + 1, тест на нулевой счёт.
+        - code: |
+            def split_bill(total, people):
+                result = []
+                for i in range(people):
+                    result.append((total + people - 1 - i) // people)
+                return result
+
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+
+            def test_uneven_split():
+                # было [33, 33, 33]: рубль терялся
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            def test_one_person():
+                assert split_bill(7, 1) == [7]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                test_one_person()
+                word = "прошли"
+                print(f"Все тесты {word}")
+          note: Доля каждого — одной формулой, лишние пустые строки, итоговая фраза f-строкой.
+      wrongSolutions:
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                # тест падал — ожидание поменяли, чтобы он «позеленел»
+                assert split_bill(100, 3) == [33, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Функция исправлена, а подогнанное ожидание осталось.
+          expectMistake: fitted-left
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Тест честный и красный, функция не исправлена.
+          expectMistake: honest-test-now-fix
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                result[0] = result[0] + total % people
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Весь остаток достаётся первому — для 8 на троих выходит [4, 2, 2].
+          expectMistake: remainder-first
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i >= people - extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [33, 33, 34]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Лишний рубль платит последний — и функция, и ожидание нарушают требование.
+          expectMistake: wrong-distribution
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [33, 33, 34]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Функция верная, а в ожидании лишний рубль у последнего.
+          expectMistake: test-wrong-order
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                print("Все тесты прошли")
+          note: Мешавший тест удалён — на старой версии ничего не падает.
+          expectMistake: no-catch
+        - code: |
+            def split_bill(total, people):
+                share = round(total / people)
+                result = []
+                for i in range(people):
+                    result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Округление вместо раздачи остатка — 100 на троих всё равно даёт [33, 33, 33].
+          expectMistake: honest-test-now-fix
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                result[0] = result[0] + total % people
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                # было: assert split_bill(100, 3) == [33, 33, 33] — подогнано под ошибку
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: >-
+            Весь остаток первому, а старое ожидание оставлено в комментарии — разбор fitted-left
+            не должен срабатывать на комментарий.
+          expectMistake: remainder-first
+        - code: |
+            def split_bill(total, people):
+                # Делит счёт на людей в целых рублях.
+                # Требования: сумма долей равна счёту, доли отличаются
+                # не больше чем на 1 рубль, лишние рубли платят первые по списку.
+                share = total // people
+                result = []
+                for i in range(people):
+                    if i == 0:
+                        result.append(share + total % people)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                # 100 на троих: лишний рубль платит первый
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Весь остаток первому через if i == 0 — на 100 рублей это совпадает с верным ответом.
+          expectMistake: remainder-first
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                if total % people > 0:
+                    result[0] = result[0] + 1
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: «Вернули потерянный рубль» — +1 первому, если есть остаток; 8 на троих даёт [3, 2, 2].
+          expectMistake: remainder-spread
+        - code: |
+            def split_bill(total, people):
+                if total == 100 and people == 3:
+                    return [34, 33, 33]
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Ответ для 100 рублей на троих вписан в функцию напрямую.
+          expectMistake: remainder-spread
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            def test_remainder_two():
+                assert split_bill(8, 3) == [4, 2, 2]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                test_remainder_two()
+                print("Все тесты прошли")
+          note: >-
+            Функция верная, а в новом тесте ожидание [4, 2, 2] — разбор не должен называть
+            функцию неверной.
+          expectMistake: assert-after-fix
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [33, 34, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Функция верная, а в ожидании лишний рубль у второго.
+          expectMistake: assert-after-fix
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                    return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: return внутри цикла — тесты верные, ошибка в функции.
+          expectMistake: assert-after-fix
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                if extra >= 1:
+                    result[0] = result[0] + 1
+                if extra >= 2:
+                    result[1] = result[1] + 1
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: >-
+            Остаток раздаётся лесенкой из if — верно, только пока остаток не больше 2. Ловит
+            граничный тест 11 на четверых; общий разбор показывает вызов и ответ.
+          expectMistake: null
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                extra = total % people
+                result = []
+                for i in range(people):
+                    if i < extra:
+                        result.append(share + 1)
+                    else:
+                        result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bill(100, 3) == [34, 33, 33]
+
+
+            def test_remainder_two():
+                assert split_bill(8, 3) == [4, 2, 2]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: >-
+            Новый тест с неверным ожиданием объявлен, но не вызван. Падает только проверка на
+            верной функции, и её сообщение объясняет, что не так.
+          expectMistake: null
+        - code: |
+            def split_bill(total, people):
+                share = total // people
+                result = []
+                for i in range(people):
+                    result.append(share)
+                return result
+
+
+            def test_even_split():
+                assert split_bill(90, 3) == [30, 30, 30]
+
+
+            def test_uneven_split():
+                assert split_bil(100, 3) == [34, 33, 33]
+
+
+            if __name__ == "__main__":
+                test_even_split()
+                test_uneven_split()
+                print("Все тесты прошли")
+          note: Опечатка в имени функции внутри теста — NameError; логические разборы не перехватывают её.
+          expectMistake: null
+      mistakes:
+        - id: fitted-left
+          when:
+            codeRegex: '^[^#\n]*split_bill\(\s*100\s*,\s*3\s*\)\s*==\s*\[\s*33\s*,\s*33\s*,\s*33\s*\]'
+          why: >-
+            В `test_uneven_split` осталось подогнанное ожидание `[33, 33, 33]`. Но 33 + 33 + 33 =
+            99, а счёт — 100 рублей. Такой тест сторожит ошибку, а не требование, и упадёт на
+            исправленной функции.
+          try: >-
+            Посчитай доли для 100 рублей на троих по требованиям из комментария: кто платит лишний
+            рубль? Впиши это в ожидание.
+          verify: Пока функция не исправлена, тест должен падать.
+        - id: test-wrong-order
+          when:
+            errorType: AssertionError
+            codeRegex: '==\s*\[\s*33\s*,\s*33\s*,\s*34\s*\]'
+          why: >-
+            Ожидание `[33, 33, 34]` нарушает требование: лишние рубли платят **первые** по
+            списку, а не последние.
+          try: Переставь лишний рубль в ожидании первому человеку.
+          verify: >-
+            Пока функция не исправлена, тест с честным ожиданием красный. После исправления
+            функции появится «Все тесты прошли».
+        - id: honest-test-now-fix
+          when:
+            errorType: AssertionError
+            codeRegex: '(?<![\s\S])(?![\s\S]*%)(?![\s\S]*\+\s*1\b)'
+          why: >-
+            Тест с честным ожиданием падает — это красный шаг: он поймал потерянный рубль. В
+            функции остаток после деления поровну пока никому не достаётся.
+          try: >-
+            Проверь по traceback, что упал именно `test_uneven_split`. Потом исправь функцию:
+            сколько рублей остаётся после деления поровну и кому их отдать по требованиям?
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: assert-after-fix
+          when:
+            errorType: AssertionError
+          why: >-
+            Один из тестов падает. Если функция ещё старая, это красный шаг. Если ты её уже
+            менял, ошибка может быть и в тесте, и в функции.
+          try: >-
+            Найди в traceback упавший assert и посчитай ожидание по требованиям из комментария.
+            Оно противоречит требованиям — поправь тест. Оно верное — ищи ошибку в функции:
+            сколько рублей остаётся после деления поровну и кому они достаются?
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: wrong-distribution
+          when:
+            failedTest: t-c100
+            outputIncludes: прошли
+          why: >-
+            Функция делит 100 рублей на троих не по требованиям: нужно `[34, 33, 33]`, лишний
+            рубль платит первый. Похоже, и ожидание в тесте записано под эту версию функции.
+          try: >-
+            Сверь с требованиями и функцию, и ожидание в `test_uneven_split`: лишние рубли
+            достаются первым по списку.
+        - id: remainder-first
+          when:
+            failedTest: t-c8
+            codeRegex: '\+[^\n]*%|\[\s*0\s*\][^\n]*\+=?\s*(?!1\b)\w'
+            outputIncludes: прошли
+          why: >-
+            Когда остаток больше рубля, функция отдаёт его целиком первому: 8 рублей на троих
+            превращаются в `[4, 2, 2]`. А доли должны отличаться не больше чем на 1 рубль:
+            `[3, 3, 2]`.
+          try: >-
+            Раздай остаток по одному рублю: первый получает +1, второй +1 — пока остаток не
+            кончится. И добавь в свои тесты случай 8 на троих: сейчас они эту ошибку не заметили.
+        - id: remainder-spread
+          when:
+            failedTest: t-c8
+            outputIncludes: прошли
+          why: >-
+            Когда остаток больше рубля, функция раздаёт его не по требованиям. 8 рублей на троих —
+            это `[3, 3, 2]`: по 2 рубля каждому и ещё по рублю первым двоим.
+          try: >-
+            Посчитай, сколько рублей осталось после деления поровну, и раздай их по одному первым
+            по списку — столько людей, сколько рублей осталось. Добавь в свои тесты случай 8 на
+            троих.
+        - id: no-catch
+          when:
+            failedTest: t-catches
+            outputIncludes: прошли
+          why: >-
+            Функция исправлена, но ни один тест не падает на старой версии, которая теряла рубль.
+            Похоже, `test_uneven_split` удалён или ослаблен. Без него ошибка может вернуться
+            незаметно.
+          try: Верни `test_uneven_split` с честным ожиданием для 100 рублей на троих.
+      afterPass: >-
+        Тест снова сторожит требования, а не ошибку. Одно улучшение: добавь проверку суммы
+        `assert sum(split_bill(100, 3)) == 100`. Сумма долей равна счёту при любых числах, и такую
+        проверку трудно подогнать под неверный ответ.
+      skills: [regression-tests, lists, for-range]
+
+  - id: practice-search
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m9-l5-e3
+      kind: write
+      title: Ошибка из отзыва слушателя
+      statement: |-
+        В плеере Леры есть поиск по плейлисту. Слушатель пишет: «Ищу „ночь“ — ничего не находит,
+        хотя в плейлисте есть „Ночь над городом“».
+
+        Требования к `find_songs(songs, query)`:
+
+        - вернуть названия из списка `songs`, в которых встречается `query`;
+        - большие и маленькие буквы не различаются;
+        - названия возвращаются такими, как в плейлисте, и в том же порядке.
+
+        Пройди весь путь сам:
+
+        1. Напиши регрессионный тест по отзыву и вызови его в блоке
+           `if __name__ == "__main__":` перед `print("Все тесты прошли")`. Запусти — тест должен
+           упасть, и именно на запросе из отзыва.
+        2. Исправь функцию. Запусти — должно появиться `Все тесты прошли`.
+
+        Плейлист для тестов можно взять такой (названия придуманы):
+
+        ```python
+        ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+        ```
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - Названия в результате — такие, как в плейлисте, с теми же большими буквами.
+        - Программа печатает только `Все тесты прошли`.
+      starterCode: |
+        def find_songs(songs, query):
+            found = []
+            for title in songs:
+                if query in title:
+                    found.append(title)
+            return found
+
+
+        # Отзыв слушателя: «Ищу "ночь" — ничего не находит,
+        # хотя в плейлисте есть "Ночь над городом"».
+        # Требование: поиск не различает большие и маленькие буквы,
+        # а названия возвращаются такими, как в плейлисте, и в том же порядке.
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            ignoreCase: true
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t-catches
+          kind: assert
+          title: Регрессионный тест падает на старой версии
+          example: true
+          code: |
+            def _old(songs, query):
+                found = []
+                for title in songs:
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("find_songs")
+            globals()["find_songs"] = _old
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["find_songs"] = _saved
+            assert _caught
+          message: >-
+            Хотя бы один твой тест падает на старой версии `find_songs` — той, что различает
+            большие и маленькие буквы.
+        - id: t-c-night
+          kind: call
+          title: Запрос из отзыва — «ночь»
+          example: true
+          call: 'find_songs(["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"], "ночь")'
+          expected: "['Ночь над городом']"
+        - id: t-c-rain
+          kind: call
+          title: Запрос большими буквами — «ДОЖДЬ»
+          example: true
+          call: 'find_songs(["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"], "ДОЖДЬ")'
+          expected: "['Летний дождь']"
+        - id: t-c-part
+          kind: call
+          title: Два названия — в порядке плейлиста
+          call: 'find_songs(["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"], "ноч")'
+          expected: "['Ночь над городом', 'Ночной поезд']"
+        - id: t-c-none
+          kind: call
+          title: Ничего не нашлось
+          edge: true
+          call: 'find_songs(["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"], "гроза")'
+          expected: "[]"
+        - id: t-c-caps
+          kind: call
+          title: Название целиком большими буквами
+          edge: true
+          call: 'find_songs(["ДОЖДЬ И ГРОМ", "Летний дождь"], "дождь")'
+          expected: "['ДОЖДЬ И ГРОМ', 'Летний дождь']"
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на верной функции
+          code: |
+            def _reference(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("find_songs")
+            globals()["find_songs"] = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                globals()["find_songs"] = _saved
+          message: >-
+            Один из твоих тестов падает на верной функции. Значит, ожидание в нём расходится с
+            требованиями: названия — такими, как в плейлисте, и в том же порядке.
+        - id: t-called
+          kind: assert
+          title: Каждый тест вызывается при запуске
+          code: |
+            import ast as _ast
+
+            with open(__file__, encoding="utf-8") as _file:
+                _tree = _ast.parse(_file.read())
+            _defined = [node.name for node in _tree.body
+                        if isinstance(node, _ast.FunctionDef) and node.name.startswith("test_")]
+            # Тест засчитан как вызванный, если его имя стоит в вызове test_…()
+            # или в списке/кортеже (вариант «for test in [...]: test()»).
+            _used = []
+            for _node in _ast.walk(_tree):
+                if isinstance(_node, _ast.Call) and isinstance(_node.func, _ast.Name):
+                    _used.append(_node.func.id)
+                if isinstance(_node, (_ast.List, _ast.Tuple)):
+                    _used += [_item.id for _item in _node.elts if isinstance(_item, _ast.Name)]
+            assert all(name in _used for name in _defined)
+          message: >-
+            Каждая функция `test_…` вызывается при запуске программы — например, в блоке
+            `if __name__ == "__main__":`.
+      criteria:
+        - Есть регрессионный тест с примером из отзыва — запрос маленькими буквами, название с большой.
+        - Тест падает на старой версии функции и проходит на исправленной.
+        - Поиск не различает регистр, названия возвращаются как в плейлисте и в том же порядке.
+        - Тесты вызываются при запуске, программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          Что именно ввёл слушатель и как нужное название записано в плейлисте? Эта пара — запрос
+          и название — и должна попасть в тест. А что по требованиям функция обязана вернуть?
+        - >-
+          Сравнение без учёта регистра на другом примере: `"Кот" == "кот"` даёт `False`, а
+          `"Кот".lower() == "кот".lower()` — `True`. Оператор `in` тоже различает регистр:
+          `"кот" in "Котлета"` — `False`.
+        - |-
+          Каркас:
+          ```text
+          def test_…():
+              playlist = [...]
+              assert find_songs(playlist, запрос из отзыва) == [название из плейлиста]
+
+          if __name__ == "__main__":
+              вызов теста
+              print("Все тесты прошли")
+          ```
+          Запусти — тест красный. Потом в `find_songs` приведи к одному регистру обе строки в
+          сравнении и запусти снова.
+      solution:
+        code: |
+          def find_songs(songs, query):
+              found = []
+              for title in songs:
+                  if query.lower() in title.lower():
+                      found.append(title)
+              return found
+
+
+          # Отзыв слушателя: «Ищу "ночь" — ничего не находит,
+          # хотя в плейлисте есть "Ночь над городом"».
+          def test_search_ignores_case():
+              playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+              assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+          def test_search_upper_query():
+              playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+              assert find_songs(playlist, "ДОЖДЬ") == ["Летний дождь"]
+
+
+          if __name__ == "__main__":
+              test_search_ignores_case()
+              test_search_upper_query()
+              print("Все тесты прошли")
+        explanation: >-
+          `test_search_ignores_case` повторяет отзыв: запрос «ночь» маленькими буквами, название с
+          большой. На старой функции он красный — `"ночь" in "Ночь над городом"` даёт `False`.
+          Исправление приводит к маленьким буквам **обе** строки, но только для сравнения: в
+          `found` попадает исходное `title`, поэтому названия возвращаются как в плейлисте.
+          Второй тест проверяет обратный случай — запрос большими буквами.
+      altSolutions:
+        - code: |
+            def find_songs(songs, query):
+                query = query.lower()
+                found = []
+                for title in songs:
+                    if query in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review_night():
+                assert find_songs(["Ночь над городом", "Летний дождь"], "ночь") == ["Ночь над городом"]
+
+
+            test_review_night()
+            print("Все тесты прошли")
+          note: Запрос приводится к маленьким буквам один раз до цикла, свой короткий плейлист, вызов без блока запуска.
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.casefold() in title.casefold():
+                        found.append(title)
+                return found
+
+
+            PLAYLIST = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+
+
+            def test_lowercase_query():
+                # регрессия: отзыв про «ночь»
+                result = find_songs(PLAYLIST, "ночь")
+                assert result == ["Ночь над городом"], f"получили {result}"
+
+
+            def test_order_kept():
+                assert find_songs(PLAYLIST, "НОЧ") == ["Ночь над городом", "Ночной поезд"]
+
+
+            def test_nothing_found():
+                assert find_songs(PLAYLIST, "гроза") == []
+
+
+            if __name__ == "__main__":
+                for test in [test_lowercase_query, test_order_kept, test_nothing_found]:
+                    test()
+                print("Все тесты прошли")
+          note: casefold вместо lower, общий плейлист только для чтения, три теста вызываются из списка.
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    big_title = title.upper()
+                    if query.upper() in big_title:
+                        found.append(title)
+                return found
+
+
+            def test_night_from_review():
+                songs = ["Ночь над городом", "Летний дождь"]
+                assert "Ночь над городом" in find_songs(songs, "ночь")
+                assert len(find_songs(songs, "ночь")) == 1
+
+
+            if __name__ == "__main__":
+                test_night_from_review()
+                print("Все тесты прошли")
+          note: Большие буквы вместо маленьких, свой плейлист, проверки через in и len.
+        - code: |
+            def find_songs(songs, query):
+                result = []
+                needle = query.upper()
+                for song in songs:
+                    if needle in song.upper():
+                        result.append(song)
+                return result
+
+
+            PLAYLIST = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+
+
+            # Регрессия по отзыву: «Ищу "ночь" — ничего не находит»
+            def test_query_in_lowercase():
+                assert find_songs(PLAYLIST, "ночь") == ["Ночь над городом"]
+
+
+            def test_two_songs_in_order():
+                assert find_songs(PLAYLIST, "НоЧ") == ["Ночь над городом", "Ночной поезд"]
+
+
+            def test_not_found():
+                assert find_songs(PLAYLIST, "гроза") == []
+
+
+            if __name__ == "__main__":
+                test_query_in_lowercase()
+                test_two_songs_in_order()
+                test_not_found()
+                print("Все тесты прошли")
+          note: upper в переменной needle, имена song и result, три теста на общем плейлисте.
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                wanted = query.strip().lower()
+                for title in songs:
+                    low_title = title.lower()
+                    if wanted in low_title:
+                        found.append(title)
+                return found
+
+
+            def test_review_night():
+                result = find_songs(["Летний дождь", "Ночь над городом"], "ночь")
+                assert result == ["Ночь над городом"], f"получили {result}"
+
+
+            if __name__ == "__main__":
+                test_review_night()
+                print("Все тесты прошли ")
+          note: strip и lower в отдельных переменных, свой плейлист в другом порядке, пробел в конце вывода.
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if title.lower().find(query.lower()) != -1:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                # отзыв: «ночь» не находила «Ночь над городом»
+                assert find_songs(["Ночь над городом"], "ночь") != [], "песня из отзыва должна найтись"
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Поиск методом find, слабая, но честная проверка «список не пустой».
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_night_lowercase():
+                assert find_songs(["Ночь над городом", "Ночной поезд"], "ночь") == ["Ночь над городом"]
+
+
+            def test_rain_uppercase():
+                assert find_songs(["Летний дождь"], "ДОЖДЬ") == ["Летний дождь"]
+
+
+            def run_all():
+                test_night_lowercase()
+                test_rain_uppercase()
+
+
+            if __name__ == "__main__":
+                run_all()
+                print("Все тесты прошли")
+          note: Тесты вызываются из общей функции run_all.
+      wrongSolutions:
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: К маленьким буквам приведён только запрос.
+          expectMistake: lower-query-only
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: К маленьким буквам приведено только название — запрос «ДОЖДЬ» ничего не находит.
+          expectMistake: lower-title-only
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title.lower())
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Названия возвращаются маленькими буквами.
+          expectMistake: lowercase-output
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() == title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Сравнение целиком через == вместо поиска части названия.
+          expectMistake: exact-match
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Красный шаг сделан, функция не исправлена.
+          expectMistake: red-now-fix
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Функция верная, а ожидание в тесте записано маленькими буквами.
+          expectMistake: wrong-expectation
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            print("Все тесты прошли")
+          note: Функция исправлена, тестов нет вовсе.
+          expectMistake: no-tests
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_search():
+                playlist = ["Ночь над городом", "Летний дождь"]
+                assert find_songs(playlist, "Ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_search()
+                print("Все тесты прошли")
+          note: Тест с запросом того же регистра, что и название, — на старой версии он проходит.
+          expectMistake: no-regression
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            print("Все тесты прошли")
+          note: Регрессионный тест написан, но не вызывается.
+          expectMistake: not-called
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            def check_night():
+                playlist = ["Ночь над городом", "Летний дождь"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                check_night()
+                print("Все тесты прошли")
+          note: Проверка есть, но имя функции не начинается с test_ — тренажёр её не находит.
+          expectMistake: no-tests
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                print(find_songs(playlist, "ночь"))
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: >-
+            Отладочный print остался в тесте — лишняя строка в выводе; общий разбор расхождения
+            вывода объясняет это сам.
+          expectMistake: null
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    title = title.lower()
+                    if query.lower() in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: >-
+            title = title.lower() в цикле (приём из урока 4.3) — в список попадает переделанное
+            название. Тест верный, разбор не должен советовать его править.
+          expectMistake: lowered-title
+        - code: |
+            def find_songs(songs, query):
+                query = query.lower()
+                found = []
+                for title in songs:
+                    title = title.lower()
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: То же, и ожидание в тесте уже подогнано под маленькие буквы.
+          expectMistake: lowered-title
+        - code: |
+            def find_songs(songs, query):
+                query = query.lower()
+                found = []
+                for title in songs:
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Запрос приведён к маленьким буквам заранее, а название сравнивается как есть.
+          expectMistake: lower-query-only
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for song in songs:
+                    if query in song.lower():
+                        found.append(song)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: К маленьким буквам приведено только название, переменная song.
+          expectMistake: lower-title-only
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.capitalize() in title:
+                        found.append(title)
+                return found
+
+
+            # Отзыв слушателя: «Ищу "ночь" — ничего не находит,
+            # хотя в плейлисте есть "Ночь над городом"».
+            def test_review_night():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review_night()
+                print("Все тесты прошли")
+          note: capitalize у запроса — «ДОЖДЬ» и «дождь» в середине названия не находятся.
+          expectMistake: only-capital
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title or query.capitalize() in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: «Маленькими или с большой буквы» — не находит название целиком большими буквами.
+          expectMistake: only-capital
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            # Отзыв слушателя: «Ищу "ночь" — ничего не находит,
+            # хотя в плейлисте есть "Ночь над городом"».
+            def test_review_night():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом", "Ночной поезд"]
+
+
+            if __name__ == "__main__":
+                test_review_night()
+                print("Все тесты прошли")
+          note: >-
+            Красный шаг, но в ожидании лишнее «Ночной поезд». Разбор красного шага просит
+            сверить ожидание с требованиями.
+          expectMistake: red-now-fix
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            # Отзыв слушателя: «Ищу "ночь" — ничего не находит,
+            # хотя в плейлисте есть "Ночь над городом"».
+            def test_review_night():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом", "Ночной поезд"]
+
+
+            if __name__ == "__main__":
+                test_review_night()
+                print("Все тесты прошли")
+          note: Функция верная, в ожидании лишнее «Ночной поезд».
+          expectMistake: wrong-expectation
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    big_title = title.upper()
+                    if query.upper() in big_title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Функция верная через upper, ожидание маленькими буквами — разбор не должен звать чинить функцию.
+          expectMistake: wrong-expectation
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.casefold() in title.casefold():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+                assert find_songs(playlist, "ноч") == ["Ночной поезд", "Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Функция верная через casefold, в ожидании для «ноч» другой порядок.
+          expectMistake: wrong-expectation
+        - code: |
+            def find_songs(songs, query):
+                query = query.lower()
+                found = []
+                for title in songs:
+                    if query in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: >-
+            Функция верная (запрос приведён заранее), ожидание маленькими буквами — разбор
+            lower-title-only не должен срабатывать.
+          expectMistake: wrong-expectation
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                    return found
+
+
+            def test_search_ignores_case():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            def test_search_upper_query():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ДОЖДЬ") == ["Летний дождь"]
+
+
+            if __name__ == "__main__":
+                test_search_ignores_case()
+                test_search_upper_query()
+                print("Все тесты прошли")
+          note: return внутри цикла, тесты верные — ошибка в функции.
+          expectMistake: wrong-expectation
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if title.lower().find(query.lower()) > 0:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: find(...) > 0 не видит совпадение в начале названия; тест верный.
+          expectMistake: wrong-expectation
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                # отзыв: «ночь» ничего не находит
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == []
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Функция не исправлена, ожидание списано с вывода — пустой список для «ночь».
+          expectMistake: fitted
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query.lower() in title.lower():
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_songs(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review
+                print("Все тесты прошли")
+          note: Тест упомянут без скобок — при запуске он не выполняется.
+          expectMistake: no-parens
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            # Отзыв слушателя: «Ищу "ночь" — ничего не находит,
+            # хотя в плейлисте есть "Ночь над городом"».
+            # Требование: поиск не различает большие и маленькие буквы,
+            # а названия возвращаются такими, как в плейлисте, и в том же порядке.
+          note: Стартовый код без изменений — «Проверить» сразу.
+          expectMistake: no-tests
+        - code: |
+            def find_songs(songs, query):
+                found = []
+                for title in songs:
+                    if query in title:
+                        found.append(title)
+                return found
+
+
+            def test_review():
+                playlist = ["Ночь над городом", "Летний дождь", "Дорога домой", "Ночной поезд"]
+                assert find_song(playlist, "ночь") == ["Ночь над городом"]
+
+
+            if __name__ == "__main__":
+                test_review()
+                print("Все тесты прошли")
+          note: Опечатка в имени функции внутри теста — NameError; логические разборы не перехватывают её.
+          expectMistake: null
+      mistakes:
+        - id: lowered-title
+          when:
+            codeRegex: '^[ \t]*(?!query\b)(\w+)\s*=\s*\1\.(lower|upper|casefold)\(\)'
+            failedTest: t-c-night
+          why: >-
+            Название перезаписано маленькими буквами (например, `title = title.lower()`), и в
+            список попадает уже переделанное. А по требованиям названия возвращаются такими, как
+            в плейлисте: «Ночь над городом».
+          try: >-
+            Не перезаписывай название: сравнивай `title.lower()`, а в список добавляй исходное
+            `title`. Если ожидание в тесте ты уже переписал маленькими буквами, верни его как в
+            плейлисте.
+          verify: Тест из отзыва ждёт `["Ночь над городом"]` — с большой «Н» — и проходит.
+        - id: lowercase-output
+          when:
+            codeRegex: 'append\([^)\n]*\.(lower|upper|casefold)\(\)'
+            failedTest: t-c-night
+          why: >-
+            Функция добавляет в список переделанное название, а в требованиях — «такими, как в
+            плейлисте». Слушатель должен увидеть «Ночь над городом», а не «ночь над городом».
+          try: >-
+            Меняй регистр только для сравнения, а в список добавляй исходное название. Если
+            ожидание в тесте ты уже переписал маленькими буквами, верни его как в плейлисте.
+        - id: exact-match
+          when:
+            codeRegex: 'query[^\n]*==[^\n]*title|title[^\n]*==[^\n]*query'
+            failedTest: t-c-night
+          why: >-
+            `==` сравнивает строки целиком: «ночь» не равна «ночь над городом». А по требованиям
+            запрос может быть частью названия.
+          try: Проверяй, входит ли запрос в название, — через `in`, как в исходной функции.
+        - id: lower-query-only
+          when:
+            codeRegex: 'query\.lower\(\)\s+in\s+\w+\s*:|(?<![\s\S])(?=[\s\S]*query\s*=\s*query\.lower\(\))(?=[\s\S]*\bif\s+query\s+in\s+\w+\s*:)'
+            failedTest: t-c-night
+          why: >-
+            К маленьким буквам приведён только запрос. «ночь» ищется в «Ночь над городом»
+            по-прежнему с учётом регистра, и большая «Н» мешает найти песню из отзыва.
+          try: Приведи к одному регистру обе строки в сравнении — и запрос, и название.
+        - id: lower-title-only
+          when:
+            codeRegex: '(?<![\s\S])(?![\s\S]*query\s*=\s*query\.)(?=[\s\S]*\bquery\s+in\s+\w+\.lower\(\))'
+            failedTest: t-c-rain
+          why: >-
+            К маленьким буквам приведено только название. Запрос из отзыва теперь находится, но
+            запрос «ДОЖДЬ» большими буквами — нет: «ДОЖДЬ» не входит в «летний дождь».
+          try: Приведи к одному регистру обе строки в сравнении — и запрос, и название.
+        - id: only-capital
+          when:
+            codeRegex: 'query\.(capitalize|title)\(\)'
+          why: >-
+            `capitalize()` делает большой только первую букву: «ДОЖДЬ» станет «Дождь», а в
+            «Летний дождь» такого нет. И название может быть записано целиком большими буквами —
+            «ДОЖДЬ И ГРОМ».
+          try: >-
+            Приведи к одному регистру обе строки в сравнении — и запрос, и название. Тогда
+            неважно, как они были записаны.
+        - id: red-now-fix
+          when:
+            errorType: AssertionError
+            codeRegex: '\bif\s+query\s+in\s+\w+\s*:'
+          why: >-
+            Твой тест падает — это красный шаг: функция по-прежнему сравнивает строки с учётом
+            регистра.
+          try: >-
+            Проверь по traceback, что упал тест с запросом из отзыва, а ожидание в нём — по
+            требованиям: «ночь» есть только в «Ночь над городом». Потом исправь `find_songs`: как
+            сравнить строки без учёта больших и маленьких букв? Вспомни методы строк из урока 4.3.
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Сравнение в функции уже изменено, но тест всё равно падает. Ошибка может быть и в
+            тесте, и в функции.
+          try: >-
+            Найди в traceback упавший assert и сверь ожидание с требованиями: названия — как в
+            плейлисте, в том же порядке и без лишних («ночь» не входит в «Ночной поезд»: там
+            «Ночн…»). Ожидание верное — ищи ошибку в функции, например где стоит `return`.
+          verify: После запуска должна появиться строка «Все тесты прошли».
+        - id: fitted
+          when:
+            failedTest: t-catches
+            codeRegex: '^[^#\n]*find_songs\([^\n]*["'']ночь["'']\s*\)\s*==\s*\[\s*\]'
+            outputIncludes: прошли
+          why: >-
+            Тест подогнан под ошибку: он ждёт пустой список для запроса «ночь». Так работает
+            сломанная функция, а по требованиям «Ночь над городом» должна найтись.
+          try: 'Запиши в ожидание то, что требуется: список с названием из плейлиста.'
+          verify: Пока функция не исправлена, тест должен падать. После исправления — проходить.
+        - id: no-parens
+          when:
+            failedTest: t-called
+            codeRegex: '^[ \t]*test_\w+[ \t]*$'
+          why: >-
+            Имя теста без скобок только упоминает функцию, но не вызывает её. Поэтому при запуске
+            тест не выполняется, и красного шага не видно.
+          try: Поставь после имени скобки, например `test_review()`.
+          verify: Пока функция не исправлена, «Запустить» должен остановиться с AssertionError.
+        - id: no-tests
+          when:
+            codeRegex: '(?<![\s\S])(?![\s\S]*def\s+test_)'
+            failedTest: t-catches
+          why: >-
+            В программе нет ни одной функции `test_…`. Тренажёр ищет тесты по имени, поэтому ему
+            нечего запускать на старой и новой версиях функции.
+          try: Оформи проверку как функцию, имя которой начинается с `test_`, а внутри — `assert`.
+        - id: no-regression
+          when:
+            failedTest: t-catches
+            outputIncludes: прошли
+          why: >-
+            Тесты есть, но ни один не падает на старой версии функции. Значит, они не
+            воспроизводят ошибку из отзыва — например, запрос и название в них записаны в одном
+            регистре.
+          try: >-
+            Возьми пример прямо из отзыва: запрос «ночь» маленькими буквами и название «Ночь над
+            городом» с большой.
+        - id: not-called
+          when:
+            failedTest: t-called
+            outputIncludes: прошли
+          why: >-
+            Тест объявлен, но при запуске не вызывается. Поэтому «Запустить» не показывает ни
+            красного, ни зелёного шага, а «Все тесты прошли» печатается в любом случае.
+          try: Добавь вызов теста в блок `if __name__ == "__main__":` перед `print`.
+      afterPass: >-
+        Отзыв слушателя превратился в тест. Если поиск когда-нибудь снова станет различать
+        регистр, тест скажет об этом раньше слушателей. Одно улучшение: добавь тест на запрос,
+        которого нет в плейлисте, — функция должна вернуть пустой список.
+      skills: [regression-tests, debugging, string-methods]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - Регрессия — исправленная ошибка вернулась или изменение сломало то, что раньше работало.
+      - "Порядок: воспроизвести → тест красный → исправить → тест зелёный → все тесты → коммит."
+      - Ожидание берут из требований и сообщения об ошибке, а не из вывода программы. Тест, списанный с вывода, узаконивает ошибку.
+      - Регрессионный тест остаётся в наборе навсегда, а его имя или комментарий говорит, какую ошибку он сторожит.
+    question: >-
+      Зачем запускать регрессионный тест до исправления, если после исправления он всё равно
+      пройдёт?
+    answer: >-
+      Только тест, который упал на старом коде — и упал на том самом неверном значении из
+      сообщения об ошибке, — доказывает, что он ловит именно эту ошибку. Тест, написанный после
+      исправления, мог бы проходить и на старом коде — например, если в нём не тот пример или
+      не то ожидание. Тогда он ничего не сторожит, и ошибка вернётся незаметно.

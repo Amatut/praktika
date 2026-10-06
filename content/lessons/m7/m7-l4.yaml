@@ -1,0 +1,1886 @@
+id: m7-l4
+module: m7
+number: "7.4"
+title: "Неверный ввод: спросить ещё раз"
+objective: >-
+  Писать цикл, который переспрашивает, пока человек не введёт подходящее значение, и объясняет,
+  что не так, — и выносить такой цикл в функцию с параметрами.
+minutes: [25, 30]
+prerequisites: [m7-l3]
+skills: [input-validation, exceptions]
+environment: python
+
+story:
+  title: "«Семь» буквами"
+  fictional: true
+  text: >-
+    Кирилл написал «Угадай число», как в уроке 3.5, и дал поиграть младшей сестре Асе. На третьей
+    попытке она набрала «семь» буквами — игра упала с ValueError, и загаданное число пропало
+    вместе со всеми попытками. Сначала Кирилл хотел дописать в правила «вводи цифрами», но понял:
+    люди всё равно будут ошибаться. Теперь игра отвечает «Нужно целое число, например 42» и
+    спрашивает снова — и Ася доиграла до победы.
+
+why: >-
+  Люди ошибаются при вводе: пишут буквы вместо цифр, ставят лишние пробелы, вводят число, которое
+  не имеет смысла. Программа не должна ни падать, ни молча принимать ерунду — она объясняет, что
+  не так, и спрашивает снова. Например, на возраст «двадцать» или «-5» — переспросить.
+
+usedIn: >-
+  Формы на сайтах: поле с ошибкой подсвечивается и ждёт исправления. Банкоматы и терминалы
+  оплаты, консольные утилиты, чат-боты, которые переспрашивают дату или сумму, игры, которые
+  ждут допустимый ход или номер пункта меню.
+
+steps:
+  - id: loop-pattern
+    type: theory
+    title: Спросить, проверить, принять
+    body: |-
+      В уроке 7.3 программа Эмиля ловила ValueError и печатала понятное сообщение — но на этом
+      всё заканчивалось: чтобы попробовать снова, её приходилось запускать заново. Удобнее сразу
+      **переспросить**. Для этого соединяем два знакомых приёма: `while True` из урока 3.4 и
+      `try`/`except` из урока 7.3.
+
+      Надёжный запрос — это четыре шага, которые повторяются, пока ответ не подойдёт:
+
+      1. **Спросить** — `input()`.
+      2. **Превратить** — `int(text)` внутри `try`. Не вышло (ValueError) — сообщение и
+         `continue`: снова к вопросу.
+      3. **Проверить смысл.** Число есть, но подходит ли оно? Возраст -5 — тоже целое число. Не
+         подходит — сообщение и `continue`.
+      4. **Принять** — `break`: из цикла выходит только подходящий ответ.
+
+      ```python
+      while True:
+          text = input("Сколько тебе лет? ")
+          try:
+              age = int(text)
+          except ValueError:
+              print("Нужно целое число цифрами, например 25")
+              continue
+          if age < 1 or age > 120:
+              print("Возраст — от 1 до 120")
+              continue
+          break
+      print("Возраст:", age)
+      ```
+
+      **`continue` после каждого сообщения обязателен,** если ниже в цикле есть ещё строки: он
+      сразу возвращает к вопросу. Без него программа пойдёт дальше по телу цикла с тем, что
+      есть. К чему это приводит, проверишь в прогнозе через шаг.
+
+      **Хорошее сообщение** говорит, что не так и как правильно, лучше с примером: «Нужно целое
+      число цифрами, например 25». Слово «Ошибка!» человеку ничем не поможет.
+
+      **Почему не `isdigit()`.** Метод из урока 4.3 отвергает `"-3"` и `" 5 "`: минус и пробел —
+      не цифры. А `int()` превращает их в -3 и 5. Пусть решает сам `int()`, а смысл (например,
+      «больше нуля») проверяет шаг 3 — со своим, точным сообщением.
+
+      **Цикл в функции.** Если спрашивать нужно не один раз, цикл выносят в функцию. Вместо
+      `break` там пишут `return age`: он выходит сразу и из цикла, и из функции и отдаёт число.
+      Правило про `continue` внутри функции то же.
+
+      **В тренажёре** ответы записаны заранее. Если все строки ввода неподходящие, программа
+      попросит ещё одну, а её нет — EOFError. На компьютере цикл просто ждал бы следующего ответа.
+    simpler: >-
+      Представь вахтёра: он спрашивает пропуск. Нет пропуска — объясняет, какой нужен, и ждёт
+      снова. Пропуск просрочен — объясняет и ждёт снова. Всё в порядке — пропускает. В коде
+      «ждёт снова» — это `continue`, «пропускает» — `break` или `return`.
+    coach: >-
+      На каждый неверный ответ спроси себя: что увидит человек и куда пойдёт программа дальше?
+
+  - id: guess-guard
+    type: example
+    title: Защита для «Угадай число»
+    body: >-
+      Функция из игры Кирилла: она спрашивает догадку, пока не получит целое число от 1 до 100.
+      Ввод для примера уже задан — «семь», «150» и «42». Нажми «Запустить».
+    code: |-
+      def ask_guess():
+          while True:
+              text = input("Твоя догадка (1–100): ")
+              try:
+                  guess = int(text)
+              except ValueError:
+                  print("Нужно целое число, например 42")
+                  continue
+              if guess < 1 or guess > 100:
+                  print("Число должно быть от 1 до 100")
+                  continue
+              return guess
+
+
+      number = ask_guess()
+      print("Принято:", number)
+    stdin: "семь\n150\n42\n"
+    notes:
+      - line: 2
+        text: >-
+          `while True` — вопрос повторяется, пока функция сама не выйдет из цикла.
+      - line: 5
+        text: >-
+          Рискованная строка — внутри `try`. На «семь» `int()` выбрасывает ValueError, и
+          `guess` не появляется.
+      - line: 8
+        text: >-
+          `continue` — «спроси заново»: строки 9–12 пропускаются, и начинается следующая итерация
+          цикла.
+      - line: 9
+        text: >-
+          Сюда доходит только настоящее число. 150 — целое, но для игры не подходит: сообщение
+          и снова `continue`.
+      - line: 12
+        text: >-
+          Обе проверки пройдены — `return` отдаёт число и завершает функцию, а вместе с ней и
+          цикл. `break` здесь не нужен.
+      - line: 15
+        text: Основная часть программы получает уже проверенное число — ей не надо думать об ошибках ввода.
+    tryIt: >-
+      Убери `continue` в строке 11 и запусти: сообщение про диапазон появится — и 150 всё равно
+      примут. Верни `continue` на место. Потом поменяй в строке 9 границу 100 на 40 и поправь
+      вопрос в строке 3 и сообщения в строках 7 и 10 (пример 42 тоже больше не подходит).
+      Теперь не подойдёт и ответ 42: ответы кончатся, и тренажёр покажет EOFError — как сказано
+      в теории.
+    coach: >-
+      Проследи по выводу: три строки ввода — три итерации цикла. Какая закончилась через
+      `continue`, а какая — через `return`?
+
+  - id: no-continue
+    type: predict
+    title: Буквы вместо числа
+    prompt: >-
+      Программа должна спрашивать число, пока не введут положительное. Во вводе две строки: `abc`
+      и `5`. Как думаешь, что произойдёт?
+    code: |-
+      while True:
+          try:
+              n = int(input())
+          except ValueError:
+              print("Нужно число")
+          if n > 0:
+              break
+      print(n)
+    stdin: "abc\n5\n"
+    options:
+      - "«Нужно число», затем 5"
+      - "«Нужно число», затем ошибка NameError"
+      - "Только 5"
+      - "Ошибка ValueError на строке «abc»"
+    answer: "«Нужно число», затем ошибка NameError"
+    answerIsNotOutput: true
+    explanation: >-
+      `int("abc")` выбросил ValueError, и присваивание `n = ...` не выполнилось: переменной `n`
+      так и не появилось. `except` поймал ошибку и напечатал «Нужно число» — поэтому ValueError
+      программу не остановил. Но дальше выполнение пошло не к вопросу, а к строке `if n > 0`, а
+      там Python не знает `n`: `NameError: name 'n' is not defined`. До второй строки ввода дело
+      не дошло. Хватило бы одной строки — `continue` после сообщения. Если бы такой цикл стоял
+      внутри функции, ошибка называлась бы UnboundLocalError (урок 5.4): у переменной функции
+      ещё нет значения.
+    coach: >-
+      `except` не возвращает к вопросу сам: после него выполняется всё, что стоит ниже.
+
+  - id: good-message
+    type: quiz
+    title: Какое сообщение поможет
+    question: >-
+      Человек ввёл «двадцать» в ответ на вопрос «Сколько тебе лет?». Какой ответ программы
+      поможет ему больше всего?
+    options:
+      - Ошибка!
+      - "ValueError: invalid literal for int() with base 10: 'двадцать'"
+      - Возраст нужно написать цифрами — например, 34
+      - Неверный ввод, попробуйте ещё раз
+    correct: 2
+    explanation: >-
+      «Ошибка!» и «Неверный ввод» говорят только, что что-то не так, — человеку придётся гадать,
+      что именно. Текст ValueError полезен программисту, а не тому, кто вводит возраст. Хорошее
+      сообщение называет, что нужно, и показывает, как правильно: цифрами, например 34.
+    coach: >-
+      Проверяй сообщение так: поймёт ли его человек, который ни разу не видел Python?
+
+  - id: practice-tickets
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m7-l4-e1
+      kind: repeat
+      title: Сколько билетов
+      statement: |-
+        Программа в кассе планетария спрашивает, сколько билетов нужно. Кассир иногда ошибается:
+        пишет число словами или жмёт Enter на пустом поле. Поэтому программа должна
+        переспрашивать:
+
+        - ввели не целое число — напечатать `Нужно целое число` и спросить снова;
+        - ввели целое число — напечатать `Билетов: N` и закончить.
+
+        Например, ввод `два`, затем `2`:
+
+        ```text
+        Нужно целое число
+        Билетов: 2
+        ```
+
+        Проверять смысл числа пока не нужно: 0 и -3 — тоже целые числа, программа их принимает.
+        Отсеем их в следующей практике.
+
+        Тесты сравнивают сообщения дословно, поэтому печатай их ровно так, как в условии. В
+        своих программах добавляй к сообщению пример, как в теории.
+      input: >-
+        Ответы по одному на строке. В тестах целое число во вводе обязательно встретится.
+      output: >-
+        `Нужно целое число` на каждый неподходящий ответ, затем одна строка `Билетов: N`.
+      constraints:
+        - Текст вопроса в `input()` можно написать любой — он не проверяется.
+        - Лови конкретное исключение, а не «всё подряд».
+      starterCode: |
+        while True:
+            text = input("Сколько билетов? ")
+            # попробуй превратить text в целое число tickets
+            # не вышло — сообщение и снова вопрос
+            # вышло — выход из цикла
+        print(f"Билетов: {tickets}")
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "2\n"
+          expected: "Билетов: 2"
+        - id: t2
+          kind: io
+          title: "Пример 2: число словом"
+          example: true
+          stdin: "два\n2\n"
+          expected: |-
+            Нужно целое число
+            Билетов: 2
+        - id: t3
+          kind: io
+          title: "Граничный случай: пустая строка, потом число с пробелами"
+          edge: true
+          stdin: "\n 3 \n"
+          expected: |-
+            Нужно целое число
+            Билетов: 3
+        - id: t4
+          kind: io
+          title: "Граничный случай: дробь и буквы подряд"
+          edge: true
+          stdin: "2.5\nabc\n4\n"
+          expected: |-
+            Нужно целое число
+            Нужно целое число
+            Билетов: 4
+        - id: t5
+          kind: io
+          title: "Граничный случай: число с минусом"
+          edge: true
+          stdin: "-3\n"
+          expected: "Билетов: -3"
+        - id: t-except
+          kind: assert
+          title: Ловится конкретное исключение
+          stdin: "2\n"
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    assert not (isinstance(node.type, ast.Name) and node.type.id in ("Exception", "BaseException"))
+          message: >-
+            Здесь ловится «всё подряд»: `except` без типа или `except Exception`. Укажи конкретный
+            тип — `ValueError`.
+      criteria:
+        - Пока ответ не превращается в целое число, программа печатает «Нужно целое число» и спрашивает снова.
+        - "На первом же целом числе цикл заканчивается, и печатается «Билетов: N»."
+        - Пустая строка, дробь и слова не ломают программу; « 3 » с пробелами принимается как 3, а «-3» — как -3.
+        - "Ловится конкретное исключение — ValueError."
+      hints:
+        - >-
+          Разбери два случая. Что должно выполниться, если `int()` не смог превратить текст, — и
+          куда после этого должна пойти программа? А что — если смог?
+        - |-
+          Тот же приём «сообщение и снова вопрос» на другом примере, без `try`:
+          ```python
+          while True:
+              answer = input("Продолжить? ")
+              if answer != "да" and answer != "нет":
+                  print("Ответь «да» или «нет»")
+                  continue
+              break
+          ```
+          У тебя вместо сравнения — попытка `int()` в `try`, а сообщение и `continue` живут в
+          `except`.
+        - |-
+          Каркас тела цикла:
+          ```text
+          text = input(...)
+          try:
+              tickets = int(text)
+          except ValueError:
+              сообщение
+              снова к вопросу
+          выход из цикла
+          ```
+      solution:
+        code: |
+          while True:
+              text = input("Сколько билетов? ")
+              try:
+                  tickets = int(text)
+              except ValueError:
+                  print("Нужно целое число")
+                  continue
+              break
+          print(f"Билетов: {tickets}")
+        explanation: >-
+          `int(text)` стоит в `try`: если текст не превращается в число, выполняется `except` —
+          сообщение и `continue`, то есть снова вопрос. Если превращение удалось, `except`
+          пропускается, и `break` выводит из цикла; `tickets` к этому моменту точно есть. `int()`
+          сам отбрасывает пробелы по краям и понимает минус, поэтому « 3 » — это 3, а «-3» —
+          это -3. Можно поставить `break` прямо в `try`, сразу после `int()`: тогда `continue` не
+          нужен.
+      altSolutions:
+        - code: |
+            while True:
+                try:
+                    tickets = int(input("Сколько билетов? "))
+                    break
+                except ValueError:
+                    print("Нужно целое число")
+            print(f"Билетов: {tickets}")
+          note: break прямо в try после int() — continue не нужен.
+        - code: |
+            def ask_tickets():
+                while True:
+                    text = input("Сколько билетов? ")
+                    try:
+                        return int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+
+
+            tickets = ask_tickets()
+            print("Билетов:", tickets)
+          note: Цикл в функции, return вместо break.
+        - code: |
+            text = input("Сколько билетов? ")
+            while True:
+                try:
+                    tickets = int(text)
+                    break
+                except ValueError:
+                    print("Нужно целое число")
+                    text = input("Сколько билетов? ")
+            print(f"Билетов: {tickets}")
+          note: Первый вопрос до цикла, повторный — в except.
+        - code: |
+            ok = False
+            while not ok:
+                text = input()
+                try:
+                    tickets = int(text)
+                    ok = True
+                except ValueError:
+                    print("Нужно целое число")
+            print(f"Билетов: {tickets}")
+          note: Флаг в заголовке while вместо break.
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                try:
+                    tickets = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                else:
+                    break
+            print("Билетов: " + str(tickets))
+          note: try/except/else — break в else; итог склейкой.
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                try:
+                    tickets = int(text)
+                except (ValueError, TypeError):
+                    print("Нужно целое число")
+                    continue
+                print(f"Билетов: {tickets}")
+                break
+          note: Кортеж исключений; итог печатается в цикле перед break.
+      wrongSolutions:
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                try:
+                    tickets = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+            print(f"Билетов: {tickets}")
+          note: Нет break — после верного числа цикл просит ещё.
+          expectMistake: no-break
+        - code: |
+            text = input("Сколько билетов? ")
+            try:
+                tickets = int(text)
+                print(f"Билетов: {tickets}")
+            except ValueError:
+                print("Нужно целое число")
+          note: Нет цикла — спрашивает один раз.
+          expectMistake: no-loop
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                try:
+                    tickets = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                break
+            print(f"Билетов: {tickets}")
+          note: Нет continue после сообщения — выход из цикла без числа.
+          expectMistake: no-continue
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                try:
+                    tickets = int(text)
+                except TypeError:
+                    print("Нужно целое число")
+                    continue
+                break
+            print(f"Билетов: {tickets}")
+          note: Ловится не тот тип исключения.
+          expectMistake: wrong-exception
+        - code: |
+            text = input("Сколько билетов? ")
+            while True:
+                try:
+                    tickets = int(text)
+                    break
+                except ValueError:
+                    print("Нужно целое число")
+            print(f"Билетов: {tickets}")
+          note: input() до цикла — цикл снова и снова проверяет одну и ту же строку.
+          expectMistake: input-outside-loop
+        - code: |
+            while True:
+                try:
+                    tickets = int(input("Сколько билетов? "))
+                except:
+                    print("Нужно целое число")
+                    continue
+                break
+            print(f"Билетов: {tickets}")
+          note: Голый except ловит всё подряд.
+          expectMistake: bare-except
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                try:
+                    tickets = int(text)
+                    break
+                except Exception:
+                    print("Нужно целое число")
+            print(f"Билетов: {tickets}")
+          note: except Exception тоже ловит всё подряд.
+          expectMistake: bare-except
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                if text.isdigit():
+                    tickets = int(text)
+                    break
+                print("Нужно целое число")
+            print(f"Билетов: {tickets}")
+          note: isdigit() без strip() — « 3 » с пробелами считается «не числом».
+          expectMistake: isdigit
+        - code: |
+            while True:
+                text = input().strip()
+                if text.isdigit():
+                    break
+                print("Нужно целое число")
+            print(f"Билетов: {int(text)}")
+          note: isdigit() после strip() — пробелы убраны, но «-3» по-прежнему «не число».
+          expectMistake: isdigit
+        - code: |
+            text = input("Сколько билетов? ")
+            try:
+                tickets = int(text)
+            except ValueError:
+                print("Нужно целое число")
+                text = input("Сколько билетов? ")
+                tickets = int(text)
+            print(f"Билетов: {tickets}")
+          note: Переспрашивает один раз вместо цикла — на второй ошибке падает.
+          expectMistake: no-loop
+        - code: |
+            text = input("Сколько билетов? ")
+            while True:
+                try:
+                    tickets = int(text)
+                    break
+                except ValueError:
+                    text = input("Нужно целое число. Сколько билетов? ")
+            print(f"Билетов: {tickets}")
+          note: Сообщение спрятано в вопрос input() — в проверяемый вывод оно не попадает.
+          expectMistake: message-in-prompt
+        - code: |
+            while True:
+                text = input("Сколько билетов? ")
+                try:
+                    tickets = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                break
+            print(f"Билетов: {text}")
+          note: Печатает text, а не число — « 3 » выходит с пробелами.
+          expectMistake: prints-text
+      mistakes:
+        - id: no-loop
+          when:
+            failedTest: t4
+            codeRegex: '(?<![\s\S])(?![\s\S]*\b(?:while|for)\b)'
+          why: >-
+            В программе нет цикла, поэтому она переспрашивает не больше раз, чем ты написал
+            `input()`. А неверных ответов может быть сколько угодно подряд: в «Граничном случае:
+            дробь и буквы подряд» их два.
+          try: >-
+            Оберни вопрос и проверку в `while True:`, а после удачного `int()` выйди из цикла
+            через `break`.
+          verify: "«Граничный случай: дробь и буквы подряд» должен закончиться строкой «Билетов: 4»."
+        - id: no-continue
+          when:
+            errorType: NameError
+            outputIncludes: Нужно целое число
+          why: >-
+            Сообщение напечатано, но после `except` программа пошла дальше — к выходу из цикла и
+            к `print` с `tickets`. А переменной `tickets` нет: `int()` не сработал. Отсюда
+            NameError — как в прогнозе «Буквы вместо числа».
+          try: Допиши `continue` в `except` сразу после сообщения — он вернёт к вопросу.
+          verify: "В «Примере 2» после «Нужно целое число» должно появиться «Билетов: 2»."
+        - id: wrong-exception
+          when:
+            errorType: ValueError
+          why: >-
+            Программа упала с ValueError — значит, эту ошибку никто не поймал. Либо в `except`
+            указан другой тип, либо `int()` стоит вне `try`: защищены только строки внутри
+            блока.
+          try: >-
+            Поставь `int(text)` внутрь `try` и лови именно `ValueError` — тип из последней строки
+            traceback.
+          verify: "«Пример 2» должен дать «Нужно целое число» и «Билетов: 2»."
+        - id: isdigit
+          when:
+            errorType: EOFError
+            codeIncludes: isdigit
+          why: >-
+            « 3 » с пробелами по краям и «-3» — целые числа: `int()` понимает и пробелы, и минус.
+            А `isdigit()` видит пробел или минус и говорит «не цифры». Программа отвечает «Нужно
+            целое число» на правильный ответ и просит ещё строку, которой во вводе теста уже нет, —
+            отсюда EOFError. Об этом абзац «Почему не `isdigit()`» в теории.
+          try: >-
+            Пусть решает сам `int()`: попробуй `int(text)` внутри `try` и лови `ValueError`.
+          verify: "«Граничный случай: число с минусом» должен дать «Билетов: -3»."
+        - id: no-break
+          when:
+            errorType: EOFError
+          why: >-
+            Целое число введено, а программа спрашивает снова: цикл не останавливается. В
+            тренажёре это видно как EOFError — ввод теста кончился, а `input()` просит ещё строку.
+            На компьютере программа просто ждала бы ответа вечно.
+          try: >-
+            После удачного `int()` выйди из цикла: `break` после блока `try`/`except` (или прямо
+            в `try`).
+          verify: "«Пример 1» должен дать «Билетов: 2» без ошибки."
+        - id: message-in-prompt
+          when:
+            failedTest: t2
+            codeRegex: 'input\s*\([^)\n]*Нужно целое число'
+          why: >-
+            Сообщение «Нужно целое число» стоит в вопросе `input()`. При запуске его видно, но
+            проверка смотрит только то, что печатает `print()`: текст вопроса не проверяется — как
+            сказано в ограничениях. Поэтому для тестов сообщения нет.
+          try: >-
+            Напечатай сообщение отдельной строкой — `print("Нужно целое число")`, — а вопрос в
+            `input()` оставь любым.
+          verify: "«Пример 2» должен дать «Нужно целое число» и «Билетов: 2»."
+        - id: input-outside-loop
+          when:
+            failedTest: t2
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]+.*\binput\s*\()'
+          why: >-
+            `input()` стоит до цикла, поэтому цикл снова и снова проверяет одну и ту же строку
+            «два» — и печатает сообщение без конца. Новый ответ не спрашивается ни разу.
+          try: Перенеси `text = input(...)` внутрь цикла — первой строкой его тела.
+          verify: "«Пример 2» должен дать ровно две строки."
+        - id: prints-text
+          when:
+            failedTest: t3
+            codeRegex: 'print\s*\([^\n]*\btext\b'
+          why: >-
+            В итоговой строке печатается `text` — ответ, как его ввели, вместе с пробелами по
+            краям. `int()` пробелы отбросил, но его результат лежит в `tickets`, а `text` остался
+            прежним.
+          try: "Печатай число, которое вернул `int()`: `print(f\"Билетов: {tickets}\")`."
+          verify: "«Граничный случай: пустая строка, потом число с пробелами» должен дать «Билетов: 3»."
+        - id: bare-except
+          when:
+            failedTest: t-except
+            codeRegex: '\bexcept\s*:|\bexcept\s+(Base)?Exception\b'
+          why: >-
+            `except:` без типа и `except Exception` ловят всё подряд — не только ValueError, но и
+            опечатки в коде, как в уроке 7.3: программа выдаст их за неверный ввод. А голый
+            `except:` вокруг `input()` на компьютере поймает даже Ctrl+C — программу не
+            остановить, на всё она ответит «Нужно целое число».
+          try: "Напиши тип явно: `except ValueError:`."
+          verify: Проверка «Ловится конкретное исключение» должна стать зелёной.
+      afterPass: >-
+        Касса больше не падает ни на «два», ни на пустой строке — она объясняет и ждёт. Но пока
+        принимает и 0, и -3: это тоже целые числа. Как отсеять их — в следующей практике.
+      skills: [input-validation, exceptions, while-loops]
+
+  - id: practice-wheel
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m7-l4-e2
+      kind: modify
+      title: Кабинка колеса обозрения
+      statement: |-
+        В кабинку колеса обозрения садятся от 1 до 6 человек. Программа контролёра спрашивает,
+        сколько человек в кабинке, но проверяет только, что ввели целое число, — и спокойно
+        принимает 8, 0 и даже -2. Измени её:
+
+        - не целое число — как и раньше, `Нужно целое число`, и снова вопрос;
+        - целое, но меньше 1 или больше 6 — `В кабинку садятся от 1 до 6 человек`, и снова
+          вопрос;
+        - от 1 до 6 включительно — `В кабинке: N`.
+
+        Например, ввод `8`, затем `2`:
+
+        ```text
+        В кабинку садятся от 1 до 6 человек
+        В кабинке: 2
+        ```
+      input: Ответы по одному на строке. В тестах подходящее число во вводе обязательно встретится.
+      output: >-
+        Сообщение на каждый неподходящий ответ, затем одна строка `В кабинке: N`.
+      constraints:
+        - Сообщение про целое число и итоговую строку не меняй.
+        - 1 и 6 подходят — границы входят.
+      starterCode: |
+        while True:
+            text = input("Сколько человек в кабинке? ")
+            try:
+                people = int(text)
+            except ValueError:
+                print("Нужно целое число")
+                continue
+            break
+        print(f"В кабинке: {people}")
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "3\n"
+          expected: "В кабинке: 3"
+        - id: t2
+          kind: io
+          title: "Пример 2: слишком много"
+          example: true
+          stdin: "8\n2\n"
+          expected: |-
+            В кабинку садятся от 1 до 6 человек
+            В кабинке: 2
+        - id: t3
+          kind: io
+          title: "Граничный случай: 0, потом 1"
+          edge: true
+          stdin: "0\n1\n"
+          expected: |-
+            В кабинку садятся от 1 до 6 человек
+            В кабинке: 1
+        - id: t4
+          kind: io
+          title: "Граничный случай: ровно 6"
+          edge: true
+          stdin: "6\n"
+          expected: "В кабинке: 6"
+        - id: t5
+          kind: io
+          title: "Граничный случай: слово, минус, 7 и только потом 5"
+          edge: true
+          stdin: "много\n-2\n7\n5\n"
+          expected: |-
+            Нужно целое число
+            В кабинку садятся от 1 до 6 человек
+            В кабинку садятся от 1 до 6 человек
+            В кабинке: 5
+        - id: t6
+          kind: io
+          title: "Граничный случай: двузначное число"
+          edge: true
+          stdin: "10\n4\n"
+          expected: |-
+            В кабинку садятся от 1 до 6 человек
+            В кабинке: 4
+      criteria:
+        - Не целое число — «Нужно целое число», целое вне 1–6 — «В кабинку садятся от 1 до 6 человек»; в обоих случаях вопрос повторяется.
+        - 1 и 6 принимаются, 0 и 7 — нет.
+        - Диапазон проверяется у числа — после `int()`, а не у строки.
+      hints:
+        - >-
+          У ответа теперь две возможные беды: это не число — или число, но не для кабинки.
+          Какую из них можно проверить только тогда, когда число уже получено? Найди внутри цикла
+          место, где оно точно есть: оттуда ещё можно вернуться к вопросу.
+        - |-
+          Проверка смысла на другом примере — оценка от 1 до 5:
+          ```python
+          if grade < 1 or grade > 5:
+              print("Оценка — от 1 до 5")
+              continue
+          ```
+          Эта проверка стоит после `try`/`except`: сюда доходит только уже превращённое число.
+        - |-
+          Каркас тела цикла:
+          ```text
+          text = input(...)
+          try / except ValueError — как сейчас
+          если people меньше 1 или больше 6:
+              сообщение про кабинку
+              снова к вопросу
+          break
+          ```
+      solution:
+        code: |
+          while True:
+              text = input("Сколько человек в кабинке? ")
+              try:
+                  people = int(text)
+              except ValueError:
+                  print("Нужно целое число")
+                  continue
+              if people < 1 or people > 6:
+                  print("В кабинку садятся от 1 до 6 человек")
+                  continue
+              break
+          print(f"В кабинке: {people}")
+        explanation: >-
+          Сначала ответ превращается в число — с «много» дальше идти нельзя. Потом проверяется
+          смысл: `people < 1 or people > 6` верно для 0, -2, 7 и 8, и тогда сообщение и
+          `continue` возвращают к вопросу. Нужно именно `or`: число не бывает одновременно меньше
+          1 и больше 6. До `break` доходит только число от 1 до 6. То же условие можно записать
+          наоборот: `if 1 <= people <= 6: break`, а сообщение — после него.
+      altSolutions:
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if 1 <= people <= 6:
+                    break
+                print("В кабинку садятся от 1 до 6 человек")
+            print(f"В кабинке: {people}")
+          note: Двойное сравнение 1 <= people <= 6 — выход, иначе сообщение.
+        - code: |
+            while True:
+                try:
+                    people = int(input())
+                    if people < 1 or people > 6:
+                        print("В кабинку садятся от 1 до 6 человек")
+                        continue
+                    break
+                except ValueError:
+                    print("Нужно целое число")
+            print("В кабинке:", people)
+          note: Проверка диапазона внутри try — continue работает и там.
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if people >= 1 and people <= 6:
+                    break
+                else:
+                    print("В кабинку садятся от 1 до 6 человек")
+            print(f"В кабинке: {people}")
+          note: Условие «подходит» через and, сообщение в else.
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if people not in range(1, 7):
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: Проверка через not in range(1, 7).
+        - code: |
+            people = 0
+            while people < 1 or people > 6:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if people < 1 or people > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+            print(f"В кабинке: {people}")
+          note: Условие в заголовке while вместо while True и break.
+      wrongSolutions:
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                if text < 1 or text > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: Диапазон проверяется у строки, до int().
+          expectMistake: range-before-int
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if people < 1 or people >= 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: ">= 6 отрезает саму шестёрку."
+          expectMistake: boundary
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                if not text.isdigit():
+                    print("Нужно целое число")
+                    continue
+                people = int(text)
+                if people < 1 or people > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: isdigit() называет -2 «не целым числом» — неверное сообщение.
+          expectMistake: isdigit-minus
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if people < 1 and people > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: and вместо or — условие не бывает верным.
+          expectMistake: and-instead-of-or
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if people < 1 or people > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                break
+            print(f"В кабинке: {people}")
+          note: После сообщения нет continue — неподходящее число принимается.
+          expectMistake: accepts-out-of-range
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: Стартовый код без изменений — диапазон не проверяется.
+          expectMistake: no-range-check
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if text < "1" or text > "6":
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: Границы сравниваются как строки — 10 проходит проверку.
+          expectMistake: range-as-text
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if (people < 1) and (people > 6):
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: and вместо or, сравнения в скобках.
+          expectMistake: and-instead-of-or
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if 1 > people > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: Цепочка 1 > people > 6 никогда не бывает верной.
+          expectMistake: range-check-silent
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                break
+                if people < 1 or people > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+            print(f"В кабинке: {people}")
+          note: Проверка дописана после break — до неё выполнение не доходит.
+          expectMistake: range-check-silent
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if people > 6:
+                    print("В кабинку садятся от 1 до 6 человек")
+                    continue
+                break
+            print(f"В кабинке: {people}")
+          note: Проверена только верхняя граница — 0 принимается.
+          expectMistake: zero-accepted
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                break
+            if people < 1 or people > 6:
+                print("В кабинку садятся от 1 до 6 человек")
+            print(f"В кабинке: {people}")
+          note: Проверка после цикла — переспросить оттуда нельзя.
+          expectMistake: check-after-loop
+        - code: |
+            while True:
+                text = input("Сколько человек в кабинке? ")
+                try:
+                    people = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                break
+            if people < 1 or people > 6:
+                print("В кабинку садятся от 1 до 6 человек")
+                continue
+            print(f"В кабинке: {people}")
+          note: Проверка после цикла и continue вне цикла — SyntaxError.
+          expectMistake: check-after-loop
+      mistakes:
+        - id: range-before-int
+          when:
+            errorIncludes: "not supported between instances of 'str'"
+          why: >-
+            Диапазон проверяется у строки: `text` — это ещё текст из `input()`, а текст с числом
+            Python сравнивать отказывается — TypeError. Смысл можно проверить только у числа.
+          try: >-
+            Перенеси проверку диапазона ниже `try`/`except` и сравнивай `people` — число, которое
+            вернул `int()`.
+          verify: "«Пример 1» должен дать «В кабинке: 3»."
+        - id: check-after-loop
+          when:
+            codeRegex: '^if[ (].*\bpeople\b'
+          why: >-
+            Проверка диапазона стоит после цикла: к ней программа приходит, когда вопрос уже
+            позади. Переспросить оттуда нельзя — `continue` работает только внутри цикла.
+          try: >-
+            Перенеси проверку внутрь цикла — после `try`/`except`, перед `break` — и поставь
+            `continue` после сообщения.
+          verify: "«Пример 2» должен дать сообщение про кабинку и «В кабинке: 2»."
+        - id: boundary
+          when:
+            errorType: EOFError
+            outputIncludes: В кабинку садятся от 1 до 6 человек
+          why: >-
+            Программа отказала числу, которое подходит, и спросила снова — а ввод теста уже
+            кончился, отсюда EOFError. Посмотри, на каком числе: обычно это 6 или 1. `people >= 6`
+            отрезает саму шестёрку, `people <= 1` — единицу, а обе границы входят в диапазон.
+          try: >-
+            Отказывай, только если число меньше 1 или больше 6: `people < 1 or people > 6`.
+          verify: "«Граничный случай: ровно 6» должен дать «В кабинке: 6»."
+        - id: isdigit-minus
+          when:
+            codeIncludes: isdigit
+            failedTest: t5
+          why: >-
+            На `-2` программа ответила «Нужно целое число». Но -2 — целое число, просто не для
+            кабинки. `isdigit()` видит минус, говорит «не цифры», и человек получает неверное
+            объяснение.
+          try: >-
+            Верни превращение через `int()` в `try` — он понимает минус. А отрицательные числа
+            отсеет проверка диапазона со своим сообщением.
+          verify: "В «Граничном случае» с `-2` должно появиться «В кабинку садятся от 1 до 6 человек»."
+        - id: range-as-text
+          when:
+            failedTest: t6
+            codeRegex: '(?:<|>)=?\s*["'']\d|["'']\d+["'']\s*(?:<|>)'
+          why: >-
+            Границы сравниваются как строки: `text > "6"`. Строки сравниваются по символам слева
+            направо, как слова в словаре: "10" меньше "6", потому что "1" меньше "6". Поэтому 10
+            прошло проверку, а 12 и 100 тоже прошли бы.
+          try: >-
+            Сравнивай число, которое вернул `int()`, с числами без кавычек: `people < 1 or
+            people > 6`.
+          verify: "«Граничный случай: двузначное число» должен дать сообщение про кабинку и «В кабинке: 4»."
+        - id: and-instead-of-or
+          when:
+            codeRegex: '(?:<|>)[^\n]*\band\b[^\n]*(?:<|>)'
+            outputEquals: "В кабинке: 8"
+          why: >-
+            В условии `and`: «меньше 1 **и** больше 6». Такого числа не бывает, поэтому условие
+            никогда не верно, и программа принимает даже 8.
+          try: >-
+            Число не подходит, если оно меньше 1 **или** больше 6 — замени `and` на `or`.
+          verify: "«Пример 2» должен начаться с сообщения про кабинку."
+        - id: range-check-silent
+          when:
+            codeIncludes: В кабинку садятся
+            outputEquals: "В кабинке: 8"
+          why: >-
+            Проверка и сообщение в программе есть, но на 8 сообщения не было — проверка не
+            сработала. Так бывает в двух случаях. Условие не бывает верным: например,
+            `1 > people > 6` Python читает как «`1 > people` и `people > 6`», а такого числа нет.
+            Или до проверки не доходит выполнение: она стоит после `break`, а на нём цикл
+            заканчивается.
+          try: >-
+            Поставь проверку перед `break`. Число не подходит, если оно меньше 1 **или** больше 6:
+            `people < 1 or people > 6`.
+          verify: "«Пример 2» должен начаться с сообщения про кабинку."
+        - id: zero-accepted
+          when:
+            outputEquals: "В кабинке: 0"
+          why: >-
+            Программа приняла 0. В кабинку садится хотя бы один человек, поэтому не подходит всё,
+            что меньше 1: и 0, и отрицательные. Похоже, нижняя граница не проверяется или
+            проверяется не так.
+          try: "Проверь условие: число не подходит, если `people < 1` или `people > 6`."
+          verify: "«Граничный случай: 0, потом 1» должен начаться с сообщения про кабинку."
+        - id: accepts-out-of-range
+          when:
+            outputEquals: |-
+              В кабинку садятся от 1 до 6 человек
+              В кабинке: 8
+          why: >-
+            Программа сказала, что 8 не подходит, — и всё равно приняла 8. После сообщения
+            выполнение пошло дальше, к `break`.
+          try: Допиши `continue` сразу после сообщения про кабинку — он вернёт к вопросу.
+          verify: "«Пример 2» должен закончиться строкой «В кабинке: 2»."
+        - id: no-range-check
+          when:
+            outputEquals: "В кабинке: 8"
+          why: >-
+            Программа приняла 8 — проверки диапазона в ней пока нет. Целое число есть, но смысл у
+            него не проверен.
+          try: >-
+            После `try`/`except` и перед `break` добавь проверку: если `people` меньше 1 или
+            больше 6 — сообщение и `continue`.
+          verify: "«Пример 2» должен дать две строки: сообщение и «В кабинке: 2»."
+      afterPass: >-
+        Теперь программа проверяет и тип, и смысл, и у каждой беды своё сообщение. Улучшение
+        на будущее: подставить введённое число в сообщение — «8 — не подходит: в кабинку садятся
+        от 1 до 6 человек». Человек сразу видит, что именно программа прочитала.
+      skills: [input-validation, boundary-checks, boolean-logic]
+
+  - id: practice-dance
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m7-l4-e3
+      kind: write
+      title: "Запись в студию: функция ask_int"
+      statement: |-
+        Танцевальная студия записывает на занятия. Программа спрашивает возраст — от 7 до 80 лет —
+        и сколько занятий в месяц нужно — от 1 до 12. Оба вопроса устроены одинаково, отличаются
+        только текстом и границами. Поэтому напиши функцию `ask_int(prompt, low, high)`:
+
+        - задаёт вопрос `prompt` через `input(prompt)`;
+        - не целое число — печатает `Нужно целое число` и спрашивает снова;
+        - целое, но не от `low` до `high` включительно — печатает `Нужно число от <low> до <high>`
+          (например, `Нужно число от 7 до 80`) и спрашивает снова;
+        - подходящее число **возвращает** — не печатает.
+
+        Потом с её помощью спроси возраст и число занятий и выведи строку записи. Ввод
+        `тридцать`, `34`, `0`, `8`:
+
+        ```text
+        Нужно целое число
+        Нужно число от 1 до 12
+        Запись готова: возраст 34, занятий 8
+        ```
+      input: Ответы по одному на строке — сначала на вопрос о возрасте, потом о занятиях.
+      output: >-
+        Сообщения на неподходящие ответы, затем `Запись готова: возраст A, занятий N`.
+      constraints:
+        - Имя и параметры функции — ровно `ask_int(prompt, low, high)`.
+        - Оба вопроса задаются через `ask_int`; функция проверяется и отдельно, с другими границами.
+        - Текст вопросов в вызовах `ask_int` — любой, он не проверяется.
+        - Лови конкретное исключение, а не «всё подряд».
+      starterCode: |
+        def ask_int(prompt, low, high):
+            # спрашивай prompt, пока не введут целое число от low до high,
+            # и верни это число
+            pass
+
+
+        # спроси возраст (от 7 до 80) и число занятий в месяц (от 1 до 12),
+        # потом выведи строку записи
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "34\n8\n"
+          expected: "Запись готова: возраст 34, занятий 8"
+        - id: t2
+          kind: io
+          title: "Пример 2: ошибки в обоих ответах"
+          example: true
+          stdin: "тридцать\n34\n0\n8\n"
+          expected: |-
+            Нужно целое число
+            Нужно число от 1 до 12
+            Запись готова: возраст 34, занятий 8
+        - id: t3
+          kind: io
+          title: "Граничный случай: 7 лет и 12 занятий"
+          edge: true
+          stdin: "7\n12\n"
+          expected: "Запись готова: возраст 7, занятий 12"
+        - id: t4
+          kind: io
+          title: "Граничный случай: 80 лет и 1 занятие"
+          edge: true
+          stdin: "80\n1\n"
+          expected: "Запись готова: возраст 80, занятий 1"
+        - id: t5
+          kind: io
+          title: "Граничный случай: рядом с границами"
+          edge: true
+          stdin: "6\n81\n40\n13\n1\n"
+          expected: |-
+            Нужно число от 7 до 80
+            Нужно число от 7 до 80
+            Нужно число от 1 до 12
+            Запись готова: возраст 40, занятий 1
+        - id: t6
+          kind: assert
+          title: Функция работает с любыми границами
+          example: true
+          stdin: "34\n8\n"
+          code: |
+            import contextlib
+            import io
+
+            answers = ["x", "0", "11", "10"]
+
+
+            def input(prompt=""):
+                assert answers, "ask_int просит ввод снова, хотя подходящее число уже введено"
+                return answers.pop(0)
+
+
+            shown = io.StringIO()
+            with contextlib.redirect_stdout(shown):
+                result = ask_int("Сколько?", 1, 10)
+            text = shown.getvalue()
+            assert type(result) is int and result == 10
+            assert "Нужно целое число" in text
+            assert text.count("Нужно число от 1 до 10") == 2
+            assert answers == []
+          message: >-
+            Проверка вызывает `ask_int("Сколько?", 1, 10)` и отвечает `x`, `0`, `11`, `10`.
+            Функция должна напечатать «Нужно целое число», потом дважды «Нужно число от 1 до 10»,
+            вернуть число 10 (int, не строку) и больше не просить ввод.
+        - id: t7
+          kind: assert
+          title: Вопрос берётся из параметра prompt
+          stdin: "34\n8\n"
+          code: |
+            asked = []
+            answers = ["5"]
+
+
+            def input(prompt=""):
+                assert answers, "ask_int просит ввод снова, хотя подходящее число уже введено"
+                asked.append(str(prompt))
+                return answers.pop(0)
+
+
+            ask_int("Сколько лет коту?", 1, 30)
+            assert len(asked) == 1 and "Сколько лет коту?" in asked[0]
+          message: >-
+            Функция должна показывать вопрос из параметра `prompt` — передай его в `input()`.
+        - id: t-except
+          kind: assert
+          title: Ловится конкретное исключение
+          stdin: "34\n8\n"
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    assert not (isinstance(node.type, ast.Name) and node.type.id in ("Exception", "BaseException"))
+          message: >-
+            Здесь ловится «всё подряд»: `except` без типа или `except Exception`. Укажи конкретный
+            тип — `ValueError`.
+      criteria:
+        - "`ask_int(prompt, low, high)` повторяет вопрос, пока не получит целое число от `low` до `high` включительно."
+        - Сообщения берут границы из параметров, поэтому одна функция подходит для любого вопроса.
+        - Функция возвращает число, а строку записи печатает основная часть программы.
+        - Оба вопроса задаются через `ask_int`.
+        - "Ловится конкретное исключение — ValueError."
+      hints:
+        - >-
+          Сравни два вопроса программы: что у них общее, а что своё? Своё — это параметры
+          функции. Общее — её тело: цикл «спросить → превратить → проверить → принять» из
+          практики с кабинкой.
+        - |-
+          Функция-вопрос на другом примере:
+          ```python
+          def ask_yes_no(prompt):
+              while True:
+                  answer = input(prompt)
+                  if answer == "да" or answer == "нет":
+                      return answer
+                  print("Ответь «да» или «нет»")
+
+
+          go = ask_yes_no("Идём в кино? ")
+          ```
+          `return` внутри цикла сразу отдаёт ответ и заканчивает и цикл, и функцию.
+        - |-
+          Каркас:
+          ```text
+          def ask_int(prompt, low, high):
+              while True:
+                  text = input(prompt)
+                  попробовать int(text); не вышло — «Нужно целое число», continue
+                  число вне low…high — сообщение с low и high в f-строке, continue
+                  вернуть число
+
+          age = ask_int(вопрос, 7, 80)
+          visits = ask_int(вопрос, 1, 12)
+          print(строка записи)
+          ```
+      solution:
+        code: |
+          def ask_int(prompt, low, high):
+              while True:
+                  text = input(prompt)
+                  try:
+                      value = int(text)
+                  except ValueError:
+                      print("Нужно целое число")
+                      continue
+                  if value < low or value > high:
+                      print(f"Нужно число от {low} до {high}")
+                      continue
+                  return value
+
+
+          age = ask_int("Возраст: ", 7, 80)
+          visits = ask_int("Занятий в месяц: ", 1, 12)
+          print(f"Запись готова: возраст {age}, занятий {visits}")
+        explanation: >-
+          Всё, что отличает вопросы, пришло в параметры: текст `prompt` и границы `low`, `high`.
+          Поэтому в теле нет ни одного конкретного числа — и сообщение, и проверка берут границы
+          из параметров. `return value` стоит там, куда доходит только подходящее число: он
+          завершает и цикл, и функцию. Основная часть программы получает уже проверенные числа и только
+          печатает итог. Понадобится третий вопрос — хватит ещё одной строки с `ask_int`.
+      altSolutions:
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if low <= value <= high:
+                        break
+                    print(f"Нужно число от {low} до {high}")
+                return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: break в цикле и return после него; двойное сравнение.
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    try:
+                        value = int(input(prompt))
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print("Нужно число от", low, "до", high)
+                    else:
+                        return value
+
+
+            age = ask_int("Сколько тебе лет? ", 7, 80)
+            visits = ask_int("Сколько занятий в месяц? ", 1, 12)
+            print("Запись готова: возраст " + str(age) + ", занятий " + str(visits))
+          note: return в else, print через запятые, склейка строк в итоге.
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(f"{prompt} ({low}–{high}): ")
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if not (low <= value <= high):
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                    return value
+
+
+            print(f"Запись готова: возраст {ask_int('Возраст', 7, 80)}, занятий {ask_int('Занятий в месяц', 1, 12)}")
+          note: Границы дописаны в вопрос; вызовы прямо внутри f-строки.
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value in range(low, high + 1):
+                        return value
+                    print(f"Нужно число от {low} до {high}")
+
+
+            age = ask_int(prompt="Возраст: ", low=7, high=80)
+            visits = ask_int("Занятий в месяц: ", high=12, low=1)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: value in range(low, high + 1); вызовы с именованными аргументами.
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    try:
+                        value = int(input(prompt))
+                        if value < low or value > high:
+                            print(f"Нужно число от {low} до {high}")
+                            continue
+                        return value
+                    except ValueError:
+                        print("Нужно целое число")
+
+
+            def main():
+                age = ask_int("Возраст (7–80): ", 7, 80)
+                visits = ask_int("Занятий в месяц (1–12): ", 1, 12)
+                print("Запись готова: возраст", str(age) + ",", "занятий", visits)
+
+
+            main()
+          note: Проверка диапазона и return внутри try; основная программа в функции main.
+      wrongSolutions:
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < 7 or value > 80:
+                        print("Нужно число от 7 до 80")
+                        continue
+                    return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: В функции записаны границы возраста вместо параметров.
+          expectMistake: hardcoded-borders
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                    print(value)
+                    break
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Функция печатает число вместо return — возвращает None.
+          expectMistake: no-return
+        - code: |
+            while True:
+                text = input("Возраст: ")
+                try:
+                    age = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if age < 7 or age > 80:
+                    print("Нужно число от 7 до 80")
+                    continue
+                break
+            while True:
+                text = input("Занятий в месяц: ")
+                try:
+                    visits = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    continue
+                if visits < 1 or visits > 12:
+                    print("Нужно число от 1 до 12")
+                    continue
+                break
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Два одинаковых цикла вместо функции.
+          expectMistake: no-function
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value <= low or value >= high:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                    return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Границы не включены — 7, 80, 1 и 12 отвергаются.
+          expectMistake: boundary
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: return стоит после бесконечного цикла — до него не дойти.
+          expectMistake: no-exit
+        - code: |
+            def ask_int(low, high, prompt):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                    return value
+
+
+            age = ask_int(7, 80, "Возраст: ")
+            visits = ask_int(1, 12, "Занятий в месяц: ")
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Параметры в другом порядке — программа работает, а вызов из условия нет.
+          expectMistake: param-order
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                    if value < low or value > high:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                    return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Нет continue после «Нужно целое число» — UnboundLocalError.
+          expectMistake: no-continue
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print(f"Нужно число от {low} до {high}")
+                    return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Нет continue после сообщения о границах — неподходящее число возвращается.
+          expectMistake: accepts-out-of-range
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                        return value
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: return сразу после int() в try — до проверки диапазона выполнение не доходит.
+          expectMistake: range-skipped
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print("Нужно число от {low} до {high}")
+                        continue
+                    return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Забыта буква f — в сообщении {low} и {high} вместо чисел.
+          expectMistake: no-f-string
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except ValueError:
+                        print("Нужно целое число")
+                        continue
+                    if value < 7 or value > 80:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                    return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Границы возраста остались только в условии, сообщение берёт параметры.
+          expectMistake: hardcoded-condition
+        - code: |
+            def ask_int(prompt, low, high):
+                text = input(prompt)
+                try:
+                    value = int(text)
+                except ValueError:
+                    print("Нужно целое число")
+                    return
+                if value < low or value > high:
+                    print(f"Нужно число от {low} до {high}")
+                    return
+                return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: В функции нет цикла — на ошибке она возвращает None.
+          expectMistake: no-loop-in-function
+        - code: |
+            def ask_int(prompt, low, high):
+                while True:
+                    text = input(prompt)
+                    try:
+                        value = int(text)
+                    except:
+                        print("Нужно целое число")
+                        continue
+                    if value < low or value > high:
+                        print(f"Нужно число от {low} до {high}")
+                        continue
+                    return value
+
+
+            age = ask_int("Возраст: ", 7, 80)
+            visits = ask_int("Занятий в месяц: ", 1, 12)
+            print(f"Запись готова: возраст {age}, занятий {visits}")
+          note: Голый except ловит всё подряд.
+          expectMistake: bare-except
+      mistakes:
+        - id: no-function
+          when:
+            errorType: NameError
+            errorIncludes: ask_int
+          why: >-
+            Python не нашёл функцию `ask_int`. Так бывает, если функция названа иначе, если вопросы
+            заданы двумя циклами без функции или если вызов стоит выше `def`. Функцию проверяют и
+            отдельно, с другими вопросами и границами, поэтому нужна именно она.
+          try: >-
+            Объяви `def ask_int(prompt, low, high):` в начале программы и задай оба вопроса через
+            неё.
+          verify: Проверка «Функция работает с любыми границами» должна стать зелёной.
+        - id: no-continue
+          when:
+            errorType: UnboundLocalError
+            outputIncludes: Нужно целое число
+          why: >-
+            Сообщение напечатано, но после `except` функция пошла дальше — к проверке диапазона.
+            А у `value` ещё нет значения: `int()` не сработал. Отсюда UnboundLocalError — так
+            внутри функции называется NameError из прогноза «Буквы вместо числа».
+          try: Допиши `continue` в `except` сразу после сообщения — он вернёт к вопросу.
+          verify: "«Пример 2» должен пройти без ошибки."
+        - id: hardcoded-borders
+          when:
+            failedTest: t2
+            outputIncludes: Нужно число от 7 до 80
+          why: >-
+            На вопрос о занятиях программа ответила «Нужно число от 7 до 80»: в функции записаны
+            границы возраста, а не параметры. Функция одна на оба вопроса, поэтому и проверка, и
+            сообщение должны брать `low` и `high`.
+          try: >-
+            Замени 7 и 80 внутри функции на `low` и `high` — и в условии, и в сообщении
+            (f-строка: `f"Нужно число от {low} до {high}"`).
+          verify: "«Пример 2» должен дать «Нужно число от 1 до 12»."
+        - id: hardcoded-condition
+          when:
+            failedTest: t6
+            codeRegex: '(?:<|>)=?\s*(?:7|80|12)\b'
+          why: >-
+            В условии функции записаны числа, а не параметры, например `value < 7 or value > 80`.
+            Сообщение берёт `low` и `high`, а проверка — всегда одни и те же числа. Поэтому для
+            занятий функция проверяет не те границы, а проверка с границами от 1 до 10 не проходит.
+          try: "Замени числа в условии на параметры: `value < low or value > high`."
+          verify: Проверка «Функция работает с любыми границами» должна стать зелёной.
+        - id: boundary
+          when:
+            errorType: EOFError
+            outputIncludes: Нужно число от
+          why: >-
+            Функция отказала подходящему числу — например, 7 или 12 — и спросила снова, а ввод
+            теста уже кончился: EOFError. «От 7 до 80» включает и 7, и 80: сами границы
+            подходят.
+          try: >-
+            Отказывай, только если `value < low` или `value > high` — со строгими знаками.
+          verify: "«Граничный случай: 7 лет и 12 занятий» должен пройти."
+        - id: no-exit
+          when:
+            errorType: EOFError
+            codeRegex: '^([ \t]+)while True\s*:[^\n]*\n(?:(?:\1[ \t]+[^\n]*)?\n)*\1return\b'
+          why: >-
+            Подходящее число введено, а функция спрашивает снова: из цикла нет выхода. `return`
+            стоит после `while True`, а туда выполнение не доходит никогда: такой цикл
+            заканчивается только через `break` или `return` внутри него. В тренажёре это
+            EOFError — ввод теста кончился.
+          try: >-
+            Верни число прямо в цикле, когда обе проверки пройдены: `return value` последней
+            строкой тела цикла.
+          verify: "«Пример 1» должен дать строку записи без ошибки."
+        - id: no-loop-in-function
+          when:
+            outputIncludes: None
+            codeRegex: '(?<![\s\S])(?![\s\S]*\b(?:while|for)\b)'
+          why: >-
+            В `ask_int` нет цикла: функция спрашивает один раз, а после сообщения об ошибке
+            заканчивается и возвращает `None` — отсюда `None` в строке записи. Переспросить она не
+            может.
+          try: >-
+            Оберни вопрос и проверки в `while True:`: после сообщения — `continue`, а `return
+            value` — только когда обе проверки пройдены.
+          verify: "«Пример 2» должен дать «Запись готова: возраст 34, занятий 8»."
+        - id: no-return
+          when:
+            outputIncludes: None
+          why: >-
+            В строке записи `None` вместо чисел: функция ничего не вернула. Скорее всего, она
+            печатает число или выходит из цикла через `break`, а `return` нет. Напечатанное
+            число основная часть программы не получит.
+          try: >-
+            Отдай число через `return value`. Печатает итог только основная часть программы.
+          verify: "«Пример 1» должен дать одну строку: «Запись готова: возраст 34, занятий 8»."
+        - id: param-order
+          when:
+            failedTest: t6
+            errorIncludes: "instances of 'int' and 'str'"
+          why: >-
+            Твоя программа работает, а проверка упала: она вызывает `ask_int("Сколько?", 1, 10)` —
+            сначала вопрос, потом границы. Если в `def` параметры стоят в другом порядке, в `low`
+            попадает текст вопроса, и сравнение числа с текстом даёт TypeError.
+          try: >-
+            Объяви параметры ровно в порядке `ask_int(prompt, low, high)` и в том же порядке
+            передавай аргументы в своих вызовах.
+          verify: Проверка «Функция работает с любыми границами» должна стать зелёной.
+        - id: no-f-string
+          when:
+            outputIncludes: "{low}"
+          why: >-
+            В сообщении напечатано `{low}` вместо числа: перед кавычками нет буквы `f`, и Python
+            считает фигурные скобки обычным текстом.
+          try: 'Поставь `f` перед строкой: `f"Нужно число от {low} до {high}"`.'
+          verify: "«Пример 2» должен дать «Нужно число от 1 до 12»."
+        - id: range-skipped
+          when:
+            failedTest: t2
+            codeRegex: '^([ \t]+)try\s*:[^\n]*\n(?:\1[ \t]+[^\n]*\n)*\1[ \t]+return\b'
+            outputEquals: |-
+              Нужно целое число
+              Запись готова: возраст 34, занятий 0
+          why: >-
+            0 занятий принято без сообщения: до проверки диапазона выполнение не дошло. `return`
+            стоит в `try` сразу после `int()` — функция заканчивается на нём, и строки ниже уже
+            не выполняются.
+          try: >-
+            Сначала проверь диапазон, а `return value` поставь последним — туда, куда доходит
+            только подходящее число.
+          verify: "«Пример 2» должен дать «Нужно число от 1 до 12»."
+        - id: accepts-out-of-range
+          when:
+            outputEquals: |-
+              Нужно целое число
+              Нужно число от 1 до 12
+              Запись готова: возраст 34, занятий 0
+          why: >-
+            Функция сказала «Нужно число от 1 до 12» — и всё равно вернула 0. После сообщения
+            выполнение пошло дальше, к `return value`.
+          try: Допиши `continue` сразу после сообщения о границах — он вернёт к вопросу.
+          verify: "«Пример 2» должен закончиться строкой «Запись готова: возраст 34, занятий 8»."
+        - id: bare-except
+          when:
+            failedTest: t-except
+            codeRegex: '\bexcept\s*:|\bexcept\s+(Base)?Exception\b'
+          why: >-
+            `except:` без типа и `except Exception` ловят всё подряд — не только ValueError, но и
+            опечатки в коде, как в уроке 7.3: программа выдаст их за неверный ввод. А голый
+            `except:` вокруг `input()` на компьютере поймает даже Ctrl+C — программу не
+            остановить, на всё она ответит «Нужно целое число».
+          try: "Напиши тип явно: `except ValueError:`."
+          verify: Проверка «Ловится конкретное исключение» должна стать зелёной.
+      afterPass: >-
+        Одна функция — два вопроса и любой будущий: номер пункта меню, количество, оценка. Если
+        захочешь, напиши рядом `ask_float` для дробных чисел: перед `float()` замени запятую на
+        точку — `text.replace(",", ".")`, — и «2,5» тоже станет числом.
+      skills: [input-validation, functions, function-design]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Надёжный запрос — цикл из четырёх шагов: спросить → превратить (`int()` в `try`) → проверить смысл → принять."
+      - "После каждого сообщения об ошибке — `continue`; до `break` или `return` доходит только подходящее значение."
+      - "Хорошее сообщение говорит, что не так и как правильно, лучше с примером: «Нужно целое число, например 42»."
+      - "Цикл запроса выносят в функцию с параметрами: одна `ask_int(prompt, low, high)` годится для любого вопроса."
+    question: >-
+      Зачем после каждого сообщения об ошибке писать `continue`?
+    answer: >-
+      Без `continue` программа пойдёт дальше по телу цикла с тем, что есть. Если `int()` не
+      сработал на первом ответе, переменной ещё нет: будет NameError, а внутри функции —
+      UnboundLocalError. Если до этого уже вводили число, в переменной останется оно — то самое,
+      которое не подошло. А число вне
+      диапазона примут, хотя сообщение только что сказало, что оно не подходит. `continue`
+      возвращает к вопросу, и до `break` или `return` доходит только подходящий ответ.

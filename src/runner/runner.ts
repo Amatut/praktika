@@ -1,7 +1,7 @@
 // Управление потоком с Python: подготовка, запуск, проверка, тайм-аут и остановка.
 // Одновременно выполняется только одна программа.
 
-import type { CheckPayload, CheckResult, RunResult, WorkerMessage, WorkerRequest } from './types.ts';
+import type { CheckPayload, CheckResult, RunEnvironment, RunResult, WorkerMessage, WorkerRequest } from './types.ts';
 
 export type RunnerPhase = 'idle' | 'loading' | 'ready' | 'busy' | 'restarting' | 'failed';
 
@@ -27,6 +27,8 @@ export type CheckOutcome =
 export interface RunOptions {
   timeLimitMs?: number;
   outputLimit?: number;
+  /** Учебные файлы, базы, seed и ответы сети задания или шага. */
+  environment?: RunEnvironment;
 }
 
 export interface CheckOptions {
@@ -227,7 +229,8 @@ export class PythonRunner {
     return new Promise<RunOutcome>((resolve) => {
       const pending: Pending = { kind: 'run', id: this.#nextId++, limitMs, timer: null, sent: false, resolve };
       this.#pending = pending;
-      void this.#dispatch(pending, { type: 'run', id: pending.id, code, stdin, limit });
+      const environment = options.environment ? { environment: options.environment } : {};
+      void this.#dispatch(pending, { type: 'run', id: pending.id, code, stdin, limit, ...environment });
     });
   }
 

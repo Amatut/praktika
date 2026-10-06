@@ -1,0 +1,4614 @@
+id: m9-l4
+module: m9
+number: "9.4"
+title: Тесты на ошибки и исключения
+objective: >-
+  Проверять тестом, что на неверный ввод функция выбрасывает нужное исключение (ValueError), а не
+  молча возвращает неверный результат: в тренажёре — приёмом с флагом и try / except, на
+  компьютере — через pytest.raises.
+minutes: [25, 30]
+prerequisites: [m9-l3, m7-l3]
+skills: [exception-tests, exceptions, edge-cases]
+environment: python
+
+story:
+  title: Гость номер ноль
+  fictional: true
+  text: >-
+    В спортклубе «Орбита» администратор на входе набирает номер клубной карты, и программа отмечает
+    посещение. Функция, которая читала номер, на опечатку вроде «12о4» с буквой «о» вместо нуля не
+    жаловалась, а молча возвращала 0 — и за месяц в журнале набралось сорок визитов «гостя № 0».
+    Разработчик Самир переделал её: теперь на неверный номер она выбрасывает ValueError, а программа
+    на входе просит набрать номер заново. Чтобы старое поведение не вернулось, он добавил тест: на
+    такой ввод функция обязана выбросить исключение.
+
+why: >-
+  Функция должна не только верно считать на хорошем вводе, но и честно отказываться на плохом.
+  Например, `parse_card("12о4")` должна выбросить ValueError, а не вернуть 0, — и тест может это
+  проверить.
+
+usedIn: >-
+  Проверки ввода есть в каждой форме, боте и API: отрицательная сумма перевода, пустое имя, дата
+  31 февраля. Тесты на исключения — обязательная часть набора тестов для таких функций; в pytest
+  для них есть `pytest.raises`.
+
+steps:
+  - id: raise-and-test
+    type: theory
+    title: Ошибка — тоже результат
+    body: |-
+      В уроке 7.3 ты ловил исключения, которые выбрасывал сам Python: `int("пять")` — это
+      ValueError. Функция может выбросить исключение и сама — командой **`raise`** (читается
+      «рейз», по-английски «поднять»):
+
+      ```python
+      def parse_card(text):
+          text = text.strip()
+          if not text.isdigit():
+              raise ValueError("номер карты — только цифры")
+          return int(text)
+      ```
+
+      `raise` останавливает функцию сразу, как `return`, но ничего не возвращает: вызов
+      прерывается исключением. Дальше всё как в уроке 7.3. **Вызывающий код** — тот, что вызвал
+      функцию. Поймал он ValueError в `except` — сам решает, что делать, например попросить номер
+      заново. Не поймал — программа падает, и текст из скобок виден в последней строке traceback.
+
+      **ValueError** — «значение не подходит»: тип верный (строка), а содержимое нет. Этот тип
+      выбирают для неверного ввода.
+
+      **Контракт функции** — её обещание: на верном вводе вернуть результат, на неверном выбросить
+      исключение. Вариант «`print("Ошибка")` и `return 0`» контракт нарушает: вызывающий код
+      получит 0 и не отличит ошибку от настоящего номера 0.
+
+      **Тест на исключение.** У такой функции два правила: «можно» и «нельзя». Для «можно» пишут
+      обычный assert, для «нельзя» — приём с **флагом**:
+
+      ```python
+      def test_card_letters():
+          raised = False
+          try:
+              parse_card("12о4")
+          except ValueError:
+              raised = True
+          assert raised, "ожидали ValueError"
+      ```
+
+      1. `raised = False` — флаг: «исключения пока не было».
+      2. Вызов стоит **внутри** `try`, иначе исключение остановит сам тест. Одна проверка — один
+         вызов в `try`: после первого исключения остальные строки `try` не выполняются.
+      3. `except ValueError` поднимает флаг.
+      4. `assert raised` — главная строка: не было ValueError — тест падает.
+
+      Тип ловим **конкретный**, как в уроке 7.3. `except Exception` засчитает и TypeError, и
+      NameError из-за опечатки: тест пройдёт, хотя функция ведёт себя не так, как обещала.
+
+      Заметь: тест на ошибку **проходит**, когда функция правильно выбросила исключение. Падает он,
+      когда исключения не было.
+
+      **На компьютере** pytest делает то же короче:
+
+      ```python
+      import pytest
+
+      def test_card_letters():
+          with pytest.raises(ValueError):
+              parse_card("12о4")
+      ```
+
+      Если внутри `with` исключения не было, pytest отметит тест как упавший. В тренажёре pytest
+      нет, поэтому здесь пишем флаг — он работает везде.
+    simpler: >-
+      На плохой ввод функция говорит «не могу» командой `raise ValueError("…")`. Тест проверяет две
+      вещи: что она отказалась и что это именно ValueError, как она обещала. Флаг `raised` —
+      отметка «исключение было»: в конце теста `assert raised` требует, чтобы отметка стояла.
+    coach: >-
+      У каждого правила функции есть «можно» и «нельзя». Тест на «нельзя» так же важен, как тест на
+      «можно».
+
+  - id: card-test
+    type: example
+    title: Тест на неверный номер карты
+    body: >-
+      Функция из истории и два теста к ней: на «можно» и на «нельзя». Тесты вызываются в блоке
+      `if __name__ == "__main__":`, как в уроке 9.3. Нажми «Запустить».
+    code: |-
+      def parse_card(text):
+          text = text.strip()
+          if not text.isdigit():
+              raise ValueError("номер карты — только цифры")
+          return int(text)
+
+
+      def test_card_ok():
+          assert parse_card(" 1042 ") == 1042
+
+
+      def test_card_letters():
+          raised = False
+          try:
+              parse_card("12о4")
+          except ValueError:
+              raised = True
+          assert raised, "ожидали ValueError для «12о4»"
+
+
+      if __name__ == "__main__":
+          test_card_ok()
+          test_card_letters()
+          print("Все тесты прошли")
+    notes:
+      - line: 4
+        text: >-
+          Неверный номер: функция ничего не возвращает, а выбрасывает ValueError с понятным
+          сообщением. Строка 5 в этом случае уже не выполнится.
+      - line: 9
+        text: "Тест на «можно»: пробелы по краям убираются, номер превращается в число."
+      - line: 13
+        text: Флаг «исключения пока не было».
+      - line: 15
+        text: >-
+          В «12о4» буква «о» русская — так и задумано: опечатка похожа на ноль. Вызов стоит внутри
+          `try`, поэтому исключение не остановит тест.
+      - line: 17
+        text: Сюда Python попадает, только если была именно ValueError. Флаг поднимается.
+      - line: 18
+        text: >-
+          Проверка флага. Если бы функция вернула число вместо исключения, флаг остался бы False, и
+          тест упал бы с сообщением «ожидали ValueError для «12о4»».
+    tryIt: >-
+      Замени в строке 4 `raise ValueError("номер карты — только цифры")` на `return 0` — это
+      старое поведение из истории. Запусти: тест упадёт с AssertionError и сообщением из строки 18.
+      Потом нажми «Вернуть пример» и замени в строке 16 `ValueError` на `TypeError`: ValueError
+      теперь никто не ловит, программа упадёт, а в последней строке traceback будет текст из
+      `raise`.
+    coach: >-
+      Сломай функцию нарочно и убедись, что тест это заметил. Так ты проверяешь сам тест.
+
+  - id: print-is-not-raise
+    type: predict
+    title: Сообщение или исключение?
+    prompt: >-
+      Самир нашёл в старом коде ещё одну версию функции — с сообщением об ошибке. Как думаешь, что
+      выведет программа?
+    code: |-
+      def parse_card(text):
+          if not text.isdigit():
+              print("Ошибка: только цифры")
+              return 0
+          return int(text)
+
+
+      raised = False
+      try:
+          number = parse_card("12о4")
+      except ValueError:
+          raised = True
+      print(raised, number)
+    options:
+      - "True 0"
+      - |-
+        Ошибка: только цифры
+        True 0
+      - |-
+        Ошибка: только цифры
+        False 0
+      - Программа остановится с ValueError
+    answer: |-
+      Ошибка: только цифры
+      False 0
+    explanation: >-
+      Слово «Ошибка» на экране — просто текст из `print`, а не исключение. Функция вернула 0 как
+      обычное значение, `except` не сработал, и флаг `raised` остался `False`. Поэтому тест с
+      `assert raised` на такой функции упадёт — он и нужен, чтобы ловить такое поведение.
+    coach: >-
+      Напечатать «Ошибка» — не то же самое, что выбросить исключение. Тест различает их, а глаза
+      легко путают.
+
+  - id: practice-seats
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m9-l4-e1
+      kind: repeat
+      title: Тест на ошибку бронирования
+      statement: |-
+        Концертный зал продаёт билеты онлайн. Функция `book_seats(free, wanted)` бронирует места и
+        возвращает, сколько свободных мест останется. Если `wanted` меньше 1 или больше свободных
+        мест, она выбрасывает ValueError. Функция верная — менять её не нужно.
+
+        Два теста уже есть: обычная бронь и бронь «больше, чем есть». Второй — образец теста с
+        флагом. Допиши тесты на два других запрета:
+
+        - бронь на 0 мест;
+        - бронь на отрицательное число мест.
+
+        Каждый новый тест вызови в блоке `if __name__ == "__main__":` перед `print`. Программа
+        печатает одну строку `Все тесты прошли`.
+
+        Тренажёр проверит твои тесты дважды: на верной функции они должны пройти, а на
+        «мутантах» — версиях функции с подставленной ошибкой, как в уроке 9.2, — упасть.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: Все тесты прошли"
+      constraints:
+        - Функцию `book_seats` не меняй — тесты пишутся для неё.
+        - >-
+          Имена новых тестов начинаются с `test_` и не повторяются: по этому началу тесты находят и
+          тренажёр, и pytest.
+        - pytest в тренажёре нет — тест на исключение пишется флагом.
+      starterCode: |
+        def book_seats(free, wanted):
+            if wanted <= 0 or wanted > free:
+                raise ValueError("нельзя забронировать столько мест")
+            return free - wanted
+
+
+        def test_normal_booking():
+            assert book_seats(10, 3) == 7
+
+
+        def test_too_many():
+            raised = False
+            try:
+                book_seats(5, 6)
+            except ValueError:
+                raised = True
+            assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+        # Допиши тесты: 0 мест и отрицательное число мест — тоже ValueError
+
+
+        if __name__ == "__main__":
+            test_normal_booking()
+            test_too_many()
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на верной функции
+          example: true
+          code: |
+            def _reference(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("book_seats")
+            globals()["book_seats"] = _reference
+            try:
+                for _test in _tests:
+                    _test()
+            finally:
+                globals()["book_seats"] = _saved
+          message: Твои тесты проходят на верной функции `book_seats`.
+        - id: t-called
+          kind: assert
+          title: Каждый тест вызван в блоке запуска
+          code: |
+            import ast
+
+            with open(__file__, encoding="utf-8") as _file:
+                _tree = ast.parse(_file.read())
+            _defined = [node.name for node in _tree.body
+                        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
+            # Имя теста отдельной строкой без скобок — не вызов.
+            _bare = {id(node.value) for node in ast.walk(_tree)
+                     if isinstance(node, ast.Expr) and isinstance(node.value, ast.Name)}
+            _used = {node.id for node in ast.walk(_tree)
+                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+                     and id(node) not in _bare}
+            assert all(name in _used for name in _defined)
+          message: >-
+            Каждая функция `test_…` вызвана в блоке `if __name__ == "__main__":` — с круглыми
+            скобками, иначе при запуске она не выполнится.
+        - id: t-unique
+          kind: assert
+          title: Имена тестов не повторяются
+          code: |
+            import ast
+
+            with open(__file__, encoding="utf-8") as _file:
+                _tree = ast.parse(_file.read())
+            _names = [node.name for node in _tree.body if isinstance(node, ast.FunctionDef)]
+            assert len(_names) == len(set(_names))
+          message: >-
+            Имена функций не повторяются: второй `def` с тем же именем заменяет первую функцию, и
+            первый тест пропадает.
+        - id: t-m-zero
+          kind: assert
+          title: Тест замечает, что бронь на 0 мест прошла без ошибки
+          edge: true
+          code: |
+            def _mutant(free, wanted):
+                if wanted < 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("book_seats")
+            globals()["book_seats"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["book_seats"] = _saved
+            assert _caught
+          message: >-
+            Твои тесты не заметили версию функции, которая разрешает бронь на 0 мест. Нужен тест,
+            который ждёт ValueError для 0 мест.
+        - id: t-m-negative
+          kind: assert
+          title: Тест замечает, что бронь на отрицательное число мест прошла без ошибки
+          edge: true
+          code: |
+            def _mutant(free, wanted):
+                if wanted == 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("book_seats")
+            globals()["book_seats"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["book_seats"] = _saved
+            assert _caught
+          message: >-
+            Твои тесты не заметили версию функции, которая разрешает бронь на отрицательное число
+            мест. Нужен тест, который ждёт ValueError для числа меньше нуля.
+        - id: t-m-type
+          kind: assert
+          title: Тест на 0 мест отличает ValueError от другой ошибки
+          code: |
+            def _mutant(free, wanted):
+                if wanted == 0:
+                    raise TypeError("нельзя забронировать столько мест")
+                if wanted < 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("book_seats")
+            globals()["book_seats"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["book_seats"] = _saved
+            assert _caught
+          message: >-
+            Твои тесты не заметили версию функции, которая на 0 мест выбрасывает не ValueError, а
+            другое исключение. Тест должен ловить именно ValueError.
+        - id: t-m-type-negative
+          kind: assert
+          title: Тест на отрицательное число мест отличает ValueError от другой ошибки
+          code: |
+            def _mutant(free, wanted):
+                if wanted < 0:
+                    raise TypeError("нельзя забронировать столько мест")
+                if wanted == 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("book_seats")
+            globals()["book_seats"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["book_seats"] = _saved
+            assert _caught
+          message: >-
+            Твои тесты не заметили версию функции, которая на отрицательное число мест выбрасывает
+            не ValueError, а другое исключение. Тест должен ловить именно ValueError.
+      criteria:
+        - Есть тест на бронь 0 мест и тест на бронь отрицательного числа мест; оба ждут ValueError.
+        - В каждом тесте один вызов внутри `try`, ловится именно ValueError, в конце — `assert` флага.
+        - Новые тесты вызываются в блоке `if __name__ == "__main__":`, программа печатает «Все тесты прошли».
+        - На верной функции тесты проходят, на версиях с ошибкой — падают.
+      hints:
+        - >-
+          Посмотри на готовый `test_too_many`: из каких частей он состоит? Что в нём останется
+          таким же в тесте на 0 мест, а что поменяется? И где новый тест нужно вызвать, чтобы он
+          выполнился при запуске?
+        - |-
+          Тот же приём на другом примере: у `int` два запрета — буквы и пустая строка. На каждый
+          запрет — свой тест:
+
+          ```python
+          def test_int_letters():
+              raised = False
+              try:
+                  int("abc")
+              except ValueError:
+                  raised = True
+              assert raised, "int('abc') — ждали ValueError"
+
+
+          def test_int_empty():
+              raised = False
+              try:
+                  int("")
+              except ValueError:
+                  raised = True
+              assert raised, "int('') — ждали ValueError"
+          ```
+
+          Почему не один `try` на оба вызова: после первой ValueError остаток `try` пропускается.
+          Второй вызов не выполнится, и тест так и не узнает, как он себя ведёт.
+        - |-
+          Каркас одного теста:
+
+          ```text
+          def test_zero_seats():
+              флаг = False
+              try:
+                  вызов book_seats: свободно 5, хотим 0
+              except ValueError:
+                  флаг = True
+              assert флаг, "сообщение"
+          ```
+
+          Второй тест — так же, но с отрицательным числом мест. И не забудь вызвать оба теста в
+          блоке `if __name__ == "__main__":` до строки с `print`.
+      solution:
+        code: |
+          def book_seats(free, wanted):
+              if wanted <= 0 or wanted > free:
+                  raise ValueError("нельзя забронировать столько мест")
+              return free - wanted
+
+
+          def test_normal_booking():
+              assert book_seats(10, 3) == 7
+
+
+          def test_too_many():
+              raised = False
+              try:
+                  book_seats(5, 6)
+              except ValueError:
+                  raised = True
+              assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+          def test_zero_seats():
+              raised = False
+              try:
+                  book_seats(5, 0)
+              except ValueError:
+                  raised = True
+              assert raised, "0 мест — должна быть ValueError"
+
+
+          def test_negative_seats():
+              raised = False
+              try:
+                  book_seats(5, -2)
+              except ValueError:
+                  raised = True
+              assert raised, "-2 места — должна быть ValueError"
+
+
+          if __name__ == "__main__":
+              test_normal_booking()
+              test_too_many()
+              test_zero_seats()
+              test_negative_seats()
+              print("Все тесты прошли")
+        explanation: >-
+          Каждый новый тест повторяет образец `test_too_many`: флаг, один вызов внутри `try`,
+          `except ValueError`, в конце `assert` флага. Меняются только число мест и сообщение. Тест
+          на 0 ловит версию функции с условием `wanted < 0`, тест на −2 — версию с `wanted == 0`. А
+          `except ValueError` вместо `except Exception` замечает версию, которая выбрасывает не тот
+          тип исключения.
+      altSolutions:
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                try:
+                    book_seats(5, 0)
+                    assert False, "0 мест — должна быть ValueError"
+                except ValueError:
+                    pass
+
+
+            def test_negative_seats():
+                try:
+                    book_seats(10, -1)
+                    assert False, "-1 место — должна быть ValueError"
+                except ValueError:
+                    pass
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Без флага: `assert False` сразу после вызова внутри try. AssertionError не ловится `except ValueError`, поэтому без исключения тест падает."
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_bad_amounts():
+                for wanted in [0, -2]:
+                    raised = False
+                    try:
+                        book_seats(5, wanted)
+                    except ValueError:
+                        raised = True
+                    assert raised, f"{wanted} мест — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_bad_amounts()
+                print("Все тесты прошли")
+          note: "Один тест с циклом по неверным количествам — флаг сбрасывается на каждом шаге."
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_and_negative():
+                zero_raised = False
+                try:
+                    book_seats(0, 0)
+                except ValueError:
+                    zero_raised = True
+                assert zero_raised
+
+                negative_raised = False
+                try:
+                    book_seats(3, -5)
+                except ValueError:
+                    negative_raised = True
+                assert negative_raised
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_and_negative()
+                print("Все тесты прошли")
+          note: "Один тест с двумя флагами и другими числами; сообщения в assert необязательны."
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def raises_value_error(free, wanted):
+                raised = False
+                try:
+                    book_seats(free, wanted)
+                except ValueError:
+                    raised = True
+                return raised
+
+
+            def test_zero_seats():
+                assert raises_value_error(5, 0), "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                assert raises_value_error(5, -2), "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Рецензия: вспомогательная функция с параметрами возвращает флаг, тесты — одна строка assert."
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+                assert raised, "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                for test in [test_normal_booking, test_too_many, test_zero_seats, test_negative_seats]:
+                    test()
+                print("Все тесты прошли")
+          note: "Рецензия: тесты вызываются циклом по списку функций в блоке запуска."
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                message = ""
+                try:
+                    book_seats(5, 0)
+                except ValueError as error:
+                    message = str(error)
+                assert message != "", "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                message = ""
+                try:
+                    book_seats(5, -2)
+                except ValueError as error:
+                    message = str(error)
+                assert message != "", "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Рецензия: except ValueError as error — вместо флага сохраняется текст сообщения."
+      wrongSolutions:
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                print("Все тесты прошли")
+          note: "Есть тест только на 0 мест, отрицательное число не проверяется."
+          expectMistake: missed-negative
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+                assert raised, "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Есть тест только на отрицательное число, 0 мест не проверяется."
+          expectMistake: missed-zero
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except Exception:
+                    raised = True
+                assert raised
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except Exception:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "except Exception засчитывает любое исключение, в том числе не тот тип."
+          expectMistake: broad-except
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                book_seats(5, 0)
+
+
+            def test_negative_seats():
+                book_seats(5, -2)
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Вызовы стоят вне try — ValueError останавливает программу."
+          expectMistake: call-outside-try
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Флаг поднимается, но в конце тестов нет assert raised — они не могут упасть."
+          expectMistake: missed-zero
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert not raised, "0 мест — ошибка"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+                assert not raised, "-2 места — ошибка"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Ожидание перевёрнуто — assert not raised падает на верной функции."
+          expectMistake: wrong-expectation
+        - code: |
+            import pytest
+
+
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                with pytest.raises(ValueError):
+                    book_seats(5, 6)
+
+
+            def test_zero_seats():
+                with pytest.raises(ValueError):
+                    book_seats(5, 0)
+
+
+            def test_negative_seats():
+                with pytest.raises(ValueError):
+                    book_seats(5, -2)
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "pytest.raises — приём для компьютера, в тренажёре pytest нет."
+          expectMistake: pytest-import
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+                assert raised, "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                print("Все тесты прошли")
+          note: "Тесты написаны верно, но в блоке запуска не вызваны."
+          expectMistake: not-called
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                assert book_seats(5, 0) == ValueError
+
+
+            def test_negative_seats():
+                assert book_seats(5, -3) == ValueError
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Рецензия ученика: результат сравнивается с ValueError — вызов вне try."
+          expectMistake: call-outside-try
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert not raised
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+                assert not raised
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                print("Все тесты прошли")
+          note: "Ожидание перевёрнуто, и тесты не вызваны — программа печатает «Все тесты прошли», но тесты падают на верной функции."
+          expectMistake: ref-fails
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except Exception:
+                    raised = True
+                assert raised, "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Рецензия: тест на 0 ловит ValueError, а тест на отрицательное — except Exception."
+          expectMistake: broad-except
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except TypeError:
+                    raised = True
+                assert raised, "0 мест — должна быть ошибка"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except TypeError:
+                    raised = True
+                assert raised, "-2 места — должна быть ошибка"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Рецензия: вызов внутри try, но ловится TypeError вместо ValueError."
+          expectMistake: wrong-type-caught
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                    raised = True
+                except ValueError:
+                    pass
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                    raised = True
+                except ValueError:
+                    pass
+                assert raised, "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Рецензия: флаг поднимается в try сразу после вызова, а не в except."
+          expectMistake: wrong-expectation
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                zero_raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert zero_raised, "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                negative_raised = False
+                try:
+                    book_seats(5, -3)
+                except ValueError:
+                    negative_raised = True
+                assert negative_raised, "-3 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_negative_seats()
+                print("Все тесты прошли")
+          note: "Рецензия: флаг zero_raised, а в except поднимается raised — assert проверяет не тот флаг."
+          expectMistake: wrong-expectation
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def zero_seats_test():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            def negative_seats_test():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+                assert raised, "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                zero_seats_test()
+                negative_seats_test()
+                print("Все тесты прошли")
+          note: "Рецензия: тесты верные, но имена не начинаются с test_."
+          expectMistake: not-test-name
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            def test_negative_seats():
+                raised = False
+                try:
+                    book_seats(5, -2)
+                except ValueError:
+                    raised = True
+                assert raised, "-2 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats
+                test_negative_seats
+                print("Все тесты прошли")
+          note: "Рецензия: в блоке запуска новые тесты упомянуты без скобок — они не вызываются."
+          expectMistake: not-called
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_bad_numbers():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                    book_seats(5, -3)
+                except ValueError:
+                    raised = True
+                assert raised, "0 и -3 — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_bad_numbers()
+                print("Все тесты прошли")
+          note: "Рецензия: два вызова в одном try — второй не выполняется после первой ValueError."
+          expectMistake: two-calls-one-try
+        - code: |
+            def book_seats(free, wanted):
+                if wanted <= 0 or wanted > free:
+                    raise ValueError("нельзя забронировать столько мест")
+                return free - wanted
+
+
+            def test_normal_booking():
+                assert book_seats(10, 3) == 7
+
+
+            def test_too_many():
+                raised = False
+                try:
+                    book_seats(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "6 мест из 5 — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 мест — должна быть ValueError"
+
+
+            def test_zero_seats():
+                raised = False
+                try:
+                    book_seats(5, -3)
+                except ValueError:
+                    raised = True
+                assert raised, "-3 места — должна быть ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal_booking()
+                test_too_many()
+                test_zero_seats()
+                test_zero_seats()
+                print("Все тесты прошли")
+          note: "Рецензия: тест скопирован, число поменяно, а имя нет — второй def заменяет первый."
+          expectMistake: same-name
+      mistakes:
+        - id: pytest-import
+          when:
+            errorIncludes: pytest
+          why: >-
+            В тренажёре нет pytest: он ставится на компьютере в окружение проекта, как в уроке 9.3.
+            Поэтому `import pytest` здесь не работает.
+          try: >-
+            Напиши тест на исключение на чистом Python — флагом, как в `test_too_many`.
+            `pytest.raises` пригодится на компьютере.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: wrong-type-caught
+          when:
+            errorType: ValueError
+            codeRegex: 'except\s+(?!ValueError\b|Exception\b|BaseException\b)\w+'
+          why: >-
+            Функция правильно выбросила ValueError, а `except` в тесте ждёт другой тип. ValueError
+            он не ловит, и исключение остановило всю программу.
+          try: Лови тот тип, который обещает функция, — `except ValueError`, как в `test_too_many`.
+          verify: Программа должна дойти до конца и напечатать «Все тесты прошли».
+        - id: call-outside-try
+          when:
+            errorType: ValueError
+          why: >-
+            Функция правильно выбросила ValueError, но тест её не поймал: вызов стоит вне `try`, и
+            исключение остановило всю программу. Само исключение на экране ещё не значит, что тест
+            его проверил.
+          try: >-
+            Перенеси вызов `book_seats` внутрь `try`, в `except ValueError` подними флаг, а в конце
+            теста проверь флаг через `assert` — как в `test_too_many`.
+          verify: Программа должна дойти до конца и напечатать «Все тесты прошли».
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          why: >-
+            Твой тест упал на верной функции — значит, неверно ожидание в самом тесте. Тест на
+            исключение проходит, когда исключение было, и падает, когда его не было.
+          try: >-
+            Проверь три вещи. Ждёт ли тест ValueError там, где функция и правда её выбрасывает, —
+            для 0 и отрицательного числа мест? Поднимается ли флаг в `except ValueError` (а не в
+            `try` после вызова) — и тот же ли это флаг, что в `assert`? И требует ли последняя
+            строка, чтобы флаг был поднят, — `assert` флага без `not`?
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: ref-fails
+          when:
+            failedTest: t-ref
+            outputIncludes: Все тесты прошли
+          why: >-
+            Один из твоих тестов падает на верной функции, но в блоке запуска он не вызван, поэтому
+            программа всё равно печатает «Все тесты прошли». Значит, неверно ожидание в самом тесте:
+            тест на исключение проходит, когда исключение было.
+          try: >-
+            Вызови все тесты в блоке `if __name__ == "__main__":` и запусти программу: упавший тест
+            покажет строку с AssertionError. Потом проверь, чего он ждёт.
+        - id: same-name
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: t-unique
+          why: >-
+            Два теста называются одинаково. Второй `def` с тем же именем заменяет первую функцию —
+            как новое значение заменяет старое в переменной. Первый тест пропал: его не выполнит ни
+            запуск, ни тренажёр.
+          try: >-
+            Дай каждому тесту своё имя, например `test_zero_seats` и `test_negative_seats`, и вызови
+            оба в блоке запуска.
+        - id: broad-except
+          when:
+            outputIncludes: Все тесты прошли
+            codeRegex: 'except\s*:|except\s+(?:Base)?Exception\b'
+          why: >-
+            `except Exception` (и `except:` без типа) ловит любое исключение. Тренажёр подставил
+            версию функции, которая вместо ValueError выбрасывает TypeError, и твой тест её
+            пропустил: флаг поднялся, хотя функция нарушила обещание.
+          try: Лови ровно тот тип, который обещает функция, — `except ValueError`.
+        - id: two-calls-one-try
+          when:
+            outputIncludes: Все тесты прошли
+            codeRegex: 'try:[ \t]*\n[ \t]+book_seats\([^\n]*\n(?:[ \t]*(?![ \t]|except\b|finally\b)[^\n]*\n)*?[ \t]+book_seats\('
+          why: >-
+            В одном `try` стоят два вызова `book_seats`. Как только первый выбросит ValueError,
+            остаток `try` пропускается (урок 7.3): второй вызов не выполнится, а флаг уже поднят.
+            Такой тест пройдёт, если ошибку выбросил хотя бы один вызов, и не заметит версию
+            функции, которая пропускает другой случай.
+          try: >-
+            Одна проверка — один вызов внутри `try` и свой флаг. Раздели тест на два: для 0 мест и
+            для отрицательного числа.
+        - id: not-test-name
+          when:
+            outputIncludes: Все тесты прошли
+            codeRegex: '^def (?!test_)\w+\(\s*\):[ \t]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+assert\b'
+          why: >-
+            Тренажёр, как и pytest, находит тесты по имени: функция-тест называется с `test_`.
+            Функцию с другим именем он не видит и на «мутантах» не запускает — поэтому кажется, что
+            теста нет.
+          try: >-
+            Переименуй свои тесты так, чтобы имя начиналось с `test_`, например `test_zero_seats`,
+            — и в `def`, и в вызове.
+        - id: missed-zero
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: t-m-zero
+          why: >-
+            Тренажёр подставил версию функции, которая бронирует 0 мест без ошибки, и ни один твой
+            тест не упал. Либо теста на 0 мест нет, либо в конце теста нет `assert` флага — тогда
+            тест не может упасть совсем.
+          try: >-
+            Проверь, что есть тест с бронью на 0 мест: `wanted` равно 0, например `book_seats(5, 0)`.
+            Вызов стоит внутри `try`, а тест заканчивается проверкой флага.
+        - id: missed-negative
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: t-m-negative
+          why: >-
+            Тренажёр подставил версию функции, которая разрешает отрицательное число мест, и ни один
+            твой тест не упал. Ноль и отрицательное число — разные случаи: версия с условием
+            `wanted == 0` запрещает ноль и пропускает минус.
+          try: >-
+            Добавь тест с бронью на отрицательное число мест: `wanted` меньше нуля, например −2.
+            Тест ждёт ValueError.
+        - id: not-called
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: t-called
+          why: >-
+            Тесты написаны, но в блоке `if __name__ == "__main__":` их нет. Тогда при запуске они
+            не выполняются, и «Все тесты прошли» печатается, хотя новые тесты ничего не проверили.
+          try: >-
+            Добавь вызов каждого нового теста в блок запуска, перед `print`: имя и скобки —
+            `test_zero_seats()`.
+      afterPass: >-
+        У каждого запрета функции теперь есть свой тест: «больше, чем есть», ноль и отрицательное
+        число. Если ты не писал сообщения в `assert`, добавь их: при падении сразу видно, какой
+        запрет сломался.
+      skills: [exception-tests, edge-cases]
+
+  - id: practice-write-off
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m9-l4-e2
+      kind: modify
+      title: ValueError вместо print — и тест на ноль
+      statement: |-
+        Склад интернет-магазина. Функция `write_off(stock, amount)` списывает товар и возвращает,
+        сколько останется. Списать 0 штук, отрицательное количество или больше, чем есть, нельзя.
+        Сейчас в таком случае функция печатает сообщение и возвращает остаток как есть — и
+        вызывающий код не узнаёт, что списания не было.
+
+        Сделай две вещи:
+
+        1. Измени **функцию**: в ветке ошибки вместо `print` и `return` выброси ValueError с
+           понятным сообщением. Готовый тест `test_too_much` уже ждёт этого.
+        2. Допиши свой тест: списать 0 штук нельзя — функция выбрасывает ValueError. Вызови его в
+           блоке `if __name__ == "__main__":` перед `print`.
+
+        После исправления функция ничего не печатает, а программа выводит одну строку
+        `Все тесты прошли`. Твой тест тренажёр проверит, как в практике 1: на верной функции он
+        проходит, а на версии, которая разрешает списать 0 штук, — падает.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: Все тесты прошли"
+      constraints:
+        - Готовые тесты не меняй — они описывают, как функция должна себя вести.
+        - Имя нового теста начинается с `test_` и не повторяет имена готовых тестов.
+        - Текст сообщения в ValueError — любой понятный.
+      starterCode: |
+        def write_off(stock, amount):
+            if amount <= 0 or amount > stock:
+                print("Ошибка: нельзя списать", amount, "шт.")
+                return stock
+            return stock - amount
+
+
+        def test_normal():
+            assert write_off(10, 3) == 7
+
+
+        def test_all_stock():
+            assert write_off(5, 5) == 0
+
+
+        def test_too_much():
+            raised = False
+            try:
+                write_off(5, 6)
+            except ValueError:
+                raised = True
+            assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+        # Допиши тест: списать 0 штук — тоже ValueError
+
+
+        if __name__ == "__main__":
+            test_normal()
+            test_all_stock()
+            test_too_much()
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+        - id: c-normal
+          kind: call
+          title: Обычное списание
+          example: true
+          call: write_off(10, 3)
+          expected: "7"
+        - id: c-all
+          kind: call
+          title: Списать всё, что есть
+          example: true
+          call: write_off(5, 5)
+          expected: "0"
+        - id: a-too-much
+          kind: assert
+          title: Больше, чем есть, — ValueError
+          example: true
+          code: |
+            _raised = False
+            try:
+                write_off(5, 6)
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: "`write_off(5, 6)` выбрасывает ValueError: списать 6 штук из 5 нельзя."
+        - id: a-zero
+          kind: assert
+          title: "Граничный случай: 0 штук — ValueError"
+          edge: true
+          code: |
+            _raised = False
+            try:
+                write_off(5, 0)
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: "`write_off(5, 0)` выбрасывает ValueError: списать 0 штук нельзя."
+        - id: a-negative
+          kind: assert
+          title: "Граничный случай: отрицательное количество — ValueError"
+          edge: true
+          code: |
+            _raised = False
+            try:
+                write_off(5, -2)
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: "`write_off(5, -2)` выбрасывает ValueError: отрицательное количество списать нельзя."
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на верной функции
+          code: |
+            def _reference(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise ValueError("нельзя списать")
+                return stock - amount
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("write_off")
+            globals()["write_off"] = _reference
+            _all_passed = True
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _all_passed = False
+            finally:
+                globals()["write_off"] = _saved
+            assert _all_passed
+          message: Твои тесты проходят на верной функции `write_off`.
+        - id: t-called
+          kind: assert
+          title: Каждый тест вызван в блоке запуска
+          code: |
+            import ast
+
+            with open(__file__, encoding="utf-8") as _file:
+                _tree = ast.parse(_file.read())
+            _defined = [node.name for node in _tree.body
+                        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
+            # Имя теста отдельной строкой без скобок — не вызов.
+            _bare = {id(node.value) for node in ast.walk(_tree)
+                     if isinstance(node, ast.Expr) and isinstance(node.value, ast.Name)}
+            _used = {node.id for node in ast.walk(_tree)
+                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+                     and id(node) not in _bare}
+            assert all(name in _used for name in _defined)
+          message: >-
+            Каждая функция `test_…` вызвана в блоке `if __name__ == "__main__":` — с круглыми
+            скобками, иначе при запуске она не выполнится.
+        - id: t-unique
+          kind: assert
+          title: Имена тестов не повторяются
+          code: |
+            import ast
+
+            with open(__file__, encoding="utf-8") as _file:
+                _tree = ast.parse(_file.read())
+            _names = [node.name for node in _tree.body if isinstance(node, ast.FunctionDef)]
+            assert len(_names) == len(set(_names))
+          message: >-
+            Имена функций не повторяются: второй `def` с тем же именем заменяет первую функцию, и
+            первый тест пропадает.
+        - id: t-m-zero
+          kind: assert
+          title: Твой тест замечает, что списание 0 штук прошло без ошибки
+          edge: true
+          code: |
+            def _mutant(stock, amount):
+                if amount < 0 or amount > stock:
+                    raise ValueError("нельзя списать")
+                return stock - amount
+
+
+            _tests = [value for name, value in list(globals().items())
+                      if name.startswith("test_") and callable(value)]
+            _saved = globals().get("write_off")
+            globals()["write_off"] = _mutant
+            _caught = False
+            try:
+                for _test in _tests:
+                    try:
+                        _test()
+                    except Exception:
+                        _caught = True
+            finally:
+                globals()["write_off"] = _saved
+            assert _caught
+          message: >-
+            Твои тесты не заметили версию функции, которая разрешает списать 0 штук. Нужен тест,
+            который ждёт ValueError при списании 0 штук.
+      criteria:
+        - На верное количество функция возвращает остаток, в том числе 0, если списали всё.
+        - На 0, отрицательное количество и «больше, чем есть» функция выбрасывает ValueError и ничего не печатает.
+        - Есть новый тест на списание 0 штук — флагом, с одним вызовом внутри `try`; он вызван в блоке запуска.
+        - Готовые тесты не изменены, программа выводит «Все тесты прошли».
+      hints:
+        - >-
+          Начни с функции: что `test_too_much` ждёт от неё при списании 6 штук из 5 и что она
+          делает сейчас? Запусти программу и посмотри, какая строка появилась перед ошибкой. Потом
+          новый тест: какой вызов в нём должен выбросить ValueError?
+        - |-
+          Оба приёма на другом примере:
+
+          ```python
+          def check_age(age):
+              if age < 0:
+                  raise ValueError("возраст не бывает отрицательным")
+              return age
+
+
+          def test_negative_age():
+              raised = False
+              try:
+                  check_age(-3)
+              except ValueError:
+                  raised = True
+              assert raised, "-3 года — ждали ValueError"
+          ```
+
+          Вызов `check_age(-3)` ничего не вернёт: функция остановится на `raise`, вызывающий код
+          получит ValueError, а тест поднимет флаг.
+        - |-
+          Каркас — в ветке ошибки две строки (`print` и `return stock`) заменяются одной:
+
+          ```text
+          def write_off(stock, amount):
+              если количество неверное:
+                  raise ValueError(<понятное сообщение: что не так>)
+              вернуть stock - amount
+
+
+          def test_zero_amount():
+              флаг = False
+              try:
+                  вызов write_off: на складе 5, списать 0
+              except ValueError:
+                  флаг = True
+              assert флаг, "сообщение"
+          ```
+
+          И вызови новый тест в блоке `if __name__ == "__main__":` до строки с `print`.
+      solution:
+        code: |
+          def write_off(stock, amount):
+              if amount <= 0 or amount > stock:
+                  raise ValueError(f"нельзя списать {amount} шт.")
+              return stock - amount
+
+
+          def test_normal():
+              assert write_off(10, 3) == 7
+
+
+          def test_all_stock():
+              assert write_off(5, 5) == 0
+
+
+          def test_too_much():
+              raised = False
+              try:
+                  write_off(5, 6)
+              except ValueError:
+                  raised = True
+              assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+          def test_zero_amount():
+              raised = False
+              try:
+                  write_off(5, 0)
+              except ValueError:
+                  raised = True
+              assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+          if __name__ == "__main__":
+              test_normal()
+              test_all_stock()
+              test_too_much()
+              test_zero_amount()
+              print("Все тесты прошли")
+        explanation: >-
+          `raise` останавливает функцию, поэтому `return stock` в ветке ошибки больше не нужен, а
+          `print` не нужен тем более: текст ошибки теперь живёт внутри исключения. Условие не
+          менялось — ValueError выбрасывается и для 0, и для отрицательного количества, и для
+          «больше, чем есть», а списать ровно всё (5 из 5) по-прежнему можно. Новый тест устроен
+          как `test_too_much`, только вызов другой — `write_off(5, 0)`. Если кто-то уберёт из
+          условия проверку нуля, этот тест упадёт.
+      altSolutions:
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0:
+                    raise ValueError("количество должно быть больше нуля")
+                if amount > stock:
+                    raise ValueError(f"на складе только {stock} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero():
+                raised = False
+                try:
+                    write_off(3, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "0 штук — ждали ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero()
+                print("Все тесты прошли")
+          note: "Два отдельных if с разными сообщениями — так понятнее, что именно не так."
+        - code: |
+            def write_off(stock, amount):
+                if not 0 < amount <= stock:
+                    raise ValueError("нельзя списать столько")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_write_off_nothing():
+                try:
+                    write_off(5, 0)
+                    assert False, "0 штук — ждали ValueError"
+                except ValueError:
+                    pass
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_write_off_nothing()
+                print("Все тесты прошли")
+          note: "Цепочка сравнений с not; тест без флага — assert False сразу после вызова."
+        - code: |
+            def write_off(stock, amount):
+                if 0 < amount <= stock:
+                    return stock - amount
+                raise ValueError(f"нельзя списать {amount} шт. из {stock}")
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_bad_amounts():
+                for amount in [0, -3]:
+                    raised = False
+                    try:
+                        write_off(5, amount)
+                    except ValueError:
+                        raised = True
+                    assert raised, f"{amount} шт. — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_bad_amounts()
+                print("Все тесты прошли")
+          note: "Рецензия: обратная форма — сначала верный случай с return, raise в конце; тест циклом по 0 и −3."
+        - code: |
+            def write_off(stock, amount):
+                if amount not in range(1, stock + 1):
+                    raise ValueError
+                left = stock - amount
+                return left
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_write_off():
+                raised = False
+                try:
+                    write_off(1, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_write_off()
+                print("Все тесты прошли")
+          note: "Рецензия: not in range и raise ValueError без скобок; свой тест без сообщения, другие числа."
+      wrongSolutions:
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    print("Ошибка: нельзя списать", amount, "шт.")
+                    return stock
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            # Допиши тест: списать 0 штук — тоже ValueError
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                print("Все тесты прошли")
+          note: "Стартовый код — функция всё ещё печатает и возвращает остаток."
+          expectMistake: still-returns
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    return ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "return вместо raise — объект ошибки возвращается как обычное значение."
+          expectMistake: return-error
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise Exception(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Выбрасывается общее Exception, а тесты ждут ValueError."
+          expectMistake: raise-generic
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    print("Ошибка: нельзя списать", amount, "шт.")
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "raise добавлен, но print остался — функция печатает лишнюю строку."
+          expectMistake: print-left
+        - code: |
+            def write_off(stock, amount):
+                if amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                print("Все тесты прошли")
+          note: "Условие сужено до «больше, чем есть» — 0 и отрицательные проходят; своего теста пока нет."
+          expectMistake: only-too-much
+        - code: |
+            def write_off(stock, amount):
+                if amount == 0 or amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Отрицательное количество не считается ошибкой."
+          expectMistake: negative-allowed
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount >= stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: ">= вместо > — списать всё, что есть, тоже стало ошибкой."
+          expectMistake: all-stock
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    print("Ошибка: нельзя списать", amount, "шт.")
+                    return stock
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                assert write_off(5, 6) == 5
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                print("Все тесты прошли")
+          note: "Тест подогнан под старое поведение, функция не изменена."
+          expectMistake: tests-changed
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Рецензия: условие заменено на amount <= 0 — «больше, чем есть» больше не ошибка."
+          expectMistake: no-raise
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 and amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Рецензия: and вместо or — условие никогда не выполняется."
+          expectMistake: no-raise
+        - code: |
+            def write_off(stock, amount):
+                try:
+                    if amount <= 0 or amount > stock:
+                        raise ValueError(f"нельзя списать {amount} шт.")
+                except ValueError:
+                    print("Ошибка: нельзя списать", amount, "шт.")
+                    return stock
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Рецензия: raise внутри try, и функция сама ловит своё исключение."
+          expectMistake: catches-own
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    return stock
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Рецензия: raise стоит после return stock — до него дело не доходит."
+          expectMistake: still-returns
+        - code: |
+            def write_off(stock, amount):
+                if amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Условие без проверки нуля, а свой тест на 0 написан верно — он и падает."
+          expectMistake: zero-test-fails
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    print("Ошибка: нельзя списать", amount, "шт.")
+                    return stock
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_zero_amount()
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                print("Все тесты прошли")
+          note: "Свой тест на 0 штук написан и вызван первым, а функция всё ещё печатает и возвращает остаток."
+          expectMistake: still-returns
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                print("Все тесты прошли")
+          note: "Функция исправлена, а тест на 0 штук не написан."
+          expectMistake: zero-test-missing
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                print("Все тесты прошли")
+          note: "Тест на 0 штук написан, но в блоке запуска не вызван."
+          expectMistake: not-called
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                write_off(5, 0)
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Вызов в новом тесте стоит вне try — ValueError останавливает программу."
+          expectMistake: call-outside-try
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                assert write_off(5, 0) == ValueError
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Новый тест сравнивает результат с ValueError — вызов вне try, исключение останавливает программу."
+          expectMistake: call-outside-try
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert not raised, "0 штук — ошибка"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Ожидание перевёрнуто — assert not raised падает на верной функции."
+          expectMistake: wrong-expectation
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise ValueError(f"нельзя списать {amount} шт.")
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                print("Все тесты прошли")
+          note: "Тест скопирован, вызов поменян, а имя нет — новый test_too_much заменил готовый."
+          expectMistake: same-name
+        - code: |
+            def write_off(stock, amount):
+                if amount <= 0 or amount > stock:
+                    raise "нельзя списать столько"
+                return stock - amount
+
+
+            def test_normal():
+                assert write_off(10, 3) == 7
+
+
+            def test_all_stock():
+                assert write_off(5, 5) == 0
+
+
+            def test_too_much():
+                raised = False
+                try:
+                    write_off(5, 6)
+                except ValueError:
+                    raised = True
+                assert raised, "списать больше, чем есть, нельзя — нужна ValueError"
+
+
+            def test_zero_amount():
+                raised = False
+                try:
+                    write_off(5, 0)
+                except ValueError:
+                    raised = True
+                assert raised, "списать 0 штук нельзя — нужна ValueError"
+
+
+            if __name__ == "__main__":
+                test_normal()
+                test_all_stock()
+                test_too_much()
+                test_zero_amount()
+                print("Все тесты прошли")
+          note: "Рецензия: raise со строкой вместо исключения — TypeError, общий разбор."
+          expectMistake: null
+      mistakes:
+        - id: return-error
+          when:
+            codeRegex: 'return\s+ValueError'
+          why: >-
+            `return` отдаёт объект ошибки как обычное значение: функция вернула «что-то», программа
+            пошла дальше, и `except` не сработал. Исключение выбрасывают командой `raise`.
+          try: Замени `return` перед `ValueError(...)` на `raise`.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: raise-generic
+          when:
+            codeRegex: 'raise\s+(?:Exception|TypeError)\b'
+          why: >-
+            Функция выбрасывает не ValueError, а другое исключение. `except ValueError` в тесте и в
+            вызывающем коде его не поймает — программа упадёт. Функция обещает ValueError: неверное
+            значение.
+          try: Выбрасывай именно `ValueError("…")`.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: call-outside-try
+          when:
+            errorType: ValueError
+            codeRegex: '^def test_\w+\(\s*\):[ \t]*\n(?:[ \t]+(?![ \t]|try:)[^\n]*\n|[ \t]*\n)*?[ \t]+[^\n]*\bwrite_off\(\s*\w+\s*,\s*(?:0|-\s*\d+)\s*\)'
+          why: >-
+            Функция правильно выбросила ValueError, но твой тест её не поймал: вызов стоит вне
+            `try`, и исключение остановило всю программу.
+          try: >-
+            Перенеси вызов `write_off` внутрь `try`, в `except ValueError` подними флаг, а в конце
+            теста проверь флаг через `assert` — как в `test_too_much`.
+          verify: Программа должна дойти до конца и напечатать «Все тесты прошли».
+        - id: all-stock
+          when:
+            errorType: ValueError
+          why: >-
+            Функция выбросила ValueError там, где списание допустимо, и программа остановилась.
+            Посмотри в traceback, на каком тесте: списать всё, что есть (5 из 5), можно — остаток
+            будет 0.
+          try: >-
+            Проверь условие в `if`: ошибка — только когда количество не больше нуля или больше
+            остатка. Ровно остаток — не ошибка.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: catches-own
+          when:
+            errorType: AssertionError
+            codeRegex: 'def write_off\([^)]*\):(?:(?!\n\S)[\s\S])*?\bexcept\b'
+          why: >-
+            `raise ValueError` в функции есть, но она тут же сама ловит своё исключение: `raise`
+            стоит внутри `try`, а `except` в этой же функции его перехватывает. Наружу ValueError не
+            выходит, и тест получает обычное число.
+          try: >-
+            Убери `try` / `except` из `write_off`: функция только выбрасывает ValueError, а ловить её
+            — дело вызывающего кода.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: still-returns
+          when:
+            errorType: AssertionError
+            codeRegex: '^[ \t]+return\s+stock\s*$'
+          why: >-
+            В ветке ошибки функция по-прежнему возвращает остаток — `return stock`. Исключения нет,
+            поэтому флаг в тесте остался `False`, и тест упал. Тест прав: он ловит именно то
+            поведение, которое нужно исправить. `raise` после `return` не поможет — до него дело не
+            дойдёт.
+          try: >-
+            В ветке ошибки замени `print` и `return stock` одной строкой: `raise ValueError(...)` с
+            понятным сообщением.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: no-raise
+          when:
+            errorType: AssertionError
+            errorIncludes: больше, чем есть
+          why: >-
+            Для `write_off(5, 6)` — списать 6 штук из 5 — функция не выбросила ValueError, и флаг в
+            `test_too_much` остался `False`. Значит, условие в `if` для этого случая ложно, и до
+            `raise` дело не доходит.
+          try: >-
+            Проверь условие: для 6 из 5 оно должно быть истинным. Нужна часть `amount > stock`, а
+            части условия соединяет `or` — ошибка, если верна хотя бы одна.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+            codeRegex: 'assert\s+not\b'
+          why: >-
+            Твой новый тест упал, хотя функция выбросила ValueError: `assert not …` требует, чтобы
+            исключения не было. Тест на исключение проходит, когда исключение было.
+          try: В конце теста проверь, что флаг поднят, — `assert` флага без `not`.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: zero-test-fails
+          when:
+            errorType: AssertionError
+          why: >-
+            Программа остановилась на AssertionError — посмотри в traceback, какой тест упал. Если
+            твой тест на 0 штук, значит, `write_off(5, 0)` не выбросила ValueError: функция молча
+            списывает 0. Тест прав — он нашёл ту самую ошибку, ради которой его пишут.
+          try: >-
+            Проверь условие в `if`: ошибка нужна и для «больше, чем есть», и для количества не
+            больше нуля. Если функция уже верна, проверь сам тест: вызов внутри `try`, флаг
+            поднимается в `except ValueError`, в конце — `assert` этого флага.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: tests-changed
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: a-too-much
+          why: >-
+            Проверка вызывает `write_off(5, 6)` напрямую и ждёт ValueError, а функция её не
+            выбрасывает. Похоже, поменялся тест, а не функция. Тест описывает требование, и
+            подгонять его под старое поведение нельзя.
+          try: >-
+            Верни готовые тесты как было и измени функцию — в ветке ошибки нужна
+            `raise ValueError(...)`.
+        - id: same-name
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: t-unique
+          why: >-
+            Два теста называются одинаково. Второй `def` с тем же именем заменяет первую функцию —
+            как новое значение заменяет старое в переменной. Первый тест пропал: его не выполнит ни
+            запуск, ни тренажёр.
+          try: >-
+            Дай новому тесту своё имя, например `test_zero_amount`, и вызови его в блоке запуска.
+            Готовые тесты оставь как были.
+        - id: print-left
+          when:
+            failedTest: t-io
+            outputIncludes: Ошибка
+          why: >-
+            ValueError уже выбрасывается, но `print` в функции остался, и при запуске на экране
+            лишняя строка. Сообщение теперь живёт внутри исключения, печатать его не нужно: решать,
+            что показать человеку, будет вызывающий код.
+          try: Убери `print` из функции — перед `raise` он не нужен.
+          verify: Программа должна напечатать только «Все тесты прошли».
+        - id: only-too-much
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: a-zero
+          why: >-
+            Функция выбрасывает ValueError, когда списывают больше, чем есть. Но списать 0 штук тоже
+            нельзя, а сейчас `write_off(5, 0)` молча возвращает 5. Тестов на этот случай в программе
+            пока нет, поэтому она печатает «Все тесты прошли».
+          try: >-
+            Верни в условие проверку «количество не больше нуля» — она была в стартовом коде рядом с
+            «больше, чем есть». Тест на 0 штук, который ты допишешь, будет следить, чтобы она не
+            пропала.
+        - id: negative-allowed
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: a-negative
+          why: >-
+            Для отрицательного количества функция не выбрасывает ValueError: `write_off(5, -2)`
+            вернёт 7 — на складе «прибавилось». Ноль и отрицательное число — разные случаи, и
+            условие `amount == 0` запрещает ноль, но пропускает минус.
+          try: Сделай условие для всех чисел меньше единицы, например `amount <= 0`.
+        - id: not-called
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: t-called
+          why: >-
+            Тест на 0 штук написан, но в блоке `if __name__ == "__main__":` его вызова нет. Тогда
+            при запуске он не выполняется, и «Все тесты прошли» печатается, хотя новый тест ничего
+            не проверил.
+          try: Добавь вызов теста в блок запуска, перед `print`, — имя и круглые скобки.
+        - id: zero-test-missing
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: t-m-zero
+          why: >-
+            Функция исправлена, а теста на 0 штук пока нет: тренажёр подставил версию функции,
+            которая разрешает списать 0 штук, и ни один тест не упал. Если тест есть, проверь, что
+            в нём вызов с нулём и в конце стоит `assert` флага.
+          try: >-
+            Допиши тест по образцу `test_too_much`: внутри `try` — списание 0 штук, в
+            `except ValueError` флаг поднимается, в конце — `assert` флага.
+      afterPass: >-
+        Функция больше не притворяется, что всё хорошо: на неверное количество вызывающий код
+        получит ValueError и сможет поймать её — например, переспросить количество, как в уроке 7.4.
+        А твой тест на ноль не даст этой проверке тихо пропасть. Улучшение: два отдельных `if` с
+        разными сообщениями — «количество должно быть больше нуля» и «на складе только N шт.» —
+        подскажут человеку, что именно не так.
+      skills: [exceptions, exception-tests]
+
+  - id: practice-timer
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m9-l4-e3
+      kind: write
+      title: Функция по готовым тестам
+      statement: |-
+        Кухонный таймер принимает время строкой вида `"мм:сс"`: `"4:05"` — это 4 минуты 5 секунд.
+        Функция `to_seconds(text)` должна переводить такую строку в секунды.
+
+        Тесты уже написаны — это требования к функции. Прочитай их и напиши функцию целиком так,
+        чтобы прошли все. Главное правило для неверного ввода: функция выбрасывает ValueError, а
+        не возвращает число и не падает с другой ошибкой. Неверный ввод здесь — это:
+
+        - текст, в котором не ровно одно двоеточие: слово, число без двоеточия, пустая строка,
+          `"1:02:03"`;
+        - не целые числа по краям от двоеточия, например `"4.5:30"`;
+        - секунд больше 59.
+
+        Отрицательные числа в этой задаче не проверяем. Программа выводит одну строку
+        `Все тесты прошли`.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: Все тесты прошли"
+      constraints:
+        - Тесты не меняй — они описывают, что должна делать функция.
+        - Время на входе — строка; результат — целое число секунд.
+      starterCode: |
+        def to_seconds(text):
+            # Тесты ниже — это требования. Прочитай их и напиши функцию.
+            return 0
+
+
+        def test_minutes_and_seconds():
+            assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+        def test_zero():
+            assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+        def test_long_timer():
+            assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+        def test_seconds_limit():
+            raised = False
+            try:
+                to_seconds("4:75")
+            except ValueError:
+                raised = True
+            assert raised, "секунд не может быть больше 59"
+
+
+        def test_not_a_time():
+            raised = False
+            try:
+                to_seconds("четыре")
+            except ValueError:
+                raised = True
+            assert raised, "текст без двоеточия — ошибка"
+
+
+        if __name__ == "__main__":
+            test_minutes_and_seconds()
+            test_zero()
+            test_long_timer()
+            test_seconds_limit()
+            test_not_a_time()
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          expected: Все тесты прошли
+        - id: c-basic
+          kind: call
+          title: Минуты и секунды
+          example: true
+          call: to_seconds("4:05")
+          expected: "245"
+        - id: c-under-minute
+          kind: call
+          title: Меньше минуты
+          example: true
+          call: to_seconds("0:59")
+          expected: "59"
+        - id: c-minute
+          kind: call
+          title: "Граничный случай: ровно минута"
+          edge: true
+          call: to_seconds("1:00")
+          expected: "60"
+        - id: c-long
+          kind: call
+          title: Больше часа
+          call: to_seconds("90:30")
+          expected: "5430"
+        - id: c-other
+          kind: call
+          title: Другое время
+          call: to_seconds("12:30")
+          expected: "750"
+        - id: a-75
+          kind: assert
+          title: 75 секунд — ValueError
+          example: true
+          code: |
+            _raised = False
+            try:
+                to_seconds("4:75")
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: '`to_seconds("4:75")` выбрасывает ValueError: секунд больше 59.'
+        - id: a-60
+          kind: assert
+          title: "Граничный случай: 60 секунд — уже ValueError"
+          edge: true
+          code: |
+            _raised = False
+            try:
+                to_seconds("4:60")
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: '`to_seconds("4:60")` выбрасывает ValueError: 60 секунд — это уже больше 59.'
+        - id: a-word
+          kind: assert
+          title: Слово вместо времени — ValueError
+          code: |
+            _raised = False
+            try:
+                to_seconds("четыре")
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: '`to_seconds("четыре")` выбрасывает ValueError: это не время.'
+        - id: a-digits
+          kind: assert
+          title: "Граничный случай: число без двоеточия — ValueError"
+          edge: true
+          code: |
+            _raised = False
+            try:
+                to_seconds("15")
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: '`to_seconds("15")` выбрасывает ValueError: без двоеточия это не время мм:сс.'
+        - id: a-empty
+          kind: assert
+          title: "Граничный случай: пустая строка — ValueError"
+          edge: true
+          code: |
+            _raised = False
+            try:
+                to_seconds("")
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: '`to_seconds("")` выбрасывает ValueError: пустая строка — не время.'
+        - id: a-three-parts
+          kind: assert
+          title: "Граничный случай: два двоеточия — ValueError"
+          edge: true
+          code: |
+            _raised = False
+            try:
+                to_seconds("1:02:03")
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: '`to_seconds("1:02:03")` выбрасывает ValueError: в «мм:сс» двоеточие одно.'
+        - id: a-fraction
+          kind: assert
+          title: "Граничный случай: дробные минуты — ValueError"
+          edge: true
+          code: |
+            _raised = False
+            try:
+                to_seconds("4.5:30")
+            except ValueError:
+                _raised = True
+            assert _raised
+          message: '`to_seconds("4.5:30")` выбрасывает ValueError: минуты и секунды — целые числа.'
+      criteria:
+        - Время «мм:сс» переводится в секунды, минут может быть сколько угодно.
+        - Секунд больше 59 — ValueError; 59 — ещё можно, 60 — уже нельзя.
+        - Если двоеточие не одно (слово, число без двоеточия, пустая строка, «1:02:03») или по краям не целые числа, — ValueError, а не число и не другая ошибка.
+        - Тесты не изменены, программа выводит «Все тесты прошли».
+      hints:
+        - >-
+          Выпиши из тестов и условия правила: какие строки во что превращаются и на каких строках
+          функция должна выбросить ValueError. Какие шаги нужны, чтобы из «4:05» получить 245?
+        - |-
+          Приёмы на других примерах:
+
+          ```python
+          print("3:15".split(":"))    # ['3', '15'] — две части
+          print("15".split(":"))      # ['15'] — одна часть: двоеточия нет
+          print("1:2:3".split(":"))   # ['1', '2', '3'] — три части
+          int("abc")                  # ValueError: int сам не принимает буквы
+          ```
+
+          Если `int` уже выбрасывает ValueError, выбрасывать её вручную не нужно. А там, где Python
+          промолчит (секунд 75, три части) или выбросит другую ошибку (для «15» `parts[1]` даст
+          IndexError), нужна своя проверка и `raise ValueError(...)`.
+        - |-
+          Каркас:
+
+          ```text
+          def to_seconds(text):
+              части = text, разделённый по ":"
+              если частей не две: raise ValueError(...)
+              минуты = int(первая часть)
+              секунды = int(вторая часть)
+              если секунд больше 59: raise ValueError(...)
+              вернуть минуты * 60 + секунды
+          ```
+      solution:
+        code: |
+          def to_seconds(text):
+              parts = text.split(":")
+              if len(parts) != 2:
+                  raise ValueError("нужно время в виде мм:сс")
+              minutes = int(parts[0])
+              seconds = int(parts[1])
+              if seconds > 59:
+                  raise ValueError("секунд не может быть больше 59")
+              return minutes * 60 + seconds
+
+
+          def test_minutes_and_seconds():
+              assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+          def test_zero():
+              assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+          def test_long_timer():
+              assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+          def test_seconds_limit():
+              raised = False
+              try:
+                  to_seconds("4:75")
+              except ValueError:
+                  raised = True
+              assert raised, "секунд не может быть больше 59"
+
+
+          def test_not_a_time():
+              raised = False
+              try:
+                  to_seconds("четыре")
+              except ValueError:
+                  raised = True
+              assert raised, "текст без двоеточия — ошибка"
+
+
+          if __name__ == "__main__":
+              test_minutes_and_seconds()
+              test_zero()
+              test_long_timer()
+              test_seconds_limit()
+              test_not_a_time()
+              print("Все тесты прошли")
+        explanation: >-
+          `split(":")` делит строку на части. Если частей не две (двоеточия нет, как в «четыре» и
+          «15», или их два, как в «1:02:03»), функция сама выбрасывает ValueError. Буквы, дроби и
+          пустые части («4:», «ab:cd», «4.5:30») отсекает `int`: он выбрасывает ValueError без
+          нашей помощи — и это тот самый тип, который обещан в тестах. Явная проверка нужна ещё для
+          секунд: `int("75")` работает, а по правилам секунд не больше 59.
+      altSolutions:
+        - code: |
+            def to_seconds(text):
+                minutes, seconds = text.split(":")
+                minutes = int(minutes)
+                seconds = int(seconds)
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Распаковка: если частей не две, `minutes, seconds = …` сама выбрасывает ValueError («not enough values to unpack» или «too many values to unpack»), поэтому отдельная проверка длины не нужна."
+        - code: |
+            def to_seconds(text):
+                if ":" not in text:
+                    raise ValueError("нет двоеточия")
+                parts = text.split(":")
+                if len(parts) != 2 or not parts[0].isdigit() or not parts[1].isdigit():
+                    raise ValueError("нужно время в виде мм:сс")
+                minutes = int(parts[0])
+                seconds = int(parts[1])
+                if seconds >= 60:
+                    raise ValueError("секунд должно быть меньше 60")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Все проверки явные — через `in`, `isdigit()` и `>= 60`."
+        - code: |
+            def to_seconds(text):
+                colon = text.index(":")
+                minutes = int(text[:colon])
+                seconds = int(text[colon + 1:])
+                if seconds >= 60:
+                    raise ValueError(f"секунд {seconds}, а можно не больше 59")
+                total = seconds + 60 * minutes
+                return total
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: index(\":\") и срезы; лишнее двоеточие отсекает int."
+        - code: |
+            def to_seconds(text):
+                parts = text.split(":")
+                if len(parts) != 2:
+                    raise ValueError("нужно время в виде мм:сс")
+                try:
+                    minutes = int(parts[0])
+                    seconds = int(parts[1])
+                except ValueError:
+                    raise ValueError(f"не время: {text}")
+                if not 0 <= seconds < 60:
+                    raise ValueError("секунды — от 0 до 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: свой ValueError с понятным сообщением вместо ValueError от int."
+        - code: |
+            def to_seconds(text):
+                if ":" not in text:
+                    raise ValueError("нет двоеточия")
+                left, right = text.split(":", 1)
+                if not left.isdigit() or not right.isdigit():
+                    raise ValueError("минуты и секунды — только цифры")
+                if int(right) > 59:
+                    raise ValueError("секунд больше 59")
+                return int(left) * 60 + int(right)
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: split(\":\", 1) и isdigit у обеих частей."
+      wrongSolutions:
+        - code: |
+            def to_seconds(text):
+                # Тесты ниже — это требования. Прочитай их и напиши функцию.
+                return 0
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Стартовый код — заглушка return 0."
+          expectMistake: stub-left
+        - code: |
+            def to_seconds(text):
+                minutes, seconds = text.split(":")
+                return int(minutes) * 60 + int(seconds)
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Нет проверки секунд — «4:75» даёт 315."
+          expectMistake: no-seconds-check
+        - code: |
+            def to_seconds(text):
+                parts = text.split(":")
+                if len(parts) != 2:
+                    raise ValueError("нужно время в виде мм:сс")
+                seconds = int(parts[1])
+                if seconds > 59:
+                    raise ValueError("секунд не может быть больше 59")
+                return int(parts[0]) * 100 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "В минуте 100 секунд вместо 60."
+          expectMistake: wrong-multiplier
+        - code: |
+            def to_seconds(text):
+                try:
+                    minutes, seconds = text.split(":")
+                    minutes = int(minutes)
+                    seconds = int(seconds)
+                except ValueError:
+                    return 0
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Функция сама ловит ValueError и возвращает 0 — вызывающий код не узнает об ошибке."
+          expectMistake: catches-inside
+        - code: |
+            def to_seconds(text):
+                parts = text.split(":")
+                minutes = int(parts[0])
+                seconds = int(parts[1])
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Число частей не проверяется — для «15» parts[1] выбрасывает IndexError."
+          expectMistake: index-error
+        - code: |
+            def to_seconds(text):
+                minutes, seconds = text.split(":")
+                minutes = int(minutes)
+                seconds = int(seconds)
+                if seconds > 60:
+                    raise ValueError("секунд больше 60")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Граница сдвинута — «4:60» проходит без ошибки."
+          expectMistake: limit-60
+        - code: |
+            def to_seconds(text):
+                if ":" not in text:
+                    raise Exception("нужно время в виде мм:сс")
+                minutes, seconds = text.split(":")
+                minutes = int(minutes)
+                seconds = int(seconds)
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Для текста без двоеточия выбрасывается общее Exception вместо ValueError."
+          expectMistake: raise-generic
+        - code: |
+            def to_seconds(text):
+                minutes, seconds = text.split(":")
+                minutes = int(minutes)
+                seconds = int(seconds)
+                if seconds >= 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Граница сдвинута в другую сторону — «0:59» тоже стало ошибкой; сообщение естественное."
+          expectMistake: limit-59
+        - code: |
+            def to_seconds(text):
+                parts = text.split(":")
+                if len(parts) != 2:
+                    raise ValueError("нужно время в виде мм:сс")
+                minutes = int(parts[0])
+                seconds = int(parts[1])
+                if seconds >= 59:
+                    raise ValueError("секунд не может быть больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: граница >= 59, сообщение как в эталоне."
+          expectMistake: limit-59
+        - code: |
+            def to_seconds(text):
+                minutes, seconds = text.split(":")
+                minutes = int(minutes)
+                seconds = int(seconds)
+                if minutes > 59 or seconds > 59:
+                    raise ValueError("минут и секунд не больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: минуты тоже ограничены 59 — «90:30» даёт ValueError; общий разбор."
+          expectMistake: null
+        - code: |
+            def to_seconds(text):
+                if ":" not in text:
+                    raise ValueError("нет двоеточия")
+                parts = text.split(":")
+                minutes = int(parts[0])
+                seconds = int(parts[1])
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: проверено только наличие двоеточия — «1:02:03» даёт 62."
+          expectMistake: extra-colon
+        - code: |
+            def to_seconds(text):
+                parts = text.split(":")
+                if len(parts) != 2:
+                    raise ValueError("нужно время в виде мм:сс")
+                minutes = float(parts[0])
+                seconds = float(parts[1])
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: float вместо int — «4.5:30» принимается как время."
+          expectMistake: float-used
+        - code: |
+            def to_seconds(text):
+                if ":" not in text:
+                    return 0
+                minutes, seconds = text.split(":")
+                minutes = int(minutes)
+                seconds = int(seconds)
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: нет двоеточия — return 0 вместо ValueError."
+          expectMistake: catches-inside
+        - code: |
+            def to_seconds(text):
+                parts = text.split(":")
+                minutes = int(parts[0])
+                try:
+                    seconds = int(parts[1])
+                except IndexError:
+                    raise ValueError("нет секунд")
+                if seconds > 59:
+                    raise ValueError("секунд больше 59")
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия ученика: IndexError превращён в ValueError, но «1:02:03» даёт 62."
+          expectMistake: extra-colon
+        - code: |
+            def to_seconds(text):
+                minutes, seconds = text.split(":")
+                minutes = int(minutes)
+                seconds = int(seconds)
+                if seconds > 59:
+                    print("Ошибка: секунд больше 59")
+                    return 0
+                return minutes * 60 + seconds
+
+
+            def test_minutes_and_seconds():
+                assert to_seconds("4:05") == 245, "4:05 — это 245 секунд"
+
+
+            def test_zero():
+                assert to_seconds("0:00") == 0, "0:00 — это 0 секунд"
+
+
+            def test_long_timer():
+                assert to_seconds("90:30") == 5430, "90:30 — это 5430 секунд"
+
+
+            def test_seconds_limit():
+                raised = False
+                try:
+                    to_seconds("4:75")
+                except ValueError:
+                    raised = True
+                assert raised, "секунд не может быть больше 59"
+
+
+            def test_not_a_time():
+                raised = False
+                try:
+                    to_seconds("четыре")
+                except ValueError:
+                    raised = True
+                assert raised, "текст без двоеточия — ошибка"
+
+
+            if __name__ == "__main__":
+                test_minutes_and_seconds()
+                test_zero()
+                test_long_timer()
+                test_seconds_limit()
+                test_not_a_time()
+                print("Все тесты прошли")
+          note: "Рецензия: на лишние секунды — print и return 0 вместо raise."
+          expectMistake: no-seconds-check
+      mistakes:
+        - id: stub-left
+          when:
+            codeRegex: 'def to_seconds\([^)]*\):(?:\s*#[^\n]*)*\s*return 0\b'
+          where: Тело функции `to_seconds`
+          why: >-
+            Функция пока заглушка: на любое время она возвращает 0. Первый же тест ждёт 245 для
+            «4:05» и падает.
+          try: >-
+            Начни с первого теста: как из строки «4:05» получить 4 минуты и 5 секунд? Раздели строку
+            по двоеточию и преврати части в числа.
+        - id: wrong-multiplier
+          when:
+            codeRegex: '\*\s*100\b'
+          why: 'В минуте 60 секунд, а не 100: «4:05» — это 4 * 60 + 5 = 245.'
+          try: Умножай минуты на 60.
+        - id: raise-generic
+          when:
+            codeRegex: 'raise\s+(?:Exception|TypeError|IndexError)\b'
+          why: >-
+            Функция выбрасывает не ValueError, а другое исключение. Тест `test_not_a_time` и
+            вызывающий код ловят `except ValueError` — такое исключение они не поймают, и программа
+            упадёт.
+          try: 'Выбрасывай именно `ValueError("…")`: неверный текст — это неверное значение.'
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: no-seconds-check
+          when:
+            errorType: AssertionError
+            errorIncludes: больше 59
+          why: >-
+            Тест `test_seconds_limit` — это требование: секунд не больше 59. Сейчас на «4:75»
+            функция не выбрасывает ValueError, а возвращает число, хотя такого времени не бывает.
+            `int("75")` работает без ошибок, поэтому Python сам ничего не заметит.
+          try: >-
+            После того как секунды стали числом, проверь их. Больше 59 — выброси
+            `ValueError(...)`.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: catches-inside
+          when:
+            errorType: AssertionError
+            errorIncludes: без двоеточия
+          why: >-
+            Для «четыре» функция вернула число вместо ValueError. Так бывает, если функция сама
+            ловит ошибку (`try` / `except` внутри) или возвращает 0 на неверный текст. Тогда
+            вызывающий код получит 0 секунд и не узнает, что ввод был неверным.
+          try: >-
+            Не перехватывай ValueError внутри `to_seconds` и не возвращай число для неверного
+            текста — пусть исключение выходит из функции наружу.
+          verify: Программа должна напечатать «Все тесты прошли».
+        - id: index-error
+          when:
+            errorType: IndexError
+          why: >-
+            Для строки без двоеточия, например «15», `split(":")` даёт список из одного элемента, и
+            `parts[1]` выбрасывает IndexError. Требование другое: для любого текста, который не
+            время мм:сс, нужна ValueError — её ловит вызывающий код.
+          try: >-
+            После `split` проверь, что частей ровно две. Если нет — выброси `ValueError(...)` сам.
+        - id: limit-60
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: a-60
+          why: >-
+            60 секунд — это уже целая минута, по правилам секунд не больше 59. Сейчас «4:60»
+            проходит без ошибки: граница сдвинута на единицу.
+          try: >-
+            Проверь сравнение в условии: ошибка должна быть уже при 60 — `> 59` или `>= 60`.
+        - id: limit-59
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: c-under-minute
+            errorType: ValueError
+          why: >-
+            Для «0:59» функция выбросила ValueError, а 59 секунд — ещё правильное время. Граница
+            сдвинута на единицу в другую сторону.
+          try: >-
+            Проверь сравнение в условии: ошибка нужна только при 60 и больше — `> 59` или `>= 60`.
+        - id: extra-colon
+          when:
+            outputIncludes: Все тесты прошли
+            failedTest: a-three-parts
+          why: >-
+            Для «1:02:03» функция вернула число: она берёт первые две части и не замечает третью. В
+            «мм:сс» двоеточие ровно одно, а проверка «есть ли двоеточие» или перехват IndexError
+            лишнее двоеточие не замечают.
+          try: >-
+            После `split(":")` проверь, что частей ровно две. Если нет — выброси `ValueError(...)`.
+        - id: float-used
+          when:
+            outputIncludes: Все тесты прошли
+            codeRegex: '\bfloat\('
+          why: >-
+            `float` превращает «4.5» в 4.5, и функция принимает дробные минуты, а результат
+            становится дробным: 245.0 вместо 245. В «мм:сс» минуты и секунды — целые числа.
+          try: >-
+            Преврати части в числа через `int`: на «4.5» он сам выбросит ValueError, и отдельная
+            проверка не понадобится.
+      afterPass: >-
+        Ты написал функцию по чужим тестам — так часто работают в команде: тесты описывают, что
+        должно получиться. Улучшение: если твоя функция пропускает минус, `"-1:30"` даст −30
+        секунд. Какой тест это покажет — и что тогда должна сделать функция?
+      skills: [exception-tests, exceptions, string-methods]
+
+  - id: pytest-raises
+    type: checklist
+    title: pytest.raises на компьютере (по желанию)
+    body: >-
+      Если ты за компьютером и у тебя есть папка `python-practice\m9` с окружением и pytest из
+      урока 9.3, этот блок займёт около 5 минут. Если нет — пропусти его: урок засчитывается и без
+      него. Команды — для Windows и «Командной строки» (cmd), как в уроках 8.3 и 9.3. На macOS и
+      Linux окружение включается командой `source .venv/bin/activate`, а вместо `python` пишут
+      `python3`.
+    items:
+      - id: seats-files
+        text: |-
+          **Создай два файла** в папке `m9`. В `seats.py` — только функция
+          `book_seats` из практики 1, без тестов. В `test_seats.py` — тесты через `pytest.raises`:
+
+          ```python
+          import pytest
+          from seats import book_seats
+
+
+          def test_normal_booking():
+              assert book_seats(10, 3) == 7
+
+
+          def test_too_many():
+              with pytest.raises(ValueError):
+                  book_seats(5, 6)
+
+
+          def test_zero_seats():
+              with pytest.raises(ValueError):
+                  book_seats(5, 0)
+          ```
+        help: >-
+          Открой «Командную строку» в папке `m9` и включи окружение: `.venv\Scripts\activate`. В
+          начале строки должно появиться `(.venv)`. Имена файлов пиши точно так: pytest ищет файлы
+          `test_*.py`, а `from seats import book_seats` ищет файл `seats.py` рядом.
+      - id: seats-run
+        text: >-
+          **Запусти тесты** командой `python -m pytest -v test_seats.py`. У всех трёх тестов
+          должно быть `PASSED`.
+        help: >-
+          `ModuleNotFoundError: No module named 'seats'` — файл назван иначе или лежит не рядом с
+          `test_seats.py`. `file or directory not found: test_seats.py` — «Командная строка» открыта
+          не в папке `m9`. `No module named pytest` — окружение не включено: pytest стоит внутри
+          него.
+      - id: seats-break
+        text: >-
+          **Сломай функцию и прочитай отчёт.** В `seats.py` поставь `#` в начале строк с `if` и с
+          `raise` — проверка пропадёт. Сохрани файл и запусти тесты ещё раз. Тесты `test_too_many`
+          и `test_zero_seats` упадут, а в отчёте будет строка примерно такая:
+          `Failed: DID NOT RAISE <class 'ValueError'>`. Оформление вокруг неё у тебя может
+          отличаться.
+        help: >-
+          DID NOT RAISE — «не выбросила»: код внутри `with pytest.raises(ValueError):` отработал
+          без исключения. Если тесты всё ещё `PASSED` — файл не сохранён. Если появилась
+          IndentationError — закомментируй обе строки, и `if`, и `raise`.
+      - id: seats-restore
+        text: >-
+          **Верни строки:** убери `#`, сохрани и запусти ещё раз — все три теста снова `PASSED`.
+        help: >-
+          Если хочешь, добавь в `test_seats.py` тест на отрицательное число мест — так же, через
+          `pytest.raises`.
+    coach: >-
+      Флаг и `pytest.raises` проверяют одно и то же. Флаг работает везде, `pytest.raises` короче,
+      но только вместе с pytest.
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - 'На неверный ввод функция выбрасывает исключение — `raise ValueError("…")`, а не печатает сообщение и не возвращает 0.'
+      - 'Тест на исключение в тренажёре — флаг: `raised = False` → один вызов внутри `try` → `except ValueError: raised = True` → `assert raised`.'
+      - "На компьютере то же короче: `with pytest.raises(ValueError):`."
+      - "Лови конкретный тип: `except Exception` засчитает любую ошибку и спрячет неверное поведение функции."
+    question: Почему в тесте на исключение пишут `except ValueError`, а не `except Exception`?
+    answer: >-
+      `except Exception` засчитает любое исключение — TypeError, IndexError или NameError из-за
+      опечатки. Тест пройдёт, хотя функция ведёт себя не так, как обещала. Конкретный тип проверяет
+      именно контракт: на неверный ввод — ValueError, и только она.

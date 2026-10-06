@@ -1,0 +1,278 @@
+/* Владелец: course; экран «Проекты». Как «Направления»: слева лестница проектов (список на линиях), справа документ
+   выбранного проекта. Общие .page-split, .rows, .row-*, .bullets, .checklist не переписываются — только уточнения
+   внутри .projects-*. Цвета и размеры — только токены. */
+
+.projects-split {
+  --list-w: 380px;
+
+  grid-template-columns: var(--list-w) minmax(0, 1fr);
+}
+
+.projects-list {
+  border-right: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+/* Лестница: ряды на линиях, номера соединены рельсом — от одного проекта к следующему. Сверху линию даёт шапка. */
+.projects-ladder {
+  border-bottom: 1px solid var(--line);
+}
+
+.projects-ladder > li {
+  position: relative;
+}
+
+.projects-ladder > li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 38px;
+  bottom: -6px;
+  left: calc(var(--gutter) + 15px);
+  width: 2px;
+  background: var(--line-strong);
+  pointer-events: none;
+}
+
+.project-row {
+  min-height: 64px;
+}
+
+/* Серый бейдж («Материалы пишутся») на выбранном ряду — на --bg-editor: подложка бейджа не сливается с янтарной
+   подложкой ряда (наведённый ряд — общее правило .rows). */
+.projects-ladder .row[aria-current='true'] .badge:not([class*='badge-']) {
+  background: var(--bg-editor);
+}
+
+/* Подпись под названием — та же группа, но строки не слипаются (как в рядах «Курса»). */
+.project-row .row-sub {
+  margin-top: var(--sp-1);
+}
+
+.project-num.is-done {
+  border-color: var(--ok-line);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.project-num svg {
+  width: 16px;
+  height: 16px;
+}
+
+.project-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.project-row-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.project-row-progress svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ------------------------------------------------------------ документ проекта */
+.project-doc {
+  scroll-margin-top: var(--sp-2);
+}
+
+.project-doc-body {
+  max-width: 760px;
+  padding: var(--sp-6) var(--sp-8) var(--sp-12);
+}
+
+/* «К списку» — только когда список выше документа (< 900 px), как в «Направлениях». */
+.project-back {
+  display: none;
+}
+
+.project-kicker {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.project-kicker svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+}
+
+#project-title {
+  margin-top: var(--sp-2);
+  font: 600 var(--fs-22) / var(--lh-22) var(--font-sans);
+}
+
+.project-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.project-story {
+  margin-top: var(--sp-4);
+}
+
+.project-sec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-8);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--line);
+}
+
+/* Заголовки секций 18 — крупнее текста требований (16), как h2 частей «Карты курса» и секции документа «Направлений». */
+.project-sec h3 {
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+.project-sec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.project-sec-aside {
+  margin-left: auto;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* Требования, критерии, этапы и изменение требования — учебное содержание: размером текста урока, строка ≤ 68 знаков. */
+.project-sec .bullets {
+  max-width: var(--reading-max);
+  color: var(--text);
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+/* «Изменение требования в конце» — отдельный блок со своим фоном; заголовок отделён от текста на 8. */
+.project-change {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: var(--reading-max);
+  margin-top: var(--sp-2);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+}
+
+.project-change strong {
+  font-weight: 600;
+}
+
+/* Этапы: чек-лист на линиях, вся подпись — цель касания (≥ 44). */
+.project-stages {
+  border-top: 1px solid var(--line);
+}
+
+.project-stages .check {
+  min-height: 44px;
+}
+
+/* Флажок 18 — по центру первой строки названия (16 × 1.5 = 24). */
+.project-stages .check input {
+  margin-top: 3px;
+}
+
+.project-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  max-width: var(--reading-max);
+  font-size: var(--lesson-size);
+}
+
+.project-stage-title {
+  color: var(--text);
+  font: 600 var(--lesson-size) / 1.5 var(--font-sans);
+}
+
+.project-stage-text {
+  color: var(--text-2);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+}
+
+.project-notes-label {
+  color: var(--text);
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+.project-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.project-saved svg {
+  width: 14px;
+  height: 14px;
+}
+
+.project-notes .textarea {
+  min-height: calc(5 * 21px + 16px);
+  line-height: var(--lh-14-wrap);
+}
+
+@media (max-width: 1199px) {
+  .projects-split {
+    --list-w: 320px;
+  }
+
+  .project-doc-body {
+    padding: var(--sp-5) var(--sp-5) var(--sp-10);
+  }
+}
+
+/* Телефон и планшет в портрете: список, затем документ. */
+@media (max-width: 899px) {
+  .projects-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .projects-list {
+    border-right: 0;
+  }
+
+  /* Название экрана уже в верхней строке: метка панели — только для скринридера (как у «Направлений»). */
+  .projects-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .project-doc {
+    border-top: 1px solid var(--line);
+  }
+
+  .project-doc-body {
+    padding: var(--sp-5) var(--gutter) var(--sp-8);
+  }
+
+  .project-back {
+    display: inline-flex;
+    margin: 0 0 var(--sp-3) calc(-1 * var(--sp-3));
+  }
+}

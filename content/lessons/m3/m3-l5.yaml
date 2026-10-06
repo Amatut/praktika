@@ -1,0 +1,2065 @@
+id: m3-l5
+module: m3
+number: "3.5"
+title: "Случайные числа: первый import"
+objective: >-
+  Подключать стандартный модуль через import и получать случайные целые числа
+  random.randint(a, b), помня, что обе границы входят, — и встраивать их в циклы и условия.
+minutes: [20, 30]
+prerequisites: [m3-l4]
+skills: [import-basics]
+environment: python
+
+story:
+  title: Кубики пропали
+  fictional: true
+  text: >-
+    В субботу семья Полины собралась играть в настольную игру, а кубики, как оказалось,
+    потерялись при переезде. Полина как раз учит Python и за пять минут написала программу-кубик:
+    одна строка подключает модуль random, другая выдаёт число от 1 до 6. Вечер спасён, а младший
+    брат тут же попросил ещё одну игру — компьютер загадывает число, а все по очереди угадывают.
+    Писать «случайность» самой Полине не пришлось: в Python она уже есть.
+
+why: >-
+  Играм, розыгрышам и тренажёрам нужны случайные числа, а формулу для них придумывать не
+  придётся. Например, бросок кубика — это одна строка `random.randint(1, 6)` после `import random`.
+
+usedIn: >-
+  Игры (кубики, выпадение предметов, расстановка противников), викторины и тренажёры со
+  случайными вопросами, жеребьёвка команд, генерация тестовых данных, модели очередей и датчиков.
+  А сам приём `import` нужен постоянно: даты, пути к файлам, CSV и JSON, сеть и базы данных в
+  Python тоже подключаются как модули.
+
+steps:
+  - id: modules
+    type: theory
+    title: Модули и random
+    body: |-
+      Python умеет гораздо больше, чем `print` и `input`. Готовые инструменты лежат в
+      **модулях**. **Модуль** — файл с функциями на одну тему: `random` — случайные числа,
+      `math` — математика. Модули, которые ставятся вместе с Python, называют
+      **стандартной библиотекой**: скачивать их не нужно.
+
+      Модуль подключают командой `import` — обычно в первой строке программы:
+
+      ```python
+      import random
+
+      value = random.randint(1, 6)
+      print(value)
+      ```
+
+      `random.randint(1, 6)` читается так: из модуля `random` взять функцию `randint` и вызвать
+      её. Точка между ними обязательна. Функция возвращает случайное целое число **от 1 до 6
+      включительно**: в отличие от `range`, правая граница тоже входит.
+
+      Так вызывают функции любого модуля: `import math`, потом `math.sqrt(16)` — квадратный
+      корень, 4.0. Есть и короткая форма `from random import randint`, после неё пишут просто
+      `randint(1, 6)`; в курсе используем `import random`.
+
+      Три правила:
+
+      - **Каждый вызов — новый бросок:** число выпадает заново и может совпасть с прошлым. Если
+        число нужно дважды (напечатать и прибавить к сумме), сохрани его в переменную и дальше
+        бери из неё.
+      - **Сначала `import`, потом имя модуля и точка.** Без `import` Python не знает модуль:
+        `NameError: name 'random' is not defined`, а в конце сообщения даже подсказывает:
+        *Did you forget to import 'random'?*
+      - **Не называй свой файл `random.py`** на компьютере: Python подключит его вместо
+        настоящего модуля.
+
+      **Случайность и проверка.** Числа `random` вычисляются по формуле из стартового числа —
+      **зерна** (по-английски seed). На компьютере Python при каждом запуске берёт новое зерно,
+      поэтому и числа каждый раз новые. В тренажёре каждый тест задаёт своё зерно: «случайные»
+      числа в нём всегда одни и те же, и вывод можно сравнить с образцом. «Запустить» в задании
+      берёт зерно первого примера. Поэтому в заданиях вызывай `randint` столько раз и в том
+      порядке, как сказано в условии (лишний вызов сдвинет все следующие числа), и не вызывай
+      `random.seed` сам.
+    simpler: >-
+      `import random` — достать из коробки с инструментами кубик. `random.randint(1, 6)` —
+      бросить его: выпадет любое число от 1 до 6, и 6 тоже. Каждый бросок — заново, число может
+      и повториться, поэтому результат броска сразу кладут в переменную.
+    coach: >-
+      Если твои числа не совпали с примером, проверь две вещи: границы в `randint` и сколько раз
+      ты его вызываешь.
+
+  - id: dice
+    type: example
+    title: Программа-кубик
+    body: >-
+      Программа Полины из истории. Во вводе задано число бросков — 3. Здесь зерна нет, как на
+      компьютере, поэтому числа при каждом запуске новые.
+    code: |-
+      import random
+
+      rolls = int(input())
+      for i in range(1, rolls + 1):
+          value = random.randint(1, 6)
+          print(f"Бросок {i}: {value}")
+    stdin: "3\n"
+    notes:
+      - line: 1
+        text: Подключаем модуль random — один раз на всю программу, в самом начале.
+      - line: 3
+        text: Сколько раз бросить кубик.
+      - line: 5
+        text: >-
+          На каждом шаге цикла — новый бросок. Число сразу сохраняется в `value`, чтобы дальше
+          работать именно с ним.
+      - line: 6
+        text: Печатаем сохранённое значение и номер броска.
+    tryIt: >-
+      Нажми «Запустить» несколько раз — числа меняются. Поменяй 6 на 20 — получится двадцатигранный
+      кубик для настольных ролевых игр. А потом удали первую строку и запусти: какую ошибку
+      покажет Python?
+    coach: >-
+      Строку `import random` пишут один раз, наверху. Внутри цикла — только вызовы
+      `random.randint`.
+
+  - id: no-prefix
+    type: predict
+    title: Забыли приставку
+    prompt: >-
+      Программа подключила модуль random и хочет случайное число от 1 до 10. Как думаешь, что
+      произойдёт при запуске?
+    code: |-
+      import random
+
+      number = randint(1, 10)
+      print(number)
+    options:
+      - Выведется случайное число от 1 до 10
+      - Выведется случайное число от 1 до 9
+      - "Ошибка NameError: Python не знает имя randint"
+    answer: "Ошибка NameError: Python не знает имя randint"
+    answerIsNotOutput: true
+    explanation: >-
+      `import random` подключил модуль под именем `random` — и только его. Функция `randint`
+      лежит внутри модуля, и Python найдёт её лишь по полному адресу `random.randint(1, 10)`.
+      Сообщение будет таким: `NameError: name 'randint' is not defined`. Просто `randint` работает
+      только после формы `from random import randint`. А если бы приставка была, могло бы выпасть
+      и 10: у randint обе границы входят.
+    coach: >-
+      Если после import Python не знает имя функции из модуля, первым делом проверь приставку —
+      имя модуля и точку.
+
+  - id: bounds
+    type: quiz
+    title: Где граница?
+    question: >-
+      Для настольной игры нужен двенадцатигранный кубик — числа от 1 до 12. Какой вызов
+      подходит?
+    options:
+      - "`random.randint(1, 13)`"
+      - "`random.randint(1, 12)`"
+      - "`random.randint(0, 12)`"
+    correct: 1
+    explanation: >-
+      У randint входят обе границы, поэтому справа пишут самое большое число, которое должно
+      выпасть, — 12. `randint(1, 13)` иногда выдаст 13: так получается, если писать границу по
+      привычке к `range(1, 13)`, у которого правая граница не входит. А `randint(0, 12)` может
+      выдать 0. randint и range легко перепутать, поэтому при каждом randint спрашивай себя:
+      какое самое маленькое и самое большое число должно выпасть?
+
+  - id: practice-dice
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m3-l5-e1
+      kind: repeat
+      title: Кубик n раз
+      statement: |-
+        За один ход в игре Полины кубик бросают несколько раз, а очки складывают. Программа
+        читает n — сколько раз бросить кубик. Каждый бросок — один вызов `random.randint(1, 6)`.
+        Для каждого броска выведи строку `Бросок k: v` (k — номер броска, начиная с 1, v —
+        выпавшее число), а в конце — сумму всех бросков.
+
+        Пример для n = 3. В тесте задано зерно, поэтому выпадают 2, 5 и 1:
+
+        ```text
+        Бросок 1: 2
+        Бросок 2: 5
+        Бросок 3: 1
+        Сумма: 8
+        ```
+
+        Кнопка «Запустить» берёт ввод и зерно первого примера, поэтому при верном решении её
+        вывод совпадёт с примером выше. Если поменяешь ввод, зерно останется прежним, и числа
+        будут другие — например, с вводом 5 не те, что в «Примере 2».
+      input: Одна строка — целое число n от 0 до 20.
+      output: "n строк `Бросок k: v`, затем строка `Сумма: S`."
+      constraints:
+        - Один вызов `random.randint(1, 6)` на бросок, по порядку — тогда «случайные» числа совпадут с проверкой.
+        - "Не вызывай `random.seed`: зерно задаёт тренажёр."
+      seed: 1
+      starterCode: |
+        # Подключи модуль random
+
+        n = int(input())
+        total = 0
+        # Брось кубик n раз: выведи каждый бросок и прибавь его к total
+
+        print(f"Сумма: {total}")
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: Пример 1
+          example: true
+          seed: 1
+          stdin: "3\n"
+          expected: |-
+            Бросок 1: 2
+            Бросок 2: 5
+            Бросок 3: 1
+            Сумма: 8
+        - id: t2
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: Пример 2
+          example: true
+          seed: 7
+          stdin: "5\n"
+          expected: |-
+            Бросок 1: 3
+            Бросок 2: 2
+            Бросок 3: 4
+            Бросок 4: 6
+            Бросок 5: 1
+            Сумма: 16
+        - id: t3
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: один бросок"
+          edge: true
+          seed: 42
+          stdin: "1\n"
+          expected: |-
+            Бросок 1: 6
+            Сумма: 6
+        - id: t4
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: ноль бросков"
+          edge: true
+          seed: 3
+          stdin: "0\n"
+          expected: "Сумма: 0"
+      criteria:
+        - Модуль random подключён, бросок — `random.randint(1, 6)`, так что могут выпасть и 1, и 6.
+        - Броски нумеруются с 1, у каждого своя строка.
+        - В сумму попадают ровно те числа, что напечатаны.
+        - "При n = 0 программа печатает только «Сумма: 0»."
+      hints:
+        - >-
+          Чего не хватает программе, чтобы Python узнал имя `random`? И где в примере
+          «Программа-кубик» стоит строка, которая бросает кубик: внутри цикла или до него?
+        - >-
+          На другом примере — монетка: `coin = random.randint(0, 1)` даёт 0 или 1. Если
+          результат нужен дважды — напечатать и сложить, — сначала сохрани его в переменную, а
+          потом используй переменную в обоих местах.
+        - |-
+          Каркас:
+          ```text
+          подключить random
+          n = int(input())
+          total = 0
+          for i in range(1, n + 1):
+              value = один бросок кубика
+              вывести «Бросок i: value»
+              прибавить value к total
+          print(f"Сумма: {total}")
+          ```
+      solution:
+        code: |
+          import random
+
+          n = int(input())
+          total = 0
+          for i in range(1, n + 1):
+              value = random.randint(1, 6)
+              print(f"Бросок {i}: {value}")
+              total += value
+          print(f"Сумма: {total}")
+        explanation: >-
+          `import random` в первой строке подключает модуль. В цикле каждый шаг — один бросок:
+          `random.randint(1, 6)` возвращает число, и оно сразу попадает в `value`. Из этой
+          переменной число и печатается, и прибавляется к сумме — поэтому в сумме ровно те
+          числа, что на экране. При n = 0 цикл не выполнится ни разу, и останется «Сумма: 0».
+      altSolutions:
+        - code: |
+            from random import randint
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total = total + value
+            print(f"Сумма: {total}")
+          note: Форма from random import randint — вызов без приставки.
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            i = 1
+            while i <= n:
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+                i += 1
+            print(f"Сумма: {total}")
+          note: Цикл while со счётчиком бросков.
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(n):
+                value = random.randint(1, 6)
+                total = total + value
+                print("Бросок", str(i + 1) + ":", value)
+            print("Сумма:", total)
+          note: range(n) и номер i + 1, вывод через запятые.
+        - code: |
+            import random
+
+            SIDES = 6
+            n = int(input("Сколько бросков? "))
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, SIDES)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: >-
+            Граница в переменной SIDES и подсказка в input(), как советует шаг «на компьютере», —
+            разбор bounds не должен срабатывать.
+      wrongSolutions:
+        - code: |
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Нет import random.
+          expectMistake: no-import
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: randint без приставки random.
+          expectMistake: no-prefix
+        - code: |
+            import random
+
+            random.seed(1)
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Своё зерно — пример 1 совпадает, остальные тесты нет.
+          expectMistake: own-seed
+        - code: |
+            import random
+
+            value = random.randint(1, 6)
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Над циклом остался бросок из теории — в цикле вызов один, но все числа сдвинуты.
+          expectMistake: extra-roll
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                print(f"Бросок {i}: {random.randint(1, 6)}")
+                total += random.randint(1, 6)
+            print(f"Сумма: {total}")
+          note: Два вызова на бросок — напечатано одно число, в сумму попало другое.
+          expectMistake: two-calls
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            value = random.randint(1, 6)
+            for i in range(1, n + 1):
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Кубик брошен один раз до цикла — все броски одинаковые.
+          expectMistake: roll-once
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 7)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Правая граница как у range — может выпасть 7.
+          expectMistake: bounds
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(0, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Левая граница 0 — «как у range, с нуля».
+          expectMistake: bounds
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Одна граница, как у range(6) — TypeError, но разбор про границы точнее общего.
+          expectMistake: bounds
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: range(1, n) — бросков на один меньше.
+          expectMistake: one-short
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+                print(f"Сумма: {total}")
+          note: Сумма печатается внутри цикла, после каждого броска.
+          expectMistake: sum-inside
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(n):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: range(n) и номер i — первый бросок «Бросок 0».
+          expectMistake: zero-based
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(n + 1):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: range(n + 1) по общему совету про границу — нумерация всё ещё с 0 и лишний бросок.
+          expectMistake: zero-based
+        - code: |
+            import random
+
+            SIDES = 6
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, SIDES)
+                print(f"Бросок {i} - {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Граница верная, но в переменной; ошибка в формате строки — разбор bounds срабатывать не должен.
+          expectMistake: null
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total = value
+            print(f"Сумма: {total}")
+          note: total = value — сумма не накапливается; общий разбор «посчитай вручную» точный.
+          expectMistake: null
+      mistakes:
+        - id: no-import
+          when:
+            errorIncludes: "name 'random' is not defined"
+          why: >-
+            Python не знает имя `random`: модуль не подключён. Готовые модули не загружаются
+            сами — каждый нужно подключить командой `import`.
+          try: Добавь в первую строку программы `import random`.
+          verify: Ошибка NameError должна исчезнуть, а в «Примере 1» выпадут 2, 5 и 1.
+        - id: no-prefix
+          when:
+            errorIncludes: "name 'randint' is not defined"
+          why: >-
+            `import random` подключил модуль под именем `random`, а функция `randint` лежит внутри
+            него. Без приставки Python ищет `randint` среди обычных имён и не находит.
+          try: "Пиши полный адрес: `random.randint(1, 6)`."
+          verify: Ошибка NameError должна исчезнуть, а в «Примере 1» выпадут 2, 5 и 1.
+        - id: own-seed
+          when:
+            codeRegex: '^[^#\n]*\bseed\s*\('
+          where: Строка с `random.seed`
+          why: >-
+            Зерно уже задаёт тренажёр — в каждом тесте своё. Твой `random.seed(...)` заменяет
+            его, и в тестах выпадают не те числа, что в образце.
+          try: >-
+            Удали строку с `random.seed`. На компьютере она тоже не нужна: без неё числа каждый
+            раз новые — так и должно быть в игре.
+          verify: Нажми «Проверить» — «Пример 2» должен стать зелёным.
+        - id: extra-roll
+          when:
+            codeRegex: '^[^ \t#\n][^#\n]*randint\s*\([\s\S]*^[ \t]+[^#\n]*randint\s*\('
+          where: Строка с `random.randint` до цикла
+          why: >-
+            Кубик бросается и до цикла, и внутри него. Бросок до цикла забирает первое
+            «случайное» число, и все броски в цикле сдвигаются: в тесте выпадает не то, что в
+            образце.
+          try: Удали вызов `randint` до цикла — бросок нужен только внутри цикла.
+          verify: В «Примере 1» должны выпасть 2, 5 и 1.
+        - id: two-calls
+          when:
+            codeRegex: '^[^#\n]*randint\s*\((?:[^#\n]*|[\s\S]*\n[^#\n]*)randint\s*\('
+          why: >-
+            `randint` вызывается дважды за бросок, а каждый вызов выдаёт своё число. Напечатано
+            одно, а в сумму попало другое, поэтому сумма не сходится с бросками на экране.
+          try: >-
+            Брось кубик один раз, сохрани результат в переменную `value` и дальше бери число
+            только из неё — и в `print`, и в сумме.
+          verify: В «Примере 1» сумма должна быть 2 + 5 + 1 = 8.
+        - id: roll-once
+          when:
+            codeRegex: '^[^ \t#\n][^#\n]*randint\s*\('
+          where: Строка с `random.randint` до цикла
+          why: >-
+            Кубик бросается один раз — до цикла, — и все броски показывают одно и то же число.
+            Переменная хранит уже выпавшее число, а не «бросок»: новое число появляется только
+            при новом вызове `randint`.
+          try: Перенеси строку с `random.randint(1, 6)` внутрь цикла — с отступом, первой строкой тела.
+          verify: В «Примере 1» должны выпасть 2, 5 и 1.
+        - id: bounds
+          when:
+            codeRegex: '^[^#\n]*randint\((?!\s*1\s*,\s*6\s*\))\s*-?\d+\s*(?:,\s*-?\d+\s*)?\)'
+          where: Строка с `random.randint`
+          why: >-
+            Границы у `randint` не те. У `randint(a, b)` две границы, и обе входят, в отличие от
+            `range`: `a` — самое маленькое число, которое может выпасть, `b` — самое большое.
+            Например, `randint(1, 7)` может выдать 7, а на кубике семёрки нет.
+          try: "Пиши те границы, которые должны выпадать: `random.randint(1, 6)`."
+          verify: В «Примере 1» должны выпасть 2, 5 и 1, а в тесте «один бросок» — 6.
+        - id: one-short
+          when:
+            outputEquals: "Бросок 1: 2\nБросок 2: 5\nСумма: 7"
+          why: >-
+            Бросков на один меньше, чем n: в «Примере 1» нужно три, а напечатано два. Правая
+            граница `range(a, b)` не входит, поэтому `range(1, n)` даёт номера только до n − 1.
+          try: Чтобы номера шли от 1 до n включительно, пиши `range(1, n + 1)`.
+          verify: "В «Примере 1» должно быть три броска и «Сумма: 8»."
+        - id: sum-inside
+          when:
+            outputIncludes: "Бросок 1: 2\nСумма: 2\nБросок 2"
+          why: >-
+            Строка «Сумма: …» печатается после каждого броска: у этого `print` отступ, и он попал
+            в тело цикла.
+          try: Сдвинь `print` с суммой влево, на уровень `for`, — тогда сумма напечатается один раз, после цикла.
+          verify: "В «Примере 1» строка «Сумма: 8» должна быть одна и последняя."
+        - id: zero-based
+          when:
+            outputIncludes: "Бросок 0:"
+          why: >-
+            Броски нумеруются с 1, а у тебя первый — «Бросок 0». `range(n)` начинает счёт с 0,
+            поэтому номер нужно сдвинуть на единицу. Если просто увеличить правую границу,
+            нумерация всё равно начнётся с 0, а бросков станет на один больше.
+          try: "Пиши `range(1, n + 1)` — или оставь `range(n)` и печатай `i + 1`."
+          verify: "В «Примере 1» первая строка должна стать «Бросок 1: 2», а бросков — ровно три."
+      afterPass: >-
+        Кубик бросается нужное число раз, и сумма сходится с экраном: каждое число сначала
+        попадает в переменную. Улучшение на будущее: выведи ещё и лучший бросок хода — это
+        максимум, как в уроке про накопители.
+      skills: [import-basics, for-range, accumulators]
+
+  - id: practice-doubles
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m3-l5-e2
+      kind: modify
+      title: Два кубика и дубль
+      statement: |-
+        Полина решила играть двумя кубиками. Если выпал **дубль** — два одинаковых числа, — игрок
+        ходит ещё раз, а программа только отмечает это строкой `Дубль!`. Измени программу из
+        прошлого задания:
+
+        - каждый бросок — два кубика: сначала первый `a`, потом второй `b` (два вызова
+          `random.randint(1, 6)` именно в этом порядке);
+        - строка броска: `Бросок k: a и b`;
+        - если выпал дубль, следующей строкой выведи `Дубль!`;
+        - в конце вместо суммы выведи `Дублей: d` — сколько раз выпал дубль.
+
+        Пример для n = 4. В тесте задано зерно, поэтому выпадают 2 и 5, 1 и 3, 1 и 4, 4 и 4:
+
+        ```text
+        Бросок 1: 2 и 5
+        Бросок 2: 1 и 3
+        Бросок 3: 1 и 4
+        Бросок 4: 4 и 4
+        Дубль!
+        Дублей: 1
+        ```
+      input: Одна строка — целое число n от 0 до 20, сколько бросков.
+      output: "Для каждого броска строка `Бросок k: a и b`, после дубля — строка `Дубль!`; в конце `Дублей: d`."
+      constraints:
+        - "На каждый бросок два вызова `random.randint(1, 6)`: сначала первый кубик, потом второй."
+        - Сумму бросков больше не печатай.
+      seed: 1
+      starterCode: |
+        import random
+
+        n = int(input())
+        total = 0
+        for i in range(1, n + 1):
+            value = random.randint(1, 6)
+            print(f"Бросок {i}: {value}")
+            total += value
+        print(f"Сумма: {total}")
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 1: дубль на последнем броске"
+          example: true
+          seed: 1
+          stdin: "4\n"
+          expected: |-
+            Бросок 1: 2 и 5
+            Бросок 2: 1 и 3
+            Бросок 3: 1 и 4
+            Бросок 4: 4 и 4
+            Дубль!
+            Дублей: 1
+        - id: t2
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 2: два дубля подряд"
+          example: true
+          seed: 9
+          stdin: "3\n"
+          expected: |-
+            Бросок 1: 4 и 5
+            Бросок 2: 3 и 3
+            Дубль!
+            Бросок 3: 2 и 2
+            Дубль!
+            Дублей: 2
+        - id: t3
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: Без дублей
+          seed: 3
+          stdin: "3\n"
+          expected: |-
+            Бросок 1: 2 и 5
+            Бросок 2: 5 и 2
+            Бросок 3: 3 и 5
+            Дублей: 0
+        - id: t4
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: ноль бросков"
+          edge: true
+          seed: 5
+          stdin: "0\n"
+          expected: "Дублей: 0"
+        - id: t5
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: дубль шестёрок на первом броске"
+          edge: true
+          seed: 20
+          stdin: "2\n"
+          expected: |-
+            Бросок 1: 6 и 6
+            Дубль!
+            Бросок 2: 2 и 3
+            Дублей: 1
+      criteria:
+        - "На каждый бросок два вызова `randint(1, 6)`: первый кубик, потом второй."
+        - «Дубль!» печатается сразу после строки броска и только когда числа равны.
+        - Счётчик дублей создаётся до цикла, растёт внутри, печатается один раз после цикла.
+        - "При n = 0 выводится только «Дублей: 0»."
+      hints:
+        - >-
+          Сколько вызовов randint теперь нужно на один бросок и что с чем сравнить? А сумма —
+          нужна ли она ещё?
+        - |-
+          Счётчик под условием на другом примере — морозные дни за неделю:
+          ```python
+          frosty = 0
+          for day in range(7):
+              temp = int(input())
+              if temp < 0:
+                  frosty = frosty + 1
+          print(f"Морозных дней: {frosty}")
+          ```
+          Счётчик заводится до цикла, растёт только внутри `if`, а итог печатается после цикла.
+        - |-
+          Каркас тела цикла:
+          ```text
+          a = бросок первого кубика
+          b = бросок второго кубика
+          print(f"Бросок {i}: {a} и {b}")
+          if a == b:
+              вывести «Дубль!»
+              увеличить счётчик дублей на 1
+          ```
+          До цикла заведи счётчик, равный 0, после цикла — выведи `Дублей: …`.
+      solution:
+        code: |
+          import random
+
+          n = int(input())
+          doubles = 0
+          for i in range(1, n + 1):
+              a = random.randint(1, 6)
+              b = random.randint(1, 6)
+              print(f"Бросок {i}: {a} и {b}")
+              if a == b:
+                  print("Дубль!")
+                  doubles += 1
+          print(f"Дублей: {doubles}")
+        explanation: >-
+          Каждый кубик — отдельный вызов `randint`, и оба числа сохраняются в переменные: их
+          нужно и напечатать, и сравнить. Условие `a == b` стоит внутри цикла, поэтому проверяется
+          каждый бросок, и «Дубль!» появляется сразу под своей строкой. Счётчик `doubles` —
+          накопитель: 0 до цикла, +1 внутри `if`, печать один раз после цикла. Сумма больше не
+          нужна, поэтому `total` из программы убран.
+      altSolutions:
+        - code: |
+            from random import randint
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = randint(1, 6)
+                b = randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles = doubles + 1
+            print(f"Дублей: {doubles}")
+          note: Форма from random import randint и запись doubles = doubles + 1.
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            doubles = 0
+            i = 1
+            while i <= n:
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                total += a + b
+                print("Бросок", str(i) + ":", a, "и", b)
+                if a == b:
+                    doubles += 1
+                    print("Дубль!")
+                i += 1
+            print(f"Дублей: {doubles}")
+          note: while со счётчиком; сумма считается, но не печатается — это не ошибка.
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                value2 = random.randint(1, 6)
+                print(f"Бросок {i}: {value} и {value2}")
+                if value == value2:
+                    print("Дубль!")
+                    total += 1
+            print(f"Дублей: {total}")
+          note: Минимальная правка стартового кода — value и value2, счётчик назван total.
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a != b:
+                    continue
+                print("Дубль!")
+                doubles += 1
+            print(f"Дублей: {doubles}")
+          note: if a != b с continue — приём из урока про continue.
+      wrongSolutions:
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = randint(1, 6)
+                b = randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: randint без приставки random.
+          expectMistake: no-prefix
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                print(f"Бросок {i}: {value}")
+                total += value
+            print(f"Сумма: {total}")
+          note: Стартовый код без изменений — второй кубик не бросается.
+          expectMistake: one-die
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                value = random.randint(1, 6)
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: Осталась строка value = random.randint(1, 6) из прошлой программы — три вызова на бросок.
+          expectMistake: extra-call
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+                    a = random.randint(1, 6)
+                    b = random.randint(1, 6)
+                    print(f"Ещё бросок: {a} и {b}")
+            print(f"Дублей: {doubles}")
+          note: «Ход ещё раз» понят как требование — после дубля программа бросает снова.
+          expectMistake: extra-call
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = a
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: Второй кубик не бросается — b равно a.
+          expectMistake: same-die
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {a}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: Второй кубик брошен, но в строке напечатан a дважды.
+          expectMistake: same-die
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                b = random.randint(1, 6)
+                a = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: Кубики бросаются в обратном порядке.
+          expectMistake: order
+        - code: |
+            import random
+
+            n = int(input())
+            total = 0
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                total += a + b
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Сумма: {total}")
+            print(f"Дублей: {doubles}")
+          note: Осталась строка с суммой.
+          expectMistake: sum-left
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+                print(f"Дублей: {doubles}")
+          note: Итог печатается внутри цикла.
+          expectMistake: total-inside
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles + 1
+            print(f"Дублей: {doubles}")
+          note: doubles + 1 без присваивания — счётчик не растёт.
+          expectMistake: count-not-updated
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+                    print(f"Дублей: {doubles}")
+          note: Итог напечатан внутри if — «Пример 1» при этом проходит.
+          expectMistake: total-inside-if
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                doubles = 0
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: doubles = 0 ещё и внутри цикла — счётчик обнуляется на каждом броске.
+          expectMistake: count-reset
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles = 1
+            print(f"Дублей: {doubles}")
+          note: doubles = 1 вместо doubles += 1 — счётчик не накапливает.
+          expectMistake: count-reset
+        - code: |
+            import random
+
+            n = int(input())
+            for i in range(1, n + 1):
+                doubles = 0
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: doubles = 0 только в теле цикла — «Пример 1» проходит, «Пример 2» нет.
+          expectMistake: count-reset
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    doubles += 1
+                print("Дубль!")
+            print(f"Дублей: {doubles}")
+          note: print("Дубль!") без отступа под if — печатается после каждого броска.
+          expectMistake: double-always
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+                print(f"Бросок {i}: {a} и {b}")
+            print(f"Дублей: {doubles}")
+          note: Проверка на дубль стоит выше строки броска — «Дубль!» раньше своей строки.
+          expectMistake: double-before
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 5)
+                b = random.randint(1, 5)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: Кубик без шестёрки — randint(1, 5).
+          expectMistake: bounds
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 7)
+                b = random.randint(1, 7)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                    doubles += 1
+            print(f"Дублей: {doubles}")
+          note: Правая граница как у range — может выпасть 7.
+          expectMistake: bounds
+        - code: |
+            import random
+
+            n = int(input())
+            doubles = 0
+            for i in range(1, n + 1):
+                a = random.randint(1, 6)
+                b = random.randint(1, 6)
+                print(f"Бросок {i}: {a} и {b}")
+                if a == b:
+                    print("Дубль!")
+                doubles += 1
+            print(f"Дублей: {doubles}")
+          note: doubles += 1 без отступа под if — считаются все броски; общий разбор точный.
+          expectMistake: null
+      mistakes:
+        - id: no-prefix
+          when:
+            errorIncludes: "name 'randint' is not defined"
+          why: >-
+            `import random` подключил модуль под именем `random`, а функция `randint` лежит внутри
+            него. Без приставки Python ищет `randint` среди обычных имён и не находит.
+          try: "Пиши полный адрес: `random.randint(1, 6)`."
+          verify: "Ошибка NameError должна исчезнуть, а в «Примере 1» первая строка станет «Бросок 1: 2 и 5»."
+        - id: one-die
+          when:
+            outputIncludes: "Бросок 1: 2\n"
+          where: Строка броска
+          why: >-
+            В строке броска одно число, а кубиков теперь два: второй кубик не бросается или не
+            печатается. На каждый бросок нужны два вызова `randint` — сначала для `a`, потом для
+            `b`.
+          try: >-
+            Вместо одного `value` брось два кубика: `a = random.randint(1, 6)` и
+            `b = random.randint(1, 6)` — и выведи оба в строке броска.
+          verify: "В «Примере 1» первая строка должна стать «Бросок 1: 2 и 5»."
+        - id: extra-call
+          when:
+            codeRegex: '^[^#\n]*randint\s*\([\s\S]*^[^#\n]*randint\s*\([\s\S]*^[^#\n]*randint\s*\('
+          why: >-
+            В программе больше двух вызовов `randint`, а кубиков два. Лишний вызов забирает
+            «случайное» число, и все следующие сдвигаются: в тесте выпадает не то, что в образце.
+            Чаще всего это строка `value = random.randint(1, 6)` из прошлой программы. Бросать
+            ещё раз после дубля тоже не нужно — программа только печатает «Дубль!».
+          try: Оставь ровно два вызова на бросок — для `a` и для `b` — и удали остальные.
+          verify: "В «Примере 1» первая строка должна стать «Бросок 1: 2 и 5»."
+        - id: same-die
+          when:
+            outputIncludes: "Бросок 1: 2 и 2"
+          why: >-
+            В каждом броске два одинаковых числа, и каждый бросок — дубль. Значит, второй кубик не
+            бросается: `b` берёт то же значение, что `a`, или одна переменная печатается дважды.
+          try: "Второй кубик — отдельный вызов: `b = random.randint(1, 6)`, а в строке броска печатай `{a}` и `{b}`."
+          verify: "В «Примере 1» первая строка должна стать «Бросок 1: 2 и 5»."
+        - id: order
+          when:
+            outputIncludes: "Бросок 1: 5 и 2"
+          why: >-
+            Числа в строке броска поменялись местами: первым вызовом `randint` получается второй
+            кубик. Зерно в тесте одно на все вызовы, поэтому их порядок решает, какое число
+            куда попадёт.
+          try: >-
+            Сначала `a = random.randint(1, 6)`, потом `b = random.randint(1, 6)` — и печатай их в
+            том же порядке, `a` первым.
+          verify: "В «Примере 1» первая строка должна стать «Бросок 1: 2 и 5»."
+        - id: sum-left
+          when:
+            outputIncludes: "Сумма:"
+          why: >-
+            В выводе осталась строка «Сумма: …» из прошлой программы. В новом условии итог
+            другой — число дублей, а сумму печатать не нужно.
+          try: Удали строку с выводом суммы. Накопитель `total` тоже можно убрать — он больше не нужен.
+          verify: "В «Примере 1» последней строкой должно быть «Дублей: 1»."
+        - id: total-inside
+          when:
+            outputIncludes: "Дублей: 0\nБросок"
+          why: >-
+            Строка «Дублей: …» печатается на каждом шаге: у этого `print` отступ, и он попал в
+            тело цикла.
+          try: Сдвинь `print` с итогом влево, на уровень `for`, — тогда итог напечатается один раз, после цикла.
+          verify: "В «Примере 1» строка «Дублей: 1» должна быть одна и последняя."
+        - id: count-not-updated
+          when:
+            outputIncludes: "Дубль!\nДублей: 0"
+          why: >-
+            «Дубль!» напечатан, а в итоге «Дублей: 0» — счётчик так и не вырос. Скорее всего,
+            строки, которая прибавляет 1, нет, или написано `doubles + 1` без присваивания:
+            значение посчитано, но никуда не сохранено.
+          try: "Рядом с «Дубль!», внутри `if`, прибавь 1 и сохрани: `doubles += 1`."
+          verify: "В «Примере 1» должно получиться «Дублей: 1»."
+        - id: total-inside-if
+          when:
+            outputIncludes: "Дубль!\nДублей: 1\nБросок"
+          why: >-
+            Строка «Дублей: …» печатается сразу после каждого дубля: этот `print` стоит внутри
+            `if`. Итог нужен один раз — после всех бросков, даже если дублей не было.
+          try: Сдвинь `print` с итогом влево, на уровень `for`, — тогда он выполнится один раз, после цикла.
+          verify: "В «Примере 2» строка «Дублей: 2» должна быть одна и последняя."
+        - id: count-reset
+          when:
+            failedTest: t2
+            outputIncludes: "2 и 2\nДубль!\nДублей: 1"
+          why: >-
+            Дублей было два, а итог — 1: счётчик не накапливает. Либо `doubles = 0` стоит внутри
+            цикла и обнуляет его на каждом броске, либо вместо `doubles += 1` написано
+            `doubles = 1`.
+          try: Оставь `doubles = 0` только до цикла, без отступа, а внутри `if` пиши `doubles += 1`.
+          verify: "В «Примере 2» должно получиться «Дублей: 2»."
+        - id: double-always
+          when:
+            outputIncludes: "Бросок 1: 2 и 5\nДубль!"
+          why: >-
+            «Дубль!» напечатан после броска «2 и 5», хотя числа разные: этот `print` срабатывает
+            не только при дубле. Скорее всего, у него нет отступа под `if a == b:`, и он
+            выполняется на каждом шаге цикла.
+          try: Сдвинь `print("Дубль!")` вправо, внутрь `if a == b:` — на один уровень с `doubles += 1`.
+          verify: "В «Примере 1» «Дубль!» должен быть только один раз — после «Бросок 4: 4 и 4»."
+        - id: double-before
+          when:
+            outputIncludes: "Дубль!\nБросок 4: 4 и 4\nДублей: 1"
+          why: >-
+            «Дубль!» напечатан раньше строки своего броска: проверка `if a == b` стоит выше, чем
+            `print` со строкой броска.
+          try: Сначала выведи строку броска, а под ней поставь проверку на дубль.
+          verify: "В «Примере 1» «Дубль!» должен идти сразу после «Бросок 4: 4 и 4»."
+        - id: bounds
+          when:
+            codeRegex: '^[^#\n]*randint\((?!\s*1\s*,\s*6\s*\))\s*-?\d+\s*(?:,\s*-?\d+\s*)?\)'
+          where: Строка с `random.randint`
+          why: >-
+            Границы у `randint` не те. У `randint(a, b)` входят обе границы: `a` — самое маленькое
+            число, которое может выпасть, `b` — самое большое. На кубике числа от 1 до 6:
+            `randint(1, 5)` никогда не выдаст шестёрку, а `randint(1, 7)` иногда выдаст 7.
+          try: "Для каждого кубика пиши `random.randint(1, 6)`."
+          verify: Все тесты должны стать зелёными, в том числе «дубль шестёрок на первом броске».
+      afterPass: >-
+        Два кубика, условие и счётчик работают вместе: каждый бросок проверяется сразу, а итог
+        печатается один раз. Если хочешь усложнить: посчитай отдельно дубли шестёрок — когда оба
+        кубика показали 6.
+      skills: [import-basics, conditions, accumulators]
+
+  - id: practice-guess
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m3-l5-e3
+      kind: write
+      title: Угадай число
+      statement: |-
+        Вторая игра семейного вечера. Программа загадывает целое число от 1 до 100 — один вызов
+        `random.randint(1, 100)` за всю игру. Потом читает догадки, по одной в строке:
+
+        - если загаданное число **больше** догадки, выведи `Больше`;
+        - если загаданное число **меньше** догадки, выведи `Меньше`;
+        - если угадали — выведи `Угадал! Попыток: k`, где k — сколько всего было догадок,
+          включая верную, и игра заканчивается.
+
+        Попыток сколько угодно: игра идёт, пока число не угадают.
+
+        Пример: загадано 80, догадки 50, 75, 90 и 80.
+
+        ```text
+        Больше
+        Больше
+        Меньше
+        Угадал! Попыток: 4
+        ```
+
+        Зерно в тестах не видно, поэтому загаданное число написано в названии каждого теста.
+        «Запустить» загадывает то же, что в «Примере 1», — 80. Если в поле ввода нет догадки 80,
+        программа попросит ещё строку и покажет EOFError, хотя сам код может быть верным.
+      input: Догадки — целые числа от 1 до 100, по одной в строке. В тестах последняя догадка всегда верная.
+      output: "После каждой неверной догадки — `Больше` или `Меньше`, после верной — `Угадал! Попыток: k`."
+      constraints:
+        - Ровно один вызов `random.randint(1, 100)` за игру.
+        - Не вызывай `random.seed`.
+      seed: 5
+      starterCode: |
+        # Угадай число: загадай число от 1 до 100
+        # и принимай догадки, пока игрок не угадает
+
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 1: загадано 80"
+          example: true
+          seed: 5
+          stdin: "50\n75\n90\n80\n"
+          expected: |-
+            Больше
+            Больше
+            Меньше
+            Угадал! Попыток: 4
+        - id: t2
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 2: загадано 42"
+          example: true
+          seed: 7
+          stdin: "50\n25\n42\n"
+          expected: |-
+            Меньше
+            Больше
+            Угадал! Попыток: 3
+        - id: t3
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: загадано 100"
+          edge: true
+          seed: 23
+          stdin: "50\n99\n100\n"
+          expected: |-
+            Больше
+            Больше
+            Угадал! Попыток: 3
+        - id: t4
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: загадано 1, угадали с первой попытки"
+          edge: true
+          seed: 364
+          stdin: "1\n"
+          expected: "Угадал! Попыток: 1"
+        - id: t5
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: загадано 42, догадки рядом"
+          edge: true
+          seed: 7
+          stdin: "41\n43\n42\n"
+          expected: |-
+            Больше
+            Меньше
+            Угадал! Попыток: 3
+        - id: t6
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: долгая игра, загадано 80"
+          edge: true
+          seed: 5
+          stdin: "10\n20\n30\n40\n50\n60\n70\n90\n85\n82\n81\n80\n"
+          expected: |-
+            Больше
+            Больше
+            Больше
+            Больше
+            Больше
+            Больше
+            Больше
+            Меньше
+            Меньше
+            Меньше
+            Меньше
+            Угадал! Попыток: 12
+      criteria:
+        - Число загадывается один раз за игру, от 1 до 100 включительно.
+        - После каждой неверной догадки — верная подсказка, «Больше» или «Меньше».
+        - Игра идёт до верной догадки, сколько бы попыток ни понадобилось, и лишних строк ввода не просит.
+        - В «Попыток» учтены все догадки, включая верную.
+      hints:
+        - >-
+          Раздели игру на части: что происходит один раз за игру, а что — для каждой догадки? И в
+          какой момент цикл должен закончиться?
+        - |-
+          Похожий цикл был в уроке про break — кодовый замок сейфа:
+          ```python
+          attempts = 0
+          while True:
+              code = input()
+              attempts = attempts + 1
+              if code == "2718":
+                  break
+              print("Неверно")
+          ```
+          Здесь вместо «Неверно» нужна подсказка, а сравнивать придётся числа.
+        - |-
+          Каркас:
+          ```text
+          import random
+          secret = random.randint(1, 100)    # один раз, до цикла
+          attempts = 0
+          while True:
+              guess = int(input())
+              attempts = attempts + 1
+              if guess == secret:
+                  break
+              если guess < secret — вывести «Больше», иначе «Меньше»
+          вывести «Угадал! Попыток: …»
+          ```
+      solution:
+        code: |
+          import random
+
+          secret = random.randint(1, 100)
+          attempts = 0
+          while True:
+              guess = int(input())
+              attempts += 1
+              if guess == secret:
+                  break
+              if guess < secret:
+                  print("Больше")
+              else:
+                  print("Меньше")
+          print(f"Угадал! Попыток: {attempts}")
+        explanation: >-
+          Число загадывается один раз, до цикла, — иначе на каждой догадке оно было бы новым.
+          `while True` повторяет «прочитать — посчитать — сравнить», пока догадка не совпадёт;
+          тогда `break` выводит из цикла, и после него печатается итог. Счётчик растёт сразу после
+          чтения, поэтому учитывает и верную догадку. Если догадка меньше загаданного, игроку
+          нужно называть больше — отсюда «Больше».
+      altSolutions:
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            guess = int(input())
+            attempts = 1
+            while guess != secret:
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+                guess = int(input())
+                attempts = attempts + 1
+            print(f"Угадал! Попыток: {attempts}")
+          note: Условие в заголовке while, без break; первая догадка читается до цикла.
+        - code: |
+            from random import randint
+
+            secret = randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess > secret:
+                    print("Меньше")
+                elif guess < secret:
+                    print("Больше")
+                else:
+                    print(f"Угадал! Попыток: {attempts}")
+                    break
+          note: from random import randint, if/elif/else, итог печатается перед break.
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            guess = 0
+            attempts = 0
+            while guess != secret:
+                guess = int(input())
+                attempts = attempts + 1
+                if guess < secret:
+                    print("Больше")
+                elif guess > secret:
+                    print("Меньше")
+            print("Угадал! Попыток:", attempts)
+          note: guess = 0 до цикла — условие while сразу верно.
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            for attempt in range(1, 101):
+                guess = int(input())
+                if guess == secret:
+                    print(f"Угадал! Попыток: {attempt}")
+                    break
+                elif guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+          note: for с номером попытки и break — как «Только три попытки» из урока про break; 100 попыток хватает на любую игру.
+        - code: |
+            import random
+
+            TOP = 100
+            secret = random.randint(1, TOP)
+            found = False
+            attempts = 0
+            while not found:
+                guess = int(input("Твоя догадка: "))
+                attempts += 1
+                if guess == secret:
+                    found = True
+                elif guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: >-
+            Флаг found, граница в переменной TOP и подсказка в input(), как советует шаг «на
+            компьютере», — разборы bounds и debug-print не должны срабатывать.
+      wrongSolutions:
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = input()
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Догадка не превращена в число.
+          expectMistake: no-int
+        - code: |
+            import random
+
+            secret = randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: randint без приставки random.
+          expectMistake: no-prefix
+        - code: |
+            import random
+
+            attempts = 0
+            while True:
+                secret = random.randint(1, 100)
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Число загадывается заново на каждой догадке.
+          expectMistake: secret-in-loop
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    print(f"Угадал! Попыток: {attempts}")
+                elif guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+          note: Нет break — после верной догадки цикл просит следующую.
+          expectMistake: no-break
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = input()
+                attempts += 1
+                if guess == secret:
+                    break
+                if int(guess) < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: После разбора no-int int() добавлен только в <, а == сравнивает строку с числом.
+          expectMistake: str-equals
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            print(secret)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Отладочный print(secret) — число попыток верное.
+          expectMistake: debug-print
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            print(f"Загадано: {secret}")
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Отладочная строка с подписью.
+          expectMistake: debug-print
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess > secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Подсказки перепутаны.
+          expectMistake: swapped
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    print(f"Угадал! Попыток: {attempts}")
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Итог напечатан дважды — перед break и после цикла.
+          expectMistake: extra-line
+        - code: |
+            import random
+
+            print("Я загадал число от 1 до 100")
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Строка-приветствие, которой нет в образце.
+          expectMistake: extra-line
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                if guess == secret:
+                    break
+                attempts += 1
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Счётчик растёт после проверки — верная догадка не учтена.
+          expectMistake: count-off
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            guess = int(input())
+            attempts = 0
+            while guess != secret:
+                attempts += 1
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+                guess = int(input())
+            print(f"Угадал! Попыток: {attempts}")
+          note: "Первая догадка читается до цикла, а счётчик начат с 0 — «Попыток: 3»."
+          expectMistake: count-off
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 1
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Счётчик начат с 1 и растёт на каждой догадке — на одну попытку больше.
+          expectMistake: count-off
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            for i in range(100):
+                guess = int(input())
+                if guess == secret:
+                    print(f"Угадал! Попыток: {i}")
+                    break
+                elif guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+          note: Номер попытки из range(100) начинается с 0.
+          expectMistake: count-off
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            for attempt in range(1, 4):
+                guess = int(input())
+                if guess == secret:
+                    print(f"Угадал! Попыток: {attempt}")
+                    break
+                elif guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+          note: Игра не больше трёх попыток, как «Только три попытки» из урока про break.
+          expectMistake: attempts-limit
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            for attempt in range(1, 5):
+                guess = int(input())
+                if guess == secret:
+                    print(f"Угадал! Попыток: {attempt}")
+                    break
+                elif guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+          note: Игра не больше четырёх попыток — проходит все примеры, падает на «долгой игре».
+          expectMistake: attempts-limit
+        - code: |
+            import random
+
+            secret = random.randint(1, 99)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: randint(1, 99) никогда не загадает 100.
+          expectMistake: bounds
+        - code: |
+            import random
+
+            secret = random.randint(1, 101)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Правая граница «как у range» — может загадать 101.
+          expectMistake: bounds
+        - code: |
+            import random
+
+            secret = random.randint(0, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Левая граница 0 — может загадать 0.
+          expectMistake: bounds
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+                if guess == secret:
+                    break
+            print(f"Угадал! Попыток: {attempts}")
+          note: Подсказка печатается до проверки на совпадение — на верной догадке лишнее «Меньше».
+          expectMistake: hint-on-win
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                print(guess)
+                attempts += 1
+                if guess == secret:
+                    break
+                if guess < secret:
+                    print("Больше")
+                else:
+                    print("Меньше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Эхо каждой догадки — в выводе есть 80, но это догадка; общий разбор точный.
+          expectMistake: null
+        - code: |
+            import random
+
+            secret = random.randint(1, 100)
+            attempts = 0
+            while True:
+                guess = int(input())
+                attempts += 1
+                if guess == secret:
+                    break
+                print("Больше")
+            print(f"Угадал! Попыток: {attempts}")
+          note: Всегда «Больше» — авторские разборы срабатывать не должны.
+          expectMistake: null
+      mistakes:
+        - id: no-int
+          when:
+            errorIncludes: not supported between
+          why: >-
+            `input()` возвращает строку, а загаданное число — целое. Сравнивать строку с числом
+            через `<` или `>` Python не умеет, отсюда TypeError.
+          try: "Преврати догадку в число сразу при чтении: `guess = int(input())`."
+          verify: TypeError должен исчезнуть.
+        - id: no-prefix
+          when:
+            errorIncludes: "name 'randint' is not defined"
+          why: >-
+            `import random` подключил модуль под именем `random`, а функция `randint` лежит внутри
+            него. Без приставки Python ищет `randint` среди обычных имён и не находит.
+          try: "Пиши полный адрес: `random.randint(1, 100)`."
+          verify: Ошибка NameError должна исчезнуть, а в «Примере 1» загадается 80.
+        - id: secret-in-loop
+          when:
+            codeRegex: '^[ \t]+[^#\n]*randint\s*\('
+          where: Строка с `random.randint` внутри цикла
+          why: >-
+            Число загадывается заново на каждой догадке: `randint` стоит в теле цикла. Подсказка
+            «Больше» или «Меньше» относится уже к другому числу, угадать почти невозможно — и
+            ввод кончается раньше, чем игра.
+          try: >-
+            Перенеси `secret = random.randint(1, 100)` выше цикла, без отступа: загадать число
+            нужно один раз за игру.
+          verify: "В «Примере 1» должно получиться «Угадал! Попыток: 4»."
+        - id: no-break
+          when:
+            errorType: EOFError
+            codeRegex: '(?<![\s\S])(?![\s\S]*\bbreak\b)(?=[\s\S]*while\s+True)'
+          why: >-
+            После верной догадки цикл `while True` не останавливается и просит следующую, а ввода
+            больше нет — отсюда EOFError. Выйти из `while True` можно только через `break`.
+          try: >-
+            В ветке, где догадка равна загаданному числу, поставь `break`. Итог «Угадал! Попыток: …»
+            печатай перед ним или сразу после цикла.
+          verify: "EOFError должен исчезнуть, а в «Примере 1» последней строкой будет «Угадал! Попыток: 4»."
+        - id: str-equals
+          when:
+            errorType: EOFError
+            codeRegex: '^[ \t]*(\w+)\s*=\s*input\s*\(\s*\)(?![\s\S]*\b\1\s*=\s*int\s*\(\s*\1\s*\))'
+          where: Строка с `input()`
+          why: >-
+            Догадка осталась строкой: `input()` возвращает текст, а загаданное число — целое.
+            Строка "80" и число 80 для Python разные, поэтому `guess == secret` никогда не верно.
+            Игра не заканчивается и просит новую догадку, а ввод кончился — отсюда EOFError.
+          try: "Преврати догадку в число сразу при чтении: `guess = int(input())` — тогда и `==`, и `<` сравнивают числа."
+          verify: "В «Примере 1» последней строкой должно быть «Угадал! Попыток: 4»."
+        - id: debug-print
+          when:
+            outputIncludes: "80\nБольше"
+          why: >-
+            В выводе лишняя строка с числом 80 — это загаданное число из «Примера 1». Печатать его
+            удобно, пока проверяешь игру сам, но игрок не должен видеть ответ, а тест сравнивает
+            весь вывод.
+          try: Удали `print` с загаданным числом или закомментируй его знаком `#`.
+          verify: "В «Примере 1» первой строкой должно быть «Больше»."
+        - id: swapped
+          when:
+            outputIncludes: "Меньше\nМеньше\nБольше"
+          why: >-
+            Подсказки перепутаны. В «Примере 1» загадано 80, первая догадка 50 — загаданное число
+            больше, поэтому игрок должен увидеть «Больше».
+          try: Проверь условие подсказки. Если `guess < secret`, загаданное число больше догадки — выводи «Больше».
+          verify: В «Примере 1» первые две строки должны быть «Больше».
+        - id: extra-line
+          when:
+            failedTest: t1
+            outputIncludes: "Больше\nБольше\nМеньше\nУгадал! Попыток: 4\n"
+          why: >-
+            Подсказки и итог верные, но в выводе есть лишняя строка — до них или после. Чаще всего
+            итог напечатан дважды: внутри `if` перед `break` и ещё раз после цикла. Или осталась
+            строка-приветствие, которой нет в образце.
+          try: "Найди `print`, который печатает лишнее, и убери его. Итог «Угадал! Попыток: …» печатай один раз."
+          verify: "В «Примере 1» должно быть ровно четыре строки: «Больше», «Больше», «Меньше» и «Угадал! Попыток: 4»."
+        - id: count-off
+          when:
+            failedTest: t1
+            outputIncludes: "Больше\nБольше\nМеньше\nУгадал! Попыток: "
+          why: >-
+            Подсказки верные, а число попыток — нет. Попытка — это каждая прочитанная догадка,
+            включая первую и верную: в «Примере 1» их четыре, и счётчик должен дойти до 4.
+          try: >-
+            Пройди «Пример 1» по программе и отметь, на каких догадках растёт счётчик. Частые
+            причины: `+= 1` стоит после проверки на совпадение — `break` выходит раньше; первая
+            догадка читается до цикла, а счётчик начат с 0; счётчик начат с 1 и растёт на каждой
+            догадке — выйдет на одну больше; номер попытки из `range(...)` начинается не с того
+            числа.
+          verify: "В «Примере 1» должно получиться «Угадал! Попыток: 4»."
+        - id: attempts-limit
+          when:
+            failedTest: t6
+            codeRegex: '^[ \t]*for\b[^#\n]*\brange\s*\((?=[\s\S]*\bbreak\b)'
+          where: Строка с `for`
+          why: >-
+            Игра заканчивается раньше, чем игрок угадал: `for … in range(…)` делает заданное
+            число шагов, а попыток в этой игре сколько угодно — в «долгой игре» их 12.
+          try: "Повторяй догадки, пока число не угадано: `while True` и `break` на верной догадке."
+          verify: Тест «долгая игра» должен стать зелёным.
+        - id: bounds
+          when:
+            codeRegex: '^[^#\n]*randint\((?!\s*1\s*,\s*100\s*\))\s*-?\d+\s*(?:,\s*-?\d+\s*)?\)'
+          where: Строка с `random.randint`
+          why: >-
+            Границы у `randint` не те. Игра загадывает число от 1 до 100, и обе границы должны
+            входить. С другими границами программа загадывает не то число, что в тесте:
+            `randint(1, 99)` никогда не выдаст 100, а `randint(1, 101)` иногда выдаст 101.
+          try: "Пиши `random.randint(1, 100)`: у randint правая граница входит, в отличие от range."
+          verify: Все тесты должны стать зелёными — и «загадано 100», и «загадано 1».
+        - id: hint-on-win
+          when:
+            outputIncludes: "Больше\nБольше\nМеньше\nМеньше\nУгадал! Попыток: 4"
+          why: >-
+            После верной догадки программа ещё печатает подсказку. Проверка на совпадение стоит
+            ниже подсказки, а `else` срабатывает и тогда, когда догадка равна загаданному числу.
+          try: Сначала проверь `guess == secret` и выйди из цикла, а подсказку печатай только после этой проверки.
+          verify: "В «Примере 1» перед «Угадал! Попыток: 4» должно быть ровно одно «Меньше»."
+      afterPass: >-
+        Игра готова: число загадывается один раз, цикл идёт до верной догадки, а счётчик учитывает
+        каждую попытку. Улучшение: если игрок ввёл число меньше 1 или больше 100, выведи
+        «От 1 до 100» и не засчитывай попытку — пригодится `continue` из прошлого урока.
+      skills: [import-basics, while-loops, loop-control, conditions]
+
+  - id: on-computer
+    type: checklist
+    title: "По желанию: сыграй на компьютере"
+    body: >-
+      Этот шаг не проверяется автоматически — отмечай пункты сам. Его можно пропустить или
+      сделать в другой день: урок засчитывается и без него. На компьютере загаданное число каждый
+      раз новое, а `input()` по-настоящему ждёт твоего ответа.
+    items:
+      - id: create-file
+        text: >-
+          **Создай файл `guess.py`** в учебной папке `python-practice` (её ты завёл в уроке 0.4) и
+          перенеси туда свою игру «Угадай число». Чтобы в терминале было понятно, чего ждёт
+          программа, добавь подсказку: `int(input("Твоя догадка: "))`.
+        help: >-
+          Не называй файл `random.py`. Встретив `import random`, Python сначала ищет модуль в
+          папке с программой и подключит твой файл вместо настоящего. Появится ошибка
+          `AttributeError: module 'random' has no attribute 'randint'`, а новые версии Python в
+          конце сообщения прямо советуют: *consider renaming … random.py* — переименуй файл. Так и
+          сделай, если такой файл уже есть в папке. Подробнее о том, как Python ищет модули, — в
+          модуле 8 нашего курса.
+      - id: run
+        text: >-
+          **Запусти игру:** открой терминал в папке `python-practice` и набери `python guess.py`
+          (или `py guess.py`; на macOS и Linux — `python3 guess.py`). Угадай число по подсказкам.
+        help: >-
+          Ответ «не является внутренней или внешней командой» или сообщение про Microsoft Store —
+          вернись к уроку 0.4, пункт «Проверь установку». Ответ `can't open file` — терминал
+          открыт не в той папке: проверь командой `dir` (на macOS и Linux — `ls`), есть ли там
+          `guess.py`.
+      - id: new-number
+        text: >-
+          **Сыграй ещё раз** — загаданное число будет другим: зерно на компьютере Python каждый раз
+          выбирает сам.
+        help: >-
+          Число не меняется от запуска к запуску — проверь, не осталась ли в коде строка с
+          `random.seed(...)`: она делает числа одинаковыми.
+      - id: ctrl-c
+        text: >-
+          **Прерви программу:** запусти игру снова и посреди неё нажми **Ctrl+C**. Программа
+          остановится, а в терминале появится `KeyboardInterrupt`.
+        help: >-
+          Так прерывают любую программу, в том числе зависший бесконечный цикл. `KeyboardInterrupt`
+          значит «прервано с клавиатуры» — это не поломка, а сообщение о том, что ты сам
+          остановил программу. На macOS в Терминале тоже Ctrl+C, а не Cmd.
+    coach: >-
+      Сыграть в свою игру на своём компьютере — приятный момент: программа уже не учебная, а
+      настоящая.
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "`import random` подключает модуль, а его функции вызывают через точку: `random.randint(1, 6)`."
+      - "У `randint(a, b)` входят обе границы, у `range(a, b)` — только левая."
+      - >-
+        Каждый вызов выдаёт своё число. Что случается один раз за игру — `randint` до цикла; что
+        на каждом шаге — внутри. Нужно одно число дважды — сохрани его в переменную.
+      - В тренажёре тесты задают зерно, поэтому важны число и порядок вызовов; на компьютере числа каждый раз новые.
+    question: >-
+      Почему в программе-кубике `randint` стоит внутри цикла, а в «Угадай число» — до него? Что
+      будет, если поменять их местами?
+    answer: >-
+      Кубик бросают на каждом шаге, поэтому и вызов — внутри цикла. Число в игре загадывают один
+      раз: если вызывать `randint` в цикле, на каждой догадке будет новое число, подсказки
+      «Больше» и «Меньше» будут относиться к разным числам, и угадать станет почти невозможно. А
+      кубик, брошенный один раз до цикла, покажет во всех бросках одно и то же число.

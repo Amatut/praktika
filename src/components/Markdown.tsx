@@ -62,7 +62,7 @@ function parseBlocks(source: string): Block[] {
       continue;
     }
     const body: string[] = [];
-    while (index < lines.length && lines[index].trim() !== '' && !/^```/.test(lines[index].trim()) && !bullet.test(lines[index]) && !numbered.test(lines[index])) {
+    while (index < lines.length && lines[index].trim() !== '' && !lines[index].trim().startsWith('```') && !bullet.test(lines[index]) && !numbered.test(lines[index])) {
       body.push(lines[index].trim());
       index += 1;
     }
@@ -81,7 +81,11 @@ export function renderInline(text: string): ReactNode[] {
     const start = match.index ?? 0;
     if (start > last) nodes.push(text.slice(last, start));
     const token = match[0];
-    if (match[1]) nodes.push(<code key={key++} className="inline-code">{token.slice(1, -1)}</code>);
+    if (match[1]) {
+      // Длинный фрагмент переносится (.is-long), короткий держится одной строкой: `py --version` не рвётся на «--».
+      const code = token.slice(1, -1);
+      nodes.push(<code key={key++} className={code.length > 24 ? 'inline-code is-long' : 'inline-code'}>{code}</code>);
+    }
     else if (match[2]) nodes.push(<strong key={key++}>{renderInline(token.slice(2, -2))}</strong>);
     else if (match[3]) nodes.push(<em key={key++}>{renderInline(token.slice(1, -1))}</em>);
     else if (match[4]) {

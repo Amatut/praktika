@@ -1,0 +1,1804 @@
+id: m6-l1
+module: m6
+number: "6.1"
+title: Traceback снизу вверх
+objective: >-
+  Читать traceback с цепочкой вызовов снизу вверх: по последней строке называть тип и причину
+  ошибки, по нижнему звену — функцию и строку, где программа остановилась, а по звеньям выше —
+  кто её вызвал и откуда пришло неверное значение.
+minutes: [20, 30]
+prerequisites: [m5-l7, m0-l3]
+skills: [traceback-reading]
+environment: python
+
+story:
+  title: Новичок сломал рейтинг
+  fictional: true
+  text: >-
+    Руководитель шахматного кружка Геннадий Ильич раз в месяц печатает рейтинг-лист: сколько
+    процентов партий выиграл каждый. В этот раз программа вывела одну строку и остановилась, а под
+    ней появилось длинное сообщение на английском. Геннадий Ильич прочитал его верх, увидел там
+    свою строку с `print` и полчаса переделывал вывод, но ошибка не уходила. Девятиклассница Лиза
+    прочитала сообщение снизу: деление на ноль в функции `win_rate`, звено выше показало, что её
+    вызвала `rating_line`, а верхнее — что всё случилось на Глебе. Глеб пришёл в кружок на прошлой
+    неделе и не сыграл ещё ни одной партии — хватило одной проверки на такой случай.
+
+why: >-
+  Когда программа падает внутри функции, traceback показывает всю дорогу к ошибке: кто кого
+  вызвал и на какой строке всё остановилось. Например, `ZeroDivisionError` в `win_rate` и звено
+  над ним подсказывают, что ноль партий передала `rating_line`.
+
+usedIn: >-
+  Traceback прикладывают к сообщению об ошибке в команде и на форумах, его записывают в журналы
+  серверов и в отчёты о сбоях приложений. Разбор любого падения опытный разработчик начинает с
+  последней строки traceback.
+
+steps:
+  - id: read-bottom-up
+    type: theory
+    title: Traceback снизу вверх
+    body: |-
+      В уроке 0.3 traceback был коротким: одна строка `File …` с кодом под ней — и сразу тип
+      ошибки. Когда функции вызывают друг друга, Python показывает всю **цепочку вызовов** — дорогу
+      от начала программы до строки, на которой она остановилась. Вот сообщение Геннадия Ильича —
+      так его показывает тренажёр:
+
+      ```text
+      Аня: 75.0% побед
+      Traceback (most recent call last):
+        File "main.py", line 10, in <module>
+          print(rating_line("Глеб", 0, 0))
+        File "main.py", line 6, in rating_line
+          return f"{name}: {win_rate(wins, games)}% побед"
+        File "main.py", line 2, in win_rate
+          return wins / games * 100
+      ZeroDivisionError: division by zero
+      ```
+
+      Из чего он состоит:
+
+      - `most recent call last` — «самый последний вызов — в конце». Ближе всего к ошибке —
+        нижнее звено.
+      - **Звено** — две строки: `File "main.py", line N, in имя` и под ней код этой строки.
+        `in win_rate` — строка внутри функции `win_rate`, `in <module>` — код вне функций, сама
+        программа.
+      - Последняя строка — тип ошибки и причина. `ZeroDivisionError: division by zero` — деление
+        на ноль: на ноль делить нельзя, и Python останавливает программу.
+
+      **Порядок чтения — снизу вверх:**
+
+      1. Последняя строка — *что* случилось.
+      2. Нижнее звено — *где* программа остановилась: номер строки и функция.
+      3. Звенья выше — *кто* вызвал эту функцию, и так до `<module>`.
+
+      Здесь: деление на ноль в строке 2, в `win_rate`; её вызвала `rating_line` в строке 6, а ту —
+      программа в строке 10, для Глеба.
+
+      **Место падения — не всегда место причины.** Формула в `win_rate` верна: функция честно
+      упала на нуле, который ей передали. Если строка нижнего звена правильная, поднимись на звено
+      выше и спроси: какое значение сюда пришло и откуда оно взялось? Исправляют там, где появилось
+      неверное значение, — или там, где особое, но честное значение (как ноль партий у новичка)
+      нужно было проверить до вызова.
+
+      У SyntaxError цепочки нет: программа не запускалась, и вызовов не было.
+
+      В тренажёре под выводом видны последняя строка сообщения и номер строки нижнего звена, а весь
+      traceback — у наставника, в разделе «Исходное сообщение Python». На компьютере вместо
+      `main.py` стоит полный путь к файлу, а под кодом в звеньях часто есть значки `~~~^^^`. Они
+      отмечают выражение, которое выполнялось в этой строке, а в нижнем звене — то, на котором всё
+      упало:
+
+      ```text
+        File "C:\Users\...\python-practice\chess.py", line 2, in win_rate
+          return wins / games * 100
+                 ~~~~~^~~~~~~
+      ```
+    simpler: >-
+      Traceback — как цепочка поручений. Мама дала сыну пятитысячную купюру и попросила купить
+      хлеб. Сын пошёл в магазин, а у продавца не нашлось сдачи. Последняя строка — что случилось
+      (нет сдачи), нижнее звено — у кого (у продавца), звенья выше — кто кого просил. Продавец ни
+      в чём не виноват: проблема пришла сверху, вместе с купюрой. Купюра настоящая, мама тоже не
+      ошиблась — подумать, где её разменять, должен был сын.
+    coach: >-
+      Сначала последняя строка, потом нижнее звено, потом вверх — пока не найдёшь, откуда пришло
+      плохое значение.
+
+  - id: chess-fixed
+    type: example
+    title: Рейтинг после исправления
+    body: |-
+      Вот программа кружка после исправления. До него строк 6 и 7 не было, и запуск выглядел так
+      (это тот же traceback, что в теории):
+
+      ```text
+      Аня: 75.0% побед
+      Traceback (most recent call last):
+        File "main.py", line 10, in <module>
+          print(rating_line("Глеб", 0, 0))
+        File "main.py", line 6, in rating_line
+          return f"{name}: {win_rate(wins, games)}% побед"
+        File "main.py", line 2, in win_rate
+          return wins / games * 100
+      ZeroDivisionError: division by zero
+      ```
+
+      Формулу в `win_rate` Лиза не тронула: «0% побед» для новичка — неправда, он просто ещё не
+      играл. И ноль партий — не ошибка в данных: Глеб правда не сыграл ни одной партии. Ошибка в
+      том, что `rating_line` не предусмотрела новичка. Поэтому проверка встала на звено выше места
+      падения — туда, где решают, что печатать про игрока.
+    code: |-
+      def win_rate(wins, games):
+          return wins / games * 100
+
+
+      def rating_line(name, wins, games):
+          if games == 0:
+              return f"{name}: ещё не играл"
+          return f"{name}: {win_rate(wins, games)}% побед"
+
+
+      print(rating_line("Аня", 6, 8))
+      print(rating_line("Глеб", 0, 0))
+    notes:
+      - line: 2
+        text: >-
+          Нижнее звено: здесь случилось деление на ноль. Но сама формула верна — функция упала на
+          значении, которое ей передали.
+      - line: 6
+        text: >-
+          Проверка особого случая: для новичка `rating_line` сразу возвращает «ещё не играл», и до
+          деления дело не доходит.
+      - line: 8
+        text: >-
+          В traceback до исправления это строка среднего звена, `line 6, in rating_line`. Над ней
+          появились две новые строки, поэтому теперь она восьмая.
+      - line: 12
+        text: >-
+          Отсюда началась цепочка для Глеба. В traceback до исправления это верхнее звено,
+          `line 10, in <module>`: строк 6–7 тогда не было, поэтому эта строка была десятой.
+    tryIt: >-
+      Удали строки 6 и 7 и запусти: появится тот же traceback. Целиком он виден у наставника, в
+      разделе «Исходное сообщение Python». Найди в нём три звена и сравни номера строк с кодом.
+      Файл в traceback тренажёра всегда называется `main.py`, даже если над редактором написано
+      другое имя. Потом нажми «Вернуть пример».
+    coach: >-
+      Номер строки в звене — это номер строки в редакторе. Пустые строки тоже считаются.
+
+  - id: what-prints
+    type: predict
+    title: Что появится до ошибки?
+    prompt: >-
+      В обе функции добавили `print`, чтобы видеть, что происходит. Как думаешь, что появится на
+      экране до сообщения об ошибке?
+    code: |-
+      def win_rate(wins, games):
+          print(f"Считаю: {wins} из {games}")
+          return wins / games * 100
+
+
+      def rating_line(name, wins, games):
+          print(f"Игрок: {name}")
+          return win_rate(wins, games)
+
+
+      rating_line("Аня", 6, 8)
+      rating_line("Глеб", 0, 0)
+      print("Рейтинг готов")
+    options:
+      - |-
+        Игрок: Аня
+        Считаю: 6 из 8
+      - |-
+        Игрок: Аня
+        Считаю: 6 из 8
+        Игрок: Глеб
+      - |-
+        Игрок: Аня
+        Считаю: 6 из 8
+        Игрок: Глеб
+        Считаю: 0 из 0
+      - |-
+        Игрок: Аня
+        Считаю: 6 из 8
+        Игрок: Глеб
+        Считаю: 0 из 0
+        Рейтинг готов
+    answer: |-
+      Игрок: Аня
+      Считаю: 6 из 8
+      Игрок: Глеб
+      Считаю: 0 из 0
+    explanation: >-
+      Для Ани всё прошло: две строки. Для Глеба `rating_line` напечатала «Игрок: Глеб» и вызвала
+      `win_rate`, та напечатала «Считаю: 0 из 0» — и только потом, в строке 3, упала на делении.
+      До «Рейтинг готов» программа не дошла. Traceback будет из трёх звеньев: `<module>`, строка
+      12 → `rating_line`, строка 8 → `win_rate`, строка 3. Ошибка случается не «у Глеба вообще», а
+      в конкретной строке — всё, что стоит раньше неё, успевает выполниться.
+    coach: >-
+      Вывод до ошибки — тоже улика: последняя напечатанная строка показывает, докуда программа
+      успела дойти.
+
+  - id: practice-read
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m6-l1-e1
+      kind: read
+      title: Штраф за прокат
+      statement: |-
+        Прокат на лыжной базе считает штрафы за просрочку: 50 руб. за каждый день. Программа
+        упала. Вот её код:
+
+        ```python
+        def days_late(rental):
+            return rental["returned"] - rental["due"]
+
+
+        def fine(rental):
+            days = days_late(rental)
+            if days <= 0:
+                return 0
+            return days * 50
+
+
+        def total_fine(rentals):
+            total = 0
+            for rental in rentals:
+                total = total + fine(rental)
+            return total
+
+
+        rentals = [
+            {"item": "Лыжи", "due": 10, "returned": 12},
+            {"item": "Сноуборд", "due": 14},
+            {"item": "Санки", "due": 3, "returned": 3},
+        ]
+        print("Штраф:", total_fine(rentals))
+        ```
+
+        А вот что показал Python:
+
+        ```text
+        Traceback (most recent call last):
+          File "main.py", line 24, in <module>
+            print("Штраф:", total_fine(rentals))
+          File "main.py", line 15, in total_fine
+            total = total + fine(rental)
+          File "main.py", line 6, in fine
+            days = days_late(rental)
+          File "main.py", line 2, in days_late
+            return rental["returned"] - rental["due"]
+        KeyError: 'returned'
+        ```
+
+        Прочитай traceback снизу вверх и впиши ответы в четыре переменные в редакторе:
+
+        - `error_type` — тип ошибки;
+        - `error_line` — номер строки, на которой программа остановилась;
+        - `error_function` — функция, в которой она остановилась;
+        - `caller` — функция, которая вызвала `error_function`.
+
+        Номер строки пиши числом, имена — в кавычках, как текст. Программу проката исправлять не
+        нужно: проверяются только ответы.
+      input: Ввода нет — код и traceback есть в условии.
+      output: Четыре переменные с ответами. Вывод не проверяется.
+      constraints:
+        - Номер строки — числом, тип ошибки и имена функций — в кавычках.
+        - Ответы бери из traceback, а не угадывай по коду.
+      starterCode: |
+        # Впиши ответы вместо None
+        error_type = None       # тип ошибки
+        error_line = None       # номер строки, где программа остановилась
+        error_function = None   # функция, в которой она остановилась
+        caller = None           # функция, которая вызвала error_function
+      tests:
+        - id: t1
+          kind: assert
+          title: Тип ошибки
+          example: true
+          code: |-
+            answer = error_type
+            if isinstance(answer, type):
+                answer = answer.__name__
+            assert str(answer).strip().casefold() == "keyerror"
+          message: >-
+            `error_type` — тип ошибки: слово слева от двоеточия в последней строке traceback.
+        - id: t2
+          kind: assert
+          title: Строка
+          code: |-
+            answer = str(error_line).strip().removeprefix("line").strip()
+            assert answer == "2"
+          message: "`error_line` — номер строки, на которой программа остановилась."
+        - id: t3
+          kind: assert
+          title: Функция
+          code: |-
+            answer = str(error_function).strip().removeprefix("in ").split("(")[0].strip()
+            assert answer == "days_late"
+          message: "`error_function` — функция, в которой программа остановилась."
+        - id: t4
+          kind: assert
+          title: Кто вызвал
+          code: |-
+            answer = str(caller).strip().removeprefix("in ").split("(")[0].strip()
+            assert answer == "fine"
+          message: "`caller` — функция, которая вызвала `error_function`."
+      criteria:
+        - "`error_type` — тип из последней строки traceback, одно слово."
+        - "`error_line` и `error_function` — номер строки и функция из нижнего звена."
+        - "`caller` — функция из звена прямо над нижним."
+        - Неважно, записан номер числом или строкой, а имя функции — со скобками или без.
+      hints:
+        - >-
+          Начни с последней строки: что стоит в ней слева от двоеточия? Потом найди звено прямо
+          над ней — это две строки, первая начинается с `File`. А после него посмотри на звено
+          ещё выше.
+        - |-
+          Тот же разбор на другом traceback:
+
+          ```text
+          Traceback (most recent call last):
+            File "main.py", line 12, in <module>
+              report()
+            File "main.py", line 8, in report
+              first = load(rows)
+            File "main.py", line 3, in load
+              return rows[0]
+          IndexError: list index out of range
+          ```
+
+          Тип — IndexError, нижнее звено — строка 3 в функции `load`, а вызвала `load` функция
+          `report` (звено над нижним).
+        - |-
+          Каркас:
+          ```text
+          error_type = "…"       # слово слева от двоеточия в последней строке
+          error_line = …         # число из line N в нижнем звене
+          error_function = "…"   # имя после in в нижнем звене
+          caller = "…"           # имя после in в звене над нижним
+          ```
+      solution:
+        code: |
+          # Впиши ответы вместо None
+          error_type = "KeyError"        # тип ошибки
+          error_line = 2                 # номер строки, где программа остановилась
+          error_function = "days_late"   # функция, в которой она остановилась
+          caller = "fine"                # функция, которая вызвала error_function
+        explanation: >-
+          Последняя строка — `KeyError: 'returned'`: в словаре нет ключа `returned`. Нижнее звено —
+          строка 2 в `days_late`: там программа остановилась. Звено над ним — `in fine`: это `fine`
+          в строке 6 вызвала `days_late`. Строка 24 — верх цепочки, `<module>`: отсюда всё
+          началось, но остановилась программа не там.
+      altSolutions:
+        - code: |
+            error_type = "KeyError"
+            error_line = "2"
+            error_function = "days_late()"
+            caller = "fine()"
+          note: Номер строки строкой, имена со скобками.
+        - code: |
+            caller = "fine"
+            error_function = "days_late"
+            error_line = 2
+            error_type = KeyError
+          note: Тип ошибки без кавычек — встроенное имя KeyError; порядок строк другой.
+        - code: |
+            error_type = 'keyerror'
+            error_line = "line 2"
+            error_function = "in days_late"
+            caller = "fine(rental)"
+          note: Ответы переписаны прямо из текста звеньев, тип — маленькими буквами.
+      wrongSolutions:
+        - code: |
+            # Впиши ответы вместо None
+            error_type = None       # тип ошибки
+            error_line = None       # номер строки, где программа остановилась
+            error_function = None   # функция, в которой она остановилась
+            caller = None           # функция, которая вызвала error_function
+          note: Стартовый код — ответов нет.
+          expectMistake: not-filled
+        - code: |
+            error_type = "KeyError"
+            error_line = 24
+            error_function = "days_late"
+            caller = "fine"
+          note: Номер строки взят из верхнего звена.
+          expectMistake: upper-frame-line
+        - code: |
+            error_type = "KeyError"
+            error_line = 6
+            error_function = "fine"
+            caller = "total_fine"
+          note: Всё сдвинуто на звено вверх.
+          expectMistake: upper-frame-line
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_function = "total_fine"
+            caller = "fine"
+          note: Функция взята не из нижнего звена.
+          expectMistake: upper-frame-function
+        - code: |
+            error_type = "KeyError: 'returned'"
+            error_line = 2
+            error_function = "days_late"
+            caller = "fine"
+          note: В тип попали подробности после двоеточия.
+          expectMistake: type-with-message
+        - code: |
+            error_type = "Traceback"
+            error_line = 2
+            error_function = "days_late"
+            caller = "fine"
+          note: Тип ошибки взят из первой строки сообщения.
+          expectMistake: type-traceback
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_function = "days_late"
+            caller = "total_fine"
+          note: Перепрыгнул звено — назвал функцию на два уровня выше.
+          expectMistake: caller-wrong
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_function = days_late
+            caller = fine
+          note: Имена функций без кавычек.
+          expectMistake: no-quotes
+        - code: |
+            error_type = keyerror
+            error_line = 2
+            error_function = "days_late"
+            caller = "fine"
+          note: Тип ошибки без кавычек и маленькими буквами — такого имени нет.
+          expectMistake: no-quotes
+        - code: |
+            error_type = KeyError: 'returned'
+            error_line = line 2
+            error_function = "days_late"
+            caller = "fine"
+          note: Ответы переписаны из traceback без кавычек — SyntaxError.
+          expectMistake: no-quotes-syntax
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_fucntion = "days_late"
+            caller = "fine"
+          note: Опечатка в имени переменной — кавычки на месте, NameError в проверке.
+          expectMistake: missing-variable
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_function = "days_late"
+            caller = "fine"
+
+
+            def days_late(rental):
+                return rental["returned"] - rental["due"]
+
+
+            def fine(rental):
+                days = days_late(rental)
+                if days <= 0:
+                    return 0
+                return days * 50
+
+
+            def total_fine(rentals):
+                total = 0
+                for rental in rentals:
+                    total = total + fine(rental)
+                return total
+
+
+            rentals = [
+                {"item": "Лыжи", "due": 10, "returned": 12},
+                {"item": "Сноуборд", "due": 14},
+                {"item": "Санки", "due": 3, "returned": 3},
+            ]
+            print("Штраф:", total_fine(rentals))
+          note: Ответы верные, но ниже вставлена программа проката из условия — она падает раньше проверки.
+          expectMistake: program-copied
+        - code: |
+            error_type = "KeyError 'returned'"
+            error_line = 2
+            error_function = "days_late"
+            caller = "fine"
+          note: В тип попал ключ из сообщения, двоеточие пропущено.
+          expectMistake: type-with-message
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_function = "days_late"
+            caller = "total_fine(rentals)"
+          note: Перепрыгнул звено и записал вызов вместе с аргументом.
+          expectMistake: caller-wrong
+        - code: |
+            error_type = "IndexError"
+            error_line = 2
+            error_function = "days_late"
+            caller = "fine"
+          note: Тип взят из примера во второй подсказке.
+          expectMistake: read-type
+        - code: |
+            error_type = "KeyError"
+            error_line = "строка 2"
+            error_function = "days_late"
+            caller = "fine"
+          note: Номер строки записан словами, как под выводом тренажёра.
+          expectMistake: read-line
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_function = 'return rental["returned"] - rental["due"]'
+            caller = "fine"
+          note: Вместо имени функции переписан код строки нижнего звена.
+          expectMistake: read-function
+        - code: |
+            error_type = "KeyError"
+            error_line = 2
+            error_function = "days_late"
+            caller = "rental"
+          note: В caller записан аргумент, а не функция.
+          expectMistake: read-caller
+      mistakes:
+        - id: program-copied
+          when:
+            codeRegex: '^def\s+(days_late|fine|total_fine)\b'
+          why: >-
+            В редакторе оказалась программа проката из условия. Она падает с KeyError — так и
+            задумано, — и проверка не доходит до твоих ответов.
+          try: Удали программу проката из редактора — оставь только четыре переменные с ответами.
+          verify: Нажми «Проверить» — KeyError больше не должен появляться.
+        - id: no-quotes
+          when:
+            errorType: NameError
+            codeRegex: '^\s*(error_type|error_line|error_function|caller)\s*=\s*(?!None\b|KeyError\b)[A-Za-z_]'
+          why: >-
+            Ответ без кавычек Python ищет как переменную в твоей программе. Таких переменных в ней
+            нет — функции проката и тип ошибки есть только в условии, — отсюда NameError.
+          try: >-
+            Тип ошибки и имена функций запиши как текст — в кавычках, например `"…"`. Номер строки —
+            просто числом.
+          verify: NameError должен исчезнуть.
+        - id: no-quotes-syntax
+          when:
+            errorType: SyntaxError
+            codeRegex: '^\s*(error_type|error_line|error_function|caller)\s*=\s*(?!None\b|KeyError\s*(#.*)?$)[A-Za-z_<]'
+          why: >-
+            Ответ без кавычек Python читает как код. А `line 2` или текст с двоеточием — не код
+            на Python, поэтому программа даже не запускается: SyntaxError.
+          try: >-
+            Номер строки запиши просто числом, а тип ошибки и имена функций — в кавычках, как
+            текст.
+          verify: SyntaxError должен исчезнуть.
+        - id: missing-variable
+          when:
+            errorType: NameError
+          why: >-
+            Проверка ищет четыре переменные: `error_type`, `error_line`, `error_function` и
+            `caller`. Одной из них в программе нет — строку удалили или в имени опечатка. Какой
+            именно, написано в сообщении NameError.
+          try: Верни строку из стартового кода с этим именем и впиши ответ в неё.
+          verify: NameError должен исчезнуть.
+        - id: type-traceback
+          when:
+            codeRegex: 'error_type\s*=\s*["'']Traceback'
+          why: >-
+            `Traceback (most recent call last)` — заголовок всего сообщения, он одинаковый у любой
+            ошибки выполнения. Тип ошибки стоит в самом конце, в последней строке.
+          try: Возьми слово слева от двоеточия в последней строке traceback.
+          verify: Нажми «Проверить» — проверка «Тип ошибки» должна пройти.
+        - id: type-with-message
+          when:
+            codeRegex: 'error_type\s*=\s*("[^"\n]*(:|returned)|''[^''\n]*(:|returned))'
+          why: >-
+            Тип — одно слово до двоеточия. После двоеточия — подробности: здесь это ключ, которого не
+            нашлось в словаре.
+          try: Оставь в `error_type` только то, что стоит слева от двоеточия.
+          verify: Нажми «Проверить» — проверка «Тип ошибки» должна пройти.
+        - id: upper-frame-line
+          when:
+            codeRegex: 'error_line\s*=\s*["'']?(line\s*)?(24|15|6)\b'
+          why: >-
+            Это номер строки из звена выше нижнего: там одна функция только вызвала следующую, и
+            программа пошла дальше по цепочке. Остановилась она в нижнем звене — прямо над строкой с
+            `KeyError`.
+          try: Возьми число из `line …` в звене, которое стоит последним перед строкой с типом ошибки.
+          verify: Нажми «Проверить» — проверка «Строка» должна пройти.
+        - id: upper-frame-function
+          when:
+            codeRegex: 'error_function\s*=\s*["''](in\s+)?(<module>|total_fine|fine)(\([^)"''\n]*\))?["'']'
+          why: >-
+            Это функция из звена выше: она вызвала другую функцию и ждала ответа. Ошибка случилась в
+            функции нижнего звена.
+          try: Возьми имя после `in` в нижнем звене — прямо над строкой с `KeyError`.
+          verify: Нажми «Проверить» — проверка «Функция» должна пройти.
+        - id: caller-wrong
+          when:
+            codeRegex: 'caller\s*=\s*["''](in\s+)?(<module>|total_fine|days_late)(\([^)"''\n]*\))?["'']'
+          why: >-
+            `caller` — функция из звена прямо над нижним. Звенья читают снизу вверх по одному:
+            нижнее — где программа остановилась, следующее над ним — кто вызвал эту функцию.
+          try: Найди нижнее звено и поднимись ровно на одно звено выше. Какое имя стоит там после `in`?
+          verify: Нажми «Проверить» — проверка «Кто вызвал» должна пройти.
+        - id: not-filled
+          when:
+            codeRegex: '^(error_type|error_line|error_function|caller)\s*=\s*None\b'
+          why: В одной или нескольких переменных всё ещё `None` — ответ не записан.
+          try: Впиши ответ вместо `None` в каждой из четырёх переменных.
+          verify: Нажми «Проверить» — все четыре проверки должны пройти.
+        - id: read-type
+          when:
+            failedTest: t1
+          why: >-
+            Тип ошибки берут не из кода и не из подсказки, а из последней строки traceback — той,
+            что в самом низу и без отступа. Тип — слово слева от двоеточия.
+          try: Перепиши в `error_type` слово до двоеточия из последней строки.
+          verify: Нажми «Проверить» — проверка «Тип ошибки» должна пройти.
+        - id: read-line
+          when:
+            failedTest: t2
+          why: >-
+            Номер строки не считают по коду — его берут из traceback: он стоит после `line` в нижнем
+            звене, прямо над строкой с `KeyError`.
+          try: Найди нижнее звено и перепиши в `error_line` число после `line` — просто числом.
+          verify: Нажми «Проверить» — проверка «Строка» должна пройти.
+        - id: read-function
+          when:
+            failedTest: t3
+          why: >-
+            Функция, в которой программа остановилась, — это имя после `in` в нижнем звене, а не
+            код строки под ним.
+          try: Возьми имя после `in` в нижнем звене — прямо над строкой с `KeyError`.
+          verify: Нажми «Проверить» — проверка «Функция» должна пройти.
+        - id: read-caller
+          when:
+            failedTest: t4
+          why: >-
+            `caller` — функция из звена прямо над нижним: это она вызвала `error_function`. Аргументы
+            и переменные вроде `rental` — не функции.
+          try: Найди нижнее звено и поднимись ровно на одно звено выше. Какое имя стоит там после `in`?
+          verify: Нажми «Проверить» — проверка «Кто вызвал» должна пройти.
+      afterPass: >-
+        Ты прочитал traceback снизу вверх: что случилось, где программа остановилась и кто вызвал
+        эту функцию. А на какой вещи сломался подсчёт? Traceback этого не говорит: `KeyError` назвал
+        только ключ. Здесь это видно глазами — у сноуборда нет `returned`, — но в списке из двухсот
+        записей так не найдёшь. Как найти данные, на которых падает программа, — в следующем уроке.
+      skills: [traceback-reading, read-errors]
+
+  - id: practice-bottom
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m6-l1-e2
+      kind: fix
+      title: Строка заказа в фотостудии
+      statement: |-
+        Фотостудия печатает список заказов на день: клиент и цена печати. Цена — 50 руб. за заказ
+        и 12 руб. за каждую фотографию. Программа падает.
+
+        Нажми «Запустить» и прочитай traceback снизу вверх: последняя строка сообщения видна под
+        выводом, а весь traceback — у наставника, в разделе «Исходное сообщение Python». Исправь
+        строку, на которой случилась ошибка.
+
+        Функция `printing_cost` нужна и в других расчётах — например, чтобы сложить выручку за
+        день, — поэтому она должна по-прежнему возвращать число.
+
+        Ожидаемый вывод:
+
+        ```text
+        Кравцовы: 290 руб.
+        Ли: 86 руб.
+        ```
+      input: Ввода нет — заказы записаны в программе.
+      output: "По строке на заказ: `клиент: цена руб.`"
+      constraints:
+        - Исправь одну строку — ту, на которую указывает нижнее звено.
+        - "`printing_cost` по-прежнему возвращает число."
+      starterCode: |
+        def printing_cost(photos):
+            return 50 + photos * 12
+
+
+        def order_line(client, photos):
+            return client + ": " + printing_cost(photos) + " руб."
+
+
+        def print_orders(orders):
+            for order in orders:
+                print(order_line(order["client"], order["photos"]))
+
+
+        today = [
+            {"client": "Кравцовы", "photos": 20},
+            {"client": "Ли", "photos": 3},
+        ]
+        print_orders(today)
+      tests:
+        - id: t1
+          kind: io
+          title: Заказы на сегодня
+          example: true
+          expected: |-
+            Кравцовы: 290 руб.
+            Ли: 86 руб.
+        - id: t2
+          kind: call
+          title: Другой заказ
+          example: true
+          call: order_line("Ким", 10)
+          expected: "'Ким: 170 руб.'"
+        - id: t3
+          kind: call
+          title: "Граничный случай: без фотографий"
+          edge: true
+          call: order_line("Соколовы", 0)
+          expected: "'Соколовы: 50 руб.'"
+        - id: t4
+          kind: call
+          title: printing_cost возвращает число
+          edge: true
+          call: printing_cost(4)
+          expected: "98"
+      criteria:
+        - "Программа не падает и печатает строки заказов в формате `клиент: цена руб.`"
+        - "`order_line` возвращает строку заказа для любого клиента и числа фотографий."
+        - "`printing_cost` по-прежнему возвращает число, а не текст."
+      hints:
+        - >-
+          Прочитай последнюю строку сообщения и нижнее звено: в какой функции и в какой строке
+          встретились текст и число? Верхние звенья только передают значения дальше.
+        - >-
+          На другом примере: `"Итого: " + 5` падает с той же ошибкой, а `f"Итого: {5}"` и
+          `"Итого: " + str(5)` работают — число превращается в текст там, где его приклеивают.
+        - >-
+          Каркас строки 6: `return f"{…}: {…} руб."` — подставь в фигурные скобки клиента и вызов
+          `printing_cost(photos)`.
+      solution:
+        code: |
+          def printing_cost(photos):
+              return 50 + photos * 12
+
+
+          def order_line(client, photos):
+              return f"{client}: {printing_cost(photos)} руб."
+
+
+          def print_orders(orders):
+              for order in orders:
+                  print(order_line(order["client"], order["photos"]))
+
+
+          today = [
+              {"client": "Кравцовы", "photos": 20},
+              {"client": "Ли", "photos": 3},
+          ]
+          print_orders(today)
+        explanation: >-
+          Нижнее звено — строка 6 в `order_line`: к тексту прибавляется число, которое вернула
+          `printing_cost`, а `+` склеивает только строки. f-строка сама превращает число в текст.
+          Строки 11 и 18 из верхних звеньев правильные — они только передают значения дальше. А
+          `printing_cost` осталась как была: она возвращает число, и выручку за день можно
+          посчитать сложением.
+      altSolutions:
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + str(printing_cost(photos)) + " руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Число превращено в текст через str().
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                cost = printing_cost(photos)
+                return f"{client}: {cost} руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Цена сначала сохранена в переменную.
+      wrongSolutions:
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + printing_cost(photos) + " руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Стартовый код.
+          expectMistake: concat-int
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + printing_cost(photos) + " руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(str(order_line(order["client"], order["photos"])))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Исправлена строка из верхнего звена.
+          expectMistake: fixed-top
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + printing_cost(photos) + " руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], str(order["photos"])))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: В текст превращено число фотографий, а не цена — ошибка переехала в printing_cost.
+          expectMistake: photos-became-str
+        - code: |
+            def printing_cost(photos):
+                return str(50 + photos * 12)
+
+
+            def order_line(client, photos):
+                return client + ": " + printing_cost(photos) + " руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: printing_cost теперь возвращает строку.
+          expectMistake: cost-became-str
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + printing_cost(photos) + " руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order["client"] + ":", printing_cost(order["photos"]), "руб.")
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Вывод собран в обход order_line — сама order_line по-прежнему падает.
+          expectMistake: concat-int
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client, ": ", printing_cost(photos), " руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: return с запятыми возвращает кортеж.
+          expectMistake: tuple-return
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + str(printing_cost(photos)) + "руб."
+
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Пропал пробел перед «руб.».
+          expectMistake: no-space
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + str(printing_cost(photos) + " руб.")
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Скобка str( закрыта в конце строки — внутри всё равно число плюс текст.
+          expectMistake: str-too-wide
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + printing_cost(str(photos)) + " руб."
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: В текст превращено число фотографий прямо в строке 6 — ошибка переехала в printing_cost.
+          expectMistake: photos-became-str
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                print(f"{client}: {printing_cost(photos)} руб.")
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: print вместо return — под каждой строкой заказа печатается None.
+          expectMistake: print-not-return
+        - code: |
+            def printing_cost(photos):
+                return 50 + photos * 12
+
+
+            def order_line(client, photos):
+                return client + ": " + str(printing_cost) + " руб."
+
+            def print_orders(orders):
+                for order in orders:
+                    print(order_line(order["client"], order["photos"]))
+
+
+            today = [
+                {"client": "Кравцовы", "photos": 20},
+                {"client": "Ли", "photos": 3},
+            ]
+            print_orders(today)
+          note: Функция без вызова — в строку попало <function ...>.
+          expectMistake: function-not-called
+      mistakes:
+        - id: fixed-top
+          when:
+            errorIncludes: can only concatenate
+            codeRegex: 'str\(\s*order_line'
+          why: >-
+            Ты изменил строку из звена выше. Но текст и число складываются раньше — внутри
+            `order_line`, в строке с `return`. Программа падает там, и до `str(...)` вокруг готового
+            результата дело не доходит.
+          try: >-
+            Верни вызов `order_line(...)` в `print_orders` как был и исправь строку с `return` в
+            `order_line` — ту, что в нижнем звене.
+          verify: >-
+            Нажми «Запустить» — обе строки заказов должны напечататься, а `print_orders` — остаться
+            такой же, как в стартовом коде.
+        - id: str-too-wide
+          when:
+            errorIncludes: "unsupported operand type(s) for +: 'int' and 'str'"
+            codeRegex: 'str\(\s*printing_cost\(\s*photos\s*\)\s*\+'
+          why: >-
+            Мысль верная, но скобка `str(` закрывается только в конце строки, и внутрь попало
+            `printing_cost(photos) + " руб."` — число плюс текст. Python падает на этом сложении
+            раньше, чем `str` успевает что-то превратить. Нижнее звено то же — строка с `return` в
+            `order_line`.
+          try: Закрой скобку `str(...)` сразу после вызова `printing_cost(photos)` — или собери строку f-строкой.
+          verify: 'Нажми «Запустить» — должна появиться строка «Кравцовы: 290 руб.».'
+        - id: photos-became-str
+          when:
+            errorIncludes: "unsupported operand type(s) for +: 'int' and 'str'"
+            codeRegex: 'str\(\s*(order\[\s*["'']photos["'']\s*\]|photos\s*\))'
+          why: >-
+            Нижнее звено переехало в `printing_cost`: туда теперь приходит текст вместо числа
+            фотографий, и `50 + "20" * 12` уже не посчитать. В текст нужно превращать не
+            количество фотографий, а готовую цену — там, где её приклеивают к строке.
+          try: >-
+            Верни число фотографий как было и исправь строку с `return` в `order_line`: цену,
+            которую вернула `printing_cost`, подставь в f-строку или оберни в `str(...)`.
+          verify: Нажми «Запустить» — обе строки заказов должны напечататься без traceback.
+        - id: concat-int
+          when:
+            errorIncludes: can only concatenate
+          why: >-
+            Нижнее звено — строка с `return` в `order_line`: к тексту прибавляется число, которое
+            вернула `printing_cost`. Знак `+` склеивает только строки: «can only concatenate str
+            (not "int") to str» — «склеить можно только строку со строкой, а не с числом».
+          try: >-
+            Исправь именно эту строку: собери её f-строкой или преврати цену в текст через
+            `str(...)`.
+          verify: Нажми «Запустить» — должны появиться обе строки заказов.
+        - id: cost-became-str
+          when:
+            failedTest: t4
+            outputIncludes: "Кравцовы: 290 руб."
+          why: >-
+            Строки заказов печатаются, но `printing_cost` теперь возвращает текст. Для строки заказа
+            это сработало, а выручка за день сломается: `"290" + "86"` склеится в `"29086"`. Лечить
+            нужно там, где упало, — в `order_line`.
+          try: >-
+            Верни `printing_cost` к числу и преврати цену в текст в строке с `return` в
+            `order_line`.
+          verify: "`printing_cost(4)` должна вернуть число 98 — без кавычек."
+        - id: print-not-return
+          when:
+            outputIncludes: None
+          why: >-
+            `order_line` сама печатает строку и ничего не возвращает. А `print` в `print_orders`
+            печатает то, что она вернула, — `None`.
+          try: Замени `print(...)` в `order_line` на `return` с той же строкой.
+          verify: Под строками заказов больше не должно быть `None`.
+        - id: function-not-called
+          when:
+            outputIncludes: <function
+          why: >-
+            В строку попала сама функция, а не её результат: `printing_cost` без скобок — это
+            функция, а не цена.
+          try: Вызови её с числом фотографий — `printing_cost(photos)` — и уже результат преврати в текст.
+          verify: В строке заказа должна появиться цена, например «290 руб.».
+        - id: tuple-return
+          when:
+            outputIncludes: "('"
+          why: >-
+            `return` с запятыми отдаёт сразу несколько значений — кортеж, и `print` показывает его со
+            скобками и кавычками. А нужна одна строка.
+          try: Собери одну строку — f-строкой или склейкой через `+` со `str(...)`.
+          verify: Строка заказа должна печататься без скобок и кавычек.
+        - id: no-space
+          when:
+            outputIncludes: 0руб.
+          why: Цена прилипла к «руб.» — перед словом пропал пробел.
+          try: Добавь пробел в начало текста `" руб."`.
+          verify: Должно получиться «290 руб.» — с пробелом.
+      afterPass: >-
+        Ты нашёл строку по нижнему звену и поменял только её: `printing_cost` по-прежнему
+        возвращает число, и выручку за день можно посчитать сложением. f-строку читать проще, чем
+        цепочку из `+` и `str()`, — в новых программах собирай текст ею.
+      skills: [traceback-reading, functions]
+
+  - id: practice-chain
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m6-l1-e3
+      kind: fix
+      title: Карточка рецепта
+      statement: |-
+        Семейные рецепты хранятся в программе: у каждого блюда — названия шагов и сколько минут
+        занимает каждый шаг. Программа печатает карточку рецепта: общее время и число шагов.
+        Сейчас она падает.
+
+        Нажми «Запустить» и прочитай traceback снизу вверх. Общий совет наставника после запуска
+        подскажет, как починить строку падения. Здесь этого мало: сначала выясни, откуда в
+        `total_minutes` пришли такие значения.
+
+        Функция `total_minutes` нужна и в других местах — например, чтобы посчитать время всего
+        праздничного обеда, — и она должна складывать любой список чисел, в том числе дробных.
+        Найди причину и исправь одну строку.
+
+        Ожидаемый вывод:
+
+        ```text
+        Шарлотка: 65 мин, шагов: 3
+        ```
+      input: Ввода нет — рецепт записан в программе.
+      output: "Одна строка: `блюдо: минуты мин, шагов: число`"
+      constraints:
+        - Исправь одну строку.
+        - "`total_minutes` не меняй: она складывает любой список чисел."
+      starterCode: |
+        def total_minutes(durations):
+            total = 0
+            for value in durations:
+                total = total + value
+            return total
+
+
+        def recipe_card(recipe):
+            dish = recipe["dish"]
+            minutes = total_minutes(recipe["steps"])
+            count = len(recipe["steps"])
+            return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+        pie = {
+            "dish": "Шарлотка",
+            "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+            "minutes": [15, 10, 40],
+        }
+        print(recipe_card(pie))
+      tests:
+        - id: t1
+          kind: io
+          title: Шарлотка
+          example: true
+          expected: "Шарлотка: 65 мин, шагов: 3"
+        - id: t2
+          kind: call
+          title: Другой рецепт
+          example: true
+          call: 'recipe_card({"dish": "Омлет", "steps": ["Взбить яйца", "Жарить"], "minutes": [3, 7]})'
+          expected: "'Омлет: 10 мин, шагов: 2'"
+        - id: t3
+          kind: call
+          title: "Граничный случай: шаги ещё не записаны"
+          edge: true
+          call: 'recipe_card({"dish": "Черновик", "steps": [], "minutes": []})'
+          expected: "'Черновик: 0 мин, шагов: 0'"
+        - id: t4
+          kind: call
+          title: total_minutes складывает числа, и дробные тоже
+          edge: true
+          call: total_minutes([60, 2.5])
+          expected: "62.5"
+      criteria:
+        - "Программа не падает и печатает карточку `блюдо: минуты мин, шагов: число`."
+        - Минуты считаются по данным того рецепта, который передали в `recipe_card`.
+        - "`total_minutes` по-прежнему складывает любой список чисел, в том числе дробных."
+      hints:
+        - >-
+          Нижнее звено показывает, где программа упала, но не всегда — где ошибка. Что лежит в
+          `durations`, когда `total_minutes` падает, и кто это туда передал?
+        - >-
+          На другом примере: функция `half(n)` возвращает `n / 2`, а её вызывают так:
+          `half(box["label"])`. Программа упадёт внутри `half` с `TypeError: unsupported operand
+          type(s) for /: 'str' and 'int'`, но формула в `half` верна. Ошибка в вызове: передали
+          надпись вместо числа.
+        - >-
+          Звено над нижним — строка 10: `total_minutes(recipe[…])`. Какое поле словаря хранит
+          минуты? Впиши его в квадратные скобки вместо нынешнего — тоже в кавычках.
+      solution:
+        code: |
+          def total_minutes(durations):
+              total = 0
+              for value in durations:
+                  total = total + value
+              return total
+
+
+          def recipe_card(recipe):
+              dish = recipe["dish"]
+              minutes = total_minutes(recipe["minutes"])
+              count = len(recipe["steps"])
+              return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+          pie = {
+              "dish": "Шарлотка",
+              "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+              "minutes": [15, 10, 40],
+          }
+          print(recipe_card(pie))
+        explanation: >-
+          Нижнее звено — строка 4 в `total_minutes`: к числу `total` прибавляется текст. Но формула
+          верна — функция честно складывала то, что ей дали, а дали ей названия шагов. Звено выше,
+          строка 10 в `recipe_card`, показывает вызов: туда передали поле `steps` вместо `minutes`.
+          Причина на звено выше места падения — там и исправление.
+      altSolutions:
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["minutes"])
+                count = len(recipe["minutes"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Число шагов тоже посчитано по списку минут — длины списков одинаковые.
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                durations = recipe["minutes"]
+                minutes = total_minutes(durations)
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Список минут сначала сохранён в переменную.
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = sum(recipe["minutes"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Минуты сложены встроенной sum — total_minutes осталась нетронутой.
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                minutes = total_minutes(recipe.get("minutes"))
+                count = len(recipe["steps"])
+                return f"{recipe['dish']}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Поле прочитано через get.
+      wrongSolutions:
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["steps"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Стартовый код.
+          expectMistake: str-plus-int
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + int(value)
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["steps"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Лечит симптом — int() в нижнем звене.
+          expectMistake: symptom-int
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = str(total) + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["steps"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Лечит симптом — total превращён в строку.
+          expectMistake: symptom-str
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["steps"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": [15, 10, 40],
+                "minutes": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+            }
+            print(recipe_card(pie))
+          note: Данные подогнаны под ошибку — списки поменяны местами.
+          expectMistake: data-swapped
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(pie["minutes"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Внутри функции взят словарь pie, а не параметр recipe.
+          expectMistake: global-pie
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                return "Шарлотка: 65 мин, шагов: 3"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Готовая строка вместо расчёта.
+          expectMistake: hardcoded
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["minute"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Опечатка в ключе — KeyError; хватает общего разбора наставника, разборы урока молчат.
+          expectMistake: null
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe[minutes])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Ключ без кавычек — Python ищет переменную minutes.
+          expectMistake: key-without-quotes
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + len(value)
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["steps"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Лечит симптом — складывает длины названий шагов.
+          expectMistake: symptom-other
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + int(value)
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["minutes"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Причина исправлена, но int() в total_minutes остался — дробные минуты обрезаются.
+          expectMistake: symptom-other
+        - code: |
+            def total_minutes(durations):
+                total = ""
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["steps"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Лечит симптом — total начинается с пустой строки, названия шагов склеиваются.
+          expectMistake: symptom-str
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    print("total = " + str(total) + ", value = " + str(value))
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe["steps"])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Отладочный print со str(total), причина не исправлена — программа всё ещё падает.
+          expectMistake: str-plus-int
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for value in durations:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes([15, 10, 40])
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: Минуты шарлотки вписаны списком прямо в вызов.
+          expectMistake: global-pie
+        - code: |
+            def total_minutes(recipe):
+                total = 0
+                for value in recipe["minutes"]:
+                    total = total + value
+                return total
+
+
+            def recipe_card(recipe):
+                dish = recipe["dish"]
+                minutes = total_minutes(recipe)
+                count = len(recipe["steps"])
+                return f"{dish}: {minutes} мин, шагов: {count}"
+
+
+            pie = {
+                "dish": "Шарлотка",
+                "steps": ["Замесить тесто", "Нарезать яблоки", "Выпекать"],
+                "minutes": [15, 10, 40],
+            }
+            print(recipe_card(pie))
+          note: total_minutes переделана под словарь рецепта — обычный список чисел она больше не сложит.
+          expectMistake: total-minutes-reworked
+      mistakes:
+        - id: key-without-quotes
+          when:
+            codeRegex: 'recipe\[\s*minutes\s*\]'
+          why: >-
+            Ключ словаря — текст, его пишут в кавычках. Без кавычек `minutes` — имя переменной, а
+            не ключ. Python ищет такую переменную, а она в этой же строке только получает значение,
+            — отсюда ошибка.
+          try: 'Возьми ключ в кавычки, как у `recipe["steps"]`.'
+          verify: 'Нажми «Запустить» — должно получиться «Шарлотка: 65 мин, шагов: 3».'
+        - id: symptom-int
+          when:
+            errorType: ValueError
+            codeRegex: 'int\(\s*value\s*\)'
+          why: >-
+            `int()` не превратит «Замесить тесто» в число: в `total_minutes` пришли названия шагов.
+            Сама функция тут ни при чём, а падение никуда не делось: в той же строке теперь
+            ValueError. Посмотри на звено выше: что ей передают?
+          try: >-
+            Верни строку `total = total + value` как была и исправь вызов `total_minutes(...)` в
+            `recipe_card`.
+          verify: >-
+            Карточка шарлотки должна показать 65 мин, а `total_minutes([60, 2.5])` — вернуть 62.5.
+        - id: symptom-str
+          when:
+            codeRegex: '^\s*total\s*=\s*(str\(\s*total\s*\)|""|'''')'
+            outputIncludes: Замесить тесто
+          why: >-
+            Теперь `total` — строка, и названия шагов просто склеиваются в одну длинную строку вместо
+            суммы минут. Падение ушло, а причина осталась: в `total_minutes` приходит не тот
+            список.
+          try: >-
+            Верни `total_minutes` как была. Лечится причина: в `total_minutes` должен прийти список
+            чисел — посмотри на её вызов в `recipe_card`.
+          verify: В карточке шарлотки должно быть «65 мин», а не названия шагов.
+        - id: symptom-other
+          when:
+            codeRegex: '^\s*total\s*=\s*(?!total\s*\+\s*value\s*(#.*)?$|0\s*(#.*)?$|total_minutes\b)\S'
+          why: >-
+            Ты изменил `total_minutes` — функцию из нижнего звена. Но её строки были верны: она
+            складывает список чисел. Правка внутри неё лечит симптом, а обычный список минут функция
+            теперь считает неверно или падает на нём.
+          try: >-
+            Верни `total_minutes` как в стартовом коде. Если вызов `total_minutes(...)` в
+            `recipe_card` ещё не исправлен, исправь его: туда должен прийти список минут.
+          verify: >-
+            `total_minutes([60, 2.5])` должна вернуть 62.5, а карточка шарлотки — показать 65 мин.
+        - id: data-swapped
+          when:
+            failedTest: t2
+            codeRegex: '["'']steps["'']\s*:\s*\[\s*\d'
+          why: >-
+            Ты поменял данные, а не программу: теперь под ключом `steps` лежат минуты. Шарлотка
+            посчиталась, но любой другой рецепт с правильными данными снова уронит программу.
+          try: >-
+            Верни данные рецепта как были: `steps` — названия шагов, `minutes` — минуты. Исправь
+            вызов `total_minutes(...)` в `recipe_card`.
+          verify: 'Карточка омлета тоже должна посчитаться: «Омлет: 10 мин, шагов: 2».'
+        - id: global-pie
+          when:
+            failedTest: t2
+            codeRegex: 'total_minutes\(\s*(pie\s*\[|\[\s*\d)'
+          why: >-
+            Внутри `recipe_card` минуты берутся не из рецепта, который передали в функцию, а из
+            `pie` или из готового списка. Поэтому карточка любого блюда покажет минуты шарлотки.
+          try: Внутри функции работай с параметром `recipe` — как в строках с `dish` и `count`.
+          verify: Карточка омлета должна показать 10 мин.
+        - id: str-plus-int
+          when:
+            errorIncludes: "unsupported operand type(s) for +"
+          why: >-
+            `unsupported operand type(s) for +: 'int' and 'str'` — «неподходящие типы для +: число и
+            строка»: к числу прибавляется текст. Но строка сложения сама по себе верна — значит,
+            складывать дали не то.
+          try: >-
+            Найди в traceback звено над нижним: какая строка вызвала `total_minutes` и что она ей
+            передала?
+          verify: Нажми «Запустить» — traceback должен исчезнуть, а карточка — показать 65 мин.
+        - id: total-minutes-reworked
+          when:
+            failedTest: t4
+            codeRegex: 'total_minutes\(\s*recipe\s*\)'
+          why: >-
+            Ты переделал `total_minutes` под словарь рецепта. Но она нужна и в других местах — там
+            ей передают список чисел, и `total_minutes([60, 2.5])` теперь падает.
+          try: Верни `total_minutes` как была и передай ей список минут рецепта.
+          verify: "`total_minutes([60, 2.5])` должна вернуть 62.5."
+        - id: hardcoded
+          when:
+            failedTest: t2
+            codeRegex: 'return\s+f?["'']Шарлотка'
+          why: >-
+            Для шарлотки всё верно, а для другого рецепта — нет: функция должна считать карточку по
+            данным, а не возвращать готовую строку.
+          try: Верни расчёт в `recipe_card` и исправь в нём одну строку — вызов `total_minutes(...)`.
+          verify: 'Карточка омлета должна посчитаться по его данным: «Омлет: 10 мин, шагов: 2».'
+      afterPass: >-
+        Место падения и место причины разошлись на одно звено: `total_minutes` честно работала с тем,
+        что ей дали. Так бывает часто — поэтому, если строка нижнего звена верна, поднимайся выше.
+        Если хочешь, добавь в `pie` четвёртый шаг — «Остудить», 20 минут — и запусти: карточка
+        пересчитается сама.
+      skills: [traceback-reading, debugging, functions]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - >-
+        Traceback читают снизу вверх: последняя строка — что случилось, нижнее звено — где
+        программа остановилась, звенья выше — кто вызвал эту функцию.
+      - "`<module>` — код вне функций, верх цепочки: отсюда всё началось."
+      - >-
+        Место падения — не всегда место причины. Если строка нижнего звена верна, поднимись на
+        звено выше и проверь, какое значение туда передали.
+      - >-
+        На компьютере traceback тот же, только с полным путём к файлу и значками `~~~^^^`: в нижнем
+        звене они отмечают выражение, на котором всё упало.
+    question: >-
+      Traceback заканчивается строкой в функции, которая выглядит правильной. Что делаешь дальше?
+    answer: >-
+      Поднимаюсь на звено выше: смотрю, с какими аргументами эту функцию вызвали и откуда взялось
+      значение, на котором она упала. Исправляю там, где появилось неверное значение, или там, где
+      особое значение (как ноль партий у новичка) нужно было проверить заранее, — а не там, где на
+      него споткнулись.

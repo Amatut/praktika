@@ -1,8 +1,9 @@
 // Сбой одного экрана не должен оставлять пустую страницу. Частый случай — вкладка открыта давно,
 // приложение обновилось, и ленивая часть экрана прежней версии уже удалена из кеша.
 
+import { CircleAlert, House, RefreshCw } from 'lucide-react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { EmptyState } from '../components/ui.tsx';
+import { Disclosure } from '../components/ui.tsx';
 import { href, paths } from './router.ts';
 
 /** Не загрузилась ленивая часть приложения (import() экрана). */
@@ -44,37 +45,31 @@ export class ScreenErrorBoundary extends Component<Props, State> {
     const { error } = this.state;
     if (!error) return this.props.children;
     const chunk = isChunkLoadError(error);
+    // Вид пустого состояния (.empty), но заголовок — h1: экран упал, и другого заголовка на нём нет.
     return (
-      <div className="page">
-        <div role="alert">
-          <EmptyState
-            title={chunk ? 'Не получилось открыть экран' : 'На этом экране что-то пошло не так'}
-            action={
-              <div className="row">
-                <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>
-                  Обновить страницу
-                </button>
-                <a className="btn btn-ghost" href={href(paths.today())}>
-                  На главную
-                </a>
-              </div>
-            }
-          >
-            <p>
-              {chunk
-                ? 'Похоже, приложение обновилось, пока эта вкладка была открыта, или пропала сеть. Обнови страницу — сохранённый прогресс на месте.'
-                : 'Сохранённый прогресс на месте. Обнови страницу; если ошибка повторится, открой другой раздел.'}
-            </p>
-            {!chunk && (
-              <details className="disclosure" style={{ marginTop: 8 }}>
-                <summary>Подробности для разработчика</summary>
-                <div className="disclosure-body">
-                  <pre className="card-code">{error.message}</pre>
-                </div>
-              </details>
-            )}
-          </EmptyState>
+      <div className="page screen-error">
+        <div role="alert" className="empty">
+          <CircleAlert aria-hidden="true" className="empty-icon" />
+          <div className="empty-main">
+            <h1 className="empty-title">{chunk ? 'Не получилось открыть экран' : 'На этом экране что-то пошло не так'}</h1>
+            <p className="empty-text">Прогресс на месте.</p>
+            <div className="empty-actions">
+              <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>
+                <RefreshCw aria-hidden="true" />
+                Обновить страницу
+              </button>
+              <a className="btn" href={href(paths.today())}>
+                <House aria-hidden="true" />
+                На главную
+              </a>
+            </div>
+          </div>
         </div>
+        {!chunk && (
+          <Disclosure summary="Подробности для разработчика" className="screen-error-details">
+            <pre className="screen-error-trace">{error.message}</pre>
+          </Disclosure>
+        )}
       </div>
     );
   }

@@ -1,10 +1,10 @@
 // «Скачать модуль»: объём загрузки, прогресс и фактическая готовность к работе без сети.
 // Состояние Python и модулей общее для всех строк: после любого скачивания или удаления обновляются все.
 
-import { CircleCheck, Download, Trash2, TriangleAlert } from 'lucide-react';
+import { CloudOff, Download, Trash2, WifiOff } from 'lucide-react';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useOnline } from '../app/hooks.ts';
-import { Meter, StatusBadge } from '../components/ui.tsx';
+import { Meter, Spinner, StatusBadge, StatusLine } from '../components/ui.tsx';
 import {
   CONTENT_CACHE,
   bundleStatus,
@@ -97,6 +97,8 @@ export function useOfflineStatus(): OfflineSnapshot {
       return () => listeners.delete(listener);
     },
     () => snapshot,
+    // Рендер без браузера (тесты разметки) видит то же состояние.
+    () => snapshot,
   );
 }
 
@@ -107,7 +109,23 @@ async function removeModule(moduleId: string, file: OfflineFile): Promise<void> 
   await removeBundle(CONTENT_CACHE, [file]);
 }
 
-export function OfflineModuleControl({ moduleId, compact = false }: { moduleId: string; compact?: boolean }) {
+/** Идёт скачивание: объём числом рядом с полосой, не внутри неё. */
+function DownloadProgress({ done, total, label }: { done: number; total: number; label: string }) {
+  return (
+    <div className="offline-progress" role="status">
+      <span className="offline-progress-text tnum">
+        {formatBytes(done)} из {formatBytes(total)}
+      </span>
+      <Meter value={done} max={total} label={label} />
+    </div>
+  );
+}
+
+/**
+ * Скачивание модуля. compact — в шапке списка уроков модуля: только статус или кнопка, без «Удалить».
+ * number — номер модуля для имён кнопок у скринридера («Скачать модуль 1 вместе с Python, всего 12,6 МБ»).
+ */
+export function OfflineModuleControl({ moduleId, compact = false, number }: { moduleId: string; compact?: boolean; number?: number }) {
   const online = useOnline();
   const { manifest, python, modules } = useOfflineStatus();
   const module = modules[moduleId];
@@ -115,7 +133,11 @@ export function OfflineModuleControl({ moduleId, compact = false }: { moduleId: 
   const [error, setError] = useState<string | null>(null);
 
   if (!offlineSupported()) {
-    return compact ? null : <p className="small muted">Скачивание для работы без сети доступно в собранной версии приложения (npm start).</p>;
+    return compact ? null : (
+      <StatusLine tone="muted" icon={CloudOff}>
+        Офлайн — только в собранной версии
+      </StatusLine>
+    );
   }
   if (!manifest || !python || !module) return null;
   const moduleFile = manifest.modules[moduleId];
@@ -123,7 +145,10 @@ export function OfflineModuleControl({ moduleId, compact = false }: { moduleId: 
 
   const ready = python.complete && module.complete;
   const pythonLeft = python.bytesTotal - python.bytesCached;
-  const remaining = pythonLeft + (module.bytesTotal - module.bytesCached);
+  const moduleLeft = module.bytesTotal - module.bytesCached;
+  const remaining = pythonLeft + moduleLeft;
+  const className = `offline-ctl${compact ? ' is-compact' : ''}`;
+  const which = number === undefined ? 'модуль' : `модуль ${number}`;
 
   async function download() {
     if (!manifest) return;
@@ -149,7 +174,7 @@ export function OfflineModuleControl({ moduleId, compact = false }: { moduleId: 
       const cache = await caches.open(CONTENT_CACHE);
       await Promise.all((await oldModuleFiles(moduleId, moduleFile)).map((url) => cache.delete(url)));
     } catch (reason) {
-      setError(`Не удалось скачать: ${(reason as Error).message}. Проверь сеть и попробуй снова.`);
+      setError(`Не удалось скачать: ${(reason as Error).message}`);
     } finally {
       setProgress(null);
       await refreshOffline();
@@ -158,151 +183,192 @@ export function OfflineModuleControl({ moduleId, compact = false }: { moduleId: 
 
   if (ready) {
     return (
-      <span className="row" style={{ gap: 6 }}>
-        <StatusBadge tone="good">Доступен без сети</StatusBadge>
-        {!compact && (
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={async () => {
-              await removeModule(moduleId, moduleFile);
-              await refreshOffline();
-            }}
-          >
-            <Trash2 aria-hidden="true" />
-            Удалить уроки
-          </button>
-        )}
-      </span>
+      <div className={className}>
+        <div className="offline-ctl-line">
+          <StatusBadge tone="good">Доступен без сети</StatusBadge>
+          {!compact && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              aria-label={`Удалить уроки: ${which}`}
+              onClick={async () => {
+                await removeModule(moduleId, moduleFile);
+                await refreshOffline();
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              Удалить
+            </button>
+          )}
+        </div>
+      </div>
     );
   }
 
   if (progress) {
     return (
-      <span className="stack-sm" style={{ minWidth: 200 }} role="status">
-        <span className="small">
-          Скачиваю: {formatBytes(progress.done)} из {formatBytes(progress.total)}
-        </span>
-        <Meter value={progress.done} max={progress.total} label="Скачивание модуля" />
-      </span>
+      <div className={className}>
+        <DownloadProgress done={progress.done} total={progress.total} label="Скачивание модуля" />
+      </div>
     );
   }
 
   const onlyPython = module.complete && !python.complete;
+  const verb = onlyPython ? 'Скачать Python' : module.stale ? 'Скачать заново' : 'Скачать модуль';
+  const withPython = !python.complete && !onlyPython;
+  // На кнопке — объём самого модуля и «+ Python», если его ещё нет (Python общий, его объём — в ряду Python);
+  // скринридер слышит итог целиком.
+  const label = onlyPython
+    ? `Скачать Python, ${formatBytes(remaining)}`
+    : `${module.stale ? `Скачать заново ${which}` : number === undefined ? verb : `${verb} ${number}`}${withPython ? ' вместе с Python, всего' : ','} ${formatBytes(remaining)}`;
   return (
-    <span className="stack-sm" style={{ alignItems: compact ? 'flex-end' : 'flex-start' }}>
-      {module.stale && (
-        <span className="tiny status-warn row" style={{ gap: 4 }}>
-          <TriangleAlert aria-hidden="true" width={13} height={13} />
-          Модуль обновился — скачай его заново для работы без сети
-        </span>
+    <div className={className}>
+      {module.stale && <StatusLine tone="warn">Модуль обновился</StatusLine>}
+      {onlyPython && <StatusLine tone="warn">Без Python код офлайн не запустится</StatusLine>}
+      <div className="offline-ctl-line">
+        <button type="button" className={`btn${compact ? ' btn-sm' : ''}`} aria-label={label} onClick={() => void download()} disabled={!online}>
+          <Download aria-hidden="true" />
+          {verb} · {formatBytes(onlyPython ? pythonLeft : moduleLeft)}
+          {withPython && ' + Python'}
+        </button>
+      </div>
+      {!online && (
+        <StatusLine tone="muted" icon={WifiOff}>
+          Нужна сеть
+        </StatusLine>
       )}
-      {onlyPython && <span className="tiny muted">Уроки скачаны, но без Python код без сети не запустится</span>}
-      <button type="button" className="btn btn-sm" onClick={() => void download()} disabled={!online}>
-        <Download aria-hidden="true" />
-        {onlyPython ? 'Скачать Python' : module.stale ? 'Скачать заново' : 'Скачать модуль'} · {formatBytes(remaining)}
-      </button>
-      {!python.complete && !onlyPython && (
-        <span className="tiny muted">Включая Python ({formatBytes(pythonLeft)}) — один раз для всех модулей</span>
-      )}
-      {!online && <span className="tiny muted">Нужна сеть</span>}
-      {error && <span className="tiny status-error">{error}</span>}
-    </span>
+      {error && <StatusLine tone="err">{error}</StatusLine>}
+    </div>
   );
 }
 
-/** Строка в настройках: Python или модуль с объёмом и состоянием. */
+/**
+ * «Работа без сети» в настройках: Python и модули строками настроек (класс bundle-row, первая строка —
+ * Python: на порядок опирается e2e), слева название и объём, справа статус и действие.
+ */
 export function OfflineOverview({ modules }: { modules: { id: string; title: string; number: number }[] }) {
   const online = useOnline();
-  const { checked, manifest, python } = useOfflineStatus();
+  const { checked, manifest, python, modules: saved } = useOfflineStatus();
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!offlineSupported()) {
     return (
-      <p className="small muted">
-        Сейчас открыта версия для разработки: офлайн-режим и скачивание работают в собранной версии (команда npm start).
-      </p>
+      <div className="setting-row">
+        <div className="setting-label">
+          <span className="setting-name">Python и уроки</span>
+        </div>
+        <div className="setting-control">
+          <StatusLine tone="muted" icon={CloudOff}>
+            Офлайн — только в собранной версии
+          </StatusLine>
+        </div>
+      </div>
     );
   }
   if (!manifest || !python) {
-    return <p className="small muted">{checked ? 'Не удалось проверить, что уже скачано. Обнови страницу.' : 'Проверяю, что уже скачано…'}</p>;
+    return (
+      <div className="setting-row">
+        <div className="setting-label">
+          <span className="setting-name">Python и уроки</span>
+        </div>
+        <div className="setting-control">
+          {checked ? (
+            <StatusLine tone="err">Не удалось проверить, что скачано. Обнови страницу.</StatusLine>
+          ) : (
+            <p className="loading-line" role="status">
+              <Spinner />
+              Проверяю, что скачано…
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
+  // «314.0.7» → «3.14» и «Pyodide 314.0.7».
+  const pyodide = manifest.python.version;
+  const pythonVersion = pyodide.replace(/^3(\d\d)\..*$/, '3.$1');
+
   return (
-    <div className="stack-sm">
-      <div className="bundle-row">
-        <div>
-          <div className="list-row-title">Python {manifest.python.version.replace(/^3(\d\d)\./, '3.$1 · Pyodide 3$1.')}</div>
-          <div className="list-row-sub">
-            {formatBytes(python.bytesTotal)} · нужен для запуска кода во всех уроках
-          </div>
-          {progress && (
-            <div className="stack-sm" style={{ marginTop: 8 }} role="status">
-              <span className="small">
-                {formatBytes(progress.done)} из {formatBytes(progress.total)}
-              </span>
-              <Meter value={progress.done} max={progress.total} label="Скачивание Python" />
+    <>
+      <div className="setting-row bundle-row">
+        <div className="setting-label">
+          <span className="setting-name">Python {pythonVersion !== pyodide ? pythonVersion : ''}</span>
+          <span className="setting-hint">
+            Pyodide {pyodide} · {formatBytes(python.bytesTotal)}
+          </span>
+        </div>
+        <div className="setting-control">
+          {python.complete ? (
+            <div className="offline-ctl-line">
+              <StatusBadge tone="good">Скачан</StatusBadge>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                aria-label="Удалить Python из офлайн-хранилища"
+                onClick={async () => {
+                  await removeBundle(manifest.python.cache, manifest.python.files);
+                  await refreshOffline();
+                }}
+              >
+                <Trash2 aria-hidden="true" />
+                Удалить
+              </button>
+            </div>
+          ) : progress ? (
+            <DownloadProgress done={progress.done} total={progress.total} label="Скачивание Python" />
+          ) : (
+            <div className="offline-ctl">
+              {/* Python — общая зависимость всех модулей: его логично скачать первым, поэтому кнопка главная. */}
+              <button
+                type="button"
+                className="btn btn-primary"
+                aria-label={`Скачать Python, ${formatBytes(python.bytesTotal - python.bytesCached)}`}
+                disabled={!online}
+                onClick={async () => {
+                  setError(null);
+                  try {
+                    await downloadBundle(manifest.python.cache, manifest.python.files, (done, total) => setProgress({ done, total }));
+                  } catch (reason) {
+                    setError(`Не удалось скачать: ${(reason as Error).message}`);
+                  } finally {
+                    setProgress(null);
+                    await refreshOffline();
+                  }
+                }}
+              >
+                <Download aria-hidden="true" />
+                Скачать · {formatBytes(python.bytesTotal - python.bytesCached)}
+              </button>
+              {!online && (
+                <StatusLine tone="muted" icon={WifiOff}>
+                  Нужна сеть
+                </StatusLine>
+              )}
+              {error && <StatusLine tone="err">{error}</StatusLine>}
             </div>
           )}
-          {error && <div className="tiny status-error">{error}</div>}
         </div>
-        {python.complete ? (
-          <span className="row" style={{ gap: 6 }}>
-            <StatusBadge tone="good">Скачан</StatusBadge>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm btn-icon"
-              aria-label="Удалить Python из офлайн-хранилища"
-              title="Без Python уроки без сети не запустят код"
-              onClick={async () => {
-                await removeBundle(manifest.python.cache, manifest.python.files);
-                await refreshOffline();
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-            </button>
-          </span>
-        ) : (
-          <button
-            type="button"
-            className="btn btn-sm"
-            disabled={!online || progress !== null}
-            onClick={async () => {
-              setError(null);
-              try {
-                await downloadBundle(manifest.python.cache, manifest.python.files, (done, total) => setProgress({ done, total }));
-              } catch (reason) {
-                setError(`Не удалось скачать: ${(reason as Error).message}`);
-              } finally {
-                setProgress(null);
-                await refreshOffline();
-              }
-            }}
-          >
-            <Download aria-hidden="true" />
-            Скачать · {formatBytes(python.bytesTotal - python.bytesCached)}
-          </button>
-        )}
       </div>
       {modules
         .filter((module) => manifest.modules[module.id])
         .map((module) => (
-          <div key={module.id} className="bundle-row">
-            <div>
-              <div className="list-row-title">
-                Модуль {module.number}. {module.title}
-              </div>
-              <div className="list-row-sub">Уроки: {formatBytes(manifest.modules[module.id].bytes)}</div>
+          <div key={module.id} className="setting-row bundle-row">
+            <div className="setting-label">
+              <span className="setting-name">
+                Модуль {module.number} · {module.title}
+              </span>
+              {/* Пока уроки не скачаны, тот же объём — на кнопке: на телефоне эту строку прячет settings.css. */}
+              <span className={`setting-hint${saved[module.id]?.complete ? '' : ' offline-size'}`}>
+                Уроки · {formatBytes(manifest.modules[module.id].bytes)}
+              </span>
             </div>
-            <OfflineModuleControl moduleId={module.id} />
+            <div className="setting-control">
+              <OfflineModuleControl moduleId={module.id} number={module.number} />
+            </div>
           </div>
         ))}
-      <p className="tiny muted row" style={{ gap: 6 }}>
-        <CircleCheck aria-hidden="true" width={13} height={13} />
-        «Скачан» означает, что файлы лежат в хранилище браузера. «Доступен без сети» — скачаны и уроки модуля, и Python.
-        Оболочка приложения сохраняется автоматически после первого открытия.
-      </p>
-    </div>
+    </>
   );
 }

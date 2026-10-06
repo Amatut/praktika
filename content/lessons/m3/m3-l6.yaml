@@ -1,0 +1,1715 @@
+id: m3-l6
+module: m3
+number: "3.6"
+title: Трассировка цикла и ошибка на единицу
+objective: >-
+  Составлять трассировочную таблицу цикла и по ней находить и исправлять ошибку на единицу —
+  лишний или недостающий шаг из-за границы range, знака < или <= или места, где меняется и
+  печатается счётчик.
+minutes: [20, 30]
+prerequisites: [m3-l5]
+skills: [loop-tracing]
+environment: python
+
+story:
+  title: Одного столба не хватило
+  fictional: true
+  text: >-
+    Дядя Витя решил поставить на даче забор длиной 10 метров со столбами через каждые 2 метра. Он
+    разделил 10 на 2, купил 5 столбов — и на самом конце забора столба не хватило. Тогда он выписал
+    места столбов в столбик — 0, 2, 4, 6, 8, 10 метров — и шестой нашёлся сразу: пролётов пять, а
+    столбов на один больше. Программисты попадают в ту же ловушку так часто, что по-английски у неё
+    есть имя — fencepost error, «ошибка заборного столба». Поймать её помогает тот же приём: выписать
+    значения по шагам в таблицу.
+
+why: >-
+  Цикл, который делает на шаг больше или меньше, чем нужно, — одна из самых частых ошибок, и на
+  обычных данных её легко не заметить. Таблица значений по шагам показывает её сразу: например, что
+  `range(1, 10)` не доходит до 10.
+
+usedIn: >-
+  Проверка и отладка своего и чужого кода; нумерация страниц и строк; расписания «с… по…
+  включительно»; постраничный вывод на сайтах («показаны записи 1–20 из 57»). В модуле 4 то же
+  понадобится для индексов строк и списков — там счёт идёт с нуля.
+
+steps:
+  - id: tracing
+    type: theory
+    title: Трассировка и ошибка на единицу
+    body: |-
+      **Трассировка** — пройти программу вручную, как компьютер, и после каждого шага записать
+      значения переменных. **Шаг цикла** — одна итерация, то есть один проход тела (не путай с
+      шагом `range` — третьим аргументом). Удобнее всего таблицей: столбцы — переменные (у `while`
+      ещё и условие), строки — «до цикла», шаг 1, шаг 2, … и «после цикла». Вот цикл и его таблица:
+
+      ```python
+      total = 0
+      for i in range(1, 4):
+          total = total + i
+      ```
+
+      ```text
+                  i    total
+      до цикла    —    0
+      шаг 1       1    1
+      шаг 2       2    3
+      шаг 3       3    6
+      после       3    6
+      ```
+
+      После `for` в `i` остаётся последнее число из range — 3. У `while` иначе: после цикла в
+      переменной лежит первое значение, при котором условие стало ложным.
+
+      **Ошибка на единицу** — цикл делает на один шаг больше или меньше, чем нужно. Почти всегда
+      она видна на краях, поэтому в таблице первым делом смотри на **первый и последний шаг**. Три
+      частых источника:
+
+      1. Правая граница `range` не входит. «С a по b включительно» — это `range(a, b + 1)`, шагов
+         b − a + 1.
+      2. `<` вместо `<=` в `while` (или наоборот). Если переменная может оказаться ровно на
+         границе, цикл остановится на шаг раньше или позже.
+      3. Счётчик начинается не с того числа или печатается до того, как его увеличили.
+
+      **Правило забора.** Автобус ходит с 8:00 до 9:00 каждые 15 минут: промежутков 60 // 15 = 4,
+      а рейсов на один больше — 5 (8:00, 8:15, 8:30, 8:45 и 9:00). Когда считаешь точки на
+      отрезке (столбы, рейсы, дни, главы), а не промежутки между ними, не забудь про эту единицу.
+
+      **Смотри на края.** На «обычных» данных ошибка на единицу прячется: итог выглядит
+      правдоподобно. Проверяй программу на маленьких и граничных значениях: 0, 1, одна глава, число
+      ровно на пороге — и сверяй с таблицей. Частое заблуждение: «на примере из условия работает —
+      значит, верно».
+
+      **Трассировка через print.** Длинную таблицу напишет компьютер: временно добавь в тело цикла
+      строку вроде `print(i, total)` — каждая напечатанная строка станет строкой таблицы. Важно, где
+      она стоит: до строки, которая меняет переменную, `print` покажет старое значение, после —
+      новое. Когда ошибка найдена, такую строку убирают.
+    simpler: >-
+      Трассировка — как пройти рецепт с карандашом: после каждого шага записываешь, что лежит в
+      каждой миске. Ошибка на единицу — одна лишняя или одна недостающая ложка. Её видно, если
+      внимательно посмотреть на первый и последний шаг.
+    coach: >-
+      Перед исправлением запиши таблицу хотя бы для первых двух шагов и последнего — исправление
+      часто становится очевидным.
+
+  - id: pages
+    type: example
+    title: Страницы с 5-й по 8-ю
+    body: >-
+      Программа отмечает прочитанные страницы — с 5-й по 8-ю включительно. `print` в теле цикла —
+      трассировочный: каждая напечатанная строка — строка таблицы с двумя столбцами, `page` и
+      `count`.
+    code: |-
+      first = 5
+      last = 8
+      count = 0
+      for page in range(first, last + 1):
+          count = count + 1
+          print(f"страница {page}, прочитано {count}")
+      print(f"Всего страниц: {count}")
+    notes:
+      - line: 4
+        text: >-
+          `last + 1` — чтобы страница 8 вошла: правая граница range не входит. Шагов будет
+          8 − 5 + 1 = 4.
+      - line: 5
+        text: Счётчик увеличивается раньше print — поэтому в таблице уже новое значение.
+      - line: 6
+        text: Трассировочный print — по строке таблицы на каждый шаг цикла.
+      - line: 7
+        text: Без отступа — выполняется один раз, после цикла. Итог совпадает с последней строкой таблицы.
+    tryIt: >-
+      Убери `+ 1` в строке 4 и запусти: страницы 8 в таблице не будет, а итог станет 3. Верни `+ 1`
+      и поменяй местами строки 5 и 6 (с теми же отступами): «прочитано» начнёт отставать на
+      единицу — print покажет значение до увеличения.
+    coach: >-
+      Трассировочный print — временный помощник: посмотрел, нашёл ошибку, убрал.
+
+  - id: grasshopper
+    type: predict
+    title: Кузнечик и отметка 10
+    prompt: >-
+      Кузнечик прыгает вперёд по 2 см, начиная с отметки 0. Составь таблицу — `position` до
+      прыжка, условие, `position` после, `jumps` — и скажи, что выведет программа.
+    code: |-
+      position = 0
+      jumps = 0
+      while position <= 10:
+          position = position + 2
+          jumps = jumps + 1
+      print(jumps, position)
+    options:
+      - "5 10"
+      - "6 12"
+      - "7 14"
+    answer: "6 12"
+    explanation: |-
+      Таблица по шагам:
+
+      ```text
+      шаг  до  <=10?  после  jumps
+      1    0   да     2      1
+      2    2   да     4      2
+      3    4   да     6      3
+      4    6   да     8      4
+      5    8   да     10     5
+      6    10  да     12     6
+      —    12  нет    выход
+      ```
+
+      При `position = 10` условие `10 <= 10` ещё верно — граница входит, поэтому кузнечик прыгает в
+      шестой раз. После цикла в `position` лежит первое значение, при котором условие стало ложным,
+      — 12. Ответ «5 10» — ошибка на единицу: так было бы с `<`, там цикл остановился бы на 10 после
+      пяти прыжков. Ответ «7 14» — лишний прыжок: при 12 условие уже ложно.
+    coach: >-
+      Самая важная строка таблицы — последняя: на каком значении условие впервые стало ложным.
+
+  - id: practice-trace
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m3-l6-e1
+      kind: read
+      title: Пирамида из кубиков по рядам
+      statement: |-
+        Для праздника в детском саду из больших кубиков выкладывают у стены ступенчатую пирамиду:
+        в верхнем ряду 1 кубик, в каждом следующем — на 2 больше (1, 3, 5, …). Программа в
+        редакторе считает, сколько кубиков нужно на пирамиду из `rows` рядов.
+
+        Прочитай её и добавь **одну строку** — трассировку. После каждого ряда программа должна
+        печатать:
+
+        ```text
+        Ряд <номер ряда>: <кубиков в этом ряду> шт., всего <итог на этот момент>
+        ```
+
+        Для 4 рядов вывод такой:
+
+        ```text
+        Ряд 1: 1 шт., всего 1
+        Ряд 2: 3 шт., всего 4
+        Ряд 3: 5 шт., всего 9
+        Ряд 4: 7 шт., всего 16
+        Всего кубиков: 16
+        ```
+
+        Остальной код не меняй. Главное — найти в теле цикла место, где все три числа относятся к
+        одному и тому же ряду.
+      input: Одна строка — число рядов (целое, 0 или больше).
+      output: "Строка `Ряд …` для каждого ряда, затем `Всего кубиков: <итог>`."
+      constraints:
+        - Добавь одну строку с `print`, остальные строки не меняй.
+        - Если рядов 0, печатается только итог.
+      starterCode: |
+        rows = int(input())
+        total = 0
+        row = 1
+        while row <= rows:
+            blocks = 2 * row - 1
+            total = total + blocks
+            row = row + 1
+        print(f"Всего кубиков: {total}")
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "4\n"
+          expected: |-
+            Ряд 1: 1 шт., всего 1
+            Ряд 2: 3 шт., всего 4
+            Ряд 3: 5 шт., всего 9
+            Ряд 4: 7 шт., всего 16
+            Всего кубиков: 16
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "2\n"
+          expected: |-
+            Ряд 1: 1 шт., всего 1
+            Ряд 2: 3 шт., всего 4
+            Всего кубиков: 4
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: один ряд"
+          edge: true
+          stdin: "1\n"
+          expected: |-
+            Ряд 1: 1 шт., всего 1
+            Всего кубиков: 1
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: пирамиды нет"
+          edge: true
+          stdin: "0\n"
+          expected: "Всего кубиков: 0"
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - В каждой строке «Ряд …» номер ряда, число кубиков и итог относятся к одному и тому же ряду.
+        - Строк «Ряд …» столько же, сколько рядов; итог печатается один раз, в самом конце.
+        - "При 0 рядах программа печатает только «Всего кубиков: 0»."
+      hints:
+        - >-
+          Какие значения у `row`, `blocks` и `total` сразу после каждой строки тела цикла? Выпиши
+          их для первого ряда: после какой строки все три числа уже относятся к ряду 1 — и ещё не
+          перешли к ряду 2?
+        - |-
+          Тот же приём на маленьком примере:
+          ```python
+          x = 1
+          x = x + 1    # print сразу после этой строки покажет 2
+          x = x * 10   # а после этой — уже 20
+          ```
+          До строки, которая меняет переменную, `print` видит старое значение, после — новое.
+          Значит, место строки решает, к какому ряду относится каждое из трёх чисел.
+        - |-
+          Строка встаёт между `total = total + blocks` и `row = row + 1`, с тем же отступом, что у
+          соседних строк:
+          ```text
+          print(f"Ряд {…}: {…} шт., всего {…}")
+          ```
+      solution:
+        code: |
+          rows = int(input())
+          total = 0
+          row = 1
+          while row <= rows:
+              blocks = 2 * row - 1
+              total = total + blocks
+              print(f"Ряд {row}: {blocks} шт., всего {total}")
+              row = row + 1
+          print(f"Всего кубиков: {total}")
+        explanation: >-
+          Трассировка встаёт между `total = total + blocks` и `row = row + 1`. В этот момент
+          `blocks` и `total` уже посчитаны для текущего ряда, а `row` ещё не перешёл к следующему —
+          все три числа говорят об одном ряде. Выше строки с `total` итог отставал бы на ряд, ниже
+          строки с `row` номер убегал бы вперёд.
+      altSolutions:
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+                print(f"Ряд {row - 1}: {blocks} шт., всего {total}")
+            print(f"Всего кубиков: {total}")
+          note: Строка после увеличения row, но номер ряда поправлен — row - 1.
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                print("Ряд", str(row) + ":", blocks, "шт., всего", total)
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: print с запятыми вместо f-строки.
+        - code: |
+            rows = int(input())
+            total = 0
+            for row in range(1, rows + 1):
+                blocks = 2 * row - 1
+                total += blocks
+                print(f"Ряд {row}: {blocks} шт., всего {total}")
+            print(f"Всего кубиков: {total}")
+          note: Программа переписана через for и +=; вывод тот же.
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                print(f"Ряд {row}: {blocks} шт., всего {total + blocks}")
+                total = total + blocks
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: Строка до обновления total, но итог в ней посчитан заранее — total + blocks.
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                print(f"Ряд {row}: {2 * row - 1} шт., всего {row * row}")
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: Строка первой в теле, а числа посчитаны формулами 2 * row - 1 и row * row.
+        - code: |
+            rows = int(input())
+
+            total = 0
+            row = 1
+
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+
+                current = row
+                row = row + 1
+                print(f'Ряд { current }: { blocks } шт., всего { total }')
+
+            print(f"Всего кубиков: {total}")
+          note: Номер ряда запомнен до увеличения row; одинарные кавычки, пустые строки в коде.
+      wrongSolutions:
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: Стартовый код — трассировки нет.
+          expectMistake: no-trace
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                print("Ряд {row}: {blocks} шт., всего {total}")
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: Нет буквы f.
+          expectMistake: no-f
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+                print(f"Ряд {row}: {blocks} шт., всего {total}")
+            print(f"Всего кубиков: {total}")
+          note: print после увеличения row — номер ряда убежал вперёд.
+          expectMistake: after-row-update
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                print(f"Ряд {row + 1}: {blocks} шт., всего {total}")
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: Строка на верном месте, но в номере row + 1.
+          expectMistake: row-plus-one
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                print(f"Ряд {rows}: {blocks} шт., всего {total}")
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: В номере ряда rows вместо row.
+          expectMistake: rows-vs-row
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                print(f"Ряд {row}: {blocks} шт., всего {total}")
+                total = total + blocks
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: print до прибавления к total — итог отстаёт на ряд.
+          expectMistake: before-total
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            blocks = 0
+            while row <= rows:
+                print(f"Ряд {row}: {blocks} шт., всего {total}")
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: print первой строкой тела, NameError «вылечен» строкой blocks = 0 до цикла.
+          expectMistake: before-total
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+            print(f"Ряд {row}: {blocks} шт., всего {total}")
+            print(f"Всего кубиков: {total}")
+          note: print без отступа — после цикла, выполняется один раз.
+          expectMistake: outside-loop
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                print(f"Ряд {row}: {blocks} шт., всего {total}")
+                row = row + 1
+            print(f"Ряд {row}: {blocks} шт., всего {total}")
+            print(f"Всего кубиков: {total}")
+          note: Строка в цикле верная, но её копия осталась и после цикла.
+          expectMistake: outside-loop
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            print(f"Ряд {row}: {blocks} шт., всего {total}")
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: Строка перед while — NameError.
+          expectMistake: before-loop
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                print(f"Ряд {row}: {blocks} шт., всего {total}")
+                blocks = 2 * row - 1
+                total = total + blocks
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: print в начале тела — на первом шаге blocks ещё нет.
+          expectMistake: too-early
+        - code: |
+            rows = int(input())
+            total = 0
+            row = 1
+            while row <= rows:
+                blocks = 2 * row - 1
+                total = total + blocks
+                print(row, blocks, total)
+                row = row + 1
+            print(f"Всего кубиков: {total}")
+          note: Трассировка как в теории, print(row, blocks, total) — без нужного формата.
+          expectMistake: null
+      mistakes:
+        - id: no-trace
+          when:
+            outputEquals: "Всего кубиков: 16"
+          where: Тело цикла while
+          why: >-
+            Программа печатает только итог — трассировочной строки пока нет, поэтому по рядам ничего
+            не видно.
+          try: >-
+            Добавь в тело цикла строку с `print`, которая выводит номер ряда, кубики в нём и итог на
+            этот момент. Подумай, между какими строками тела её поставить.
+          verify: В «Примере 1» перед итогом должны появиться четыре строки «Ряд …».
+        - id: no-f
+          when:
+            outputIncludes: "{"
+          where: Строка с трассировкой
+          why: >-
+            На экране видны фигурные скобки — значит, строка обычная, и Python не подставил значения
+            переменных. Подставлять умеет только f-строка.
+          try: Поставь букву `f` прямо перед открывающей кавычкой.
+          verify: "Первая строка «Примера 1» должна стать «Ряд 1: 1 шт., всего 1»."
+        - id: after-row-update
+          when:
+            outputIncludes: "Ряд 2: 1 шт."
+            codeRegex: 'row\s*(?:=\s*row\s*\+\s*1|\+=\s*1)[ \t]*\n(?:[ \t]*\n)*[ \t]+print\('
+          where: Строка с трассировкой стоит после `row = row + 1`
+          why: >-
+            К этому моменту `row` уже перешёл к следующему ряду, а кубики и итог — ещё от прежнего.
+            Поэтому первая строка говорит «Ряд 2», хотя в ней кубики ряда 1, а в конце появляется
+            несуществующий ряд 5. Таблица «съехала» на единицу.
+          try: >-
+            Перенеси строку выше — между `total = total + blocks` и `row = row + 1`: там итог уже
+            новый, а номер ряда ещё прежний.
+          verify: "В «Примере 1» таблица должна начинаться строкой «Ряд 1: 1 шт., всего 1» и заканчиваться рядом 4."
+        - id: row-plus-one
+          when:
+            outputIncludes: "Ряд 2: 1 шт."
+            codeRegex: 'print\(.*\brow\s*\+\s*1\b'
+          where: Номер ряда в строке с трассировкой
+          why: >-
+            В номер ряда подставлено `row + 1`. Но в этом месте `row` ещё не увеличен — он и есть
+            номер текущего ряда. Поэтому первая строка говорит «Ряд 2», а кубики в ней — ряда 1.
+          try: Подставь в f-строку сам `row`, без прибавки.
+          verify: "Первая строка «Примера 1» должна стать «Ряд 1: 1 шт., всего 1»."
+        - id: rows-vs-row
+          when:
+            outputIncludes: "Ряд 4: 1 шт."
+          where: Номер ряда в строке с трассировкой
+          why: >-
+            В номер ряда подставлено `rows` — сколько рядов всего, — а не `row`, номер текущего ряда.
+            `rows` в цикле не меняется, поэтому в «Примере 1» у каждой строки номер 4.
+          try: Подставь в f-строку `row` — переменную, которая меняется на каждом шаге.
+          verify: Номера рядов в «Примере 1» должны идти по порядку — 1, 2, 3, 4.
+        - id: before-total
+          when:
+            outputIncludes: "шт., всего 0"
+          where: Строка с трассировкой стоит до `total = total + blocks`
+          why: >-
+            Кубики текущего ряда к итогу ещё не прибавлены, поэтому «всего» отстаёт на один ряд: в
+            первой строке 0 вместо 1.
+          try: Перенеси строку ниже — сразу после `total = total + blocks`, но до `row = row + 1`.
+          verify: "Первая строка «Примера 1» должна стать «Ряд 1: 1 шт., всего 1»."
+        - id: outside-loop
+          when:
+            codeRegex: '^print\(.*Ряд(?![\s\S]*^(?:while|for)\b)'
+            failedTest: t1
+          where: Строка с трассировкой после цикла
+          why: >-
+            После цикла стоит строка «Ряд …» без отступа. Она не входит в тело цикла и выполняется
+            один раз, когда цикл уже закончился, — с номером ряда, которого в пирамиде нет: после
+            цикла `row` на единицу больше последнего ряда.
+          try: >-
+            Строка с трассировкой нужна только внутри цикла, с тем же отступом, что у
+            `total = total + blocks`, — между обновлением `total` и `row`. Если она там уже есть,
+            копию после цикла удали.
+          verify: В «Примере 1» перед итогом должны быть ровно четыре строки «Ряд …».
+        - id: before-loop
+          when:
+            errorType: NameError
+            codeRegex: '^print\(.*Ряд(?=[\s\S]*^(?:while|for)\b)'
+          where: Строка с трассировкой стоит перед циклом
+          why: >-
+            Строка без отступа перед `while` выполняется один раз, ещё до цикла. Переменной
+            `blocks` в этот момент нет — отсюда NameError. Да и таблицы по рядам из одной строки
+            не выйдет.
+          try: >-
+            Перенеси строку внутрь цикла, с тем же отступом, что у `total = total + blocks`, —
+            между обновлением `total` и `row`.
+          verify: "NameError должен исчезнуть, а в «Примере 1» перед итогом — появиться четыре строки «Ряд …»."
+        - id: too-early
+          when:
+            errorType: NameError
+            errorIncludes: "'blocks'"
+            codeRegex: '^[ \t]+print\(.*Ряд'
+          where: Строка с трассировкой стоит в начале тела цикла
+          why: >-
+            На первом шаге строка выполняется раньше, чем `blocks = 2 * row - 1`, — переменной
+            `blocks` ещё нет, и Python не знает этого имени.
+          try: Перенеси строку ниже — после `total = total + blocks`, но до `row = row + 1`.
+          verify: "Ошибка NameError должна исчезнуть, а первой строкой «Примера 1» — стать «Ряд 1: 1 шт., всего 1»."
+      afterPass: >-
+        Строка напечатала таблицу за тебя: видно, что в ряду n ровно `2 * n - 1` кубиков, а итог
+        после n рядов — `n * n`. Обычно такую строку ставят на время проверки и потом убирают; здесь
+        она нужна по условию. Перенеси её на строку ниже и нажми «Запустить» — увидишь, как
+        «съезжает» номер ряда.
+      skills: [loop-tracing, while-loops]
+
+  - id: practice-chapters
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m3-l6-e2
+      kind: fix
+      title: План чтения теряет главу
+      statement: |-
+        Полина читает толстую библиотечную книгу по одной главе в день — с главы `first` по главу
+        `last` включительно. Программа печатает план по дням, но в нём ошибка на единицу.
+
+        Составь трассировочную таблицу для «Примера 1» (главы с 3-й по 7-ю): какие значения
+        принимают `chapter` и `day` на каждом шаге? Сравни её с правильным планом, найди ошибку и
+        исправь её, не переписывая программу.
+
+        Для глав с 3-й по 7-ю план должен быть таким:
+
+        ```text
+        День 1: глава 3
+        День 2: глава 4
+        День 3: глава 5
+        День 4: глава 6
+        День 5: глава 7
+        Всего дней: 5
+        ```
+      input: Две строки — номер первой главы и номер последней (первая не больше последней).
+      output: "Строка `День <номер>: глава <номер>` на каждую главу с first по last включительно, затем `Всего дней: <число>`."
+      constraints:
+        - Исправь причину ошибки, а не итоговую строку — хватит одной точной правки.
+        - "В программе остаются два `print`: строка плана в цикле и итог. Временный трассировочный `print` перед проверкой убери."
+        - Номер первой главы не больше номера последней.
+      starterCode: |
+        first = int(input())
+        last = int(input())
+        day = 0
+        for chapter in range(first, last):
+            day = day + 1
+            print(f"День {day}: глава {chapter}")
+        print(f"Всего дней: {day}")
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "3\n7\n"
+          expected: |-
+            День 1: глава 3
+            День 2: глава 4
+            День 3: глава 5
+            День 4: глава 6
+            День 5: глава 7
+            Всего дней: 5
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "10\n12\n"
+          expected: |-
+            День 1: глава 10
+            День 2: глава 11
+            День 3: глава 12
+            Всего дней: 3
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: одна глава"
+          edge: true
+          stdin: "1\n1\n"
+          expected: |-
+            День 1: глава 1
+            Всего дней: 1
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: две соседние главы"
+          edge: true
+          stdin: "4\n5\n"
+          expected: |-
+            День 1: глава 4
+            День 2: глава 5
+            Всего дней: 2
+          compare:
+            ignoreSpaces: true
+      rules:
+        - id: no-extra-print
+          max: { "call:print": 2 }
+          message: >-
+            В программе должно остаться два `print`: строка плана в цикле и итог после цикла. Если
+            последняя глава допечатана отдельной строкой после цикла — это подгонка: исправь конец
+            range. Временные трассировочные `print` тоже убери.
+      criteria:
+        - В плане все главы с first по last, включая последнюю.
+        - Дни нумеруются с 1, «Всего дней» равно числу глав — last − first + 1.
+        - Исправлена причина — граница цикла, а не итоговая строка.
+      hints:
+        - >-
+          Выпиши, какие значения даёт `range(3, 7)` в «Примере 1», и сравни их с главами, которые
+          Полина хочет прочитать. На каком краю расхождение — в начале или в конце?
+        - >-
+          На другом примере: `range(1, 5)` даёт 1, 2, 3, 4 — пятёрки нет. Чтобы 5 вошла, конец
+          должен быть 6, то есть на единицу больше последнего нужного числа.
+        - >-
+          Нужна одна правка — конец `range` в строке 4. Счётчик дней и итог трогать не надо: когда
+          цикл сделает нужное число шагов, они станут верными сами.
+      solution:
+        code: |
+          first = int(input())
+          last = int(input())
+          day = 0
+          for chapter in range(first, last + 1):
+              day = day + 1
+              print(f"День {day}: глава {chapter}")
+          print(f"Всего дней: {day}")
+        explanation: >-
+          Таблица для глав 3–7 показывает, что `range(3, 7)` даёт 3, 4, 5, 6: правая граница не
+          входит, и последний шаг теряется. Конец на единицу больше — `last + 1` — возвращает главу 7,
+          а вместе с ней верными становятся и счётчик дней, и итог. Для одной главы (1–1) старая
+          программа не печатала ни одного дня: `range(1, 1)` пустой.
+      altSolutions:
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last + 1):
+                day += 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: То же исправление, счётчик через +=.
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            chapter = first
+            while chapter <= last:
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+                chapter = chapter + 1
+            print(f"Всего дней: {day}")
+          note: Цикл while с условием <= — последняя глава тоже входит.
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first - 1, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter + 1}")
+            print(f"Всего дней: {day}")
+          note: Сдвинуто начало range, а в печати chapter + 1 — главы те же.
+        - code: |
+            first = int(input())
+            last = int(input()) + 1
+            day = 0
+            for chapter in range(first, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Единица прибавлена сразу при чтении last.
+        - code: |
+            first = int(input())
+            last = int(input())
+            for i in range(last - first + 1):
+                chapter = first + i
+                print(f"День {i + 1}: глава {chapter}")
+            print(f"Всего дней: {last - first + 1}")
+          note: Цикл по номеру шага, глава и день считаются из него.
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last + 1):
+                day = day + 1
+                print(f"День {day}:  глава {chapter}")
+            print("Всего дней:", day)
+          note: Два пробела после двоеточия и print с запятой в итоге.
+      wrongSolutions:
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Ничего не исправлено.
+          expectMistake: last-missing
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first - 1, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Сдвинуто начало range вместо конца.
+          expectMistake: start-shifted
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first - 1, last + 1):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Сдвинуты оба конца — начало назад, конец вперёд.
+          expectMistake: start-shifted
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 1
+            for chapter in range(first, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Счётчик дней начат с 1 — итог совпал, но нумерация дней сбилась и седьмой главы нет.
+          expectMistake: day-from-one
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 1
+            for chapter in range(first, last + 1):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: range исправлен, но заодно и day = 1.
+          expectMistake: day-from-one
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day + 1}")
+          note: Подогнан итог, а причина осталась.
+          expectMistake: symptom-patched
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last + 1):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day + 1}")
+          note: range исправлен и «на всякий случай» +1 в итоге.
+          expectMistake: total-plus-one
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last):
+                print(f"День {day}: глава {chapter}")
+                day = day + 1
+            print(f"Всего дней: {day}")
+          note: Переставлены print и day = day + 1, range не тронут.
+          expectMistake: print-before-count
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last + 1):
+                print(f"День {day}: глава {chapter}")
+                day = day + 1
+            print(f"Всего дней: {day}")
+          note: range исправлен, но print стоит до увеличения day.
+          expectMistake: print-before-count
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter + 1}")
+            print(f"Всего дней: {day}")
+          note: Единица прибавлена к номеру главы в печати, range не тронут.
+          expectMistake: print-shifted
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last + 1):
+                day = day + 1
+                print(f"День {day}: глава {chapter + 1}")
+            print(f"Всего дней: {day}")
+          note: range исправлен, но в печати осталось chapter + 1.
+          expectMistake: print-shifted
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first + 1, last + 1):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Сдвинуты оба конца range — пропала первая глава.
+          expectMistake: both-shifted
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last + 2):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Конец range сдвинут на два — лишняя глава.
+          expectMistake: overshoot
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last - 1):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {day}")
+          note: Конец range сдвинут не в ту сторону — глав стало ещё меньше.
+          expectMistake: wrong-direction
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            day = day + 1
+            print(f"День {day}: глава {last}")
+            print(f"Всего дней: {day}")
+          note: Подгонка — последняя глава допечатана после цикла; тесты проходят, правило — нет.
+          expectMistake: null
+        - code: |
+            first = int(input())
+            last = int(input())
+            day = 0
+            for chapter in range(first, last + 1):
+                day = day + 1
+                print(f"День {day}: глава {chapter}")
+            print(f"Всего дней: {chapter}")
+          note: В итоге номер последней главы вместо счётчика дней.
+          expectMistake: null
+      mistakes:
+        - id: print-before-count
+          when:
+            outputIncludes: "День 0:"
+          where: Порядок строк в теле цикла
+          why: >-
+            `print` стоит раньше, чем `day = day + 1`, поэтому печатает старое значение счётчика:
+            первый день назван «День 0».
+          try: >-
+            Верни `day = day + 1` выше `print` — тогда в строке будет уже новый номер дня. Если
+            после этого в плане нет главы 7, исправь и конец range.
+          verify: "«Пример 1» должен начинаться строкой «День 1: глава 3»."
+        - id: last-missing
+          when:
+            outputIncludes: "глава 6\nВсего дней: 4"
+          where: Строка 4, `range(first, last)`
+          why: >-
+            `range(first, last)` останавливается перед `last`: для «Примера 1» это главы 3, 4, 5, 6 —
+            седьмая не попадает в план. Правая граница range не входит никогда.
+          try: >-
+            Выпиши значения `chapter` по шагам и сравни с главами 3–7. Сделай конец range на
+            единицу больше последней нужной главы.
+          verify: "В «Примере 1» должна появиться строка «День 5: глава 7»."
+        - id: start-shifted
+          when:
+            outputIncludes: "День 1: глава 2"
+          where: Начало range
+          why: >-
+            План теперь начинается с главы 2 — Полина её уже прочитала. Сдвинуто начало range, а
+            ошибка была на другом краю: начало `first` и так входит в range.
+          try: Верни началу значение `first`. Конец range — `last + 1`, на единицу больше последней главы.
+          verify: "«Пример 1» должен начинаться строкой «День 1: глава 3» и заканчиваться главой 7."
+        - id: day-from-one
+          when:
+            outputIncludes: "День 2: глава 3"
+          where: Начальное значение `day`
+          why: >-
+            Счётчик дней начинается с 1, а увеличивается в начале тела — поэтому первый день назван
+            вторым, а «Всего дней» на единицу больше, чем строк в плане.
+          try: >-
+            Верни `day = 0` — на первом шаге счётчик как раз станет 1. Последнюю главу возвращает
+            конец range, а не счётчик: если главы 7 в плане нет, исправь и его.
+          verify: "В «Примере 1» дни должны идти с 1 по 5, последняя строка плана — «День 5: глава 7»."
+        - id: symptom-patched
+          when:
+            outputIncludes: "глава 6\nВсего дней: 5"
+          where: Итоговая строка
+          why: >-
+            Итог стал 5, но седьмой главы в плане всё ещё нет. Итог подогнан под ответ, а причина
+            осталась: цикл по-прежнему делает на шаг меньше.
+          try: >-
+            Верни в итоге просто `{day}` и исправь причину — конец range. Когда цикл сделает пять
+            шагов, итог станет верным сам.
+          verify: "В «Примере 1» должно быть пять строк «День …», последняя — «День 5: глава 7»."
+        - id: total-plus-one
+          when:
+            outputIncludes: "глава 7\nВсего дней: 6"
+          where: Итоговая строка
+          why: >-
+            Глава 7 в плане уже есть: range исправлен, и счётчик дней стал верным сам. Лишняя
+            единица в итоге даёт 6 дней на 5 глав.
+          try: Верни в итоге просто `{day}`.
+          verify: "«Пример 1» должен заканчиваться строкой «Всего дней: 5»."
+        - id: print-shifted
+          when:
+            outputIncludes: "День 1: глава 4"
+            codeRegex: 'print\(.*\bchapter\s*\+\s*1\b'
+          where: Номер главы в строке плана
+          why: >-
+            В строку плана подставлено `chapter + 1`, поэтому каждая глава напечатана на единицу
+            больше, чем значение `chapter`: план начинается с главы 4, а глава 3 пропала. Номер в
+            печати не меняет число шагов цикла — его задаёт range.
+          try: >-
+            Печатай сам `chapter`. Если после этого в плане нет главы 7 — прибавь единицу к концу
+            range.
+          verify: "«Пример 1» должен начинаться строкой «День 1: глава 3» и заканчиваться «Всего дней: 5»."
+        - id: both-shifted
+          when:
+            outputIncludes: "День 1: глава 4"
+            codeRegex: 'range\(\s*first\s*\+\s*1\b'
+          where: Начало range
+          why: >-
+            Сдвинуты оба конца range: седьмая глава появилась, но потерялась третья. Начало `first`
+            и так входит в range — сдвигать его не нужно.
+          try: Верни началу значение `first`, а единицу прибавь только к концу.
+          verify: "«Пример 1» должен начинаться строкой «День 1: глава 3»."
+        - id: overshoot
+          when:
+            outputIncludes: "глава 8"
+          where: Конец range
+          why: >-
+            В плане лишняя глава 8: конец range сдвинут на две единицы вместо одной. Последний шаг
+            должен быть ровно на `last`.
+          try: Конец range — на единицу больше последней нужной главы, то есть `last + 1`.
+          verify: "«Пример 1» должен заканчиваться строками «День 5: глава 7» и «Всего дней: 5»."
+        - id: wrong-direction
+          when:
+            outputIncludes: "глава 5\nВсего дней: 3"
+          where: Конец range
+          why: >-
+            Конец range сдвинут не в ту сторону: план стал ещё короче — теперь нет глав 6 и 7.
+            Правая граница не входит, поэтому её нужно не уменьшать, а увеличивать.
+          try: Конец range — на единицу больше последней нужной главы, то есть `last + 1`.
+          verify: "«Пример 1» должен заканчиваться строками «День 5: глава 7» и «Всего дней: 5»."
+      afterPass: >-
+        Одна правка на краю — и план верный для любых глав, даже для одной. Ты исправил причину, а
+        не подогнал итог. На будущее: число шагов цикла легко проверить формулой last − first + 1 —
+        если счётчик с ней не совпал, ищи ошибку на первом или последнем шаге.
+      skills: [loop-tracing, for-range]
+
+  - id: practice-posts
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m3-l6-e3
+      kind: write
+      title: Столбы для забора
+      statement: |-
+        Дядя Витя ставит забор длиной `length` метров со столбами через каждые `step` метров:
+        первый столб — на 0 м, последний — ровно на конце забора. Напиши программу, которая
+        печатает, где стоит каждый столб, а потом — сколько столбов нужно купить.
+
+        Для забора из истории — 10 м, шаг 2 м — вывод такой:
+
+        ```text
+        Столб на 0 м
+        Столб на 2 м
+        Столб на 4 м
+        Столб на 6 м
+        Столб на 8 м
+        Столб на 10 м
+        Столбов: 6
+        ```
+
+        Прежде чем запускать, проверь свой цикл по таблице: какое значение будет на первом проходе
+        цикла и какое — на последнем?
+      input: >-
+        Две строки — длина забора и шаг между столбами (целые числа; шаг от 1 до длины, длина
+        делится на шаг без остатка).
+      output: "Строка `Столб на <место> м` для каждого столба по порядку, затем `Столбов: <число>`."
+      constraints:
+        - Длина делится на шаг без остатка, шаг не больше длины.
+        - Столбы печатаются по порядку — от 0 до конца забора.
+      starterCode: |
+        # Прочитай длину забора и шаг между столбами
+        # Выведи место каждого столба, а потом — сколько их всего
+
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "10\n2\n"
+          expected: |-
+            Столб на 0 м
+            Столб на 2 м
+            Столб на 4 м
+            Столб на 6 м
+            Столб на 8 м
+            Столб на 10 м
+            Столбов: 6
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "6\n3\n"
+          expected: |-
+            Столб на 0 м
+            Столб на 3 м
+            Столб на 6 м
+            Столбов: 3
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: один пролёт"
+          edge: true
+          stdin: "5\n5\n"
+          expected: |-
+            Столб на 0 м
+            Столб на 5 м
+            Столбов: 2
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: метр с шагом 1"
+          edge: true
+          stdin: "1\n1\n"
+          expected: |-
+            Столб на 0 м
+            Столб на 1 м
+            Столбов: 2
+          compare:
+            ignoreSpaces: true
+        - id: t5
+          kind: io
+          title: Длинные пролёты
+          stdin: "12\n4\n"
+          expected: |-
+            Столб на 0 м
+            Столб на 4 м
+            Столб на 8 м
+            Столб на 12 м
+            Столбов: 4
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - Первый столб — на 0 м, последний — на конце забора, между соседними столбами ровно шаг.
+        - Столбов на один больше, чем пролётов, — для 10 м с шагом 2 их 6.
+        - Итог печатается один раз, после списка столбов.
+      hints:
+        - >-
+          Где стоит первый столб, где последний и какой шаг между ними? Какие значения должен
+          перебрать цикл — и войдёт ли последнее из них в range?
+        - >-
+          Похожий приём на другом примере: метки на линейке длиной 20 см через каждые 5 см стоят на
+          0, 5, 10, 15 и 20 см. `range(0, 21, 5)` даёт ровно их: начало 0, шаг 5, а конец на
+          единицу больше последнего нужного значения. Меток пять, промежутков четыре.
+        - |-
+          Каркас:
+          ```text
+          длина = int(input())
+          шаг = int(input())
+          столбов = 0
+          for место in range(0, …, шаг):
+              print(f"Столб на {…} м")
+              столбов = столбов + 1
+          print(f"Столбов: {…}")
+          ```
+      solution:
+        code: |
+          length = int(input())
+          step = int(input())
+          posts = 0
+          for place in range(0, length + 1, step):
+              print(f"Столб на {place} м")
+              posts = posts + 1
+          print(f"Столбов: {posts}")
+        explanation: >-
+          Первый столб на 0 — с него и начинается range. Последний на `length`, а правая граница
+          range не входит, поэтому конец — `length + 1`. Шаг range — расстояние между столбами.
+          Счётчик `posts` прибавляет единицу на каждый столб; его можно заменить формулой
+          `length // step + 1`: пролётов `length // step`, а столбов на один больше.
+      altSolutions:
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = 0
+            while place <= length:
+                print(f"Столб на {place} м")
+                posts += 1
+                place += step
+            print(f"Столбов: {posts}")
+          note: Цикл while с условием <= — столб на конце забора тоже входит.
+        - code: |
+            length = int(input())
+            step = int(input())
+            for place in range(0, length + 1, step):
+                print(f"Столб на {place} м")
+            print(f"Столбов: {length // step + 1}")
+          note: Итог формулой — пролётов length // step, столбов на один больше.
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = length // step + 1
+            for number in range(posts):
+                print("Столб на", number * step, "м")
+            print("Столбов:", posts)
+          note: Сначала число столбов, потом их места через номер столба; print с запятыми.
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(0, length + step, step):
+                posts = posts + 1
+                print(f"Столб на {place} м")
+            print(f"Столбов: {posts}")
+          note: Конец range — length + step; тоже не пропускает последний столб и не даёт лишнего.
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = 0
+            while place < length + 1:
+                posts += 1
+                print(f"Столб на {place} м")
+                place += step
+            print(f"Столбов: {posts}")
+          note: while с условием < length + 1, счётчик увеличивается до print.
+        - code: |
+            length = int(input())
+            step = int(input())
+            print("Столб на 0 м")
+            posts = 1
+            for place in range(step, length + 1, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Столб на 0 м напечатан отдельно, поэтому range начинается с шага, а счётчик — с 1.
+        - code: |
+            length = int(input())
+            step = int(input())
+            spans = 0
+            place = 0
+            print(f"Столб на {place} м")
+            while place < length:
+                place = place + step
+                spans = spans + 1
+                print(f"Столб на {place} м")
+            print(f"Столбов: {spans + 1}")
+          note: Первый столб отдельно, цикл считает пролёты, итог — пролёты + 1 (правило забора).
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for metre in range(0, length + 1):
+                if metre % step == 0:
+                    print(f"Столб на {metre} м")
+                    posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Перебор каждого метра, столб — там, где метр делится на шаг.
+        - code: |
+            length = int(input())
+
+            step = int(input())
+
+            posts = 0
+            for place in range(0, length + 1, step):
+                print("Столб  на", place, "м ")
+                posts = posts + 1
+
+            print("Столбов:  " + str(posts) + " ")
+          note: Лишние пробелы в выводе и пустые строки в коде; итог склейкой.
+      wrongSolutions:
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(0, length, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Конец range — length, последний столб не входит.
+          expectMistake: last-post-missing
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = 0
+            while place < length:
+                print(f"Столб на {place} м")
+                posts = posts + 1
+                place = place + step
+            print(f"Столбов: {posts}")
+          note: while с < вместо <= — последний столб не входит.
+          expectMistake: last-post-missing
+        - code: |
+            length = int(input())
+            step = int(input())
+            for place in range(0, length, step):
+                print(f"Столб на {place} м")
+            print(f"Столбов: {length // step + 1}")
+          note: Итог по правилу забора верный, но range без + 1 — нет столба на конце.
+          expectMistake: last-post-missing
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = length // step
+            for number in range(posts):
+                print(f"Столб на {number * step} м")
+            print(f"Столбов: {posts}")
+          note: Как дядя Витя — сначала поделил длину на шаг и перебрал номера.
+          expectMistake: last-post-missing
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(step, length + 1, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: range начинается с шага — пропал столб на 0 м.
+          expectMistake: first-post-missing
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = 0
+            while place < length:
+                place = place + step
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: while, место увеличивается раньше печати (как в копилке из 3.1).
+          expectMistake: first-post-missing
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = step
+            while place <= length:
+                print(f"Столб на {place} м")
+                posts = posts + 1
+                place = place + step
+            print(f"Столбов: {posts}")
+          note: while, но place начат со step.
+          expectMistake: first-post-missing
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = 0
+            while place <= length:
+                place = place + step
+                posts = posts + 1
+                print(f"Столб на {place} м")
+            print(f"Столбов: {posts}")
+          note: while с <=, место увеличивается раньше печати — столбы 2…12.
+          expectMistake: shift-before-print
+        - code: |
+            length = int(input())
+            step = int(input())
+            count = 0
+            for place in range(length + 1, step):
+                print(f"Столб на {place} м")
+                count = count + 1
+            print(f"Столбов: {count}")
+          note: range(конец, шаг) без начала — пустой цикл.
+          expectMistake: empty-loop
+        - code: |
+            length = int(input())
+            step = int(input())
+            for place in range(0, length + 1, step):
+                print(f"Столб на {place} м")
+            print(f"Столбов: {length // step}")
+          note: Список верный, но в итоге посчитаны пролёты.
+          expectMistake: count-formula
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(0, length + 1, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts + 1}")
+          note: Правило забора применено дважды — счётчик уже верный, и ещё + 1.
+          expectMistake: fence-twice
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 1
+            for place in range(0, length + 1, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Счётчик начат с 1 — лишний столб в итоге.
+          expectMistake: counter-from-one
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 1
+            for place in range(0, length, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Две ошибки на единицу гасят друг друга в итоге, но столба на конце нет.
+          expectMistake: two-cancel
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(0, length, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts + 1}")
+          note: range без + 1, а итог добран прибавкой + 1 — столба на конце нет.
+          expectMistake: two-cancel
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(0, length + 1):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Забыт шаг range — столб на каждом метре.
+          expectMistake: no-step
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = length // step + 1
+            for number in range(posts):
+                print(f"Столб на {number} м")
+            print(f"Столбов: {posts}")
+          note: Число столбов верное, но печатается номер столба, а не место.
+          expectMistake: number-not-place
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(0, length + 1, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+                print(f"Столбов: {posts}")
+          note: Итог внутри цикла.
+          expectMistake: total-inside
+        - code: |
+            step = int(input())
+            length = int(input())
+            posts = 0
+            for place in range(0, length + 1, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Перепутан порядок ввода — шаг прочитан первым.
+          expectMistake: null
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = 0
+            while place <= length:
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: place не меняется — бесконечный цикл с print (упирается в лимит вывода).
+          expectMistake: null
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(1, length + 1, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: range начинается с 1 — все столбы сдвинуты на метр.
+          expectMistake: from-one
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            for place in range(0, length + 2, step):
+                print(f"Столб на {place} м")
+                posts = posts + 1
+            print(f"Столбов: {posts}")
+          note: Конец range с запасом +2 — примеры проходят, а при шаге 1 появляется столб за концом забора.
+          expectMistake: past-end
+        - code: |
+            length = int(input())
+            step = int(input())
+            posts = 0
+            place = 0
+            while place <= length + 1:
+                print(f"Столб на {place} м")
+                posts = posts + 1
+                place = place + step
+            print(f"Столбов: {posts}")
+          note: while с запасом — place <= length + 1.
+          expectMistake: past-end
+        - code: |
+            length = int(input())
+            step = int(input())
+            for place in range(0, length + 1, step):
+                print(f"Столб на {place} м")
+            print(f"Столбов: {length / step + 1}")
+          note: Итог формулой через / — дробное 6.0.
+          expectMistake: null
+      mistakes:
+        - id: total-inside
+          when:
+            outputIncludes: "Столб на 0 м\nСтолбов: 1"
+            codeRegex: '^[ \t]+print\(.*Столбов'
+          where: Строка с «Столбов»
+          why: >-
+            Итог печатается внутри цикла — после каждого столба. У этой строки такой же отступ, как у
+            тела цикла.
+          try: Убери отступ у строки с итогом, чтобы она выполнилась один раз — после цикла.
+          verify: "В «Примере 1» строка «Столбов: …» должна быть одна, в самом конце."
+        - id: two-cancel
+          when:
+            outputIncludes: "Столб на 8 м\nСтолбов: 6"
+            codeRegex: '^[ \t]*[A-Za-z_]\w*\s*=\s*1[ \t]*$|Столбов.*[{(,]\s*[A-Za-z_]\w*\s*\+\s*1\b'
+          where: Конец цикла и итог
+          why: >-
+            Итог 6 верный, а столба на конце забора нет. Цикл делает на один проход меньше, а итог
+            добирает единицу иначе — счётчиком с 1 или прибавкой `+ 1`. Такие ошибки гасят друг
+            друга на любом заборе, поэтому заметить их можно только по списку.
+          try: >-
+            Пусть цикл дойдёт до `length`: конец range — `length + 1`, у while — `<=`. А итог —
+            счётчик с 0, без добавок: тогда он сам посчитает каждый столб.
+          verify: "В «Примере 1» перед «Столбов: 6» должна стоять строка «Столб на 10 м»."
+        - id: last-post-missing
+          when:
+            outputIncludes: "Столб на 8 м\nСтолбов:"
+          where: Конец цикла
+          why: >-
+            Нет последнего столба — на конце забора. Цикл останавливается на проход раньше: у range
+            правая граница не входит, а у `while place < length` условие при `place = length` уже
+            ложно.
+          try: >-
+            Посмотри в таблице на последний проход: какое значение должно быть последним? Конец
+            range — на единицу больше последнего значения, которое должен принять цикл: для
+            `range(0, …, step)` это `length + 1`, для номеров столбов — `length // step + 1`. Для
+            while поставь `<=`.
+          verify: "В «Примере 1» перед итогом должна появиться строка «Столб на 10 м»."
+        - id: first-post-missing
+          when:
+            outputEquals: |-
+              Столб на 2 м
+              Столб на 4 м
+              Столб на 6 м
+              Столб на 8 м
+              Столб на 10 м
+              Столбов: 5
+          where: Начало цикла
+          why: >-
+            Нет первого столба — на 0 м: первое напечатанное место — уже шаг. Так бывает, если
+            range (или `place` перед while) начинается со `step` или если место увеличивается
+            раньше, чем печатается.
+          try: >-
+            Посмотри в таблице на первый проход: напечатано должно быть 0. Начни с 0 и печатай место
+            до того, как прибавишь шаг.
+          verify: "«Пример 1» должен начинаться строкой «Столб на 0 м»."
+        - id: shift-before-print
+          when:
+            codeRegex: '^[ \t]*while\b'
+            outputEquals: |-
+              Столб на 2 м
+              Столб на 4 м
+              Столб на 6 м
+              Столб на 8 м
+              Столб на 10 м
+              Столб на 12 м
+              Столбов: 6
+          where: Порядок строк в теле while
+          why: >-
+            Список сдвинут на шаг: первый столб напечатан на 2 м, а последний — на 12 м, за концом
+            забора. В теле while место увеличивается раньше, чем печатается, поэтому print видит уже
+            следующее значение.
+          try: >-
+            Поменяй строки местами: сначала напечатай место, потом прибавь шаг. Условие
+            `place <= length` оставь как есть.
+          verify: "«Пример 1» должен начинаться строкой «Столб на 0 м» и заканчиваться строкой «Столб на 10 м»."
+        - id: empty-loop
+          when:
+            outputEquals: "Столбов: 0"
+          where: Заголовок цикла
+          why: >-
+            Цикл не сделал ни одного прохода: ни одного столба не напечатано, счётчик остался 0. У
+            range так бывает, если аргументы стоят не в том порядке: `range(length + 1, step)` —
+            это «от length + 1 до step», и такой range пустой.
+          try: >-
+            Порядок аргументов range — начало, конец, шаг: начни с 0. У while проверь, что условие
+            верно уже при `place = 0`.
+          verify: "«Пример 1» должен начинаться строкой «Столб на 0 м»."
+        - id: count-formula
+          when:
+            outputIncludes: "Столб на 10 м\nСтолбов: 5"
+          where: Итоговая строка
+          why: >-
+            Список столбов верный, а в итоге посчитаны пролёты: `length // step` — это промежутки
+            между столбами. Столбов на один больше — правило забора.
+          try: >-
+            Посчитай столбы счётчиком в цикле или прибавь к числу пролётов единицу.
+          verify: "В «Примере 1» итог должен стать «Столбов: 6»."
+        - id: fence-twice
+          when:
+            outputIncludes: "Столб на 10 м\nСтолбов: 7"
+            codeRegex: 'Столбов.*\+\s*1\b'
+          where: Итоговая строка
+          why: >-
+            Список верный, а в итоге на один столб больше. Правило забора здесь уже выполнено: цикл
+            прошёл по каждому столбу, включая последний, и счётчик посчитал их все. Прибавка `+ 1`
+            нужна, только когда считаешь пролёты — формулой `length // step`.
+          try: Выведи счётчик без `+ 1` — сколько строк «Столб на …», столько и столбов.
+          verify: "В «Примере 1» итог должен стать «Столбов: 6»."
+        - id: counter-from-one
+          when:
+            outputIncludes: "Столбов: 7"
+            codeRegex: '^[ \t]*[A-Za-z_]\w*\s*=\s*1[ \t]*$'
+          where: Начальное значение счётчика
+          why: >-
+            Счётчик начинается с 1, хотя до цикла не посчитан ни один столб. Каждый столб
+            прибавляет единицу, и в итоге выходит на один больше.
+          try: Начни счётчик с 0 — как любой счётчик до цикла.
+          verify: "В «Примере 1» итог должен стать «Столбов: 6»."
+        - id: from-one
+          when:
+            outputIncludes: "Столб на 1 м\nСтолб на 3 м"
+          where: Начало range
+          why: >-
+            Все столбы сдвинуты на метр: range начинается с 1, а первый столб стоит на 0 м — в самом
+            начале забора. Из-за сдвига пропал и столб на конце.
+          try: Начни range с 0 — тогда шаг приведёт ровно к концу забора.
+          verify: "«Пример 1» должен начинаться строкой «Столб на 0 м» и заканчиваться столбом на 10 м."
+        - id: past-end
+          when:
+            failedTest: t4
+            outputIncludes: "Столб на 2 м\nСтолбов: 3"
+          where: Конец цикла
+          why: >-
+            Цикл заходит за конец забора: конец range взят с запасом больше единицы или у while
+            условие `<= length + 1`. При шаге 2 и больше это незаметно, а при шаге 1 в список
+            попадает столб на 2 м при длине 1 м.
+          try: >-
+            Последний столб — ровно на `length`. Для range конец — `length + 1`, для while
+            условие — `place <= length`.
+          verify: Проверь граничный случай «метр с шагом 1» — столбов должно быть два, на 0 и 1 м.
+        - id: number-not-place
+          when:
+            outputIncludes: "Столб на 5 м\nСтолбов: 6"
+          where: Строка с print в цикле
+          why: >-
+            Число столбов верное, но печатается номер столба — 0, 1, 2, … — а нужно его место на
+            заборе в метрах.
+          try: Место столба — его номер, умноженный на шаг между столбами.
+          verify: "В «Примере 1» должны быть столбы на 0, 2, 4, 6, 8 и 10 м."
+        - id: no-step
+          when:
+            failedTest: t1
+            outputIncludes: "Столб на 9 м\nСтолб на 10 м"
+          where: Аргументы range
+          why: >-
+            Столбы стоят на каждом метре: у range нет третьего аргумента, и он шагает по 1.
+          try: Добавь в range третьим аргументом шаг между столбами.
+          verify: "В «Примере 1» должны остаться столбы на 0, 2, 4, 6, 8 и 10 м."
+      afterPass: >-
+        Столбов на один больше, чем пролётов, — и программа это учитывает для любого забора.
+        Улучшение: посчитай итог ещё и формулой `length // step + 1` и сравни со счётчиком — такая
+        сверка двумя способами быстро ловит ошибку на единицу.
+      skills: [loop-tracing, for-range, boundary-checks]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - >-
+        Трассировочная таблица: строки — шаги цикла, столбцы — переменные (у while ещё и условие).
+        Ошибку на единицу ищи на первом и последнем шаге.
+      - >-
+        «С a по b включительно» — `range(a, b + 1)`, это b − a + 1 шагов. Точек на отрезке
+        (столбов, дней, глав) на одну больше, чем промежутков между ними.
+      - >-
+        Ошибка на единицу прячется на обычных данных — проверяй на 0, 1 и значениях ровно на
+        пороге. Исправляй причину (границу, условие, начало счётчика), а не подгоняй итог.
+      - >-
+        Временный `print` в теле цикла печатает таблицу за тебя. Где он стоит, такие значения и
+        покажет: до изменения переменной — старое, после — новое.
+    question: >-
+      Нужно обработать страницы с 1-й по 100-ю. В коде `page = 1`, затем цикл `while page < 100:`,
+      в конце тела — `page = page + 1`. Сколько страниц обработается и как исправить?
+    answer: >-
+      99 — с 1-й по 99-ю: при `page = 100` условие `100 < 100` уже ложно, и сотая страница не
+      попадает в цикл. Нужно `while page <= 100:` — граница должна входить.

@@ -1,162 +1,210 @@
-/* Дизайн-токены «Практики». Базовая палитра — из брифа (03-platform-and-style.md),
-   производные оттенки подобраны с контрастом текста не ниже 4.5:1, а границы полей ввода и
-   элементов выбора (--border-control) — не ниже 3:1. Проверка: src/styles/tokens.test.ts (npm test). */
+/* Дизайн-токены «Мастерской»: тёплый графит (тёмная, основная) и светлая бумага (дневная), один акцент — янтарь.
+   Контраст по правилам читаемости (спецификация редизайна, 1.2): основной текст ≥ 10:1, вторичный ≥ 7:1,
+   третичный ≥ 4.5:1 (только номера строк и короткие метки), цветные статусы и текст на цветных подложках ≥ 6:1,
+   подсветка кода ≥ 6:1, комментарии ≥ 4.5:1, рамки, фокус и каретка ≥ 3:1 — в обеих темах.
+   Все «мягкие» подложки — сплошные цвета, чтобы контраст был предсказуем. Проверка: src/styles/tokens.test.ts.
+   Тема: prefers-color-scheme или ручной выбор <html data-theme="light|dark"> (настройки, скрипт в index.html). */
 
 :root {
   color-scheme: light;
 
-  /* Палитра — светлая тема */
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-2: #f9fafb;
-  --surface-hover: #f1f3f6;
-  --text: #1d2433;
-  --muted: #5f6878;
-  --border: #dde1e8;
-  --border-strong: #c3c9d4;
-  /* Граница полей ввода и кружков вариантов: не ниже 3:1 к фону (--border — только разделитель). */
-  --border-control: #868e9d;
-  --accent: #5b50d6;
-  --accent-hover: #4d42c4;
-  --on-accent: #ffffff;
-  --accent-soft: #eeecfc;
-  --accent-soft-border: #cfc9f5;
-  --accent-text: #4a3fc2;
-  --good: #217044;
-  --good-soft: #e6f3eb;
-  --good-border: #a9d4b9;
-  --error: #a43e26;
-  --error-soft: #fbece8;
-  --error-border: #eab7aa;
-  --warn: #85520a;
-  --warn-soft: #fbf1df;
-  --warn-border: #e7cb95;
-  --overlay: rgb(17 19 24 / 40%);
-  --shadow-pop: 0 12px 32px rgb(29 36 51 / 14%), 0 2px 6px rgb(29 36 51 / 8%);
-
-  /* Подсветка кода */
-  --syn-keyword: #5b50d6;
-  --syn-builtin: #2d5fb0;
-  --syn-string: #1c6b44;
-  --syn-number: #8a4f00;
-  --syn-comment: #687083;
-  --syn-operator: #1d2433;
-  --syn-function: #1d2433;
-  --syn-selection: #dcd8fa;
-  --syn-active-line: #f4f3fd;
-  --syn-error-line: #fbece8;
-
-  /* Шрифты */
-  --font-ui: 'Inter Variable', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-code: 'JetBrains Mono', Consolas, 'Cascadia Mono', 'Roboto Mono', 'Courier New', monospace;
+  /* Шрифты и размеры текста (--lesson-size и --code-size меняются в настройках) */
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-code: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
   --lesson-size: 16px;
   --code-size: 14px;
 
-  /* Отступы: шаг 4/8 */
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 24px;
-  --s-6: 32px;
-  --s-7: 48px;
+  /* Цвет — дневная тема */
+  --bg-chrome: #dfdcd5;
+  --bg-panel: #f3f1ec;
+  --bg-editor: #fffdfa;
+  --bg-raised: #e7e3db;
+  --bg-sunken: #f0ede7;
+  --bg-line: #f5f2eb;
+  --nav-hover: #e8e5df;
+  --nav-selected: #fffdfa;
+  --line: #cdc5b7;
+  --line-strong: #b1a898;
+  --line-control: #7a7164;
+  --text: #1b1916;
+  --text-2: #3d3934;
+  --text-3: #57524a;
+  --accent: #f0a53e;
+  --accent-hover: #f5b155;
+  --accent-edge: #a86a10;
+  --accent-ink: #1b1205;
+  --accent-text: #6f4209;
+  --accent-soft: #f7e6c8;
+  --ok: #185529;
+  --ok-soft: #dcebdd;
+  --ok-line: #8fbf98;
+  --err: #8c2514;
+  --err-soft: #f7e0da;
+  --err-line: #d9998b;
+  --err-line-bg: #fbe8e3;
+  --warn: #5e4700;
+  --warn-soft: #f2e8cc;
+  --warn-line: #c9ad5e;
+  --focus: #1a5a9c;
+  --selection: #f5dcae;
+  --scrim: rgb(27 25 22 / 45%);
+  --syn-fn: #1a5088;
+  --syn-str: #37561c;
+  --syn-num: #7c3f17;
+  --syn-kw: #684c0d;
+  --syn-com: #57524a;
+  --syn-op: #3d3934;
 
-  /* Радиусы */
-  --r-panel: 12px;
-  --r-control: 8px;
-  --r-chip: 6px;
+  /* Кегли и межстрочные: интерфейс ≥ 13, код ≥ 14 (--code-size), текст урока ≥ 16 (--lesson-size) */
+  --fs-13: 13px;
+  --lh-13: 20px;
+  --fs-14: 14px;
+  --lh-14: 20px;
+  --lh-14-wrap: 21px;
+  --fs-16: 16px;
+  --lh-16: 24px;
+  --fs-18: 18px;
+  --lh-18: 26px;
+  --fs-22: 22px;
+  --lh-22: 30px;
+  --fs-28: 28px;
+  --lh-28: 36px;
+  --lh-prose: 1.6;
 
-  /* Размеры каркаса */
-  --sidebar-w: 208px;
-  --rail-w: 84px;
-  --coach-w: 280px;
-  --topbar-h: 56px;
-  --bottombar-h: 64px;
-  --control-h: 40px;
-  --content-max: 1180px;
+  /* Отступы — только эта шкала (N × 4 px) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* Радиусы: 4 — кнопки, поля, метки, узлы, адрес; 6 — блоки кода, превью, попапы, диалоги */
+  --r-1: 4px;
+  --r-2: 6px;
+
+  /* Каркас */
+  --titlebar: 44px;
+  --activity: 96px;
+  --statusbar: 28px;
+  --head: 40px;
+  --control: 36px;
+  --control-sm: 32px;
+  --touch: 44px;
+  --gutter: 20px;
+  --gut: 56px;
+  --topbar: 48px;
+  --bottombar: 56px;
+  /* Ширина панелей «Задание» и «Наставник» по умолчанию: 1440 → 372, 1280 → 354 */
+  --w-side: clamp(320px, calc(12vw + 200px), 460px);
+  /* Наибольшая ширина страницы экрана и мера строки текста (68 знаков кегля самого текста) */
+  --content-max: 1280px;
   --reading-max: 68ch;
 }
 
+@media (pointer: coarse), (max-width: 899px) {
+  :root {
+    --head: 48px;
+    --control: 44px;
+    --control-sm: 44px;
+  }
+}
+
+@media (max-width: 899px) {
+  :root {
+    --gutter: 16px;
+    --gut: 44px;
+  }
+}
+
+/* Тёмная тема (основная). Одно и то же содержимое дважды — для системной настройки и явного выбора. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --bg: #111318;
-    --surface: #1a1d25;
-    --surface-2: #15171e;
-    --surface-hover: #222631;
-    --text: #eef0f6;
-    --muted: #a5adbe;
-    --border: #343a47;
-    --border-strong: #4a5162;
-    --border-control: #6b7385;
-    --accent: #a79bff;
-    --accent-hover: #b9afff;
-    --on-accent: #171222;
-    --accent-soft: #2b2643;
-    --accent-soft-border: #4a4178;
-    --accent-text: #b8aeff;
-    --good: #8dddac;
-    --good-soft: #1a2a22;
-    --good-border: #2f5a42;
-    --error: #ffb29d;
-    --error-soft: #35221d;
-    --error-border: #6b3a2e;
-    --warn: #f2c572;
-    --warn-soft: #30291a;
-    --warn-border: #6a5528;
-    --overlay: rgb(0 0 0 / 55%);
-    --shadow-pop: 0 12px 32px rgb(0 0 0 / 45%), 0 2px 6px rgb(0 0 0 / 30%);
-
-    --syn-keyword: #a79bff;
-    --syn-builtin: #8cb8ff;
-    --syn-string: #8dddac;
-    --syn-number: #f2c572;
-    --syn-comment: #8d95a8;
-    --syn-operator: #eef0f6;
-    --syn-function: #eef0f6;
-    --syn-selection: #3a335e;
-    --syn-active-line: #20232d;
-    --syn-error-line: #35221d;
+    --bg-chrome: #110f0d;
+    --bg-panel: #1a1815;
+    --bg-editor: #231f1b;
+    --bg-raised: #2f2b26;
+    --bg-sunken: #0f0e0c;
+    --bg-line: #2a2621;
+    --nav-hover: #1d1a17;
+    --nav-selected: #2f2b26;
+    --line: #35302a;
+    --line-strong: #4a443b;
+    --line-control: #877f72;
+    --text: #eeeae3;
+    --text-2: #c8c2b7;
+    --text-3: #aba498;
+    --accent: #f0a53e;
+    --accent-hover: #f6b65c;
+    --accent-edge: #f0a53e;
+    --accent-ink: #1b1205;
+    --accent-text: #f2ad4e;
+    --accent-soft: #3a2c18;
+    --ok: #80cf98;
+    --ok-soft: #1e2e22;
+    --ok-line: #3d6b4a;
+    --err: #f8947d;
+    --err-soft: #3b231d;
+    --err-line: #7a3e31;
+    --err-line-bg: #35221c;
+    --warn: #e8c56b;
+    --warn-soft: #342b16;
+    --warn-line: #75622f;
+    --focus: #88bff3;
+    --selection: #4a3b24;
+    --scrim: rgb(0 0 0 / 60%);
+    --syn-fn: #95c6ef;
+    --syn-str: #b3cfa3;
+    --syn-num: #eaab86;
+    --syn-kw: #e8d5a6;
+    --syn-com: #aba498;
+    --syn-op: #c8c2b7;
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #111318;
-  --surface: #1a1d25;
-  --surface-2: #15171e;
-  --surface-hover: #222631;
-  --text: #eef0f6;
-  --muted: #a5adbe;
-  --border: #343a47;
-  --border-strong: #4a5162;
-  --border-control: #6b7385;
-  --accent: #a79bff;
-  --accent-hover: #b9afff;
-  --on-accent: #171222;
-  --accent-soft: #2b2643;
-  --accent-soft-border: #4a4178;
-  --accent-text: #b8aeff;
-  --good: #8dddac;
-  --good-soft: #1a2a22;
-  --good-border: #2f5a42;
-  --error: #ffb29d;
-  --error-soft: #35221d;
-  --error-border: #6b3a2e;
-  --warn: #f2c572;
-  --warn-soft: #30291a;
-  --warn-border: #6a5528;
-  --overlay: rgb(0 0 0 / 55%);
-  --shadow-pop: 0 12px 32px rgb(0 0 0 / 45%), 0 2px 6px rgb(0 0 0 / 30%);
-
-  --syn-keyword: #a79bff;
-  --syn-builtin: #8cb8ff;
-  --syn-string: #8dddac;
-  --syn-number: #f2c572;
-  --syn-comment: #8d95a8;
-  --syn-operator: #eef0f6;
-  --syn-function: #eef0f6;
-  --syn-selection: #3a335e;
-  --syn-active-line: #20232d;
-  --syn-error-line: #35221d;
+  --bg-chrome: #110f0d;
+  --bg-panel: #1a1815;
+  --bg-editor: #231f1b;
+  --bg-raised: #2f2b26;
+  --bg-sunken: #0f0e0c;
+  --bg-line: #2a2621;
+  --nav-hover: #1d1a17;
+  --nav-selected: #2f2b26;
+  --line: #35302a;
+  --line-strong: #4a443b;
+  --line-control: #877f72;
+  --text: #eeeae3;
+  --text-2: #c8c2b7;
+  --text-3: #aba498;
+  --accent: #f0a53e;
+  --accent-hover: #f6b65c;
+  --accent-edge: #f0a53e;
+  --accent-ink: #1b1205;
+  --accent-text: #f2ad4e;
+  --accent-soft: #3a2c18;
+  --ok: #80cf98;
+  --ok-soft: #1e2e22;
+  --ok-line: #3d6b4a;
+  --err: #f8947d;
+  --err-soft: #3b231d;
+  --err-line: #7a3e31;
+  --err-line-bg: #35221c;
+  --warn: #e8c56b;
+  --warn-soft: #342b16;
+  --warn-line: #75622f;
+  --focus: #88bff3;
+  --selection: #4a3b24;
+  --scrim: rgb(0 0 0 / 60%);
+  --syn-fn: #95c6ef;
+  --syn-str: #b3cfa3;
+  --syn-num: #eaab86;
+  --syn-kw: #e8d5a6;
+  --syn-com: #aba498;
+  --syn-op: #c8c2b7;
 }

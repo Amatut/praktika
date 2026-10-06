@@ -1,0 +1,110 @@
+# Курс-фикстура для справочника docs/content-format.md: урок fe-l1 показывает все поля формата,
+# в том числе учебные файлы, базы SQLite, seed и учебную симуляцию сети.
+# Запуск: node scripts/verify-content.ts --root scripts/fixtures/engine
+title: Справочный курс
+subtitle: Урок-образец формата материалов, который проверяется настоящим Python.
+
+stages:
+  - id: start
+    title: Начало
+    description: Первые программы.
+  - id: middle
+    title: Середина
+    description: Функции и проверки.
+  - id: finish
+    title: Финиш
+    description: Небольшой проект.
+
+skills:
+  - id: fe-files
+    title: Файлы
+    module: fe
+    description: Читать и записывать файлы, CSV.
+  - id: fe-modules
+    title: Свои модули
+    module: fe
+    description: Делить программу на модули и импортировать их.
+  - id: fe-http
+    title: Запросы к серверу
+    module: fe
+    description: Получать данные по HTTP и обрабатывать ошибки.
+  - id: fe-sqlite
+    title: SQLite
+    module: fe
+    description: Читать данные из базы SQLite.
+  - id: fe-random
+    title: Случайные числа
+    module: fe
+    description: Пользоваться модулем random.
+  - id: fe-basics
+    title: Переменные и вывод
+    module: fe
+    description: Считать из переменных и выводить результат.
+
+modules:
+  - id: fe
+    number: 1
+    part: deepening
+    title: Справочный модуль
+    why: Образец всех полей формата урока для авторов материалов.
+    outcomes:
+      - Скрипт проверки принимает этот урок без ошибок.
+    hours: [1, 2]
+    lessons:
+      - id: fe-l1
+        title: Файлы, модули, база и сеть
+    practice: Шесть заданий на все возможности движка.
+    mistakes:
+      - Забыть превратить ввод в число.
+    completion: Все задания решены.
+    environment: browser
+
+labs:
+  - id: fe-lab
+    title: Проверочная лаборатория
+    hook: Нужна только для полноты формата.
+    story:
+      title: Придуманная история
+      text: История для проверки формата.
+      fictional: true
+    day: Обычный рабочий день.
+    products: [Небольшие программы]
+    likes: [Решать задачи]
+    hard: [Долго искать ошибку]
+    project:
+      title: Мини-проект
+      result: Работающая программа.
+      sessions: [1, 2]
+      environment: python
+      tools: Браузер
+      prototype: working
+    prerequisites: [Модуль fe]
+    unlockAfter: fe
+    realWork: [Писать и проверять программы]
+    paidTasks:
+      - title: Калькулятор чеков
+        example: Сложить суммы из списка чеков.
+        gap: Нужно уметь читать файлы.
+      - title: Подсчёт баллов
+        example: Посчитать баллы участников.
+        gap: Нужны словари.
+    ready: false
+
+projects:
+  - id: fe-project
+    title: Проверочный проект
+    after: fe
+    story: Придуманный проект для проверки формата.
+    environment: browser
+    minimum: [Программа запускается]
+    extras: [Проверка ввода, Красивый вывод]
+    criteria: [Тесты проходят]
+    stages:
+      - id: s1
+        title: Каркас
+        description: Написать основу программы.
+      - id: s2
+        title: Проверка
+        description: Проверить на примерах.
+    changeRequest: Добавить ещё одну операцию.
+    ready: false

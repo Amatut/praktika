@@ -13,7 +13,7 @@ export type Route =
   | { name: 'settings'; section: string | null }
   | { name: 'not-found'; path: string };
 
-export type NavSection = 'today' | 'course' | 'directions' | 'progress' | 'settings';
+export type NavSection = 'today' | 'course' | 'directions' | 'projects' | 'progress' | 'settings';
 
 function currentPath(): string {
   const hash = window.location.hash.replace(/^#/, '');
@@ -55,9 +55,10 @@ export function sectionOf(route: Route): NavSection | null {
       return 'today';
     case 'course':
     case 'module':
-    case 'projects':
     case 'lesson':
       return 'course';
+    case 'projects':
+      return 'projects';
     case 'directions':
       return 'directions';
     case 'progress':

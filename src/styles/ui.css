@@ -1,0 +1,2231 @@
+/* Владелец: foundation. Общие компоненты «Мастерской» (спецификация редизайна, раздел 3): кнопки, метки,
+   статусы, вкладки, сегменты, поля, раскрывающиеся блоки, диалог, сообщения, пустые состояния, страница и
+   секции, ряды списков, код и учебный текст, адрес места в коде, конвейер шагов, маршрут.
+   Старые имена классов, на которые опираются e2e и ещё не переписанные экраны, сохранены и получили новый вид.
+   Правила читаемости: цвета текста — только --text / --text-2 / --text-3 / тоны; без opacity у текста;
+   интерфейс ≥ 13 px, код ≥ 14 px, текст урока — --lesson-size; многострочный текст — межстрочный ≥ 1.5. */
+
+/* ------------------------------------------------------------ кнопки */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: var(--control);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.btn-primary {
+  border-color: var(--accent-edge);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: var(--accent-ink);
+}
+
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.btn-danger {
+  border-color: var(--err);
+  background: transparent;
+  color: var(--err);
+  font-weight: 600;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--err-soft);
+  color: var(--err);
+}
+
+/* Выключенная: без opacity — текст остаётся читаемым (--text-3 на --bg-raised ≥ 5.6:1). */
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  border-color: var(--line);
+  background: var(--bg-raised);
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+/* Прозрачная кнопка и выключенной остаётся прозрачной («Назад» на первом шаге), а не серой плашкой с рамкой. */
+.btn-ghost:disabled,
+.btn-ghost[aria-disabled='true'] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-3);
+}
+
+.btn-sm {
+  min-height: var(--control-sm);
+  padding: 0 var(--sp-3);
+}
+
+.btn-icon {
+  width: var(--control);
+  padding: 0;
+}
+
+.btn-sm.btn-icon {
+  width: var(--control-sm);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Длинная или переменная надпись (название урока, заголовок разбора) переносится, а не обрезается. */
+.btn-block,
+.btn-wrap {
+  min-width: 0;
+  max-width: 100%;
+  padding-block: 7px;
+  white-space: normal;
+  line-height: var(--lh-14-wrap);
+}
+
+.btn-wrap {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.btn-wrap svg {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.btn .spinner {
+  width: 16px;
+  height: 16px;
+}
+
+/* Подсказка клавиши внутри кнопки: «Ctrl ↵». Только там, где есть клавиатура и место. */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--sp-1);
+  border-radius: var(--r-1);
+  background: var(--bg-raised);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / 20px var(--font-code);
+}
+
+.btn-primary .kbd {
+  background: rgb(27 18 5 / 14%);
+  color: var(--accent-ink);
+}
+
+/* В выключенной кнопке (идёт проверка, загружается Python) подсказка клавиши — в тоне выключенной кнопки,
+   а не тёмным текстом янтарной кнопки на сером. */
+.btn:disabled .kbd,
+.btn[aria-disabled='true'] .kbd {
+  background: var(--bg-panel);
+  color: var(--text-3);
+}
+
+@media (pointer: coarse), (max-width: 1279px) {
+  .kbd {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ метки панелей, метки, бейджи, статусы */
+
+/* Метка панели или секции из 1–2 слов: единственный капс в интерфейсе. */
+.plabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--text-2);
+  font: 600 var(--fs-13) / var(--lh-13) var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plabel svg {
+  width: 14px;
+  height: 14px;
+}
+
+.label {
+  color: var(--text-2);
+  font: 600 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* Метка — не кнопка и не статус. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-1);
+  background: var(--bg-raised);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / var(--lh-13) var(--font-sans);
+  vertical-align: middle;
+}
+
+.tag svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* Бейдж статуса: значок + слово на подложке тона. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-1);
+  background: var(--bg-raised);
+  color: var(--text-2);
+  font: 600 var(--fs-13) / var(--lh-13) var(--font-sans);
+  vertical-align: middle;
+}
+
+.badge svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.badge-ok,
+.badge-good {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge-err,
+.badge-error {
+  background: var(--err-soft);
+  color: var(--err);
+}
+
+.badge-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.badge-accent {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+/* Строка статуса без подложки: значок 16 + текст тоном. */
+.status-line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: 0;
+  font: 500 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.status-line svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+}
+
+.status-ok,
+.status-good {
+  color: var(--ok);
+}
+
+.status-err,
+.status-error {
+  color: var(--err);
+}
+
+.status-warn {
+  color: var(--warn);
+}
+
+.status-muted {
+  color: var(--text-2);
+}
+
+/* Длинный статус (сообщение Python, требование к коду, сбой проверки): тон — у значка и первых слов
+   (.status-lead), сам текст — обычным цветом и весом, а не двумя-тремя рядами цветного жирного. */
+.status-line.is-long > span {
+  color: var(--text);
+  font-weight: 400;
+}
+
+.status-line.is-long .status-lead {
+  font-weight: 600;
+}
+
+.status-ok.is-long .status-lead {
+  color: var(--ok);
+}
+
+.status-err.is-long .status-lead {
+  color: var(--err);
+}
+
+.status-warn.is-long .status-lead {
+  color: var(--warn);
+}
+
+/* «Есть новое, ещё не открыто» — янтарная точка у вкладки; слово — для скринридера. */
+.dot-new {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent-edge);
+}
+
+/* ------------------------------------------------------------ сегменты и вкладки */
+
+/* Если варианты не помещаются в строку (320 px), они переносятся и делят строку поровну. */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0;
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+}
+
+.segmented button {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: var(--control-sm);
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  text-align: center;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+
+.segmented button:hover {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.segmented button[aria-selected='true'],
+.segmented button[aria-pressed='true'],
+.segmented button[aria-checked='true'] {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--accent-edge);
+}
+
+.segmented button:focus-visible {
+  outline-offset: -2px;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--head);
+  margin-bottom: -1px;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-2);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--accent-edge);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Вкладки прокручиваются по горизонтали и обрезают всё за краем: кольцо фокуса — внутрь. */
+.tab:focus-visible {
+  outline-offset: -2px;
+}
+
+.tab .count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-1);
+  background: var(--bg-raised);
+  color: var(--text-2);
+  font: 600 var(--fs-13) / 20px var(--font-code);
+  text-align: center;
+}
+
+.tab .badge {
+  min-height: 20px;
+  padding: 0 6px;
+}
+
+/* ------------------------------------------------------------ поля ввода */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.field-label {
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: var(--control);
+  padding: 7px var(--sp-3);
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.textarea {
+  min-height: calc(3 * 1.5em + 16px);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+.textarea.mono,
+.input.mono {
+  font-family: var(--font-code);
+  font-size: var(--code-size);
+}
+
+/* JetBrains Mono сводит «://» в лигатуру с зазором — адрес читался бы как «http: //». */
+.input.mono {
+  font-variant-ligatures: none;
+}
+
+.input:hover,
+.select:hover,
+.textarea:hover {
+  border-color: var(--text-2);
+}
+
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  border-color: var(--focus);
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  cursor: pointer;
+}
+
+.check > * {
+  min-width: 0;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin: 2px 0 0;
+  accent-color: var(--accent-edge);
+}
+
+/* ------------------------------------------------------------ раскрывающиеся блоки: на линиях, без коробок */
+.disclosure {
+  border-top: 1px solid var(--line);
+}
+
+.disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 12px 0;
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+  list-style: none;
+  cursor: pointer;
+}
+
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure-chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-2);
+  transition: transform 0.15s;
+}
+
+.disclosure[open] > summary .disclosure-chevron {
+  transform: rotate(90deg);
+}
+
+/* Старая разметка без значка: шеврон рисуется рамкой. */
+.disclosure > summary:not(:has(.disclosure-chevron))::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: none;
+  margin: 0 5px 0 3px;
+  border-right: 1.5px solid var(--text-2);
+  border-bottom: 1.5px solid var(--text-2);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+
+.disclosure[open] > summary:not(:has(.disclosure-chevron))::before {
+  transform: rotate(45deg);
+}
+
+.disclosure > summary:hover .disclosure-chevron {
+  color: var(--text);
+}
+
+.disclosure-summary {
+  min-width: 0;
+}
+
+/* Текст тела — на одной линии с текстом summary (шеврон 16 + промежуток 8). */
+.disclosure-body {
+  padding: 0 0 var(--sp-3) var(--sp-6);
+}
+
+/* ------------------------------------------------------------ диалог */
+.dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--bg-panel);
+  color: var(--text);
+}
+
+.dialog::backdrop {
+  background: var(--scrim);
+}
+
+.dialog-body {
+  padding: var(--sp-5) var(--gutter) var(--sp-4);
+  overflow: auto;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+
+.dialog-head .btn-icon {
+  margin: -4px -8px 0 0;
+}
+
+.dialog-title {
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+/* Текст диалога — предупреждение перед действием: основной цвет. */
+.dialog-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--gutter) var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------------ сообщения */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  background: var(--bg-raised);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.notice > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--text-2);
+}
+
+.notice-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.notice-title {
+  color: var(--text);
+  font-weight: 600;
+  line-height: var(--lh-14);
+}
+
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+.notice-accent {
+  border-left-color: var(--accent-edge);
+  background: var(--accent-soft);
+}
+
+.notice-accent > svg {
+  color: var(--accent-text);
+}
+
+.notice-warn {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.notice-warn > svg {
+  color: var(--warn);
+}
+
+.notice-err,
+.notice-error {
+  border-left-color: var(--err);
+  background: var(--err-soft);
+}
+
+.notice-err > svg,
+.notice-error > svg {
+  color: var(--err);
+}
+
+.notice-ok,
+.notice-good {
+  border-left-color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.notice-ok > svg,
+.notice-good > svg {
+  color: var(--ok);
+}
+
+/* ------------------------------------------------------------ прогресс, загрузка */
+.meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--bg-raised);
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent-edge);
+  transition: width 0.2s;
+}
+
+.meter-ok > span {
+  background: var(--ok);
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent-edge);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Строка ожидания («Загружаю курс…», «Открываю…»): слева сверху, не по центру экрана. */
+.loading-line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ пустые состояния */
+.empty {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.empty-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--text-3);
+}
+
+.empty-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+  max-width: 68ch;
+}
+
+.empty-title {
+  color: var(--text);
+  font: 600 var(--fs-16) / var(--lh-16) var(--font-sans);
+}
+
+/* Две короткие строки («что случилось», «что сделать») — отдельными строками с зазором, не одним абзацем. */
+.empty-text > p + p {
+  margin-top: var(--sp-1);
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+/* ------------------------------------------------------------ списки определений и маркированные */
+.kv {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: var(--sp-2) var(--sp-4);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.kv dt {
+  color: var(--text-2);
+}
+
+.kv dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.bullets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding-left: 20px;
+  line-height: var(--lh-14-wrap);
+}
+
+.bullets li::marker {
+  color: var(--text-3);
+}
+
+/* ------------------------------------------------------------ страница, шапка, секции */
+
+/* Область экрана внутри <main>. Ширину задаёт экран (по умолчанию — переходная 1280). */
+.page {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0;
+  padding: var(--sp-6) var(--sp-8) var(--sp-12);
+}
+
+.page-narrow {
+  max-width: 880px;
+}
+
+.page-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-6);
+}
+
+.page-head h1 {
+  font: 600 var(--fs-22) / var(--lh-22) var(--font-sans);
+}
+
+/* Основная колонка + боковая панель со своей прокруткой (≥ 900 px). Ширину боковой задаёт экран: --side-w. */
+.page-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--side-w, 400px);
+  height: 100%;
+  min-height: 0;
+}
+
+.page-split > * {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.side {
+  border-left: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+/* Шапка панели: метка капсом, справа пометка и значки-действия. */
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--head);
+  padding: 0 var(--gutter);
+  border-bottom: 1px solid var(--line);
+}
+
+.pane-head > :nth-child(2) {
+  margin-left: auto;
+}
+
+.pane-aside {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  text-align: right;
+}
+
+.pane-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+@media (max-width: 1199px) {
+  .page {
+    padding: var(--sp-5) var(--sp-5) var(--sp-10);
+  }
+}
+
+@media (max-width: 899px) {
+  .page {
+    padding: var(--sp-4) var(--sp-4) var(--sp-8);
+  }
+
+  .page-split {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .page-split > * {
+    overflow: visible;
+  }
+
+  .side {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+
+/* Режим «страницей» (низкое окно, полноразмерные снимки): прокручивается страница, а не колонки. */
+@media (max-height: 559px) {
+  .page-split {
+    height: auto;
+  }
+
+  .page-split > * {
+    overflow: visible;
+  }
+}
+
+:root[data-scroll='page'] .page-split {
+  height: auto;
+}
+
+:root[data-scroll='page'] .page-split > * {
+  overflow: visible;
+}
+
+/* ------------------------------------------------------------ ряды списков (вместо карточек) */
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.rows .row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  min-height: 48px;
+  padding: var(--sp-3) var(--gutter);
+  color: inherit;
+  text-decoration: none;
+}
+
+.rows a.row:hover,
+.rows button.row:hover {
+  background: var(--bg-raised);
+}
+
+/* Серый бейдж в наведённом ряду — на поле редактора, чтобы не слиться с подложкой ряда. */
+.rows a.row:hover .badge:not([class*='badge-']),
+.rows button.row:hover .badge:not([class*='badge-']) {
+  background: var(--bg-editor);
+}
+
+.rows .row:focus-visible {
+  outline-offset: -2px;
+}
+
+.rows .row[aria-current='true'],
+.rows a.row[aria-current='true']:hover {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent-edge);
+}
+
+.rows .row > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--text-2);
+}
+
+.row-ic {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  margin-top: -6px;
+  margin-bottom: -6px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / 1 var(--font-code);
+}
+
+.row-ic svg {
+  width: 16px;
+  height: 16px;
+}
+
+.row-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row-title {
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.row-sub {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.row-meta {
+  flex: none;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ текст урока */
+.prose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: var(--reading-max);
+  color: var(--text);
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+.prose ul,
+.prose ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding-left: var(--sp-6);
+}
+
+.prose li::marker {
+  color: var(--text-3);
+}
+
+/* h4 в тексте: сверху 24 (12 + промежуток абзацев 12), снизу 8. */
+.prose h4 {
+  margin: var(--sp-3) 0 calc(-1 * var(--sp-1));
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+.prose a {
+  color: var(--text);
+  text-decoration-color: var(--line-control);
+  text-underline-offset: 4px;
+}
+
+.prose .code-block {
+  font-size: var(--code-size);
+}
+
+.prose-compact {
+  gap: var(--sp-2);
+}
+
+/* Заметка «> » — отдельный блок со своим фоном. */
+.prose-note {
+  padding: var(--sp-3) var(--sp-4);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.inline-code,
+.prose code:not(.code-block code) {
+  padding: 1px var(--sp-1);
+  border-radius: var(--r-1);
+  background: var(--bg-raised);
+  color: var(--text);
+  font-family: var(--font-code);
+  font-size: max(14px, 0.9em);
+  overflow-wrap: anywhere;
+  white-space: break-spaces;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Короткий фрагмент (до 24 знаков; длинным Markdown ставит .is-long) не рвётся посередине: `py --version`. */
+.inline-code:not(.is-long) {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+/* Ширину истории задаёт текст урока внутри (.prose — 68 знаков кегля урока), а не кегль интерфейса. */
+.story {
+  min-width: 0;
+}
+
+.story .prose {
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ код только для чтения */
+.code-block {
+  margin: 0;
+  padding: var(--sp-3) 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 400 var(--code-size) / calc(var(--code-size) * 1.6) var(--font-code);
+  tab-size: 4;
+}
+
+.code-block.is-bare {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.code-line {
+  display: flex;
+  min-width: max-content;
+  padding: 0 var(--sp-4);
+}
+
+.code-block.with-numbers .code-line {
+  padding-left: 0;
+}
+
+.code-line.is-marked {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent-edge);
+}
+
+/* Номера строк: колонка 40 px, 13 px, текст кода — через 16 px. */
+.code-ln {
+  flex: none;
+  width: 40px;
+  margin-right: var(--sp-4);
+  color: var(--text-3);
+  font-size: var(--fs-13);
+  text-align: right;
+  user-select: none;
+}
+
+.code-text {
+  white-space: pre;
+}
+
+.code-block.is-wrapped .code-line {
+  min-width: 0;
+}
+
+.code-block.is-wrapped .code-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Перенесённый хвост длинной строки начинается на 2 знака правее отступа самой строки (--indent ставит
+   CodeBlock) — его не принять за новую строку. */
+.code-block.is-wrapped .code-text {
+  padding-left: calc((var(--indent, 0) + 2) * 1ch);
+  text-indent: calc((var(--indent, 0) + 2) * -1ch);
+}
+
+/* Телефон: любой блок кода переносит строки, как редактор (< 600), — хвост строки не уходит за край блока
+   без признака прокрутки. Висячий отступ — тот же. */
+@media (max-width: 599px) {
+  .code-block .code-line {
+    min-width: 0;
+  }
+
+  .code-block .code-text {
+    min-width: 0;
+    padding-left: calc((var(--indent, 0) + 2) * 1ch);
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    text-indent: calc((var(--indent, 0) + 2) * -1ch);
+  }
+}
+
+/* Блок-«файл»: полоса с именем файла над кодом. */
+.code-file {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+}
+
+.code-file.is-bare {
+  border: 0;
+  border-radius: 0;
+}
+
+.code-file-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 36px;
+  padding: 0 var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-code);
+}
+
+.code-file-tab svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.code-file-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Подсветка: общие классы tok-* для CodeBlock и редактора (classHighlighter). */
+.tok-keyword,
+.tok-controlKeyword,
+.tok-operatorKeyword,
+.tok-definitionKeyword,
+.tok-moduleKeyword,
+.tok-special {
+  color: var(--syn-kw);
+}
+
+.tok-string,
+.tok-string2 {
+  color: var(--syn-str);
+}
+
+.tok-number,
+.tok-bool,
+.tok-atom,
+.tok-null,
+.tok-literal {
+  color: var(--syn-num);
+}
+
+.tok-comment {
+  color: var(--syn-com);
+  font-style: italic;
+}
+
+.tok-builtin,
+.tok-definition,
+.tok-function,
+.tok-className {
+  color: var(--syn-fn);
+}
+
+.tok-operator,
+.tok-punctuation {
+  color: var(--syn-op);
+}
+
+.tok-invalid {
+  color: var(--err);
+  text-decoration: underline wavy var(--err);
+}
+
+/* ------------------------------------------------------------ адрес места в коде: main.py:4 */
+.addr {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 500 var(--fs-14) / 20px var(--font-code);
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+button.addr,
+a.addr {
+  cursor: pointer;
+}
+
+button.addr:hover,
+a.addr:hover {
+  border-color: var(--text-2);
+  color: var(--text);
+}
+
+.addr-static {
+  cursor: default;
+}
+
+/* ------------------------------------------------------------ чек-лист: ряды на линиях */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist li {
+  padding: var(--sp-3) 0;
+}
+
+.checklist li + li {
+  border-top: 1px solid var(--line);
+}
+
+.checklist .prose {
+  font-size: var(--lesson-size);
+}
+
+/* ------------------------------------------------------------ состояние строкой (телефон, низ «Сегодня») */
+.status-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ конвейер шагов (FlowSteps) */
+.flow {
+  min-width: 0;
+}
+
+.flow-line,
+.flow-group,
+.flow-group > ol,
+.flow-group > ol > li {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-cap {
+  padding: 0 var(--sp-2);
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+.flow-group:first-child > .flow-cap {
+  padding-left: 0;
+}
+
+.flow-group.is-current > .flow-cap {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Участки линии: подпись → первый узел, узел → узел, этап → этап. */
+.flow-cap + ol > li:first-child::before,
+.flow-group > ol > li + li::before,
+.flow-group + .flow-group::before {
+  content: '';
+  width: 12px;
+  height: 2px;
+  flex: none;
+  background: var(--line-strong);
+}
+
+/* Зелёный участок — только от пройденного узла к пройденному или текущему: пропущенные шаги не выглядят
+   пройденными. Участки по обе стороны подписи этапа — по тому же правилу. */
+.flow-group > ol > li.is-done + li:is(.is-done, .is-current)::before,
+.flow-group:first-child > .flow-cap + ol > li:first-child.is-done::before,
+.flow-group:has(> ol > li:last-child.is-done) + .flow-group:has(> ol > li:first-child:is(.is-done, .is-current))::before,
+.flow-group:has(> ol > li:last-child.is-done) + .flow-group > .flow-cap + ol > li:first-child:is(.is-done, .is-current)::before {
+  background: var(--ok);
+}
+
+.flow-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-panel);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / 1 var(--font-code);
+  text-decoration: none;
+}
+
+button.flow-node:hover {
+  border-color: var(--text-2);
+  color: var(--text);
+}
+
+button.flow-node:focus-visible {
+  outline-offset: 2px;
+}
+
+.flow-node svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.25;
+}
+
+.is-done > .flow-node {
+  border-color: transparent;
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.is-done > button.flow-node:hover {
+  border-color: var(--ok);
+}
+
+/* Текущий шаг: янтарный узел «7_» — номер 16 px моноширинным и каретка, как в знаке «П_». */
+.is-current > .flow-node {
+  align-items: flex-end;
+  gap: 1px;
+  width: 36px;
+  padding-bottom: 5px;
+  border-color: var(--accent-edge);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 600 16px/1 var(--font-code);
+}
+
+.is-current > .flow-node::after {
+  content: '';
+  width: 7px;
+  height: 2px;
+  margin-bottom: 1px;
+  background: currentColor;
+}
+
+.flow-home .is-current > .flow-node::after {
+  animation: caret-blink 1s steps(1) 3s infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Подпись узла — над узлом при наведении и фокусе, со своим фоном и рамкой. */
+.flow-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 40;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 500 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+button.flow-node:hover .flow-tip,
+button.flow-node:focus-visible .flow-tip {
+  visibility: visible;
+}
+
+.flow-label {
+  margin: 0 0 var(--sp-2);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Узкая колонка: подписи этапов уходят, этапы разделены разрывом линии. */
+@media (max-width: 1023px) {
+  .flow-cap {
+    display: none;
+  }
+
+  .flow-cap + ol > li:first-child::before {
+    content: none;
+  }
+
+  /* Разрыв между этапами — пустой, без цвета. */
+  .flow-group + .flow-group::before {
+    width: 8px;
+    visibility: hidden;
+  }
+
+  .flow-group + .flow-group > ol > li:first-child::before {
+    content: '';
+    width: 12px;
+    height: 2px;
+    flex: none;
+    background: var(--line-strong);
+  }
+}
+
+@media (pointer: coarse) {
+  button.flow-node {
+    width: 44px;
+    height: 44px;
+  }
+
+  .is-current > button.flow-node {
+    width: 44px;
+  }
+
+  button.flow-node .flow-tip {
+    display: none;
+  }
+}
+
+/* Список шагов «7 из 10 · Практика 1 ▾» */
+.flow-pick {
+  position: relative;
+  min-width: 0;
+}
+
+.flow-pick > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  min-height: var(--control-sm);
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-1);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  list-style: none;
+  cursor: pointer;
+}
+
+.flow-pick > summary::-webkit-details-marker {
+  display: none;
+}
+
+.flow-pick > summary:hover,
+.flow-pick[open] > summary {
+  background: var(--bg-raised);
+}
+
+.flow-count {
+  flex: none;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.flow-count .n:first-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.flow-now {
+  min-width: 0;
+  font-weight: 600;
+}
+
+.flow-pick-chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-2);
+  transition: transform 0.15s;
+}
+
+.flow-pick[open] .flow-pick-chevron {
+  transform: rotate(180deg);
+}
+
+.flow-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  width: min(340px, calc(100vw - 32px));
+  /* Высота — по окну, а не 60vh: на 1440 × 900 последняя группа шагов («Закрепить» и «Итог») видна целиком. */
+  max-height: calc(100dvh - 150px);
+  padding: var(--sp-1);
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+}
+
+.flow-pop ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-pop-group {
+  display: flex;
+  padding: var(--sp-2) var(--sp-2) var(--sp-1);
+}
+
+.flow-pop-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 0;
+  border-radius: var(--r-1);
+  background: none;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+  text-align: left;
+}
+
+.flow-pop-item:hover {
+  background: var(--bg-raised);
+}
+
+.flow-pop-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.flow-pop-item[aria-current] {
+  background: var(--bg-raised);
+  font-weight: 600;
+}
+
+.flow-pop-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.flow-pop-label {
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: var(--lh-13);
+}
+
+.step-node {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / 1 var(--font-code);
+}
+
+.step-node svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.25;
+}
+
+.flow-pop-item.is-done .step-node {
+  border-color: transparent;
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.flow-pop-item.is-current .step-node {
+  border-color: var(--accent-edge);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+@media (pointer: coarse) {
+  .flow-pop-item {
+    min-height: 44px;
+  }
+}
+
+/* Мини-конвейер (телефон): узлы 8 px на линии 1 px, текущий 12 px янтарный, разрывы между этапами. */
+.mbar-wrap {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.mbar {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 64px;
+  height: 12px;
+}
+
+.mbar i {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  height: 12px;
+}
+
+/* Линия ячейки — две половины: к предыдущему узлу (--l) и к следующему (--r). Зелёная — только между пройденным
+   и пройденным или текущим узлом, как у большого конвейера. */
+.mbar i::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(to right, var(--l, var(--line-strong)) 50%, var(--r, var(--line-strong)) 50%);
+}
+
+.mbar i.is-done:has(+ i:is(.is-done, .is-current)) {
+  --r: var(--ok);
+}
+
+.mbar i.is-done + i:is(.is-done, .is-current) {
+  --l: var(--ok);
+}
+
+.mbar i::after {
+  content: '';
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--line-control);
+  border-radius: 2px;
+  background: var(--bg-panel);
+}
+
+.mbar i.is-done::after {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+
+.mbar i.is-current::after {
+  width: 12px;
+  height: 12px;
+  border-color: var(--accent-edge);
+  background: var(--accent);
+}
+
+.mbar b {
+  width: 8px;
+  flex: none;
+}
+
+.mbar-count {
+  flex: none;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ маршрут: граф веток (RouteGraph) */
+.route-graph {
+  container-type: inline-size;
+  container-name: route;
+}
+
+.route {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Вертикальный граф (узкая колонка): слева колонка рельсов 44 px (основная линия x = 12, ветка x = 32). */
+.rt {
+  position: relative;
+  display: grid;
+  align-content: start;
+  row-gap: var(--sp-1);
+  padding: 0 0 var(--sp-4) 44px;
+}
+
+.rt:last-child {
+  padding-bottom: 0;
+}
+
+.rt-art {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 44px;
+}
+
+.rt-art > * {
+  position: absolute;
+}
+
+/* Статус, перенесённый на вторую строку (узкая колонка), не слипается с названием стадии. */
+.stage-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-3);
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.stage-st {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+.rt.is-current .stage-st {
+  color: var(--text);
+}
+
+.cm,
+.rt .node {
+  box-sizing: border-box;
+  border: 2px solid var(--line-control);
+  background: var(--bg-panel);
+}
+
+.rt-labs .node {
+  border-radius: 50%;
+}
+
+.rt-choice .node {
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.rt-projects .node {
+  border-radius: 2px;
+}
+
+/* Основы (вертикально): узел — янтарный квадрат с кареткой, ниже — рельс; модули — мини-полоса. */
+.rt-basics::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--accent-edge);
+  border-radius: 3px;
+  background: linear-gradient(var(--accent-ink), var(--accent-ink)) no-repeat 50% 10px / 6px 2px, var(--accent);
+}
+
+.rt-basics::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  left: 11px;
+  width: 2px;
+  background: var(--line-strong);
+}
+
+.rt-basics .rt-art {
+  position: relative;
+  order: 3;
+  width: min(100%, 240px);
+  height: 16px;
+  margin-top: var(--sp-1);
+}
+
+.rt-basics .rt-art::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  right: 5px;
+  left: 5px;
+  height: 2px;
+  background: var(--line-strong);
+}
+
+.rt-done {
+  top: 7px;
+  left: 5px;
+  z-index: 0;
+  width: calc((100% - 10px) * var(--done, 0) / var(--n, 11));
+  height: 2px;
+  background: var(--ok);
+}
+
+.cm {
+  top: 8px;
+  left: calc(5px + (100% - 10px) * var(--i) / var(--n, 11));
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  border-width: 1px;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+}
+
+.cm.is-done {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+
+/* Каретка «_» у текущего модуля — только в горизонтальном графе: в вертикальном она уже есть у узла «Основ». */
+.cm.is-current {
+  width: 14px;
+  height: 14px;
+  border-color: var(--accent-edge);
+  background: var(--accent);
+}
+
+/* «Основы» пройдены целиком: линия пройденного во всю длину, узел — зелёный, а не янтарь «текущего». */
+.rt-basics.is-complete::before {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+
+.rt-basics .fork,
+.rt-basics .join,
+.rt-labs .pd,
+.rt-labs .merge {
+  display: none;
+}
+
+/* Пробы (вертикально): основная линия идёт дальше, ветка отходит вправо к кругу. */
+.rt-labs::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 11px;
+  width: 2px;
+  background: var(--line-strong);
+}
+
+.rt-labs::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 11px;
+  width: 16px;
+  height: 23px;
+  box-sizing: border-box;
+  border-bottom: 2px solid var(--line-strong);
+  border-left: 2px solid var(--line-strong);
+  border-bottom-left-radius: 10px;
+}
+
+.rt-labs .node {
+  top: 4px;
+  left: 26px;
+  width: 12px;
+  height: 12px;
+}
+
+.rt-labs .rt-art::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  bottom: 0;
+  left: 31px;
+  width: 2px;
+  background: var(--line-strong);
+}
+
+/* Выбор (вертикально): ветка возвращается в основную линию, ромб; ниже — пунктир к проекту. */
+.rt-choice::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 11px;
+  width: 2px;
+  height: 4px;
+  background: var(--line-strong);
+}
+
+.rt-choice .rt-art::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  width: 17px;
+  height: 11px;
+  box-sizing: border-box;
+  border-right: 2px solid var(--line-strong);
+  border-bottom: 2px solid var(--line-strong);
+  border-bottom-right-radius: 10px;
+}
+
+.rt-choice .node {
+  top: 4px;
+  left: 6px;
+  width: 12px;
+  height: 12px;
+}
+
+.rt-choice::after {
+  content: '';
+  position: absolute;
+  top: 21px;
+  bottom: 0;
+  left: 11px;
+  border-left: 2px dashed var(--line-strong);
+}
+
+.rt-projects::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 11px;
+  height: 4px;
+  border-left: 2px dashed var(--line-strong);
+}
+
+.rt-projects .node {
+  top: 4px;
+  left: 6px;
+  width: 12px;
+  height: 12px;
+}
+
+/* Горизонтальный граф — когда колонке хватает ширины: четыре стадии в ряд на общих линиях (subgrid). */
+@container route (min-width: 720px) {
+  .route {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: 40px auto;
+    row-gap: var(--sp-2);
+  }
+
+  .rt {
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: var(--sp-2);
+    padding: 0 var(--sp-4) 0 0;
+  }
+
+  .rt:last-child {
+    padding-right: 0;
+  }
+
+  .rt::before,
+  .rt::after {
+    content: none;
+  }
+
+  .rt-art,
+  .rt-basics .rt-art {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    order: 0;
+    grid-row: 1;
+    width: auto;
+    height: 40px;
+    margin: 0;
+  }
+
+  .stage-name {
+    display: grid;
+    gap: 2px;
+  }
+
+  .cm.is-current {
+    background: linear-gradient(var(--accent-ink), var(--accent-ink)) no-repeat 50% 8px / 5px 2px, var(--accent);
+  }
+
+  .rt-basics .rt-art::before {
+    right: -16px;
+  }
+
+  .rt-basics .fork,
+  .rt-basics .join {
+    display: block;
+    top: 8px;
+    left: calc(5px + (100% - 10px) * var(--i) / var(--n, 11) - 1px);
+    height: 23px;
+    box-sizing: border-box;
+    border-bottom: 2px solid var(--line-strong);
+    border-left: 2px solid var(--line-strong);
+    border-bottom-left-radius: 10px;
+  }
+
+  .rt-basics .fork {
+    right: -16px;
+  }
+
+  .rt-basics .join {
+    width: 14px;
+  }
+
+  .rt-labs .rt-art::before {
+    top: 7px;
+    right: -16px;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: 2px;
+  }
+
+  .rt-labs .rt-art::after {
+    content: '';
+    position: absolute;
+    top: 29px;
+    right: -4px;
+    left: 0;
+    height: 2px;
+    background: var(--line-strong);
+  }
+
+  .rt-labs .node {
+    top: 24px;
+    left: 0;
+    z-index: 1;
+  }
+
+  .rt-labs .pd {
+    display: block;
+    top: 30px;
+    left: var(--x);
+    z-index: 1;
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border: 2px solid var(--line-strong);
+    border-radius: 50%;
+    background: var(--bg-panel);
+    transform: translate(-50%, -50%);
+  }
+
+  .rt-labs .merge {
+    display: block;
+    top: 8px;
+    right: -16px;
+    width: 16px;
+    height: 23px;
+    box-sizing: border-box;
+    border-right: 2px solid var(--line-strong);
+    border-bottom: 2px solid var(--line-strong);
+    border-bottom-right-radius: 10px;
+  }
+
+  .rt-choice .rt-art::before {
+    content: none;
+  }
+
+  .rt-choice .node {
+    top: 2px;
+    left: 3px;
+    z-index: 1;
+  }
+
+  .rt-choice .rt-art::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    right: -16px;
+    left: 20px;
+    border-top: 2px dashed var(--line-strong);
+  }
+
+  .rt-projects .node {
+    top: 2px;
+    left: 0;
+  }
+}
+
+@media (max-width: 599px) {
+  .kv {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-1);
+  }
+
+  .kv dd:not(:last-child) {
+    margin-bottom: var(--sp-2);
+  }
+}
+
+/* ------------------------------------------------------------ движение */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .segmented button,
+  .disclosure-chevron,
+  .flow-pick-chevron {
+    transition: none;
+  }
+
+  .spin,
+  .flow-home .is-current > .flow-node::after {
+    animation: none;
+  }
+
+  /* Спиннер — неподвижная точка; текст статуса рядом остаётся. */
+  .spinner {
+    width: 8px;
+    height: 8px;
+    border: 0;
+    background: var(--accent-edge);
+    animation: none;
+  }
+}

@@ -1,75 +1,113 @@
-import { FolderKanban } from 'lucide-react';
+import { ArrowUp, Check, FolderCode, FolderKanban, Hourglass, ListChecks } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAsync, useDataVersion } from '../app/hooks.ts';
 import { reportSaveProblem } from '../app/problems.ts';
 import { href, navigate, paths } from '../app/router.ts';
-import { StatusBadge } from '../components/ui.tsx';
+import { StatusBadge, Tag } from '../components/ui.tsx';
 import type { Course, Project } from '../content/schema.ts';
-import { getProject, saveProject } from '../storage/repo.ts';
+import { getAllProjects, getProject, saveProject } from '../storage/repo.ts';
 import type { ProjectRecord } from '../storage/types.ts';
+
+// «Проекты» — как «Направления»: слева лестница из четырёх проектов (список), справа документ выбранного.
+// Отметки этапов и «Мои решения» — записи ученика; пояснений «как это работает» нет.
 
 const ENV = { browser: 'в браузере', local: 'на компьютере', mixed: 'браузер + компьютер' } as const;
 
+function afterNumber(course: Course, project: Project): number | null {
+  return course.modules.find((module) => module.id === project.after)?.number ?? null;
+}
+
 export function ProjectsScreen({ course, projectId }: { course: Course; projectId: string | null }) {
   const selected = course.projects.find((project) => project.id === projectId) ?? course.projects[0];
+  const version = useDataVersion(['projects']);
+  // Отметки этапов для счётчиков в лестнице; хранилище недоступно — лестница без счётчиков (о сбое говорит баннер).
+  const records = useAsync(() => getAllProjects(), [version]);
+  const byId = new Map((records.value ?? []).map((record) => [record.projectId, record]));
+
   return (
-    <div className="page">
-      <header className="page-head">
-        <a className="eyebrow" href={href(paths.course())} style={{ textDecoration: 'none' }}>
-          ← Курс · проекты
-        </a>
-        <h1>Проекты</h1>
-        <p className="page-lead">
-          Лестница от небольшой консольной программы до итогового проекта. Сначала ты пишешь план и делаешь реализацию сам,
-          наставник помогает точечно. В конце одно требование меняется — это проверка понимания.
-        </p>
-      </header>
-      <div className="labs-layout">
-        <ol className="lesson-rows" aria-label="Лестница проектов">
+    <div className="page-split projects-split">
+      <div className="projects-list">
+        {/* Шапка списка — как у «Направлений»: метка панели. На телефоне название экрана уже в верхней строке —
+            метка остаётся только для скринридера. Готовность материалов — бейджем у каждого проекта. */}
+        <div className="pane-head projects-head">
+          <h1 className="plabel">
+            <FolderCode aria-hidden="true" />
+            Проекты
+          </h1>
+        </div>
+        <ol className="rows projects-ladder" aria-label="Лестница проектов">
           {course.projects.map((project, index) => {
-            const after = course.modules.find((module) => module.id === project.after);
+            const done = byId.get(project.id)?.stagesDone.length ?? 0;
+            const total = project.stages.length;
+            const finished = done > 0 && done >= total;
             return (
               <li key={project.id}>
                 <a
-                  className="lesson-row"
+                  className="row lesson-row project-row"
                   href={href(paths.projects(project.id))}
                   aria-current={project.id === selected.id ? 'true' : undefined}
                   onClick={(event) => {
                     event.preventDefault();
                     navigate(paths.projects(project.id), { replace: true });
-                    // На узком экране описание ниже списка: показываем его и переносим туда фокус.
-                    if (window.matchMedia('(max-width: 1199px)').matches) {
+                    // Узкий экран: документ ниже списка — показываем его и переносим туда фокус.
+                    if (window.matchMedia('(max-width: 899px)').matches) {
+                      const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
                       requestAnimationFrame(() => {
                         document.getElementById('project-title')?.focus({ preventScroll: true });
-                        document.getElementById('project-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        document.getElementById('project-detail')?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
                       });
                     }
                   }}
                 >
-                  <span className="lesson-row-num">{index + 1}</span>
-                  <span>
-                    <span className="list-row-title">{project.title}</span>
-                    <span className="list-row-sub" style={{ display: 'block' }}>
-                      после модуля {after?.number ?? '—'} · {ENV[project.environment]}
+                  <span className={`row-ic n project-num${finished ? ' is-done' : ''}`} aria-hidden="true">
+                    {finished ? <Check /> : index + 1}
+                  </span>
+                  <span className="row-main">
+                    <span className="row-title">{project.title}</span>
+                    <span className="row-sub">
+                      <span className="nowrap">после модуля {afterNumber(course, project) ?? '—'}</span>
+                      &nbsp;·{' '}
+                      <span className="nowrap">{ENV[project.environment]}</span>
+                    </span>
+                    <span className="project-row-tags">
+                      {project.ready ? (
+                        <StatusBadge tone="ok">Готов</StatusBadge>
+                      ) : (
+                        <StatusBadge tone="muted" icon={Hourglass}>
+                          Материалы пишутся
+                        </StatusBadge>
+                      )}
+                      {done > 0 && (
+                        <span className="project-row-progress">
+                          <ListChecks aria-hidden="true" />
+                          <span>
+                            этапы <span className="n">{done}</span> из <span className="n">{total}</span>
+                          </span>
+                        </span>
+                      )}
                     </span>
                   </span>
-                  <StatusBadge tone={project.ready ? 'good' : 'muted'}>{project.ready ? 'Готов' : 'Материалы пишутся'}</StatusBadge>
                 </a>
               </li>
             );
           })}
         </ol>
-        <ProjectDetail key={selected.id} course={course} project={selected} />
       </div>
+      <ProjectDetail key={selected.id} course={course} project={selected} index={course.projects.indexOf(selected)} />
     </div>
   );
 }
 
-function ProjectDetail({ course, project }: { course: Course; project: Project }) {
+function ProjectDetail({ course, project, index }: { course: Course; project: Project; index: number }) {
   const version = useDataVersion(['projects']);
   const stored = useAsync(() => getProject(project.id), [project.id, version]);
   const record: ProjectRecord = stored.value ?? { projectId: project.id, stagesDone: [], notes: '', updatedAt: 0 };
   const [notes, setNotes] = useState('');
+  const [saved, setSaved] = useState(false);
+  // Отметка этапа видна сразу, не дожидаясь записи в хранилище; свежая запись из хранилища её сменяет.
+  const [localStages, setLocalStages] = useState<string[] | null>(null);
+  useEffect(() => setLocalStages(null), [stored.value]);
+  const stagesDoneIds = localStages ?? record.stagesDone;
   const loaded = useRef(false);
   // Записи сохраняются с небольшой задержкой при наборе, при уходе из поля и при закрытии вкладки.
   const pendingNotes = useRef<string | null>(null);
@@ -80,14 +118,18 @@ function ProjectDetail({ course, project }: { course: Course; project: Project }
       loaded.current = true;
     }
   }, [stored.loading, stored.value]);
-  const after = course.modules.find((module) => module.id === project.after);
+  const after = afterNumber(course, project);
 
   const flushNotes = useCallback(() => {
     window.clearTimeout(saveTimer.current);
     const value = pendingNotes.current;
     if (value === null) return;
     pendingNotes.current = null;
-    saveProject({ projectId: project.id, notes: value }).catch((error: unknown) => reportSaveProblem(error, 'Записи проекта не сохранены'));
+    saveProject({ projectId: project.id, notes: value })
+      .then(() => {
+        if (pendingNotes.current === null) setSaved(true);
+      })
+      .catch((error: unknown) => reportSaveProblem(error, 'Записи проекта не сохранены'));
   }, [project.id]);
 
   useEffect(() => {
@@ -104,94 +146,145 @@ function ProjectDetail({ course, project }: { course: Course; project: Project }
   }, [flushNotes]);
 
   async function toggleStage(stageId: string) {
-    const done = new Set(record.stagesDone);
+    const done = new Set(stagesDoneIds);
     if (done.has(stageId)) done.delete(stageId);
     else done.add(stageId);
-    await saveProject({ projectId: project.id, stagesDone: project.stages.map((stage) => stage.id).filter((id) => done.has(id)) });
+    const next = project.stages.map((stage) => stage.id).filter((id) => done.has(id));
+    setLocalStages(next);
+    try {
+      await saveProject({ projectId: project.id, stagesDone: next });
+    } catch (error) {
+      setLocalStages(null);
+      reportSaveProblem(error, 'Этапы проекта не сохранены');
+    }
+  }
+
+  const stagesDone = project.stages.filter((stage) => stagesDoneIds.includes(stage.id)).length;
+
+  // Узкий экран: список выше документа — возвращаемся к выбранному проекту в лестнице (как «К списку» в «Направлениях»).
+  function backToList() {
+    const row = document.querySelector<HTMLElement>('.project-row[aria-current="true"]');
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    row?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'center' });
+    row?.focus({ preventScroll: true });
   }
 
   return (
-    <section id="project-detail" className="lab-detail" aria-labelledby="project-title">
-      <div className="card stack">
-        <div className="stack-sm">
-          <span className="eyebrow row" style={{ gap: 6 }}>
-            <FolderKanban aria-hidden="true" width={14} height={14} />
-            Проект · после модуля {after?.number ?? '—'}
+    <section id="project-detail" className="project-doc" aria-labelledby="project-title">
+      <div className="project-doc-body">
+        <button type="button" className="btn btn-sm btn-ghost project-back" onClick={backToList}>
+          <ArrowUp aria-hidden="true" />
+          К списку
+        </button>
+        <p className="project-kicker">
+          <FolderKanban aria-hidden="true" />
+          <span>
+            <span className="nowrap">Проект {index + 1}</span>
+            &nbsp;·{' '}
+            <span className="nowrap">после модуля {after ?? '—'}</span>
+            &nbsp;·{' '}
+            <span className="nowrap">{ENV[project.environment]}</span>
           </span>
-          <h2 id="project-title" tabIndex={-1}>
-            {project.title}
-          </h2>
-          <p className="muted">{project.story}</p>
-          {!project.ready && (
-            <StatusBadge tone="muted">Пошаговые материалы проекта ещё пишутся — требования уже можно прочитать</StatusBadge>
-          )}
-        </div>
-        <div className="stack-sm">
-          <span className="label">Минимальные требования</span>
-          <ul className="bullets small">
+        </p>
+        <h2 id="project-title" tabIndex={-1}>
+          {project.title}
+        </h2>
+        {!project.ready && (
+          <div className="project-badges">
+            <StatusBadge tone="muted" icon={Hourglass}>
+              Материалы пишутся
+            </StatusBadge>
+          </div>
+        )}
+        <p className="prose project-story">{project.story}</p>
+
+        <section className="project-sec" aria-labelledby="project-minimum">
+          <h3 id="project-minimum">Минимальные требования</h3>
+          <ul className="bullets">
             {project.minimum.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </div>
-        <div className="stack-sm">
-          <span className="label">Дополнительно (по желанию)</span>
-          <ul className="bullets small">
+        </section>
+
+        <section className="project-sec" aria-labelledby="project-extras">
+          <div className="project-sec-head">
+            <h3 id="project-extras">Дополнительно</h3>
+            <Tag>по желанию</Tag>
+          </div>
+          <ul className="bullets">
             {project.extras.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </div>
-        <div className="stack-sm">
-          <span className="label">Проект готов, когда</span>
-          <ul className="bullets small">
+        </section>
+
+        <section className="project-sec" aria-labelledby="project-criteria">
+          <h3 id="project-criteria">Проект готов, когда</h3>
+          <ul className="bullets">
             {project.criteria.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </div>
-        <div className="prose-note small">
-          <strong>Изменение требования в конце: </strong>
-          {project.changeRequest}
-        </div>
-      </div>
+          <div className="prose-note project-change">
+            <strong>Изменение требования в конце</strong>
+            <p>{project.changeRequest}</p>
+          </div>
+        </section>
 
-      <div className="card stack">
-        <div>
-          <h3 className="card-title">Этапы</h3>
-          <p className="card-sub">Отметки ставишь ты — это твой план, а не автоматическая проверка.</p>
-        </div>
-        <ul className="checklist">
-          {project.stages.map((stage) => (
-            <li key={stage.id} data-done={record.stagesDone.includes(stage.id)}>
-              <label className="check">
-                <input type="checkbox" checked={record.stagesDone.includes(stage.id)} onChange={() => void toggleStage(stage.id)} />
-                <span>
-                  <strong className="small">{stage.title}</strong>
-                  <span className="small muted" style={{ display: 'block' }}>
-                    {stage.description}
+        <section className="project-sec" aria-labelledby="project-stages">
+          <div className="project-sec-head">
+            <h3 id="project-stages">Этапы</h3>
+            <Tag>Отмечаешь сам</Tag>
+            <span className="project-sec-aside">
+              <span className="n">{stagesDone}</span> из <span className="n">{project.stages.length}</span>
+            </span>
+          </div>
+          <ul className="checklist project-stages">
+            {project.stages.map((stage) => (
+              <li key={stage.id}>
+                <label className="check">
+                  <input type="checkbox" checked={stagesDoneIds.includes(stage.id)} onChange={() => void toggleStage(stage.id)} />
+                  <span className="project-stage">
+                    <span className="project-stage-title">{stage.title}</span>
+                    <span className="project-stage-text">{stage.description}</span>
                   </span>
-                </span>
-              </label>
-            </li>
-          ))}
-        </ul>
-        <label className="field">
-          <span className="field-label">Мои решения</span>
-          <span className="field-hint">План, выбранные структуры данных, что пришлось поменять. Сохраняется автоматически.</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="project-sec project-notes" aria-labelledby="project-notes-label">
+          <div className="project-sec-head">
+            <label id="project-notes-label" htmlFor="project-notes" className="project-notes-label">
+              Мои решения
+            </label>
+            <span className="project-saved" aria-live="polite">
+              {saved && (
+                <>
+                  <Check aria-hidden="true" />
+                  Сохранено
+                </>
+              )}
+            </span>
+          </div>
           <textarea
+            id="project-notes"
             className="textarea"
             rows={5}
             value={notes}
+            placeholder="План, структуры данных, что пришлось поменять"
             onChange={(event) => {
               setNotes(event.target.value);
+              setSaved(false);
               pendingNotes.current = event.target.value;
               window.clearTimeout(saveTimer.current);
               saveTimer.current = window.setTimeout(flushNotes, 500);
             }}
             onBlur={flushNotes}
           />
-        </label>
+        </section>
       </div>
     </section>
   );

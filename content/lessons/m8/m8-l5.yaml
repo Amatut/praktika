@@ -1,0 +1,1567 @@
+id: m8-l5
+module: m8
+number: "8.5"
+title: Ветка для эксперимента
+objective: >-
+  Пробовать идею в отдельной ветке Git, переключаться между ней и рабочей версией, сливать удачный
+  эксперимент в основную ветку или удалять неудачный и разрешать простой конфликт слияния.
+minutes: [30, 40]
+prerequisites: [m8-l4]
+skills: [git-workflow]
+environment: external
+
+story:
+  title: Черновик рядом с рабочей игрой
+  fictional: true
+  text: >-
+    Девятиклассница Лиза написала консольную игру «Камень, ножницы, бумага», и на переменах в неё
+    играет полкласса. Ей захотелось добавить очки за серию побед подряд, но переделка могла сломать
+    игру, в которую все уже играют. Раньше для таких проб Лиза копировала папку с игрой и потом
+    путалась, какая из копий рабочая. Теперь она завела в Git отдельную ветку: дома
+    экспериментировала в ней, а перед школой одной командой возвращала в папку рабочую версию. Очки
+    за серии прижились — Лиза слила ветку в основную, а неудачную идею с таймером на ход удалила
+    тоже одной командой.
+
+why: >-
+  Ветка позволяет пробовать смелые идеи, не рискуя рабочей версией: не понравилось — вернулся одной
+  командой. Например, `git switch -c combo` открывает черновик, а `git switch master` возвращает в
+  папку рабочую версию.
+
+usedIn: >-
+  В командах каждую задачу делают в своей ветке и сливают в основную после проверки; на GitHub и
+  похожих сервисах слияние оформляют как запрос на слияние (pull request). Одиночке ветки тоже
+  помогают: можно срочно исправить ошибку в рабочей версии, пока новая функция ещё не готова.
+
+steps:
+  - id: branches
+    type: theory
+    title: Ветка — черновик с именем
+    body: |-
+      До сих пор история проекта была одной линией: коммит за коммитом. **Ветка** — отдельная
+      линия коммитов со своим именем. Имя ветки работает как закладка: оно указывает на последний
+      коммит линии и само сдвигается вперёд с каждым новым коммитом. Основная ветка называется
+      `master` или `main` — это зависит от настроек Git. Как она называется у тебя, видно в первой
+      строке `git status`: `On branch master`. Дальше в уроке пишем `master`.
+
+      Когда Лиза завела ветку `combo`, история стала такой:
+
+      ```text
+      master:  A ─ B
+                    \
+      combo:         C ─ D
+      ```
+
+      Коммиты `C` и `D` есть только в ветке `combo`, а в `master` по-прежнему рабочая игра `B`.
+
+      Команды:
+
+      - `git branch` — список веток, звёздочка `*` стоит у текущей;
+      - `git switch -c combo` — создать ветку и перейти в неё: новые коммиты пойдут туда;
+      - `git switch master` — вернуться в основную ветку;
+      - `git merge combo` — находясь в `master`, забрать себе коммиты ветки `combo`, то есть
+        **слить** ветку;
+      - `git branch -d combo` — удалить слитую ветку: её коммиты уже есть в `master`;
+      - `git branch -D combo` — удалить неслитую ветку: её коммиты пропадут из истории.
+
+      **Переключение меняет файлы.** Ветка — не копия папки. Папка одна, и при `git switch` Git
+      раскладывает в ней файлы из последнего коммита нужной ветки. Перешёл в `master` — функции из
+      `combo` в файле нет; вернулся в `combo` — она на месте.
+
+      **Перед переключением — чистый `git status`.** Незакоммиченные правки не принадлежат ни одной
+      ветке. Git либо унесёт их с собой в другую ветку, либо откажется переключаться и напишет
+      `Your local changes to the following files would be overwritten`. Поэтому сначала закоммить
+      правку или верни файл через `git restore`.
+
+      У эксперимента два исхода. Удался — `git switch master` и `git merge combo`. Если в `master`
+      за это время не было новых коммитов, Git просто передвинет закладку `master` вперёд и напишет
+      `Fast-forward` — «перемотка вперёд». Если были, Git соединит две линии отдельным **коммитом
+      слияния**. Не удался — из `master` удали ветку: `git branch -D combo`. Рабочая версия об
+      эксперименте не узнает.
+
+      В Git до версии 2.23 команды `switch` нет. Там пишут `git checkout -b combo` и
+      `git checkout master`.
+    simpler: >-
+      Ветка — черновик рядом с чистовиком. Пишешь в черновике сколько хочешь; понравилось —
+      переносишь в чистовик (`git merge`), не понравилось — выбрасываешь (`git branch -D`). Папка
+      при этом одна: `git switch` раскладывает в ней файлы той ветки, куда ты перешёл.
+    coach: >-
+      Перед каждым `git switch` — `git status`. Чистая папка — спокойное переключение.
+
+  - id: switch-files
+    type: quiz
+    title: Куда делась функция?
+    question: >-
+      Лиза в ветке `combo` добавила в `game.py` функцию `combo_points` и закоммитила. Потом
+      набрала `git switch master`, открыла `game.py` — функции нет. Что случилось?
+    options:
+      - Git удалил её работу, функцию придётся писать заново
+      - >-
+        В `master` файл такой, каким он был в последнем коммите `master`; функция лежит в ветке
+        `combo` и вернётся после `git switch combo`
+      - Лиза забыла сохранить файл, и функция пропала
+    correct: 1
+    explanation: >-
+      Папка одна, а версий файла две — по одной в каждой ветке. `git switch` раскладывает в папке
+      файлы той ветки, куда ты перешёл, поэтому в `master` функции нет. Коммит с функцией никуда не
+      делся: он в `combo`. Третий вариант не подходит: `git add` берёт файл с диска, и раз функция
+      попала в коммит, файл был сохранён.
+
+  - id: conflicts
+    type: theory
+    title: Когда две ветки поменяли одно и то же
+    body: |-
+      Пока Лиза меняла приветствие в ветке `greeting`, в `master` она поменяла ту же строку
+      по-другому. Git не угадывает, какая версия правильная, и на `git merge greeting` отвечает:
+
+      ```text
+      Auto-merging main.py
+      CONFLICT (content): Merge conflict in main.py
+      Automatic merge failed; fix conflicts and then commit the result.
+      ```
+
+      Это **конфликт слияния** — не поломка, а вопрос к тебе: какую версию оставить? `git status`
+      покажет файл в разделе `Unmerged paths` с пометкой `both modified` — «изменён в обеих
+      ветках». А в самом файле Git записал обе версии между **маркерами**:
+
+      ```text
+      print("Камень, ножницы, бумага")
+      <<<<<<< HEAD
+      print("Привет, игрок! Сыграем?")
+      =======
+      print("Добро пожаловать в игру!")
+      >>>>>>> greeting
+      ```
+
+      Между `<<<<<<< HEAD` и `=======` — версия текущей ветки, где ты стоишь (`master`). Между
+      `=======` и `>>>>>>> greeting` — версия из сливаемой ветки. Маркеры всегда стоят в самом
+      начале строки.
+
+      Как разрешить конфликт:
+
+      1. Отредактируй спорное место: оставь одну версию, другую или собери из двух новую.
+      2. Удали все три строки маркеров.
+      3. Запусти программу и убедись, что она работает.
+      4. `git add main.py` — отметить, что конфликт разрешён.
+      5. `git commit --no-edit` — коммит слияния с готовым сообщением `Merge branch 'greeting'`.
+
+      Передумал сливать — `git merge --abort` вернёт всё как было до `git merge`.
+    simpler: >-
+      Конфликт — Git показывает обе версии спорного места и ждёт твоего решения. Верхняя половина —
+      твоя текущая ветка, нижняя — ветка, которую сливаешь. Реши, что оставить, сотри маркеры,
+      проверь запуском — и `git add`, `git commit`.
+    coach: >-
+      Конфликт — обычное дело даже в маленьком проекте. Главное правило: не коммитить файл, пока в
+      нём есть маркеры.
+
+  - id: markers
+    type: predict
+    title: Маркеры в коде
+    prompt: >-
+      Лиза сливает ветку `combo-bonus`, и в подсчёте очков случился конфликт. Не разрешив его, она
+      запускает программу. Во вводе `10` и `3`. Как думаешь, что произойдёт?
+    code: |-
+      points = int(input())
+      combo = int(input())
+      <<<<<<< HEAD
+      score = points * 2
+      =======
+      score = points + combo * 5
+      >>>>>>> combo-bonus
+      print(f"Счёт: {score}")
+    stdin: "10\n3\n"
+    options:
+      - "Счёт: 20"
+      - "Счёт: 25"
+      - Ошибка SyntaxError в строке 3
+    answer: Ошибка SyntaxError в строке 3
+    answerIsNotOutput: true
+    explanation: >-
+      Маркеры — не код на Python. Python сначала проверяет запись всей программы, спотыкается о
+      строку 3 `<<<<<<< HEAD` и сообщает `SyntaxError: invalid syntax`. Поэтому не выполняется ни
+      одна строка — даже `input()` в самом начале, как с незакрытой кавычкой в уроке 0.3. Программа
+      с неразрешённым конфликтом не запустится вообще.
+    coach: >-
+      SyntaxError на строке с `<<<<<<<`, `=======` или `>>>>>>>` — верный признак забытого
+      конфликта.
+
+  - id: practice-scoreboard
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m8-l5-e1
+      kind: fix
+      title: "Табло: слить две правки"
+      statement: |-
+        Школьное табло показывает счёт футбольного матча. Две правки сделали в разных ветках: в
+        `master` счёт стал выводиться через двоеточие, а в ветке `team-names` к нему добавили
+        слова «Хозяева» и «Гости». При слиянии случился конфликт — он в стартовом коде.
+
+        Нужны обе правки сразу. Для счёта 2 : 1 табло должно показать:
+
+        ```text
+        Хозяева 2 : 1 Гости
+        ```
+
+        Разреши конфликт: собери из двух версий одну строку вывода и удали маркеры.
+      input: Две строки — голы хозяев и голы гостей.
+      output: "Одна строка: `Хозяева <голы хозяев> : <голы гостей> Гости`."
+      constraints:
+        - Первые две строки программы не меняй.
+        - Разделитель между голами — двоеточие с пробелами по бокам, как в `master`.
+      starterCode: |
+        home = int(input())
+        away = int(input())
+        <<<<<<< HEAD
+        print(f"{home} : {away}")
+        =======
+        print(f"Хозяева {home} — {away} Гости")
+        >>>>>>> team-names
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "2\n1\n"
+          expected: "Хозяева 2 : 1 Гости"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "0\n0\n"
+          expected: "Хозяева 0 : 0 Гости"
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: двузначный счёт"
+          edge: true
+          stdin: "10\n3\n"
+          expected: "Хозяева 10 : 3 Гости"
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - В коде не осталось строк с маркерами `<<<<<<<`, `=======` и `>>>>>>>`.
+        - Программа выводит одну строку, в которой есть и слова из ветки `team-names`, и двоеточие из `master`.
+        - Счёт берётся из ввода.
+      hints:
+        - >-
+          Прочитай конфликт по половинам. Что изменилось в `master` (между `<<<<<<<` и `=======`)
+          и что — в ветке `team-names` (между `=======` и `>>>>>>>`)? В итоговой строке должны
+          уцелеть обе правки.
+        - >-
+          Тот же приём на ценах. В одной ветке — `print(f"{price} руб.")`, в другой —
+          `print(f"Цена: {price}")`. Объединённая версия берёт подпись из одной ветки, а рубли — из
+          другой: `print(f"Цена: {price} руб.")`.
+        - >-
+          Удали три строки маркеров и одну из двух строк с `print`. В оставшейся строке с
+          «Хозяева» и «Гости» замени тире между голами на разделитель из `master`.
+      solution:
+        code: |
+          home = int(input())
+          away = int(input())
+          print(f"Хозяева {home} : {away} Гости")
+        explanation: >-
+          Из `master` взят разделитель « : », из ветки `team-names` — слова «Хозяева» и «Гости».
+          Маркеры удалены, и осталась одна строка вывода — новая версия, собранная из двух. Git сам
+          так не умеет: он видит две разные строки и спрашивает тебя, что с ними делать.
+      altSolutions:
+        - code: |
+            home = int(input())
+            away = int(input())
+            print("Хозяева", home, ":", away, "Гости")
+          note: print через запятую ставит пробелы сам.
+        - code: |
+            home = int(input())
+            away = int(input())
+            score = f"{home} : {away}"
+            print(f"Хозяева {score} Гости")
+          note: Строка счёта из master целиком, вокруг неё — слова из ветки.
+      wrongSolutions:
+        - code: |
+            home = int(input())
+            away = int(input())
+            <<<<<<< HEAD
+            print(f"{home} : {away}")
+            =======
+            print(f"Хозяева {home} — {away} Гости")
+            >>>>>>> team-names
+          note: Ничего не изменено — маркеры на месте.
+          expectMistake: markers-left
+        - code: |
+            home = int(input())
+            away = int(input())
+            print(f"Хозяева {home} : {away} Гости")
+            =======
+          note: Удалены почти все лишние строки, но забыт разделитель =======.
+          expectMistake: markers-left
+        - code: |
+            home = int(input())
+            away = int(input())
+            print(f"{home} : {away}")
+            print(f"Хозяева {home} — {away} Гости")
+          note: Маркеры удалены, но оставлены обе версии.
+          expectMistake: both-lines
+        - code: |
+            home = int(input())
+            away = int(input())
+            print(f"{home} : {away}")
+          note: Оставлена только версия master.
+          expectMistake: only-head
+        - code: |
+            home = int(input())
+            away = int(input())
+            print(f"Хозяева {home} — {away} Гости")
+          note: Оставлена только версия из ветки team-names.
+          expectMistake: only-branch
+        - code: |
+            home = int(input())
+            away = int(input())
+            print(f"Хозяева {home}:{away} Гости")
+          note: Двоеточие без пробелов.
+          expectMistake: no-spaces
+      mistakes:
+        - id: markers-left
+          when:
+            errorType: SyntaxError
+            codeRegex: '^(<{7}|={7}|>{7})'
+          why: >-
+            В коде осталась строка маркера конфликта. Маркеры — пометки Git, а не Python, поэтому
+            программа не запускается вовсе: SyntaxError.
+          try: >-
+            Удали все три строки маркеров: `<<<<<<< HEAD`, `=======` и `>>>>>>> team-names`.
+            Строки, которые начинаются с семи знаков `<`, `=` или `>`, в коде остаться не должны.
+          verify: Программа должна запуститься без SyntaxError.
+        - id: both-lines
+          when:
+            codeRegex: '^\s*print\([\s\S]*^\s*print\('
+          why: >-
+            Маркеры удалены, но остались обе версии, и табло печатает две строки. Разрешить
+            конфликт — значит оставить одну строку, в которой есть обе правки.
+          try: Собери из двух строк `print` одну — с «Хозяева», «Гости» и двоеточием из `master`.
+          verify: "В «Примере 1» должна быть одна строка: «Хозяева 2 : 1 Гости»."
+        - id: only-head
+          when:
+            outputEquals: "2 : 1"
+          why: >-
+            Оставлена только версия из `master`: двоеточие есть, а слова «Хозяева» и «Гости» из
+            ветки `team-names` потерялись.
+          try: Добавь в строку вывода слова из второй половины конфликта.
+          verify: "В «Примере 1» должно получиться «Хозяева 2 : 1 Гости»."
+        - id: only-branch
+          when:
+            outputEquals: "Хозяева 2 — 1 Гости"
+          why: >-
+            Оставлена только версия из ветки `team-names`: слова есть, а правка из `master` —
+            двоеточие вместо тире — потерялась.
+          try: 'Замени тире между голами на разделитель из верхней половины конфликта — « : ».'
+          verify: "В «Примере 1» должно получиться «Хозяева 2 : 1 Гости»."
+        - id: no-spaces
+          when:
+            codeRegex: '\{home\}:|:\{away\}'
+          why: >-
+            Правки объединены, но двоеточие потеряло пробелы. В `master` счёт выводился как
+            `{home} : {away}` — с пробелом по обе стороны двоеточия.
+          try: Поставь пробел до и после двоеточия, как в версии из `master`.
+          verify: "В «Примере 1» должно получиться «Хозяева 2 : 1 Гости»."
+      afterPass: >-
+        Ты не выбрал одну из версий, а собрал новую из двух — так разрешают многие конфликты.
+        Совет на будущее: после слияния запускай программу на тех же данных, на которых проверял
+        обе ветки по отдельности.
+      skills: [git-workflow, f-strings]
+
+  - id: practice-combo
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m8-l5-e2
+      kind: fix
+      title: Очки за комбо
+      statement: |-
+        В игре Лизы «Камень, ножницы, бумага» за раунд начисляются очки. Две ветки поменяли одну и
+        ту же строку подсчёта:
+
+        - в `master` — двойные очки выходного дня: весь счёт удваивается;
+        - в ветке `combo-bonus` — бонус за серии: `+5` очков за каждое **комбо** (серию побед
+          подряд).
+
+        Нужны оба правила: сначала к очкам прибавляется бонус за комбо, потом всё вместе
+        удваивается. Например, 10 очков и 3 комбо: бонус 15, вместе с очками 25, после удвоения —
+        50.
+
+        Разреши конфликт в стартовом коде — это та самая программа из прогноза.
+      input: Две строки — очки за раунд и число комбо.
+      output: "Одна строка: `Счёт: <число>`."
+      constraints:
+        - "Строку вывода `Счёт: …` не меняй."
+      starterCode: |
+        points = int(input())
+        combo = int(input())
+        <<<<<<< HEAD
+        score = points * 2
+        =======
+        score = points + combo * 5
+        >>>>>>> combo-bonus
+        print(f"Счёт: {score}")
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "10\n3\n"
+          expected: "Счёт: 50"
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "7\n1\n"
+          expected: "Счёт: 24"
+        - id: t3
+          kind: io
+          title: "Граничный случай: без комбо"
+          edge: true
+          stdin: "10\n0\n"
+          expected: "Счёт: 20"
+        - id: t4
+          kind: io
+          title: "Граничный случай: ноль очков за раунд"
+          edge: true
+          stdin: "0\n2\n"
+          expected: "Счёт: 20"
+      criteria:
+        - В коде не осталось строк с маркерами конфликта.
+        - Счёт учитывает оба правила — бонус за комбо и удвоение.
+        - Удваивается весь счёт вместе с бонусом, поэтому для 10 очков и 3 комбо выходит 50.
+      hints:
+        - >-
+          Каждая ветка добавила своё правило. Какое правило стоит в какой половине конфликта — и
+          в каком порядке их применить, чтобы для 10 очков и 3 комбо получилось 50?
+        - >-
+          Вспомни порядок действий из урока 1.1: `2 + 3 * 2` даёт 8, а `(2 + 3) * 2` — 10. Скобки
+          говорят Python: сначала сложи, потом умножь.
+        - >-
+          Вместо всего блока с маркерами оставь одну строку `score = (…) * 2`. В скобках — формула
+          из ветки `combo-bonus`.
+      solution:
+        code: |
+          points = int(input())
+          combo = int(input())
+          score = (points + combo * 5) * 2
+          print(f"Счёт: {score}")
+        explanation: >-
+          Формула из ветки `combo-bonus` взята в скобки и умножена на 2 — это правило из `master`.
+          Без скобок удвоились бы только очки за раунд. Можно и в две строки:
+          `score = points + combo * 5`, затем `score = score * 2`. Важно, что вторая строка
+          берёт результат первой, а не считает счёт заново из `points`.
+      altSolutions:
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points + combo * 5
+            score = score * 2
+            print(f"Счёт: {score}")
+          note: Сначала правило ветки, потом правило master — вторая строка берёт результат первой.
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points + combo * 5
+            score *= 2
+            print(f"Счёт: {score}")
+          note: Удвоение через *=.
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points * 2 + combo * 10
+            print(f"Счёт: {score}")
+          note: Скобки раскрыты — удвоены и очки, и бонус.
+        - code: |
+            points = int(input())
+            combo = int(input())
+            bonus = combo * 5
+            score = (points + bonus) * 2
+            print(f"Счёт: {score}")
+          note: Бонус в отдельной переменной (найдено рецензентом-учеником).
+      wrongSolutions:
+        - code: |
+            points = int(input())
+            combo = int(input())
+            <<<<<<< HEAD
+            score = points * 2
+            =======
+            score = points + combo * 5
+            >>>>>>> combo-bonus
+            print(f"Счёт: {score}")
+          note: Конфликт не разрешён.
+          expectMistake: markers-left
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points * 2
+            score = points + combo * 5
+            print(f"Счёт: {score}")
+          note: Маркеры удалены, обе строки оставлены — вторая перезаписывает первую.
+          expectMistake: both-assign
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points + combo * 5
+            score = points * 2
+            print(f"Счёт: {score}")
+          note: Обе строки в обратном порядке — побеждает удвоение без бонуса.
+          expectMistake: both-assign
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points * 2
+            print(f"Счёт: {score}")
+          note: Оставлена только версия master.
+          expectMistake: only-head
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points + combo * 5
+            print(f"Счёт: {score}")
+          note: Оставлена только версия ветки combo-bonus.
+          expectMistake: only-branch
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points * 2 + combo * 5
+            print(f"Счёт: {score}")
+          note: Бонус прибавлен после удвоения.
+          expectMistake: wrong-order
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points + combo * 5 * 2
+            print(f"Счёт: {score}")
+          note: Удвоен только бонус.
+          expectMistake: bonus-doubled
+        - code: |
+            points = int(input())
+            combo = int(input())
+            score = points + combo * 5
+            score * 2
+            print(f"Счёт: {score}")
+          note: Удвоение отдельной строкой без присваивания — результат теряется.
+          expectMistake: lost-result
+      mistakes:
+        - id: markers-left
+          when:
+            errorType: SyntaxError
+            codeRegex: '^(<{7}|={7}|>{7})'
+          why: >-
+            В коде осталась строка маркера конфликта. Пока она там, Python не запускает программу
+            вовсе — это SyntaxError, как в прогнозе.
+          try: >-
+            Удали строки `<<<<<<< HEAD`, `=======` и `>>>>>>> combo-bonus` и оставь одну формулу
+            счёта, которая учитывает оба правила.
+          verify: Программа должна запуститься без SyntaxError.
+        - id: both-assign
+          when:
+            codeRegex: '^score\s*=(?!=)(?![^\n]*\bscore\b)[^\n]*\n(?:[^\n]*\n)*?score\s*=(?!=)(?![^\n]*\bscore\b)'
+          why: >-
+            Маркеры удалены, но обе строки `score = …` остались, и каждая считает счёт заново из
+            `points`. Вторая строка перезаписывает первую, поэтому работает только одно правило.
+          try: >-
+            Объедини правила в одну формулу. Или сделай так, чтобы вторая строка брала результат
+            первой: `score = score * 2`.
+          verify: "В «Примере 1» должно получиться «Счёт: 50»."
+        - id: lost-result
+          when:
+            codeRegex: '^\s*score\s*[-+*/][^=\n]*$'
+          why: >-
+            Строка вроде `score * 2` считает удвоенный счёт, но никуда его не записывает: результат
+            сразу теряется, и `score` остаётся прежним.
+          try: Запиши результат обратно в переменную — `score = score * 2`.
+          verify: "В «Примере 1» должно получиться «Счёт: 50»."
+        - id: only-head
+          when:
+            outputEquals: "Счёт: 20"
+          why: >-
+            Оставлено только правило из `master`: очки удвоены, а бонус за 3 комбо из ветки
+            `combo-bonus` потерялся.
+          try: Добавь в формулу бонус `combo * 5` — до удвоения.
+          verify: "В «Примере 1» должно получиться «Счёт: 50»."
+        - id: only-branch
+          when:
+            outputEquals: "Счёт: 25"
+          why: >-
+            Оставлено только правило из ветки `combo-bonus`: бонус есть, а удвоение из `master`
+            потерялось.
+          try: Умножь на 2 весь счёт вместе с бонусом.
+          verify: "В «Примере 1» должно получиться «Счёт: 50»."
+        - id: wrong-order
+          when:
+            outputEquals: "Счёт: 35"
+          why: >-
+            Оба правила есть, но бонус прибавлен после удвоения: `10 * 2 + 3 * 5` = 35. По условию
+            удваивается весь счёт вместе с бонусом.
+          try: Сначала сложи очки и бонус, а потом умножь сумму на 2 — возьми её в скобки.
+          verify: "В «Примере 1» должно получиться «Счёт: 50»."
+        - id: bonus-doubled
+          when:
+            outputEquals: "Счёт: 40"
+          why: >-
+            Удвоен только бонус: `combo * 5 * 2`, а очки за раунд остались как были. Умножение
+            выполняется раньше сложения, поэтому `* 2` прилипло к бонусу.
+          try: Возьми в скобки всю сумму `points + combo * 5` и умножь на 2 уже её.
+          verify: "В «Примере 1» должно получиться «Счёт: 50»."
+      afterPass: >-
+        Оба правила работают вместе: сначала бонус, потом удвоение. Улучшение: вынеси 5 и 2 в
+        переменные с понятными именами, например `combo_bonus = 5` и `weekend_factor = 2`, — тогда
+        следующий конфликт в этой строке будет проще прочитать.
+      skills: [git-workflow, numbers-arithmetic]
+
+  - id: practice-markers
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m8-l5-e3
+      kind: write
+      title: Проверка перед коммитом
+      statement: |-
+        В длинном файле легко пропустить одну строку маркеров — и закоммитить программу, которая
+        не запускается. Напиши проверку: программа читает файл `game.py` (он лежит рядом, его
+        видно в блоке «Файлы задания») и ищет строки, которые **начинаются** с `<<<<<<<`,
+        `=======` или `>>>>>>>` — семи одинаковых знаков подряд.
+
+        Для каждой такой строки программа печатает её номер (строки считаются с 1) и саму строку.
+        Для файла из блока «Файлы задания» вывод такой:
+
+        ```text
+        Строка 3: <<<<<<< HEAD
+        Строка 5: =======
+        Строка 7: >>>>>>> combo-bonus
+        ```
+
+        Если маркеров нет, программа печатает одну строку `Маркеров нет`.
+
+        Проверить начало строки поможет метод `startswith` из урока 8.3:
+        `"<<<<<<< HEAD".startswith("<<<<<<<")` даёт `True`, а `"x = 1".startswith("<<<<<<<")` —
+        `False`. Подойдёт и срез из модуля 4: `line[:7] == "<<<<<<<"`.
+      input: Ввода нет — программа читает файл `game.py`.
+      output: >-
+        По строке на каждый маркер: `Строка <номер>: <строка файла>`. Если маркеров нет — одна
+        строка `Маркеров нет`.
+      constraints:
+        - Открывай файл с `encoding="utf-8"`.
+        - Маркер — только в самом начале строки. Например, `print("=======")` маркером не считается.
+        - Проверка подставляет разные файлы `game.py`, поэтому номера и строки не записывай в код готовыми.
+      files:
+        game.py: |
+          points = int(input())
+          combo = int(input())
+          <<<<<<< HEAD
+          score = points * 2
+          =======
+          score = points + combo * 5
+          >>>>>>> combo-bonus
+          print(f"Счёт: {score}")
+      starterCode: |
+        # Прочитай game.py строка за строкой
+        # Для каждой строки, которая начинается с маркера, выведи её номер и саму строку
+        # Если маркеров не нашлось, выведи «Маркеров нет»
+      tests:
+        - id: t1
+          kind: io
+          title: Конфликт не разрешён
+          example: true
+          expected: |-
+            Строка 3: <<<<<<< HEAD
+            Строка 5: =======
+            Строка 7: >>>>>>> combo-bonus
+          compare:
+            ignoreBlankLines: true
+        - id: t2
+          kind: io
+          title: Конфликт разрешён
+          example: true
+          files:
+            game.py: |
+              points = int(input())
+              combo = int(input())
+              score = (points + combo * 5) * 2
+              print(f"Счёт: {score}")
+          expected: Маркеров нет
+          compare:
+            ignoreBlankLines: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: забыта одна строка"
+          edge: true
+          files:
+            game.py: |
+              home = int(input())
+              away = int(input())
+              print(f"Хозяева {home} : {away} Гости")
+              =======
+              print(f"Хозяева {home} — {away} Гости")
+          expected: "Строка 4: ======="
+          compare:
+            ignoreBlankLines: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: похоже на маркер, но не он"
+          edge: true
+          files:
+            game.py: |
+              """
+              Итоги
+              ======
+              """
+              print("======= ИТОГИ =======")
+              wins = 3
+              print(f"Побед: {wins}")
+              print("=======")
+          expected: Маркеров нет
+          compare:
+            ignoreBlankLines: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: два конфликта в одном файле"
+          edge: true
+          files:
+            game.py: |
+              print("Камень, ножницы, бумага")
+              <<<<<<< HEAD
+              print("Привет, игрок! Сыграем?")
+              =======
+              print("Добро пожаловать в игру!")
+              >>>>>>> greeting
+              rounds = 3
+              <<<<<<< HEAD
+              print("Раундов:", rounds)
+              =======
+              print(f"Играем до {rounds} побед")
+              >>>>>>> greeting
+          expected: |-
+            Строка 2: <<<<<<< HEAD
+            Строка 4: =======
+            Строка 6: >>>>>>> greeting
+            Строка 8: <<<<<<< HEAD
+            Строка 10: =======
+            Строка 12: >>>>>>> greeting
+          compare:
+            ignoreBlankLines: true
+        - id: t6
+          kind: io
+          title: "Граничный случай: пустой файл"
+          edge: true
+          files:
+            game.py: ""
+          expected: Маркеров нет
+          compare:
+            ignoreBlankLines: true
+        - id: t7
+          kind: io
+          title: "Граничный случай: маркер в первой строке"
+          edge: true
+          files:
+            game.py: |
+              <<<<<<< HEAD
+              import random
+              =======
+              from random import choice
+              >>>>>>> greeting
+              print("Камень, ножницы, бумага")
+          expected: |-
+            Строка 1: <<<<<<< HEAD
+            Строка 3: =======
+            Строка 5: >>>>>>> greeting
+          compare:
+            ignoreBlankLines: true
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            Файл открыт без кодировки. Добавь `encoding="utf-8"` — иначе на Windows со старым
+            Python (до 3.15) русский текст из `game.py` прочитается с ошибкой.
+      criteria:
+        - Программа читает `game.py` и проверяет каждую его строку.
+        - Маркером считается только строка, которая начинается с `<<<<<<<`, `=======` или `>>>>>>>`.
+        - Номера строк считаются с 1, как в редакторе; первая строка файла тоже проверяется.
+        - Если маркеров нет, выводится ровно одна строка `Маркеров нет`.
+        - "Файл открыт с кодировкой `encoding=\"utf-8\"`."
+      hints:
+        - >-
+          Разбей работу на части: пройти по строкам файла, про каждую решить «маркер или нет», а в
+          конце понять, нашлось ли хоть что-нибудь. Что нужно запоминать по ходу цикла, чтобы
+          напечатать номер строки и чтобы после цикла знать ответ на последний вопрос?
+        - |-
+          Номер строки — обычный счётчик из модуля 3, а «нашлось ли» — второй счётчик. Пример на
+          другом файле — сколько строк заметок начинается с `#`:
+
+          ```python
+          count = 0
+          with open("notes.txt", encoding="utf-8") as file:
+              for line in file:
+                  if line.startswith("#"):
+                      count += 1
+          print("Комментариев:", count)
+          ```
+        - |-
+          Каркас:
+
+          ```text
+          номер = 0, найдено = 0
+          открыть game.py с encoding="utf-8"
+          для каждой строки файла:
+              номер += 1
+              если строка начинается с <<<<<<<, ======= или >>>>>>>:
+                  напечатать «Строка номер: строка без перевода строки»
+                  найдено += 1
+          после цикла: если найдено == 0 — напечатать «Маркеров нет»
+          ```
+      solution:
+        code: |
+          number = 0
+          found = 0
+          with open("game.py", encoding="utf-8") as file:
+              for line in file:
+                  number += 1
+                  if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                      print(f"Строка {number}: {line.strip()}")
+                      found += 1
+          if found == 0:
+              print("Маркеров нет")
+        explanation: >-
+          Счётчик `number` растёт на каждом шаге цикла — ещё до проверки, поэтому совпадает с
+          номером строки в редакторе. `startswith` смотрит только на начало строки, так что
+          `print("=======")` маркером не считается. `strip()` убирает перевод строки в конце.
+          Второй счётчик `found` нужен, чтобы после цикла понять, печатать ли «Маркеров нет».
+      altSolutions:
+        - code: |
+            number = 0
+            found = False
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line[:7] in ["<<<<<<<", "=======", ">>>>>>>"]:
+                        print(f"Строка {number}: {line.strip()}")
+                        found = True
+            if not found:
+                print("Маркеров нет")
+          note: Срез первых семи знаков, список маркеров и флаг вместо счётчика.
+        - code: |
+            with open("game.py", encoding="utf-8") as file:
+                lines = file.read().splitlines()
+            markers = ["<<<<<<<", "=======", ">>>>>>>"]
+            found = 0
+            number = 1
+            for line in lines:
+                for marker in markers:
+                    if line.startswith(marker):
+                        print("Строка", str(number) + ":", line)
+                        found += 1
+                number += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Весь файл сразу, вложенный цикл по маркерам, счёт строк с 1.
+        - code: |
+            from pathlib import Path
+
+            text = Path("game.py").read_text(encoding="utf-8")
+            number = 0
+            found = 0
+            for line in text.split("\n"):
+                number += 1
+                start = line[:7]
+                if start == "<<<<<<<" or start == "=======" or start == ">>>>>>>":
+                    print(f"Строка {number}: {line}")
+                    found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Файл через pathlib, строки через split.
+        - code: |
+            with open("game.py", encoding="utf-8") as file:
+                lines = file.read().splitlines()
+            found = 0
+            for i in range(len(lines)):
+                line = lines[i]
+                if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                    print(f"Строка {i + 1}: {line}")
+                    found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Перебор по индексам, номер строки — индекс плюс 1.
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith(("<<<<<<<", "=======", ">>>>>>>")):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: startswith с кортежем образцов (в уроках не объяснялось, но верно).
+      wrongSolutions:
+        - code: |
+            print("Строка 3: <<<<<<< HEAD")
+            print("Строка 5: =======")
+            print("Строка 7: >>>>>>> combo-bonus")
+          note: Ответ для одного файла записан в код готовым.
+          expectMistake: no-file
+        - code: |
+            number = 0
+            found = 0
+            with open("games.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Опечатка в имени файла.
+          expectMistake: wrong-file
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if "<<<<<<<" in line or "=======" in line or ">>>>>>>" in line:
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: in ищет маркер в любом месте строки, а не только в начале.
+          expectMistake: not-at-start
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+                    number += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Счётчик растёт после проверки — нумерация с нуля.
+          expectMistake: off-by-one
+        - code: |
+            number = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        number += 1
+                        print(f"Строка {number}: {line.strip()}")
+            if number == 0:
+                print("Маркеров нет")
+          note: Счётчик растёт только на маркерах — считает маркеры, а не строки.
+          expectMistake: count-markers
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Забыт маркер =======.
+          expectMistake: missing-kind
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<" or "=======" or ">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: or внутри startswith — проверяется только первый маркер.
+          expectMistake: or-inside
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line[:7] == "<<<<<<<" or "=======" or ">>>>>>>":
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Сравнение и голые строки через or — условие верно для любой строки.
+          expectMistake: or-inside
+        - code: |
+            number = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                    else:
+                        print("Маркеров нет")
+          note: «Маркеров нет» печатается внутри цикла для каждой обычной строки.
+          expectMistake: message-too-early
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line == "<<<<<<<" or line == "=======" or line == ">>>>>>>":
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Строка сравнивается с маркером целиком — в ней ещё перевод строки и имя ветки.
+          expectMistake: nothing-found
+        - code: |
+            number = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+          note: Нет сообщения для файла без маркеров.
+          expectMistake: no-message
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<") or "=======" or ">>>>>>>":
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Первая проверка полная, остальные маркеры — голыми строками через or.
+          expectMistake: or-inside
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<", "=======", ">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Три маркера в одном startswith — TypeError про slice indices.
+          expectMistake: startswith-args
+        - code: |
+            with open("game.py", encoding="utf-8") as file:
+                lines = file.read().splitlines()
+            found = 0
+            for i in range(len(lines)):
+                if lines[i].startswith("<<<<<<<") or lines[i].startswith("=======") or lines[i].startswith(">>>>>>>"):
+                    print(f"Строка {i}: {lines[i]}")
+                    found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Номер — индекс без + 1, нумерация с нуля.
+          expectMistake: off-by-one
+        - code: |
+            number = 1
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Счётчик начат с 1 и увеличивается в начале шага — номера на 1 больше.
+          expectMistake: off-by-one-up
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file.read():
+                    number += 1
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Цикл по file.read() перебирает символы, а не строки.
+          expectMistake: nothing-found
+        - code: |
+            with open("game.py", encoding="utf-8") as file:
+                lines = file.read().splitlines()
+            found = 0
+            for i in range(1, len(lines)):
+                if lines[i].startswith("<<<<<<<") or lines[i].startswith("=======") or lines[i].startswith(">>>>>>>"):
+                    print(f"Строка {i + 1}: {lines[i]}")
+                    found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Перебор с индекса 1 — первая строка файла не проверяется.
+          expectMistake: first-line-skipped
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py", encoding="utf-8") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<") or line.startswith("===") or line.startswith(">>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: Проверяются три знака вместо семи.
+          expectMistake: short-marker
+        - code: |
+            number = 0
+            found = 0
+            with open("game.py") as file:
+                for line in file:
+                    number += 1
+                    if line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>"):
+                        print(f"Строка {number}: {line.strip()}")
+                        found += 1
+            if found == 0:
+                print("Маркеров нет")
+          note: open без encoding — в тренажёре работает, на Windows падает на русских буквах.
+          expectMistake: no-encoding
+      mistakes:
+        - id: wrong-file
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            В рабочей папке нет файла с таким именем: программа открывает не тот файл. Имя должно
+            совпадать до буквы — `game.py`, как в блоке «Файлы задания».
+          try: Сверь имя в `open(...)` с именем в блоке «Файлы задания».
+          verify: Программа должна запуститься без FileNotFoundError.
+        - id: startswith-args
+          when:
+            errorType: TypeError
+            errorIncludes: slice indices
+          why: >-
+            `startswith` проверяет один образец. Второе и третье значения в скобках Python понимает
+            как номера символов — откуда и докуда смотреть, — а не как ещё два маркера. Отсюда
+            TypeError про `slice indices`.
+          try: >-
+            Проверь каждый маркер своим вызовом и соедини проверки через `or`:
+            `line.startswith("<<<<<<<") or line.startswith("=======") or …`.
+          verify: Программа должна запуститься без TypeError.
+        - id: no-file
+          when:
+            codeRegex: '(?<![\s\S])(?![\s\S]*(?:\bopen\s*\(|read_text\s*\())'
+          why: >-
+            Программа не читает `game.py`, поэтому печатает одно и то же для любого файла. Проверка
+            подставляет разные файлы — в «Конфликт разрешён» маркеров нет вовсе.
+          try: Открой `game.py` через `with open("game.py", encoding="utf-8") as file:` и пройди по его строкам циклом `for`.
+        - id: or-inside
+          when:
+            codeRegex: '(?:\(|==)\s*["''][<=>]{7}["'']\)?\s+or\s+["'']'
+          why: >-
+            `or` соединяет целые условия, а не варианты значения — как `day == "сб" or "вс"` в уроке
+            2.4. Голая строка `"======="` после `or` непустая, а значит, истинная. Поэтому
+            `line.startswith("<<<<<<<") or "======="` и `line[:7] == "<<<<<<<" or "======="` верны
+            для любой строки. А в `line.startswith("<<<<<<<" or "=======")` Python сначала
+            вычисляет `"<<<<<<<" or "======="`, получает первую строку и проверяет только один
+            маркер.
+          try: >-
+            Запиши каждую проверку полностью:
+            `line.startswith("<<<<<<<") or line.startswith("=======") or line.startswith(">>>>>>>")`.
+        - id: not-at-start
+          when:
+            outputIncludes: 'print("=======")'
+          why: >-
+            Программа приняла за маркер строку `print("=======")`: знаки `=======` в ней есть, но
+            не в начале. Оператор `in` ищет текст в любом месте строки, а Git ставит маркеры только
+            в самое начало.
+          try: Проверяй начало строки — `line.startswith("=======")` или `line[:7] == "======="`.
+        - id: off-by-one
+          when:
+            failedTest: t1
+            outputIncludes: "Строка 2: <<<<<<< HEAD"
+          why: >-
+            Номера на единицу меньше, чем в редакторе: счёт начался с нуля. Так бывает, когда
+            счётчик растёт уже после печати или номер взят из индекса: индексы из
+            `range(len(...))` начинаются с 0.
+          try: >-
+            Увеличивай счётчик в самом начале шага цикла, до проверки строки. А если номер — индекс
+            `i`, печатай `i + 1`.
+          verify: "В примере «Конфликт не разрешён» первая строка должна быть «Строка 3: <<<<<<< HEAD»."
+        - id: off-by-one-up
+          when:
+            failedTest: t1
+            outputIncludes: "Строка 4: <<<<<<< HEAD"
+          why: >-
+            Номера на единицу больше, чем в редакторе: счётчик начался с 1 и вырос до 2 ещё до
+            проверки первой строки.
+          try: >-
+            Выбери что-то одно: начни с 0 и увеличивай счётчик в начале шага цикла — или начни с 1 и
+            увеличивай в конце шага. Но не то и другое сразу.
+          verify: "В примере «Конфликт не разрешён» первая строка должна быть «Строка 3: <<<<<<< HEAD»."
+        - id: count-markers
+          when:
+            failedTest: t1
+            outputIncludes: "Строка 1: <<<<<<< HEAD"
+          why: >-
+            Счётчик растёт только на строках с маркерами, поэтому считает маркеры, а не строки
+            файла: вышло 1, 2, 3 вместо 3, 5, 7.
+          try: >-
+            Увеличивай номер на каждом шаге цикла — для любой строки, а не только внутри `if`. Чтобы
+            понять, нашлись ли маркеры, заведи отдельный счётчик.
+          verify: "В примере «Конфликт не разрешён» номера должны быть 3, 5 и 7."
+        - id: missing-kind
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?:(?![\s\S]*<{7})|(?![\s\S]*={7})|(?![\s\S]*>{7}))'
+          why: >-
+            У конфликта три вида маркеров: `<<<<<<<` открывает его, `=======` делит версии,
+            `>>>>>>>` закрывает. Программа ищет не все три, поэтому часть строк пропускает.
+          try: Проверяй начало строки на каждый из трёх маркеров.
+          verify: "В примере «Конфликт не разрешён» должно быть три строки: 3, 5 и 7."
+        - id: nothing-found
+          when:
+            failedTest: t1
+            outputEquals: Маркеров нет
+          why: >-
+            Программа не узнала ни одного маркера, хотя в файле их три: условие в `if` не
+            срабатывает ни на одной строке. Частые причины: строка сравнивается целиком через `==`
+            (а в ней после маркера ещё имя ветки и перевод строки), срез не той длины — в маркере
+            семь знаков — или цикл идёт не по строкам: `for line in file.read()` перебирает
+            отдельные символы.
+          try: >-
+            Проверь условие на промежуточных значениях, как в модуле 6: временно напечатай в цикле
+            `print(f"ОТЛАДКА: {line[:7]=}")` и результат проверки — и сравни со строкой 3 файла.
+          verify: В примере «Конфликт не разрешён» должны найтись строки 3, 5 и 7.
+        - id: message-too-early
+          when:
+            outputIncludes: Маркеров нет
+          why: >-
+            «Маркеров нет» напечатано, хотя маркеры в файле есть. Так бывает, когда сообщение
+            стоит внутри цикла (в `else`), после цикла без условия или когда счётчик найденных
+            обнуляется внутри цикла. Сказать «маркеров нет» можно только после того, как
+            просмотрены все строки.
+          try: >-
+            Заведи счётчик найденных до цикла, а сообщение напечатай после цикла — только если
+            счётчик равен нулю.
+          verify: В примере «Конфликт не разрешён» не должно быть строки «Маркеров нет».
+        - id: no-message
+          when:
+            failedTest: t2
+            outputEquals: ""
+          why: >-
+            Для файла без маркеров программа ничего не печатает. По условию в этом случае нужна
+            строка «Маркеров нет».
+          try: Считай найденные маркеры, а после цикла выведи «Маркеров нет», если счётчик равен нулю.
+        - id: first-line-skipped
+          when:
+            failedTest: t7
+            outputEquals: "Строка 3: =======\nСтрока 5: >>>>>>> greeting"
+          why: >-
+            Первая строка файла не проверяется, поэтому маркер в строке 1 пропущен. Так бывает с
+            `range(1, len(lines))`, со срезом `lines[1:]` или если первую строку пропустили, как
+            заголовок CSV. Но у `game.py` заголовка нет: конфликт может начаться прямо с первой
+            строки.
+          try: >-
+            Проверяй все строки: `range(len(lines))` и номер `i + 1` — или `for line in file` со
+            счётчиком.
+          verify: "В граничном случае «маркер в первой строке» вывод должен начинаться со строки «Строка 1: <<<<<<< HEAD»."
+        - id: short-marker
+          when:
+            failedTest: t4
+            outputEquals: "Строка 3: ======"
+          why: >-
+            Программа приняла за маркер строку `======` из описания в начале файла: в ней шесть
+            знаков `=`, а в маркере их семь. Проверка начала строки короче семи знаков ловит и такие
+            строки.
+          try: >-
+            Сравнивай начало строки ровно с семью знаками: `"======="` в `startswith` или срез
+            `line[:7]`.
+          verify: "В граничном случае «похоже на маркер, но не он» должно получиться «Маркеров нет»."
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            codeRegex: '(?:\bopen|read_text)\s*\((?![^)]*encoding)'
+            outputIncludes: Строка
+          where: Вызов `open()`
+          why: >-
+            В `open()` не указана кодировка. В тренажёре этого не видно: здесь по умолчанию UTF-8.
+            А на русской Windows с Python 3.14 и раньше файл прочитается в cp1251, и русские буквы
+            из `game.py` дадут ошибку UnicodeDecodeError.
+          try: Добавь в `open()` аргумент `encoding="utf-8"`.
+          verify: Тест «Кодировка указана» должен стать зелёным.
+      afterPass: >-
+        Теперь забытый маркер легко поймать до коммита: запусти проверку перед `git add`. Такая
+        проверка есть и в самом Git: команда `git diff --check` печатает для каждого маркера строку
+        вида `main.py:2: leftover conflict marker` — «оставшийся маркер конфликта». Улучшение:
+        вынеси имя файла в переменную в начале программы — тогда проверку легко направить на
+        другой файл, например на свой `main.py`.
+      skills: [git-workflow, files-paths, string-methods, accumulators]
+
+  - id: experiment
+    type: checklist
+    title: Эксперимент в ветке
+    body: |-
+      Вторая часть урока — на компьютере, с проектом «Список задач» после урока 8.4: в проекте
+      есть `.gitignore`, а `git status` чистый. Займёт 10–15 минут, интернет не нужен. Можно
+      сразу после заданий, а можно отдельным заходом в другой день. Если под рукой только
+      телефон — переходи к итогу урока, а сюда вернись позже. Нет своего проекта — сначала пройди
+      чек-листы уроков 8.2–8.4 с учебным мини-проектом из 8.2: там он получает пакет `todo`,
+      окружение, Git и `.gitignore`.
+
+      Эксперимент — сроки задач: при добавлении программа спросит дату, а в списке покажет,
+      сколько дней осталось (урок 8.1). Команды Git работают в любом терминале, а программу
+      запускай в «Командной строке» с включённым окружением — в начале строки видно `(.venv)`
+      (урок 8.3). Git отвечает на английском; если у тебя он пишет по-русски, ищи те же строки по
+      смыслу.
+    items:
+      - id: clean
+        text: >-
+          **Проверь, что всё закоммичено.** В папке проекта набери `git status` — должно быть
+          `nothing to commit, working tree clean`. Затем `git branch`: одна строка `* master` (или
+          `* main`).
+        help: >-
+          Есть изменённые файлы — закоммить их, как в уроке 8.4, или верни через
+          `git restore <файл>`, если правку не жалко. В `Untracked files` видны `.venv/` или
+          `__pycache__/` — нет `.gitignore`, вернись к уроку 8.4. `fatal: not a git repository` —
+          терминал открыт не в папке проекта. Основная ветка называется `main` — тогда везде ниже
+          пиши `main` вместо `master`.
+      - id: create
+        text: >-
+          **Создай ветку:** `git switch -c deadlines`. Git ответит
+          `Switched to a new branch 'deadlines'`. Набери `git branch` — звёздочка теперь у
+          `deadlines`.
+        help: >-
+          Git пишет, что `switch` — не команда (`is not a git command`), значит, у тебя Git версии
+          ниже 2.23. Пиши `git checkout -b deadlines`, а дальше вместо `git switch <имя>` —
+          `git checkout <имя>`; а лучше обнови Git с [git-scm.com](https://git-scm.com/downloads).
+          `fatal: a branch named 'deadlines' already exists` — ветка уже есть, перейди в неё:
+          `git switch deadlines`.
+      - id: code
+        text: >-
+          **Добавь задачам срок.** Код готовый, он в «Если не получается»: замени им содержимое
+          `todo/tasks.py` и поправь одно место в `main.py`. Главное в этом пункте — не сам код, а
+          то, что правка живёт в ветке. Запусти программу и добавь задачу со сроком: дата в виде
+          ГГГГ-ММ-ДД, пустой ответ — без срока.
+        help: |-
+          Замени содержимое `todo/tasks.py` целиком — это файл из уроков 8.2 и 8.3 плюс сроки:
+
+          ```python
+          from datetime import date
+
+          from tabulate import tabulate
+
+
+          def add_task(tasks, title, due):
+              if due != "":
+                  try:
+                      date.fromisoformat(due)
+                  except ValueError:
+                      print("Дата не распознана — задача добавлена без срока.")
+                      due = ""
+              tasks.append({"title": title, "done": False, "due": due})
+
+
+          def mark_done(tasks, number):
+              if 1 <= number <= len(tasks):
+                  tasks[number - 1]["done"] = True
+                  return True
+              return False
+
+
+          def due_text(task):
+              due = task.get("due", "")
+              if due == "":
+                  return "без срока"
+              left = (date.fromisoformat(due) - date.today()).days
+              return f"{left} дн."
+
+
+          def show_tasks(tasks):
+              if len(tasks) == 0:
+                  print("Задач пока нет.")
+                  return
+              rows = []
+              number = 1
+              for task in tasks:
+                  if task["done"]:
+                      done = "да"
+                  else:
+                      done = "нет"
+                  rows.append([number, task["title"], done, due_text(task)])
+                  number += 1
+              print(tabulate(rows, headers=["№", "Задача", "Готово", "Осталось"]))
+          ```
+
+          Если в твоём `tasks.py` были ещё функции, например удаление, — перенеси их в новый файл.
+
+          В `main.py`, в ветке команды «добавить», прямо перед вызовом `add_task` спроси срок — с тем
+          же отступом, что у `add_task`, — и передай его третьим аргументом:
+
+          ```python
+          due = input("Срок ГГГГ-ММ-ДД (Enter — без срока): ").strip()
+          add_task(tasks, title, due)
+          ```
+
+          `No module named 'tabulate'` — в этом окне не включено окружение:
+          `.venv\Scripts\activate` (macOS и Linux: `source .venv/bin/activate`). `try`/`except` в
+          `add_task` не пускает в список дату вроде `2026-13-01`, иначе список падал бы при каждом
+          показе. У старых задач ключа `"due"` нет, поэтому в `due_text` стоит
+          `task.get("due", "")`, а не `task["due"]`.
+      - id: commit
+        text: >-
+          **Закоммить эксперимент.** `git status` и `git diff` — изменены `main.py` и
+          `todo/tasks.py`. Затем `git add main.py todo/tasks.py` и
+          `git commit -m "Добавить сроки задач"`. Ответ Git начинается с `[deadlines …]` — коммит
+          ушёл в новую ветку.
+        help: >-
+          В `git status` виден `tasks.json` — его нет в `.gitignore` (урок 8.4); личные задачи в
+          коммит не добавляй. Ответ начинается с `[master …]` — ветка не создалась, и коммит ушёл в
+          основную ветку. Отменять его не нужно: создай ветку сейчас (пункт «Создай ветку») и сделай
+          в ней следующую правку — например, поменяй текст вопроса о сроке, — чтобы потренировать
+          переключение.
+      - id: switch-back
+        text: >-
+          **Вернись в рабочую версию:** `git switch master`. Открой `todo/tasks.py` — функции
+          `due_text` нет. Запусти программу — сроков в списке тоже нет. Теперь
+          `git switch deadlines`: код со сроками вернулся.
+        help: >-
+          IDLE не перечитывает файл, который изменился на диске: закрывай файлы перед
+          `git switch` и открывай заново после, иначе сохранение запишет старую версию поверх
+          новой. VS Code обновляет открытые файлы сам. `error: Your local changes to the following
+          files would be overwritten` — есть незакоммиченная правка: закоммить её или верни через
+          `git restore`. Задачи, которые ты добавлял, никуда не деваются: `tasks.json` в
+          `.gitignore`, и при переключении Git его не трогает.
+      - id: merge
+        text: >-
+          **Эксперимент удался — слей ветку.** `git switch master`, затем `git merge deadlines`.
+          Git напишет `Updating …`, `Fast-forward` и список изменённых файлов. Посмотри
+          `git log --oneline --graph --all`: `--graph` рисует линии веток, `--all` показывает все
+          ветки, а не только текущую. У верхнего коммита пометка `(HEAD -> master, deadlines)` —
+          обе метки стоят на одном коммите.
+        help: >-
+          `Already up to date.` — ты сливаешь не в ту сторону или в ветке нет новых коммитов:
+          набери `git branch`, звёздочка должна стоять у `master`. Открылся редактор с сообщением
+          `Merge branch 'deadlines'` — значит, в `master` после создания ветки появились другие
+          коммиты, и Git делает коммит слияния. Сообщение уже готово: в Блокноте сохрани файл и
+          закрой окно, в VS Code закрой вкладку с сообщением, в Vim набери `:wq` и нажми Enter.
+          Длинный журнал листается пробелом, выход — клавиша `q`.
+      - id: delete
+        text: >-
+          **Убери слитую ветку:** `git branch -d deadlines`. Git ответит
+          `Deleted branch deadlines (was …)`. Коммит со сроками остался в `master` — проверь через
+          `git log --oneline`.
+        help: >-
+          `error: the branch 'deadlines' is not fully merged` — слияние не состоялось: вернись к
+          предыдущему пункту. Удалять слитую ветку необязательно, но старые ветки загромождают
+          список `git branch`.
+      - id: failed-idea
+        text: >-
+          **Неудачная идея.** `git switch -c wild-idea`, измени любую строку (например, текст
+          меню), закоммить и вернись: `git switch master`. Попробуй `git branch -d wild-idea` —
+          Git откажет: `error: the branch 'wild-idea' is not fully merged`. Идея не нужна — удали
+          ветку большой буквой: `git branch -D wild-idea`. Рабочая версия не изменилась.
+        help: >-
+          Строки `hint:` под ошибкой — подсказки Git; одна из них как раз предлагает
+          `git branch -D wild-idea`. Команда с `-D` не спрашивает подтверждения и удаляет коммиты
+          ветки, поэтому перед ней проверь по `git branch`, что удаляешь именно эксперимент.
+          `error: cannot delete branch 'wild-idea' used by worktree at …` — ты сейчас в этой ветке:
+          сначала `git switch master`.
+    coach: >-
+      После каждого `git switch` набирай `git branch` или `git status`: так всегда видно, в какой
+      ветке ты сейчас работаешь.
+
+  - id: conflict-live
+    type: checklist
+    title: Конфликт вживую (по желанию)
+    body: >-
+      Необязательный блок на компьютере, 5–10 минут, — можно сразу после эксперимента: устроим
+      конфликт нарочно, чтобы в первый раз встретить его не в важный момент. Нужен проект с чистым
+      `git status`, интернет не нужен.
+    items:
+      - id: branch-change
+        text: >-
+          **Правка в ветке.** `git switch -c greeting`, поменяй в `main.py` одну строку — например,
+          текст приглашения в `input(...)` меню. Сохрани, затем `git add main.py` и
+          `git commit -m "Изменить приглашение"`.
+        help: >-
+          Ответ Git начинается с `[greeting …]` — коммит ушёл в новую ветку. Начинается с
+          `[master …]` — ветка не создалась: проверь `git branch` и повтори опыт с новой веткой.
+          `fatal: a branch named 'greeting' already exists` — ветка осталась с прошлого раза:
+          возьми другое имя, например `greeting2`, и пиши его дальше вместо `greeting`.
+      - id: master-change
+        text: >-
+          **Другая правка той же строки.** `git switch master` и поменяй **ту же строку**
+          по-другому. Сохрани, `git add main.py` и `git commit -m "Уточнить приглашение"`.
+        help: >-
+          IDLE: закрой файл перед `git switch` и открой после — иначе он покажет версию из другой
+          ветки.
+      - id: merge
+        text: >-
+          **Слей ветку.** `git merge greeting` — Git сообщит
+          `CONFLICT (content): Merge conflict in main.py`. Набери `git status`: файл в разделе
+          `Unmerged paths` с пометкой `both modified`.
+        help: >-
+          Конфликта нет и слияние прошло само — значит, правки попали в разные строки, и Git
+          объединил их без тебя. Если при этом открылся редактор с сообщением
+          `Merge branch 'greeting'`: в Блокноте сохрани файл и закрой окно, в VS Code закрой вкладку
+          с сообщением, в Vim набери `:wq` и Enter. Потом повтори опыт с новой веткой — и меняй в
+          обеих ветках одну и ту же строку.
+      - id: resolve
+        text: >-
+          **Разреши конфликт.** Открой `main.py`, найди маркеры, реши, какую версию оставить (или
+          собери свою), удали три строки маркеров и сохрани. Запусти `python main.py` — программа
+          работает.
+        help: >-
+          В VS Code над конфликтом появляются кнопки **Accept Current Change** (версия текущей
+          ветки), **Accept Incoming Change** (версия сливаемой ветки) и **Accept Both Changes**
+          (обе). Кнопка убирает маркеры сама, но решение и проверка запуском — за тобой.
+          SyntaxError при запуске — в файле остались маркеры; команда `git diff --check` покажет
+          строки с ними (`leftover conflict marker`). `No module named 'tabulate'` — в этом окне не
+          включено окружение: `.venv\Scripts\activate` (урок 8.3).
+      - id: finish
+        text: |-
+          **Заверши слияние.** `git add main.py`, затем `git commit --no-edit` — Git создаст
+          коммит слияния с сообщением `Merge branch 'greeting'`. Посмотри
+          `git log --oneline --graph --all` — две линии сходятся в одну, примерно так:
+
+          ```text
+          *   cc0c237 (HEAD -> master) Merge branch 'greeting'
+          |\
+          | * 9f9d4d1 (greeting) Изменить приглашение
+          * | aa2a1ab Уточнить приглашение
+          |/
+          ```
+
+          Теперь ветку можно удалить: `git branch -d greeting`.
+        help: >-
+          `git commit --no-edit` берёт готовое сообщение и не открывает редактор. Передумал на
+          середине — `git merge --abort` вернёт всё к состоянию до `git merge`. Ветка не удаляется
+          (`not fully merged`) — коммит слияния не создан: проверь `git status`.
+    coach: >-
+      Первый конфликт лучше встретить нарочно, когда никуда не спешишь, — тогда настоящий уже не
+      испугает.
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Ветка — отдельная линия коммитов: `git switch -c <имя>` создаёт её и переходит в неё, `git switch <имя>` переключает, `git branch` показывает, где ты."
+      - "Папка одна: при переключении Git раскладывает в ней файлы нужной ветки. Перед `git switch` — чистый `git status`."
+      - "Удачный эксперимент — `git switch master`, `git merge <имя>` и `git branch -d <имя>`; неудачный — `git branch -D <имя>`."
+      - "Конфликт: выбрать или собрать версию, удалить маркеры `<<<<<<<`, `=======`, `>>>>>>>`, проверить запуском, затем `git add` и `git commit`."
+    question: Почему перед `git switch` стоит набрать `git status`?
+    answer: >-
+      Незакоммиченные правки не принадлежат ни одной ветке. Git либо унесёт их с собой в другую
+      ветку — и правка из эксперимента окажется в рабочей версии, — либо откажется переключаться.
+      Чистый статус значит, что каждая правка уже лежит в коммите своей ветки и переключение ничего
+      не перепутает.

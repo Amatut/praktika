@@ -1,0 +1,1920 @@
+id: m3-l3
+module: m3
+number: "3.3"
+title: "Счётчики и накопители"
+objective: >-
+  За один проход цикла считать сумму, количество подходящих значений, минимум и максимум:
+  задавать начальное значение до цикла, обновлять внутри и выводить итог после.
+minutes: [20, 30]
+prerequisites: [m3-l2]
+skills: [accumulators]
+environment: python
+
+story:
+  title: Журнал метеокружка
+  fictional: true
+  text: >-
+    В школьном метеокружке каждое утро записывают в журнал температуру и осадки. В конце месяца
+    руководитель кружка Пётр Андреевич садился с калькулятором: складывал тридцать чисел, считал
+    дождливые дни и искал самое холодное утро. Его итоги почти всегда расходились с подсчётом
+    учеников, и всё приходилось пересчитывать. Восьмиклассница Злата написала программу,
+    которая читает записи по одной и держит в переменных сумму осадков, число дождливых дней и
+    рекорд холода. Теперь итоги готовы через секунду после последней строки.
+
+why: >-
+  Вопросы «сколько всего?», «сколько раз?» и «какое самое большое?» решаются за один проход цикла:
+  результат копится в отдельной переменной. Например, сумма осадков за месяц: начинаем с 0 и
+  каждый день прибавляем осадки этого дня.
+
+usedIn: >-
+  Итоги в чеках и отчётах, статистика шагов и тренировок в фитнес-приложениях, подсчёт голосов,
+  рекорды: самая высокая температура, лучший результат в игре. В модуле 4 тот же приём будет
+  работать со списками.
+
+steps:
+  - id: accumulators
+    type: theory
+    title: Накопители и счётчики
+    body: |-
+      В уроке 3.1 `savings` копила взносы, а `weeks` считала недели — это и были накопитель и
+      счётчик. Разберём их подробно.
+
+      Многие вопросы к данным звучат так: «сколько всего?», «сколько раз?», «какое самое
+      большое?». Ответ на каждый собирается по ходу цикла в отдельной переменной.
+
+      **Накопитель** — переменная, в которой копится результат. У него три места в программе:
+
+      1. **до цикла** — начальное значение;
+      2. **внутри цикла** — обновление (на каждом проходе или когда выполнено условие);
+      3. **после цикла** — вывод итога, один раз.
+
+      ```python
+      n = int(input())          # сколько чисел будет дальше
+      total = 0                 # до цикла
+      for _ in range(n):
+          mm = int(input())     # осадки за день, мм
+          total = total + mm    # внутри
+      print(total)              # после
+      ```
+
+      **Чтение в цикле.** Каждый проход заново вызывает `input()` и получает следующую строку
+      ввода. Сколько раз читать, программа узнаёт из первой строки: там N — сколько строк будет
+      дальше, — и цикл делает ровно N проходов. Номер прохода здесь не нужен, и переменную цикла
+      назвали `_`: так принято называть переменную, которой не пользуются.
+
+      **Счётчик** — накопитель, который прибавляет 1, часто под условием:
+
+      ```python
+      if mm > 0:
+          rainy = rainy + 1
+      ```
+
+      **Короткая запись:** `total += mm` значит то же, что `total = total + mm`, а `left -= 1` —
+      то же, что `left = left - 1`. Пиши, как тебе удобнее.
+
+      **С чего начинать.** Сумма и счётчик начинаются с 0: ноль ничего не добавляет к итогу.
+      Максимум с 0 начинать нельзя: если все температуры ниже нуля, ни одна не окажется больше 0,
+      и программа выдаст 0 — температуру, которой не было. Поэтому рекорд начинают с **первого
+      значения** (если значений хотя бы одно): читают его до цикла, а цикл читает остальные
+      `n - 1`:
+
+      ```python
+      n = int(input())
+      highest = int(input())    # первое значение — сразу рекорд
+      for _ in range(n - 1):    # остальные значения
+          t = int(input())
+          if t > highest:
+              highest = t
+      print(highest)
+      ```
+
+      Минимум ищут в том же цикле и от того же первого значения (второй раз его читать не нужно),
+      а обновляют со знаком `<`.
+    simpler: >-
+      Накопитель — как копилка. Перед началом ставишь пустую копилку (0), на каждом шаге кладёшь
+      в неё монету, а в конце открываешь и считаешь. Если перед каждой монетой ставить новую
+      пустую копилку, в конце там окажется одна монета. Счётчик — та же копилка, но в неё кладут
+      ровно одну монету и только тогда, когда выполнено условие. А рекорд — табличка «лучший
+      результат»: на неё сразу пишут первый результат, а потом переписывают, только если новый
+      лучше.
+    coach: >-
+      Для каждого накопителя найди три строки: где он создаётся, где меняется и где печатается.
+      Создание — до цикла, печать — после.
+
+  - id: rain
+    type: example
+    title: Осадки за пять дней
+    body: >-
+      Часть программы Златы — только осадки. Первая строка ввода — сколько дней в журнале, дальше
+      осадки за каждый день в миллиметрах. Ввод уже задан: 5 дней — 0, 4, 12, 0 и 3 мм. Нажми
+      «Запустить».
+    code: |-
+      days = int(input())
+      total = 0
+      rainy = 0
+      for _ in range(days):
+          mm = int(input())
+          total = total + mm
+          if mm > 0:
+              rainy = rainy + 1
+      print(f"Осадков: {total} мм")
+      print(f"Дождливых дней: {rainy}")
+    stdin: "5\n0\n4\n12\n0\n3\n"
+    notes:
+      - line: 1
+        text: Первая строка ввода говорит, сколько дней в журнале, — столько раз и повторится цикл.
+      - line: 2
+        text: Накопитель суммы. Создаётся до цикла и начинается с 0.
+      - line: 3
+        text: Счётчик дождливых дней — тоже до цикла и тоже с 0.
+      - line: 4
+        text: >-
+          Номер дня программе не нужен, поэтому переменная цикла — `_`. Тело выполнится `days`
+          раз.
+      - line: 5
+        text: Каждый проход читает следующую строку ввода — осадки одного дня.
+      - line: 6
+        text: Накопитель растёт на осадки этого дня.
+      - line: 7
+        text: >-
+          Счётчик растёт на 1, но только в дождливый день. В сухой день условие `mm > 0` ложно,
+          строка 8 не выполняется, и счётчик не меняется.
+      - line: 9
+        text: >-
+          Без отступа — это уже после цикла. Строка выполнится один раз, когда все дни прочитаны.
+    tryIt: >-
+      Добавь в тело цикла (с отступом, после строки 6) строку `print(total)` и запусти — увидишь,
+      как сумма растёт день за днём: 0, 4, 16, 16, 19. Потом убери её: в итоговом отчёте нужна одна
+      строка суммы, а не пять.
+    coach: >-
+      Найди у `total` три места: строка 2 — до цикла, строка 6 — внутри, строка 9 — после.
+
+  - id: lost-rain
+    type: predict
+    title: Сколько накопилось?
+    prompt: >-
+      Злата набросала программу для осадков за три дня. Во вводе три строки: `4`, `0` и `7`. Как
+      думаешь, что она выведет?
+    code: |-
+      total = 0
+      for _ in range(3):
+          total = 0
+          mm = int(input())
+          total = total + mm
+      print(total)
+    stdin: "4\n0\n7\n"
+    options:
+      - "11"
+      - "7"
+      - "0"
+    answer: "7"
+    explanation: |-
+      Проследим `total` по проходам цикла:
+
+      ```text
+      проход   total в начале   mm   total в конце
+      1        0                4    4
+      2        0                0    0
+      3        0                7    7
+      ```
+
+      Строка `total = 0` стоит внутри цикла и в начале каждого прохода стирает накопленное. После
+      цикла в `total` остаются только осадки последнего дня — 7. Обнуление внутри цикла — частая
+      ошибка. Чтобы получилось 11, `total = 0` должна выполниться один раз — до цикла.
+    coach: >-
+      Если итог подозрительно похож на последнее значение из ввода, первым делом ищи обнуление
+      внутри цикла.
+
+  - id: practice-steps
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m3-l3-e1
+      kind: repeat
+      title: "Шагомер: сколько всего"
+      statement: |-
+        Пётр Андреевич ходит на метеоплощадку пешком, и шагомер в телефоне показывает шаги за
+        каждый день. А сколько всего пройдено за несколько дней, шагомер не считает.
+
+        Напиши программу, которая сложит шаги. Первая строка ввода — число дней N, дальше N строк:
+        шаги за каждый день. Выведи одну строку:
+
+        ```text
+        Всего шагов: 23500
+        ```
+      input: >-
+        Первая строка — число дней N (целое, 0 или больше). Дальше N строк — шаги за день (целые
+        числа).
+      output: "Одна строка: `Всего шагов: <сумма>`."
+      constraints:
+        - Дней может быть сколько угодно, поэтому шаги читай в цикле.
+        - Текст подсказок в `input()` может быть любым — он не проверяется.
+      starterCode: |
+        n = int(input())
+        total = 0
+        # Повтори n раз: прочитай шаги за день и прибавь их к total
+
+        print(f"Всего шагов: {total}")
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: Пример 1
+          example: true
+          stdin: "3\n4000\n7500\n12000\n"
+          expected: "Всего шагов: 23500"
+        - id: t2
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 2: неделя"
+          example: true
+          stdin: "7\n8000\n10000\n6500\n12000\n0\n9000\n11000\n"
+          expected: "Всего шагов: 56500"
+        - id: t3
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: один день"
+          edge: true
+          stdin: "1\n5000\n"
+          expected: "Всего шагов: 5000"
+        - id: t4
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: ноль дней"
+          edge: true
+          stdin: "0\n"
+          expected: "Всего шагов: 0"
+      criteria:
+        - Программа читает ровно N строк с шагами — столько, сколько указано в первой строке.
+        - "Сумма копится в одной переменной: начальное значение до цикла, прибавление внутри, вывод после."
+        - "Выводится одна итоговая строка `Всего шагов: X` — и при 0 дней тоже."
+      hints:
+        - >-
+          У накопителя три места: до цикла, внутри и после. Какие два уже есть в стартовом коде?
+          Чего не хватает — и сколько раз это нужно повторить?
+        - |-
+          Тот же приём без ввода — копилка, в которую 4 недели кладут по 500:
+          ```python
+          saved = 0
+          for _ in range(4):
+              saved = saved + 500
+          print(saved)
+          ```
+          Программа печатает 2000. В твоей задаче каждый раз прибавляется не 500, а новое число из
+          ввода.
+        - |-
+          Каркас:
+          ```text
+          for _ in range(n):
+              steps = число из следующей строки ввода
+              total = total + …
+          ```
+          Строка с `print` остаётся после цикла, без отступа.
+      solution:
+        code: |
+          n = int(input())
+          total = 0
+          for _ in range(n):
+              steps = int(input())
+              total = total + steps
+          print(f"Всего шагов: {total}")
+        explanation: >-
+          `total` создаётся до цикла с нулём, в теле цикла растёт на шаги очередного дня, а
+          печатается один раз — после цикла. Каждый проход вызывает `input()` и читает следующую
+          строку, поэтому цикл с `range(n)` читает ровно n строк. При 0 дней тело не выполняется ни
+          разу, и печатается начальное значение — 0. Вместо `total = total + steps` можно написать
+          `total += steps`.
+      altSolutions:
+        - code: |
+            n = int(input())
+            total = 0
+            for day in range(n):
+                total += int(input())
+            print("Всего шагов:", total)
+          note: Короткая запись +=, число прочитано прямо в выражении, print через запятую.
+        - code: |
+            n = int(input())
+            total = 0
+            day = 0
+            while day < n:
+                steps = int(input())
+                total = total + steps
+                day = day + 1
+            print(f"Всего шагов: {total}")
+          note: Цикл while со счётчиком дней.
+        - code: |
+            n = int(input("Сколько дней? "))
+            total = 0
+            for day in range(1, n + 1):
+                total += int(input(f"Шаги за день {day}: "))
+            print(f"Всего шагов: {total}")
+          note: Номера дней с 1 через range(1, n + 1) и подсказки в input().
+        - code: |
+            n = int(input("Дней: "))
+            total = 0
+            while n > 0:
+                total = total + int(input("Шаги: "))
+                n = n - 1
+            print("Всего шагов:", total, " ")
+          note: Обратный отсчёт по n в while, пробел в конце строки вывода.
+        - code: |
+            n = int(input()); total = 0
+            for _ in range(n):
+                steps = int(input()); total = steps + total
+            print("Всего шагов: " + str(total))
+          note: Точки с запятой, сложение в другом порядке, склейка через str().
+      wrongSolutions:
+        - code: |
+            n = int(input())
+            total = 0
+            # Повтори n раз: прочитай шаги за день и прибавь их к total
+
+            print(f"Всего шагов: {total}")
+          note: Стартовый код без изменений — цикла нет, итог 0.
+          expectMistake: total-unchanged
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+            print(f"Всего шагов: {total}")
+          note: Шаги читаются, но не прибавляются к total.
+          expectMistake: total-unchanged
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                total = 0
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Накопитель обнуляется внутри цикла — остаются шаги последнего дня.
+          expectMistake: reset-inside
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                print(f"Всего шагов: {total}")
+          note: print внутри цикла — печатаются промежуточные итоги.
+          expectMistake: print-inside
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = input()
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Шаги не превращены в число — TypeError.
+          expectMistake: no-int
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+            total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Прибавление без отступа — стоит после цикла и выполняется один раз.
+          expectMistake: add-outside
+        - code: |
+            n = int(input())
+            total = 0
+            steps = int(input())
+            for _ in range(n):
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Шаги прочитаны один раз до цикла — первое число прибавляется n раз.
+          expectMistake: read-outside
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n + 1):
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Цикл делает на один проход больше, чем дней, — EOFError.
+          expectMistake: extra-read
+        - code: |
+            n = int(input())
+            total = 0
+            steps = int(input())
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Лишнее чтение до цикла (по образцу рекорда из теории) — EOFError.
+          expectMistake: extra-read
+        - code: |
+            n = int(input())
+            total = 0
+            day = 0
+            while day < n:
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: while без увеличения счётчика дней — цикл читает, пока ввод не кончится, EOFError.
+          expectMistake: extra-read
+        - code: |
+            n = int(input())
+            total = 0
+            day = 0
+            while day <= n:
+                total = total + int(input())
+                day = day + 1
+            print(f"Всего шагов: {total}")
+          note: while day <= n при счёте с 0 — лишний проход, EOFError.
+          expectMistake: extra-read
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                total = 0  # начинаем день
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Обнуление внутри цикла с комментарием в той же строке.
+          expectMistake: reset-inside
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                print(steps)
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Отладочный print внутри цикла не убран — лишние строки.
+          expectMistake: print-inside
+        - code: |
+            n = int(input())
+            total = 0
+            for day in range(1, n):
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: range(1, n) — на один проход меньше, последний день не прочитан.
+          expectMistake: range-short
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n - 1):
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: range(n - 1) — на один проход меньше, последний день не прочитан.
+          expectMistake: range-short
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + 1
+            print(f"Всего шагов: {total}")
+          note: К накопителю прибавляется 1 — получилось число дней, а не сумма.
+          expectMistake: counts-days
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                total = steps
+            print(f"Всего шагов: {total}")
+          note: total = steps — накопитель перезаписывается, остаётся последний день.
+          expectMistake: last-day
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                total =+ steps
+            print(f"Всего шагов: {total}")
+          note: Опечатка =+ вместо += — это total = +steps.
+          expectMistake: last-day
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                total = int(input())
+            print(f"Всего шагов: {total}")
+          note: Число из ввода записывается в накопитель вместо прибавления.
+          expectMistake: last-day
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input)
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: int(input) без скобок у input — TypeError другого рода; разбор no-int срабатывать не должен.
+          expectMistake: null
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+            if n > 0:
+                print(f"В среднем за день: {total // n}")
+          note: Улучшение из afterPass добавлено в проверяемое решение — лишняя строка; print-inside срабатывать не должен.
+          expectMistake: null
+      mistakes:
+        - id: read-outside
+          when:
+            failedTest: t1
+            outputEquals: "Всего шагов: 12000"
+            codeRegex: '(?<=\binput\s*\([\s\S]*)^\w+\s*=[^\n]*\binput\s*\((?![\s\S]*^[ \t]+[^\n]*\binput\s*\()'
+          where: Строка с `input()` перед циклом
+          why: >-
+            Шаги читаются один раз — до цикла, и цикл n раз прибавляет одно и то же число. В
+            «Примере 1» получается 4000 три раза, то есть 12000, а остальные дни не прочитаны вовсе.
+          try: >-
+            Перенеси чтение шагов в тело цикла, с отступом: тогда каждый проход прочитает
+            следующую строку ввода. Строку `n = int(input())` оставь до цикла.
+          verify: "В «Примере 1» должно получиться «Всего шагов: 23500»."
+        - id: total-unchanged
+          when:
+            failedTest: t1
+            outputEquals: "Всего шагов: 0"
+          why: >-
+            В `total` так ничего и не прибавилось — итог остался 0. Либо цикла, который читает шаги,
+            ещё нет, либо шаги читаются, но к `total` не прибавляются.
+          try: >-
+            Напиши цикл на n повторов. В его теле, с отступом, прочитай шаги и прибавь их к
+            накопителю: `total = total + steps`.
+          verify: "В «Примере 1» должно получиться «Всего шагов: 23500»."
+        - id: add-outside
+          when:
+            failedTest: t1
+            codeRegex: '^\w+\s*(\+=|=\s*\w+\s*\+)'
+          where: Строка с прибавлением без отступа — после цикла
+          why: >-
+            Прибавление стоит после цикла, поэтому выполняется один раз — для последнего
+            прочитанного дня. Цикл читает все строки, но сумма из них не складывается: в итоге
+            только 12000 вместо 23500.
+          try: >-
+            Сдвинь прибавление внутрь цикла — на один уровень со строкой, где читаются шаги. Тогда
+            оно выполнится для каждого дня.
+          verify: "В «Примере 1» должно получиться «Всего шагов: 23500»."
+        - id: extra-read
+          when:
+            errorType: EOFError
+          why: >-
+            Программа попросила строку ввода, которой нет: `input()` вызывается больше раз, чем
+            строк во вводе. Значит, цикл сделал лишний проход или где-то есть лишний `input()`.
+          try: >-
+            Посчитай проходы цикла: `range(n)` повторяет тело ровно n раз, а `while` со счётчиком
+            от 0 должен идти, пока `day < n`, и счётчик должен расти на каждом проходе. И посчитай
+            все `input()`: один — для n до цикла и по одному на день в теле цикла.
+          verify: В «Примере 1» ошибка EOFError должна исчезнуть, а сумма стать 23500.
+        - id: no-int
+          when:
+            errorType: TypeError
+            codeRegex: '(?<!int\(\s*)\binput\s*\('
+          why: >-
+            `input()` возвращает строку, а строку с числом `total` не сложить — поэтому TypeError.
+          try: "Превращай строку в число сразу при чтении: `int(input())`."
+          verify: "Ошибка должна исчезнуть, а в «Примере 1» — получиться «Всего шагов: 23500»."
+        - id: reset-inside
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]+\w+\s*=\s*0\s*(#.*)?$'
+          where: Строка `= 0` внутри цикла
+          why: >-
+            Накопитель обнуляется в теле цикла — на каждом проходе. После цикла в нём остаются
+            только шаги последнего дня: 12000 вместо 23500.
+          try: >-
+            Оставь `total = 0` один раз — до цикла, без отступа. Внутри цикла накопитель только
+            растёт.
+          verify: "В «Примере 1» должно получиться «Всего шагов: 23500»."
+        - id: print-inside
+          when:
+            failedTest: t1
+            codeRegex: '(?<=^(?:for|while)\b[^\n]*\n(?:[ \t]+[^\n]*\n|[ \t]*(?:#[^\n]*)?\n)*)^[ \t]+print\('
+          where: "`print` с отступом — внутри цикла"
+          why: >-
+            `print` стоит в теле цикла, поэтому печатает на каждом проходе: вместо одной итоговой
+            строки получается несколько. А при 0 дней итог не печатается вовсе.
+          try: >-
+            Итог печатай один раз — после цикла, без отступа. Отладочный `print` внутри цикла
+            убери перед проверкой.
+          verify: >-
+            В «Примере 1» должна остаться одна строка «Всего шагов: 23500», а в граничном случае с
+            нулём дней — «Всего шагов: 0».
+        - id: range-short
+          when:
+            failedTest: t1
+            outputEquals: "Всего шагов: 11500"
+          where: Строка с `range` или условием `while`
+          why: >-
+            В итоге 11500 — шаги только первых двух дней из трёх. Цикл сделал на один проход
+            меньше, чем дней, и последний день не прочитан. Так выходит с `range(1, n)` или
+            `range(n - 1)`: в них n − 1 повторов.
+          try: >-
+            Номер дня здесь не нужен — пиши `range(n)`. Если нужны номера с 1, то
+            `range(1, n + 1)`.
+          verify: "В «Примере 1» должно получиться «Всего шагов: 23500»."
+        - id: counts-days
+          when:
+            failedTest: t1
+            outputEquals: "Всего шагов: 3"
+          why: >-
+            Получилось 3 — число дней, а не сумма шагов: на каждом проходе к накопителю
+            прибавляется 1. Так работает счётчик, а здесь нужна сумма.
+          try: "Прибавляй шаги этого дня — число, прочитанное в этом проходе: `total = total + steps`."
+          verify: "В «Примере 1» должно получиться «Всего шагов: 23500»."
+        - id: last-day
+          when:
+            failedTest: t1
+            outputEquals: "Всего шагов: 12000"
+          where: Строка внутри цикла, которая меняет `total`
+          why: >-
+            В итоге только шаги последнего дня — 12000. Значит, на каждом проходе накопитель не
+            дополняется, а заменяется: например, `total = steps`, `total = int(input())` или
+            опечатка `=+` вместо `+=`.
+          try: >-
+            Внутри цикла прибавляй к старому значению: `total = total + steps` или
+            `total += steps`.
+          verify: "В «Примере 1» должно получиться «Всего шагов: 23500»."
+      afterPass: >-
+        Сумма копится за один проход, и программе всё равно, сколько дней во вводе — один, семь или
+        триста. Если хочешь, выведи ещё среднее за день, округлённое вниз: `total // n`. Только
+        сначала проверь, что `n > 0`: делить на ноль нельзя. Пробуй это кнопкой «Запустить»:
+        «Проверить» ждёт ровно одну строку, и с лишней строкой проверка не пройдёт.
+      skills: [accumulators, for-range, input-read]
+
+  - id: practice-norm
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m3-l3-e2
+      kind: modify
+      title: Дни с нормой
+      statement: |-
+        Пётр Андреевич поставил себе цель — не меньше 10 000 шагов в день. Доработай программу из
+        прошлого задания: пусть после суммы она печатает, сколько дней цель была выполнена. Ровно
+        10 000 шагов — цель выполнена.
+
+        ```text
+        Всего шагов: 26000
+        Дней с нормой: 2
+        ```
+      input: >-
+        Как в прошлом задании: первая строка — число дней N (0 или больше), дальше N строк с
+        шагами.
+      output: >-
+        Две строки: `Всего шагов: <сумма>` и `Дней с нормой: <сколько дней с 10 000 шагов и
+        больше>`.
+      constraints:
+        - Сумму и число дней с нормой считай в одном цикле.
+        - "В коде число пишется без пробела: `10000`."
+        - Текст подсказок в `input()` может быть любым — он не проверяется.
+      starterCode: |
+        n = int(input())
+        total = 0
+        for _ in range(n):
+            steps = int(input())
+            total = total + steps
+        print(f"Всего шагов: {total}")
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: Пример 1
+          example: true
+          stdin: "3\n4000\n10000\n12000\n"
+          expected: |-
+            Всего шагов: 26000
+            Дней с нормой: 2
+        - id: t2
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 2: неделя"
+          example: true
+          stdin: "7\n8000\n10000\n6500\n12000\n0\n9000\n11000\n"
+          expected: |-
+            Всего шагов: 56500
+            Дней с нормой: 3
+        - id: t3
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: чуть-чуть не хватило"
+          edge: true
+          stdin: "2\n3000\n9999\n"
+          expected: |-
+            Всего шагов: 12999
+            Дней с нормой: 0
+        - id: t4
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: ровно 10 000"
+          edge: true
+          stdin: "1\n10000\n"
+          expected: |-
+            Всего шагов: 10000
+            Дней с нормой: 1
+        - id: t5
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: ноль дней"
+          edge: true
+          stdin: "0\n"
+          expected: |-
+            Всего шагов: 0
+            Дней с нормой: 0
+        - id: t6
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: поход, 25 000 шагов"
+          edge: true
+          stdin: "2\n25000\n3000\n"
+          expected: |-
+            Всего шагов: 28000
+            Дней с нормой: 1
+      criteria:
+        - Сумма шагов считается, как раньше.
+        - "Счётчик дней с нормой создаётся до цикла с нулём и растёт на 1 внутри цикла, когда в день пройдено 10 000 шагов или больше."
+        - Проверяется каждый день, а не только последний; ровно 10 000 — это норма.
+        - "Вывод — две строки: сначала сумма, потом число дней с нормой."
+      hints:
+        - >-
+          Сумма уже считается. Для числа дней нужен второй накопитель — счётчик. С какого числа он
+          начинается, на сколько растёт и при каком условии?
+        - |-
+          Похожий счётчик в другой задаче — сколько пятёрок в журнале:
+          ```python
+          fives = 0
+          for _ in range(4):
+              mark = int(input())
+              if mark == 5:
+                  fives = fives + 1
+          print(fives)
+          ```
+          Проверка стоит внутри цикла, поэтому смотрит на каждую оценку.
+        - |-
+          Каркас:
+          ```text
+          good_days = 0                  # до цикла
+          for _ in range(n):
+              steps = int(input())
+              total = total + steps
+              if steps … 10000:          # внутри цикла, с отступом
+                  good_days = …
+          print(f"Всего шагов: {total}")
+          print(…)                       # после цикла
+          ```
+      solution:
+        code: |
+          n = int(input())
+          total = 0
+          good_days = 0
+          for _ in range(n):
+              steps = int(input())
+              total = total + steps
+              if steps >= 10000:
+                  good_days = good_days + 1
+          print(f"Всего шагов: {total}")
+          print(f"Дней с нормой: {good_days}")
+        explanation: >-
+          Счётчик `good_days` устроен как накопитель: 0 до цикла, изменение внутри, вывод после.
+          Отличие в том, что он растёт на 1 и только в те дни, когда условие `if` верно. Знак `>=`
+          включает ровно 10 000 — по условию это тоже норма. `if` стоит внутри цикла, поэтому
+          проверяется каждый день, а не только последний.
+      altSolutions:
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total += steps
+                if steps > 9999:
+                    good_days += 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Короткая запись += и условие «больше 9999» — для целых чисел то же самое, что «не меньше 10 000».
+        - code: |
+            n = int(input())
+            total = 0
+            good = 0
+            day = 0
+            while day < n:
+                steps = int(input())
+                total = total + steps
+                if 10000 <= steps:
+                    good = good + 1
+                day = day + 1
+            print("Всего шагов:", total)
+            print("Дней с нормой:", good)
+          note: Цикл while, условие записано в другом порядке, print через запятую.
+        - code: |
+            goal = 10000
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= goal:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Норма в переменной goal — улучшение из afterPass.
+        - code: |
+            n = int(input())
+            total = 0
+            bad = 0
+            for _ in range(n):
+                steps = int(input())
+                total += steps
+                if steps < 10000:
+                    bad += 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {n - bad}")
+          note: Считаются дни без нормы, ответ — n - bad.
+        - code: |
+            n = int(input())
+            good_days = 0
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                if steps // 10000 >= 1:
+                    good_days += 1
+                total += steps
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Условие через целочисленное деление, проверка стоит до прибавления.
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                good_days = good_days + (steps >= 10000)
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: True и False прибавляются как 1 и 0 — без if.
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total += steps
+                if steps >= 10000: good_days += 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: if с телом в той же строке.
+      wrongSolutions:
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+            if steps >= 10000:
+                good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Проверка стоит после цикла — смотрит только последний день.
+          expectMistake: if-after-loop
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                good_days = 0
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Счётчик обнуляется внутри цикла.
+          expectMistake: reset-inside
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if total >= 10000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: С нормой сравнивается сумма, а не шаги дня.
+          expectMistake: checks-total
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps > 10000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Строгое «больше» — ровно 10 000 не считается.
+          expectMistake: strict
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days = good_days + steps
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: К счётчику прибавляются шаги вместо 1.
+          expectMistake: adds-steps
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Счётчик не создан до цикла — NameError.
+          expectMistake: no-init
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                good_days = 0  # новый день
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Обнуление счётчика внутри цикла с комментарием в той же строке.
+          expectMistake: reset-inside
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if 10000 < steps:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Строгое сравнение, записанное в другом порядке, — ровно 10 000 не считается.
+          expectMistake: strict
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                if steps >= 10000:
+                    good_days = good_days + 1
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Проверка вставлена сразу под for — выше чтения steps, NameError.
+          expectMistake: check-before-read
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= 10 000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Число из условия переписано с пробелом — SyntaxError.
+          expectMistake: spaced-number
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days = good_days + 1
+                    print(f"Дней с нормой: {good_days}")
+            print(f"Всего шагов: {total}")
+          note: print счётчика внутри if в цикле.
+          expectMistake: print-inside
+        - code: |
+            n = int(input())
+            total = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+            print(f"Всего шагов: {total}")
+          note: Стартовый код без изменений — нет второй строки.
+          expectMistake: no-second-line
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total += steps
+                if steps > 9999:
+                    good_days += 1
+            print(f"Всего шагов: {total}")
+          note: Верное условие > 9999, но забыта вторая строка вывода; strict срабатывать не должен.
+          expectMistake: no-second-line
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days =+ 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Опечатка =+ — счётчику присваивается +1.
+          expectMistake: set-one
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days = 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Счётчику присваивается 1 вместо прибавления.
+          expectMistake: set-one
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: Счётчик растёт без условия — считаются все дни.
+          expectMistake: all-days
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                good_days = good_days + steps // 10000
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: steps // 10000 — день с 25 000 шагов засчитывается дважды; ловит тест t6.
+          expectMistake: null
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps == 10000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+          note: == 10000 — засчитываются только дни ровно с 10 000.
+          expectMistake: null
+        - code: |
+            n = int(input())
+            total = 0
+            good_days = 0
+            for _ in range(n):
+                steps = int(input())
+                total = total + steps
+                if steps >= 10000:
+                    good_days = good_days + 1
+            print(f"Всего шагов: {total}")
+            print(f"Дней с нормой: {good_days}")
+            if n > 0:
+                print(f"В среднем за день: {total // n}")
+          note: Улучшение из e1 добавлено в проверяемое решение; if-after-loop и print-inside срабатывать не должны.
+          expectMistake: null
+      mistakes:
+        - id: spaced-number
+          when:
+            errorType: SyntaxError
+            codeRegex: '\d \d{3}\b'
+          where: Число с пробелом внутри
+          why: >-
+            В тексте 10 000 пишут с пробелом, а в коде пробел делит число на два: `10 000` для
+            Python — два числа подряд, и строку он не понимает.
+          try: "Пиши число слитно: `10000`."
+          verify: Ошибка SyntaxError должна исчезнуть.
+        - id: if-after-loop
+          when:
+            failedTest: t1
+            outputIncludes: "Дней с нормой: 1"
+            codeRegex: '^if\b'
+          where: Строка `if` без отступа — после цикла
+          why: >-
+            Проверка стоит после цикла и выполняется один раз. К этому моменту в `steps` лежат шаги
+            только последнего дня, поэтому остальные дни не проверяются вовсе.
+          try: >-
+            Сдвинь `if` и строку под ним внутрь цикла — на один уровень со `steps = int(input())`.
+            Тогда проверка пройдёт для каждого дня.
+          verify: "В «Примере 1» должно получиться «Дней с нормой: 2»."
+        - id: reset-inside
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]+\w+\s*=\s*0\s*(#.*)?$'
+          where: Строка `= 0` внутри цикла
+          why: >-
+            Счётчик обнуляется на каждом проходе, поэтому к концу в нём не больше 1: он помнит
+            только последний день.
+          try: Создай счётчик один раз — до цикла, рядом с `total = 0`.
+          verify: "В «Примере 1» должно получиться «Дней с нормой: 2»."
+        - id: checks-total
+          when:
+            failedTest: t2
+            codeRegex: '\bif\s+total\b'
+          where: Условие `if total …`
+          why: >-
+            С нормой сравнивается сумма за все прошедшие дни, а не шаги одного дня. Сумма быстро
+            перерастает 10 000, и дальше засчитывается каждый день — даже с 0 шагов.
+          try: Сравнивай с 10 000 шаги текущего дня — число, которое прочитано в этом проходе.
+          verify: "В «Примере 2» должно получиться «Дней с нормой: 3»."
+        - id: adds-steps
+          when:
+            outputIncludes: "Дней с нормой: 22000"
+          why: >-
+            К счётчику прибавляются шаги, а не 1. Получилась сумма шагов в удачные дни:
+            10 000 + 12 000 = 22 000, — а нужно число таких дней.
+          try: Прибавляй к счётчику 1 — один удачный день.
+          verify: "В «Примере 1» должно получиться «Дней с нормой: 2»."
+        - id: strict
+          when:
+            failedTest: t4
+            codeRegex: '>\s*10_?000\b|\b10_?000\s*<(?!=)'
+          where: Знак сравнения в условии
+          why: >-
+            При знаке `>` день ровно с 10 000 шагов не засчитывается, а по условию 10 000 шагов —
+            это уже норма. Граница должна входить.
+          try: Используй `>=` — «не меньше 10 000».
+          verify: "В «Примере 1» должно получиться «Дней с нормой: 2»: день с 10 000 шагов тоже считается."
+        - id: check-before-read
+          when:
+            errorType: NameError
+            errorIncludes: "name 'steps' is not defined"
+          where: Строка с `if` — она выше строки, где читаются шаги
+          why: >-
+            `steps` появляется только в строке `steps = int(input())`, а проверка стоит выше. На
+            первом проходе Python ещё не знает этого имени. Создавать `steps` до цикла не нужно:
+            тогда проверка будет смотреть на шаги вчерашнего дня.
+          try: Перенеси `if` вместе со строкой под ним ниже — после чтения шагов.
+          verify: "В «Примере 1» должно получиться «Дней с нормой: 2»."
+        - id: no-init
+          when:
+            errorType: NameError
+          why: >-
+            Python не знает имени счётчика. Переменную нужно создать до цикла — прежде чем
+            прибавлять к ней 1. Или имя в разных строках написано по-разному.
+          try: >-
+            Добавь перед циклом, рядом с `total = 0`, строку со счётчиком и начальным значением 0.
+            Проверь, что имя везде написано одинаково.
+          verify: Ошибка NameError должна исчезнуть в «Примере 1».
+        - id: print-inside
+          when:
+            failedTest: t1
+            codeRegex: '(?<=^(?:for|while)\b[^\n]*\n(?:[ \t]+[^\n]*\n|[ \t]*(?:#[^\n]*)?\n)*)^[ \t]+print\('
+          where: "`print` с отступом — внутри цикла"
+          why: >-
+            `print` стоит в теле цикла, поэтому печатает на каждом проходе (или в каждый удачный
+            день), а не один раз. Нужны два итога — после цикла, когда все дни уже проверены.
+          try: >-
+            Убери отступ у `print` со счётчиком и поставь его после `print` суммы — обе строки
+            без отступа, после цикла.
+          verify: "В «Примере 1» должны получиться две строки: «Всего шагов: 26000» и «Дней с нормой: 2»."
+        - id: no-second-line
+          when:
+            failedTest: t1
+            outputEquals: "Всего шагов: 26000"
+          why: >-
+            Сумма верная, но программа печатает только её. Для второй строки нужен счётчик и ещё
+            один `print` после цикла.
+          try: >-
+            Создай счётчик до цикла, увеличивай его в теле цикла, когда шагов 10 000 или больше, и
+            выведи второй строкой: `Дней с нормой: …`.
+          verify: "В «Примере 1» должно получиться две строки, вторая — «Дней с нормой: 2»."
+        - id: set-one
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]+\w+\s*=\+?\s*1\s*(#.*)?$'
+          where: Строка, где счётчик получает 1
+          why: >-
+            `good_days = 1` (или опечатка `=+ 1`) не прибавляет единицу, а записывает в счётчик 1 —
+            сколько бы дней ни выполнили норму.
+          try: "Прибавляй к прошлому значению: `good_days = good_days + 1` или `good_days += 1`."
+          verify: "В «Примере 1» должно получиться «Дней с нормой: 2»."
+        - id: all-days
+          when:
+            failedTest: t1
+            outputIncludes: "Дней с нормой: 3"
+          why: >-
+            В «Примере 1» три дня, и счётчик вырос в каждый из них — даже в день с 4000 шагов.
+            Значит, он растёт без условия или условие верно для любого дня.
+          try: "Увеличивай счётчик только под `if steps >= 10000:` — с отступом под ним."
+          verify: "В «Примере 1» должно получиться «Дней с нормой: 2»."
+      afterPass: >-
+        Теперь за один проход считаются сразу два итога — сумма и количество. Одно улучшение:
+        запиши норму в переменную в начале программы, например `goal = 10000`, и сравнивай с ней.
+        Тогда новую цель можно будет поставить, поменяв одно число.
+      skills: [accumulators, conditions, boundary-checks]
+
+  - id: record-start
+    type: quiz
+    title: С чего начать минимум
+    question: >-
+      Злата ищет и самое тёплое, и самое холодное утро. Первую температуру программа уже прочитала
+      до цикла: `highest = int(input())`. Какой строкой начать минимум `lowest`, чтобы ответ был
+      верным и зимой, и летом?
+    options:
+      - "`lowest = 0`"
+      - "`lowest = highest`"
+      - "`lowest = int(input())`"
+      - "`lowest = n`"
+    correct: 1
+    explanation: |-
+      `lowest = highest` — минимум начинается с той же первой температуры, а цикл потом обновляет
+      его со знаком `<`.
+
+      - С `0` минимум летом застрянет на нуле: ни одна из температур 18, 25, 21 не меньше 0.
+      - `int(input())` прочитает не первую температуру, а следующую строку: каждый `input()`
+        забирает новую строку ввода. Первая температура в минимум не попадёт, а в конце ввода не
+        хватит строки.
+      - `n` — число дней, а не температура.
+    coach: >-
+      Одна строка ввода — один `input()`. Если значение уже прочитано, бери его из переменной.
+
+  - id: practice-extremes
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m3-l3-e3
+      kind: write
+      title: Рекорды тепла и холода
+      statement: |-
+        В журнале метеокружка — утренние температуры за несколько дней. Злата хочет, чтобы
+        программа находила самую высокую и самую низкую из них.
+
+        Первая строка ввода — число дней N (не меньше 1), дальше N строк — температуры, целые числа
+        от -60 до 60. Выведи две строки:
+
+        ```text
+        Максимум: 7
+        Минимум: -2
+        ```
+
+        Бывает, что все температуры ниже нуля (зима) или все выше нуля (лето). Программа должна
+        работать в обоих случаях.
+      input: >-
+        Первая строка — число дней N (целое, 1 или больше). Дальше N строк — температуры (целые
+        числа от -60 до 60).
+      output: "Две строки: `Максимум: <самая высокая>` и `Минимум: <самая низкая>`."
+      constraints:
+        - Дней может быть сколько угодно, поэтому температуры читай в цикле.
+        - Текст подсказок в `input()` может быть любым — он не проверяется.
+      starterCode: |
+        # Первая строка — сколько дней, дальше температуры, по одной в строке
+        # Выведи две строки: «Максимум: …» и «Минимум: …»
+
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: Пример 1
+          example: true
+          stdin: "4\n3\n7\n-2\n5\n"
+          expected: |-
+            Максимум: 7
+            Минимум: -2
+        - id: t2
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 2: зима, все ниже нуля"
+          example: true
+          stdin: "3\n-5\n-12\n-3\n"
+          expected: |-
+            Максимум: -3
+            Минимум: -12
+        - id: t3
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Лето: все выше нуля"
+          stdin: "3\n18\n25\n21\n"
+          expected: |-
+            Максимум: 25
+            Минимум: 18
+        - id: t4
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: один день"
+          edge: true
+          stdin: "1\n4\n"
+          expected: |-
+            Максимум: 4
+            Минимум: 4
+        - id: t5
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: одинаковые температуры"
+          edge: true
+          stdin: "2\n0\n0\n"
+          expected: |-
+            Максимум: 0
+            Минимум: 0
+        - id: t6
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: сильный мороз"
+          edge: true
+          stdin: "3\n-58\n-60\n-59\n"
+          expected: |-
+            Максимум: -58
+            Минимум: -60
+        - id: t7
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: жара"
+          edge: true
+          stdin: "3\n59\n60\n58\n"
+          expected: |-
+            Максимум: 60
+            Минимум: 58
+      criteria:
+        - Программа читает ровно N температур — каждую по одному разу.
+        - >-
+          Начальные значения рекордов не искажают ответ ни зимой, ни летом, ни в сильный мороз или
+          жару. Надёжнее всего начать оба рекорда с первой температуры.
+        - Ответ верен и тогда, когда день один.
+        - "Вывод — две строки: сначала `Максимум: X`, затем `Минимум: Y`."
+      hints:
+        - >-
+          Максимум и минимум — тоже накопители. С какого значения начать каждый из них, чтобы при
+          морозе -5, -12, -3 он не застрял на числе, которого в журнале нет? И сколько строк тогда
+          останется прочитать в цикле?
+        - |-
+          Тот же приём для минимума на другом примере — самая низкая цена из n чеков:
+          ```python
+          n = int(input())
+          cheapest = int(input())      # первая цена — сразу рекорд
+          for _ in range(n - 1):       # остальные цены
+              price = int(input())
+              if price < cheapest:
+                  cheapest = price
+          print(cheapest)
+          ```
+        - |-
+          Каркас:
+          ```text
+          n = число из первой строки
+          first = число из второй строки
+          highest = first
+          lowest = first
+          повторить n - 1 раз:
+              t = следующее число
+              если t больше highest — запомнить t в highest
+              если t меньше lowest — запомнить t в lowest
+          вывести «Максимум: …» и «Минимум: …»
+          ```
+      solution:
+        code: |
+          n = int(input())
+          first = int(input())
+          highest = first
+          lowest = first
+          for _ in range(n - 1):
+              t = int(input())
+              if t > highest:
+                  highest = t
+              if t < lowest:
+                  lowest = t
+          print(f"Максимум: {highest}")
+          print(f"Минимум: {lowest}")
+        explanation: >-
+          Первая температура читается до цикла и сразу становится и максимумом, и минимумом: это
+          настоящее значение из журнала, поэтому рекорд не застрянет на 0 или другом придуманном
+          числе. Цикл читает остальные `n - 1` температур и сравнивает каждую с обоими рекордами.
+          Если день один, `range(0)` пуст, и оба рекорда равны этой температуре. Вместо второго
+          `if` можно написать `elif`: новая температура не может быть одновременно выше максимума
+          и ниже минимума. Но только при старте с первой температуры: если начать с придуманных
+          чисел вроде -1000 и 1000, первая температура должна попасть в оба рекорда, а `elif`
+          пропустит минимум.
+      altSolutions:
+        - code: |
+            n = int(input())
+            for day in range(n):
+                t = int(input())
+                if day == 0:
+                    highest = t
+                    lowest = t
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Все температуры читаются в цикле, а в первый день (day == 0) рекорды получают первое значение.
+        - code: |
+            n = int(input())
+            highest = -1000
+            lowest = 1000
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print("Максимум:", highest)
+            print("Минимум:", lowest)
+          note: >-
+            Начальные значения заведомо за пределами условия (-60…60), поэтому первая же температура
+            заменит оба. Верно, пока данные не выходят за эти пределы. Здесь нужны два отдельных if:
+            с elif первая температура не попала бы в минимум.
+        - code: |
+            n = int(input())
+            highest = int(input())
+            lowest = highest
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                elif t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: >-
+            Рекорды с первого значения и elif: новая температура не может быть одновременно выше
+            максимума и ниже минимума.
+        - code: |
+            n = int(input())
+            highest = lowest = int(input())
+            for _ in range(n - 1):
+                t = int(input())
+                highest = max(highest, t)
+                lowest = min(lowest, t)
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Цепочка присваиваний и встроенные max() и min().
+        - code: |
+            n = int(input())
+            first_day = True
+            highest = 0
+            lowest = 0
+            for _ in range(n):
+                t = int(input())
+                if first_day:
+                    highest = t
+                    lowest = t
+                    first_day = False
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Флаг первого дня — нули сразу заменяются первой температурой.
+        - code: |
+            n = int(input())
+            highest = -60
+            lowest = 60
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Начальные значения — границы из условия; это тоже верно, хотя рекорд может совпасть с границей.
+        - code: |
+            n = int(input())
+            highest = -61
+            lowest = 61
+            while n > 0:
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+                n -= 1
+            print("Максимум:", highest)
+            print("Минимум:", lowest)
+          note: Начальные значения сразу за границей условия, while с обратным отсчётом.
+        - code: |
+            n = int(input("Сколько дней? "))
+            t = int(input("Температура: "))
+            hi = t
+            lo = t
+            for _ in range(n - 1):
+                t = int(input("Температура: "))
+                if t >= hi:
+                    hi = t
+                if t <= lo:
+                    lo = t
+            print("Максимум: " + str(hi) + "  ")
+            print("Минимум: " + str(lo))
+            print()
+          note: Подсказки в input(), нестрогие сравнения, пробелы и пустая строка в конце вывода.
+      wrongSolutions:
+        - code: |
+            n = int(input())
+            highest = 0
+            lowest = 0
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Оба рекорда начаты с 0 — зимой максимум застревает на 0.
+          expectMistake: zero-start-max
+        - code: |
+            n = int(input())
+            highest = -100
+            lowest = 0
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Минимум начат с 0 — летом он застревает на 0.
+          expectMistake: zero-start-min
+        - code: |
+            n = int(input())
+            highest = int(input())
+            lowest = 0
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Максимум с первого значения, а минимум с 0.
+          expectMistake: zero-start-min
+        - code: |
+            n = int(input())
+            first = int(input())
+            highest = first
+            lowest = first
+            for _ in range(n - 1):
+                t = int(input())
+                if t < highest:
+                    highest = t
+                if t > lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Знаки сравнения перепутаны — максимум и минимум поменялись местами.
+          expectMistake: swapped
+        - code: |
+            n = int(input())
+            first = int(input())
+            highest = first
+            lowest = first
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Первая температура прочитана до цикла, а цикл всё равно читает n строк — EOFError.
+          expectMistake: extra-read
+        - code: |
+            n = int(input())
+            highest = int(input())
+            lowest = int(input())
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Первая температура читается дважды — для максимума и для минимума, EOFError.
+          expectMistake: double-first
+        - code: |
+            n = int(input())
+            highest = int(input())
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+            lowest = int(input())
+            for _ in range(n - 1):
+                t = int(input())
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Блок из теории скопирован дважды — два цикла, ввод читается заново, EOFError.
+          expectMistake: double-first
+        - code: |
+            n = int(input())
+            highest = int(input())
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Минимум не создан до цикла — NameError.
+          expectMistake: no-init
+        - code: |
+            n = int(input())
+            highest = int(input())
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                lowest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Минимум создаётся внутри цикла — неверный ответ, а при одном дне NameError.
+          expectMistake: no-init
+        - code: |
+            highest = int(input())
+            lowest = highest
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Число дней не прочитано — фрагмент взят без первой строки, NameError.
+          expectMistake: no-init
+        - code: |
+            n = int(input())
+            first = input()
+            highest = first
+            lowest = first
+            for _ in range(n - 1):
+                t = input()
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Температуры остались строками — сравниваются по символам.
+          expectMistake: str-compare
+        - code: |
+            n = int(input())
+            highest = -1000
+            lowest = 1000
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                elif t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Придуманные начальные значения и elif — первая температура не попадает в минимум.
+          expectMistake: elif-sentinel
+        - code: |
+            n = int(input())
+            highest = -50
+            lowest = 50
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Начальные значения «с запасом» внутри диапазона -60…60.
+          expectMistake: start-in-range
+        - code: |
+            n = int(input())
+            first = int(input())
+            highest = first
+            lowest = first
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+                print(f"Максимум: {highest}")
+                print(f"Минимум: {lowest}")
+          note: print внутри цикла — рекорды печатаются после каждого дня.
+          expectMistake: print-inside
+        - code: |
+            n = int(input())
+            highest = n
+            lowest = n
+            for _ in range(n):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+          note: Рекорды начаты с n — числа дней, а не температуры.
+          expectMistake: null
+        - code: |
+            n = int(input())
+            first = int(input())
+            highest = first
+            lowest = first
+            for _ in range(n - 1):
+                t = int(input())
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Минимум: {lowest}")
+            print(f"Максимум: {highest}")
+          note: Строки вывода в другом порядке.
+          expectMistake: null
+        - code: |
+            n = int(input())
+            first = int(input())
+            highest = first
+            lowest = first
+            total = first
+            for _ in range(n - 1):
+                t = int(input())
+                total = total + t
+                if t > highest:
+                    highest = t
+                if t < lowest:
+                    lowest = t
+            print(f"Максимум: {highest}")
+            print(f"Минимум: {lowest}")
+            print(f"Средняя: {round(total / n, 1)}")
+          note: Улучшение из afterPass добавлено в проверяемое решение — третья строка.
+          expectMistake: null
+      mistakes:
+        - id: double-first
+          when:
+            errorType: EOFError
+            codeRegex: '(?<=^\w+\s*=[^\n]*\binput\s*\([\s\S]*^\w+\s*=[^\n]*\binput\s*\([\s\S]*)^\w+\s*=[^\n]*\binput\s*\('
+          where: Строки с `input()` до цикла
+          why: >-
+            Каждый `input()` забирает новую строку ввода. Первая температура одна, а читается
+            дважды — для максимума и для минимума: второй вызов забирает уже следующую температуру,
+            и в конце ввода не хватает строки.
+          try: >-
+            Прочитай первую температуру один раз и начни с неё оба рекорда: `lowest = highest`. Оба
+            рекорда обновляй в одном цикле на остальные `n - 1` температур.
+          verify: "В «Примере 1» должно получиться «Максимум: 7» и «Минимум: -2»."
+        - id: extra-read
+          when:
+            errorType: EOFError
+          why: >-
+            Программа попросила строку ввода, которой нет: `input()` вызывается больше раз, чем
+            строк во вводе. Частый случай — первая температура прочитана до цикла, а цикл всё равно
+            читает n строк: всего получается n + 1.
+          try: >-
+            Посчитай вызовы `input()`: один — для n, один — для первой температуры и `n - 1` в
+            цикле, то есть `range(n - 1)`.
+          verify: В «Примере 1» ошибка EOFError должна исчезнуть.
+        - id: no-init
+          when:
+            errorType: NameError
+          why: >-
+            Python не знает этого имени: переменную используют раньше, чем создали. До цикла
+            должны появиться и число дней `n`, и оба рекорда — `highest` и `lowest`.
+          try: >-
+            Проверь начало программы: сначала `n = int(input())`, затем первая температура, и с
+            неё начинаются оба рекорда. Внутри цикла рекорды только обновляются.
+          verify: Ошибка NameError должна исчезнуть, в том числе в граничном случае «один день».
+        - id: zero-start-max
+          when:
+            failedTest: t2
+            outputIncludes: "Максимум: 0"
+          where: Начальное значение максимума
+          why: >-
+            Максимум начат с 0. Зимой (-5, -12, -3) ни одна температура не больше 0, поэтому
+            максимум так и остаётся нулём — температурой, которой в журнале не было.
+          try: >-
+            Начни максимум с первой температуры: прочитай её до цикла, а цикл пусть читает
+            остальные `n - 1`. Минимум начни с того же значения.
+          verify: "В «Примере 2» должно получиться «Максимум: -3»."
+        - id: zero-start-min
+          when:
+            failedTest: t3
+            outputIncludes: "Минимум: 0"
+          where: Начальное значение минимума
+          why: >-
+            Минимум начат с 0. Летом (18, 25, 21) ни одна температура не меньше 0, поэтому минимум
+            так и остаётся нулём.
+          try: Начни минимум, как и максимум, с первой температуры из журнала.
+          verify: "В тесте «Лето: все выше нуля» должно получиться «Минимум: 18»."
+        - id: str-compare
+          when:
+            failedTest: t2
+            codeRegex: '(?<!int\(\s*)\binput\s*\('
+          where: Строка с `input()` без `int()`
+          why: >-
+            Температуры остались строками. Строки сравниваются не как числа, а по символам, как
+            слова в словаре: `"-5" > "-3"`, потому что символ 5 идёт после 3. Поэтому зимой
+            максимумом оказалось -5.
+          try: "Превращай каждую температуру в число сразу при чтении: `int(input())` — и до цикла, и в цикле."
+          verify: "В «Примере 2» должно получиться «Максимум: -3»."
+        - id: elif-sentinel
+          when:
+            failedTest: t3
+            outputIncludes: "Минимум: 21"
+            codeRegex: '^[ \t]*elif\b'
+          where: Строка с `elif`
+          why: >-
+            Рекорды начаты не с первой температуры, а с придуманных чисел, и `elif` пропускает
+            проверку минимума, когда температура обновила максимум. Первая температура (18)
+            обновила максимум и в минимум не попала — поэтому минимум 21.
+          try: Начни оба рекорда с первой температуры (`lowest = highest`) или сделай два отдельных `if`.
+          verify: "В тесте «Лето: все выше нуля» должно получиться «Минимум: 18»."
+        - id: start-in-range
+          when:
+            failedTest: t6
+            codeRegex: '^\w+\s*=\s*-[1-5]?\d\s*(#.*)?$'
+          where: Начальные значения рекордов
+          why: >-
+            Рекорд начат с придуманного числа, которое попадает в диапазон температур (-60…60). В
+            сильный мороз (-58, -60, -59) ни одна температура не больше этого числа, и максимум
+            так и остаётся им — температурой, которой в журнале нет. С минимумом в жару то же самое.
+          try: >-
+            Начни оба рекорда с первой температуры: прочитай её до цикла, `lowest = highest`, а
+            цикл пусть читает остальные `n - 1`.
+          verify: "В тесте «Граничный случай: сильный мороз» должно получиться «Максимум: -58»."
+        - id: swapped
+          when:
+            outputEquals: |-
+              Максимум: -2
+              Минимум: 7
+          why: >-
+            Максимум и минимум поменялись местами: в сравнениях перепутаны знаки `>` и `<` или
+            подписи в `print`.
+          try: >-
+            Максимум обновляется, когда новая температура **больше** него, минимум — когда
+            **меньше**. Проверь и то, какая переменная стоит в каждой строке вывода.
+          verify: "В «Примере 1» должно получиться «Максимум: 7» и «Минимум: -2»."
+        - id: print-inside
+          when:
+            failedTest: t1
+            codeRegex: '(?<=^(?:for|while)\b[^\n]*\n(?:[ \t]+[^\n]*\n|[ \t]*(?:#[^\n]*)?\n)*)^[ \t]+print\('
+          where: "`print` с отступом — внутри цикла"
+          why: >-
+            `print` стоит в теле цикла, поэтому рекорды печатаются после каждого дня. А нужны два
+            итога — когда прочитаны все температуры.
+          try: Убери отступ у обеих строк с `print`, чтобы они выполнились после цикла.
+          verify: В «Примере 1» должны остаться ровно две строки.
+      afterPass: >-
+        Рекорды не застревают на 0 и на других придуманных числах, поэтому программа не ошибается
+        ни зимой, ни летом. Одно улучшение: добавь третью строку — среднюю температуру. Для неё
+        нужен ещё один накопитель — сумма. Начни её с первой температуры (`total = first`): она
+        прочитана до цикла, и в цикле её уже не будет. Среднее — `round(total / n, 1)`. Пробуй это
+        кнопкой «Запустить»: «Проверить» ждёт ровно две строки.
+      skills: [accumulators, conditions]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Накопитель: начальное значение — до цикла, обновление — внутри, итог — после цикла."
+      - "Счётчик прибавляет 1, часто под условием: `good_days += 1` стоит внутри `if steps >= 10000:`."
+      - Сумма и счётчик начинаются с 0, а максимум и минимум — с первого значения, прочитанного до цикла.
+      - "`total = 0` внутри цикла стирает итог на каждом проходе, а `print` внутри цикла печатает промежуточные итоги, когда нужен один."
+    question: Почему максимум нельзя начинать с 0, если бывают морозы?
+    answer: >-
+      Если все температуры ниже нуля, например -5, -12 и -3, ни одна из них не больше 0, и
+      максимум так и останется нулём. Программа выдаст 0 — температуру, которой в журнале не было.
+      Если начать с первого значения, максимум всегда будет одной из настоящих температур.

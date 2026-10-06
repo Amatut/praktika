@@ -159,6 +159,26 @@ describe('PythonRunner', () => {
     await expect(second).resolves.toEqual({ status: 'done', result: { stdout: '1\n' } });
   });
 
+  it('окружение запуска (файлы, базы, seed, сеть) уходит в поток вместе с программой, без окружения — не уходит', async () => {
+    const runner = new PythonRunner();
+    const environment = { filename: 'calc.py', files: { 'data.txt': '1' }, seed: 7, http: [{ url: 'https://api.example.com/x' }] };
+    const first = runner.run('print(1)', '', { environment });
+    const worker = lastWorker();
+    worker.ready();
+    await vi.advanceTimersByTimeAsync(0);
+    const request = worker.posted[0];
+    expect(request).toMatchObject({ type: 'run', code: 'print(1)', environment });
+    worker.send({ type: 'run-result', id: request?.id ?? -1, result: { stdout: '1\n', files: [] } });
+    await first;
+
+    const second = runner.run('print(2)', '');
+    await vi.advanceTimersByTimeAsync(0);
+    const plain = worker.posted[1];
+    expect(plain && 'environment' in plain).toBe(false);
+    worker.send({ type: 'run-result', id: plain?.id ?? -1, result: { stdout: '2\n' } });
+    await second;
+  });
+
   it('Python не загрузился — запуск завершается сбоем, слот освобождается', async () => {
     const runner = new PythonRunner();
     const outcome = runner.run('print(1)', '');

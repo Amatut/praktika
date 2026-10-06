@@ -1,0 +1,1693 @@
+id: m5-l6
+module: m5
+number: "5.6"
+title: "Первое знакомство с Git и README: сохраняем проект"
+objective: >-
+  Сохранить свой первый проект в Git: создать репозиторий, сделать два осмысленных коммита — код
+  и README с инструкцией запуска, — посмотреть историю и вернуть файл к последнему коммиту.
+minutes: [40, 60]
+prerequisites: [m5-l5, m0-l4]
+skills: [git-first-steps, readme-docs]
+environment: external
+
+story:
+  title: calc_final_точно.py
+  fictional: true
+  text: >-
+    После модуля про коллекции Даша написала свой первый проект — консольный калькулятор. Перед
+    каждой большой правкой она сохраняла копию: `calc.py`, `calc_new.py`, `calc_final.py`,
+    `calc_final_точно.py`. Когда очередная правка всё сломала, выяснилось, что Даша не помнит,
+    какая из копий была рабочей. Друг показал ей Git: он хранит снимки проекта с коротким
+    сообщением «что изменилось», и к любому снимку можно вернуться. А чтобы друзья могли
+    запустить калькулятор без её объяснений, Даша добавила в проект файл README с инструкцией.
+
+why: >-
+  Git хранит историю проекта: каждый коммит — снимок проекта с сообщением о том, что изменилось,
+  поэтому менять код не страшно, рабочая версия не потеряется. README объясняет любому человеку —
+  и тебе через месяц, — что делает программа и как её запустить: например, «Открой терминал в
+  папке проекта и выполни `python calc.py`».
+
+usedIn: >-
+  Git — самая распространённая система контроля версий: ею пользуются и программисты-одиночки, и
+  большие команды. Его создал Линус Торвальдс в 2005 году для работы над ядром Linux. Сайты
+  GitHub и GitLab хранят Git-репозитории в интернете, а README — первое, что видит человек,
+  открывший чужой проект.
+
+steps:
+  - id: snapshots
+    type: theory
+    title: "Git: снимки проекта"
+    body: |-
+      У Даши было четыре копии калькулятора, и ни одна не говорила, чем она отличается от
+      остальных. Эту задачу решает **система контроля версий** — программа, которая хранит
+      историю проекта: что менялось, когда и зачем. Самая распространённая такая система — **Git**.
+
+      **Репозиторий** — папка проекта вместе с его историей. Историю Git хранит в скрытой папке
+      `.git` внутри проекта, трогать её руками не нужно. Репозиторий создаётся один раз командой
+      `git init`.
+
+      **Коммит** — снимок проекта с **сообщением**: короткой подписью о том, что изменилось. Ещё
+      Git запоминает автора и время. У каждого коммита есть короткий номер вроде `3f9a2c1`. Новые
+      коммиты не стирают старые: история только растёт.
+
+      Обычный цикл работы:
+
+      1. Изменить файл и сохранить его (Ctrl + S).
+      2. `git add calc.py` — выбрать изменения для следующего снимка. Файлы из прошлого
+         снимка, которые не менялись, войдут в новый такими же, как были.
+      3. `git commit -m "Что изменилось"` — сделать снимок с сообщением.
+
+      Ещё три команды:
+
+      - `git status` — что сейчас видит Git: какие файлы новые, какие изменены, какие изменения
+        выбраны для снимка. Не понимаешь, что происходит, — набери `git status`, она ничего не меняет.
+      - `git log --oneline` — история: по строке на коммит, новые сверху.
+      - `git restore calc.py` — выбросить изменения в файле, которые ещё не выбраны через
+        `git add`. Если ты ничего не выбирал, файл станет таким, как в последнем коммите.
+        Вернуть выброшенное нельзя.
+
+      Есть и `git add .` — выбрать сразу все файлы папки. Пока не пользуйся этой командой: в
+      снимок легко попадёт лишнее. Как этого избежать, узнаешь в модуле 8.
+
+      **Хорошее сообщение коммита** отвечает на вопрос «что изменилось?»: «Добавить README с
+      инструкцией запуска», а не «fix» или «правки». Ориентир — до 50 символов. Удобно начинать
+      с действия: «Добавить…», «Исправить…», «Убрать…».
+
+      Git работает на твоём компьютере без интернета и без регистрации. GitHub и GitLab —
+      отдельные сайты, где хранят копии репозиториев; сейчас они не нужны.
+
+      Урок — на два захода по 20–30 минут: сначала задание в тренажёре и установка Git, потом
+      коммиты и README. Работу на компьютере тренажёр не видит, поэтому в чек-листах отмечай
+      пункты сам — по результату, а не по прочтении.
+    simpler: >-
+      Git — фотоальбом проекта. `git add` — решить, что обновить на следующем снимке,
+      `git commit` — сделать снимок с подписью, `git log` — пролистать альбом, `git restore` —
+      отменить правку, которую ты ещё не выбрал для снимка.
+    coach: >-
+      Команды Git не нужно заучивать: в чек-листах каждая будет перед глазами. Запомни идею —
+      выбрать изменения, сделать снимок, посмотреть историю.
+
+  - id: commands
+    type: order
+    title: "Первый коммит: в каком порядке?"
+    prompt: >-
+      Расставь команды в том порядке, в каком ты выполнишь их, чтобы сохранить в Git новый
+      проект и посмотреть историю.
+    items:
+      - id: init
+        text: git init — создать репозиторий
+      - id: status
+        text: git status — посмотреть, что видит Git
+      - id: add
+        text: git add calc.py — выбрать файл для снимка
+      - id: commit
+        text: git commit -m "Первая версия калькулятора" — сделать снимок
+      - id: log
+        text: git log --oneline — посмотреть историю
+    before:
+      - [init, status]
+      - [init, add]
+      - [add, commit]
+      - [commit, log]
+    explanation: >-
+      Сначала репозиторий: без `git init` Git не следит за папкой и на `status`, `add`, `commit`
+      и `log` ответит `fatal: not a git repository`. Снимок делается из того, что выбрано через
+      `git add`, поэтому add идёт раньше commit. История появится только после первого коммита.
+      А `git status` можно набирать в любой момент после init — она ничего не меняет, только
+      показывает.
+    coach: >-
+      Порядок легко запомнить по фотоальбому: завести альбом (init), выбрать кадр (add), снять
+      (commit), пролистать (log).
+
+  - id: message
+    type: quiz
+    title: Какое сообщение понятнее?
+    question: >-
+      Через месяц ты открываешь историю калькулятора. Какое сообщение коммита лучше всего
+      расскажет, что тогда изменилось?
+    options:
+      - "`fix`"
+      - "`Исправил баг`"
+      - "`Добавить проверку деления на ноль`"
+      - "`правки в calc.py`"
+    correct: 2
+    explanation: >-
+      Только «Добавить проверку деления на ноль» говорит, что именно изменилось. «Исправил баг»
+      похоже на хорошее — начинается с действия, — но какой баг? Через месяц не вспомнишь.
+      Вариант «правки в calc.py» говорит где, но не что, а какой файл изменился, Git и так
+      запомнит. `fix` не говорит ничего: чтобы понять такой коммит, придётся перечитывать код.
+
+  - id: practice-message
+    type: exercise
+    title: Практика
+    exercise:
+      id: m5-l6-e1
+      kind: write
+      title: Проверка сообщения коммита
+      statement: |-
+        Даша решила больше не подписывать коммиты словами вроде «fix» и хочет, чтобы программа
+        проверяла сообщение заранее. Напиши функцию `is_good_message(message)`: она возвращает
+        `True`, если сообщение годится, и `False`, если нет.
+
+        Сообщение **не годится**, если после удаления пробелов по краям:
+
+        1. оно пустое;
+        2. в нём больше 50 символов;
+        3. оно **целиком** совпадает с одним из слов `fix`, `update`, `правки`, `изменения`,
+           `asdf` — в любом регистре: «Правки» и «FIX» тоже не годятся.
+
+        Во всех остальных случаях сообщение годится. Например, «Описать изменения в README»
+        годится: слово из списка здесь только часть сообщения. Вызовы внизу стартового кода
+        нужны для кнопки «Запустить», а проверка вызывает функцию сама.
+      input: "Параметр `message` — строка, сообщение коммита."
+      output: "Функция возвращает `True` или `False`."
+      constraints:
+        - "Результат — через `return`: проверка получает то, что функция вернула, а не то, что она напечатала."
+        - Пробелы по краям не считаются ни в длине, ни при сравнении со словами. Пробелы между словами — часть сообщения и в длину входят.
+      starterCode: |
+        def is_good_message(message):
+            pass  # верни True или False
+
+
+        print(is_good_message("Добавить README с инструкцией запуска"))  # ожидаю True
+        print(is_good_message("fix"))  # ожидаю False
+      tests:
+        - id: t1
+          kind: call
+          title: "Пример: понятное сообщение"
+          example: true
+          call: is_good_message("Добавить README с инструкцией запуска")
+          expected: "True"
+        - id: t2
+          kind: call
+          title: "Пример: слово из списка"
+          example: true
+          call: is_good_message("fix")
+          expected: "False"
+        - id: t3
+          kind: call
+          title: "Пример: длиннее 50 символов"
+          example: true
+          call: is_good_message("Добавить в калькулятор проверку деления на ноль и сообщение об ошибке")
+          expected: "False"
+        - id: t4
+          kind: call
+          title: "Граничный случай: пустое сообщение"
+          edge: true
+          call: is_good_message("")
+          expected: "False"
+        - id: t5
+          kind: call
+          title: "Граничный случай: одни пробелы"
+          edge: true
+          call: is_good_message("   ")
+          expected: "False"
+        - id: t6
+          kind: call
+          title: "Граничный случай: слово с большой буквы"
+          edge: true
+          call: is_good_message("Правки")
+          expected: "False"
+        - id: t7
+          kind: call
+          title: "Граничный случай: слово заглавными буквами"
+          edge: true
+          call: is_good_message("FIX")
+          expected: "False"
+        - id: t8
+          kind: call
+          title: "Граничный случай: другое слово из списка"
+          edge: true
+          call: is_good_message("Изменения")
+          expected: "False"
+        - id: t9
+          kind: call
+          title: "Граничный случай: слово с пробелами по краям"
+          edge: true
+          call: is_good_message("  fix  ")
+          expected: "False"
+        - id: t10
+          kind: call
+          title: "Граничный случай: ровно 50 символов"
+          edge: true
+          call: 'is_good_message("Д" * 50)'
+          expected: "True"
+        - id: t11
+          kind: call
+          title: "Граничный случай: 51 символ"
+          edge: true
+          call: 'is_good_message("Д" * 51)'
+          expected: "False"
+        - id: t12
+          kind: call
+          title: "Граничный случай: пробелы по краям не входят в длину"
+          edge: true
+          call: 'is_good_message("   " + "Д" * 48 + "   ")'
+          expected: "True"
+        - id: t13
+          kind: call
+          title: "Граничный случай: 51 символ вместе с пробелами между словами"
+          edge: true
+          call: is_good_message("Добавить в калькулятор деление с остатком и степень")
+          expected: "False"
+        - id: t14
+          kind: call
+          title: "Граничный случай: „правки“ внутри слова „справки“"
+          edge: true
+          call: is_good_message("Добавить команду справки")
+          expected: "True"
+        - id: t15
+          kind: call
+          title: "Граничный случай: слово из списка — лишь часть сообщения"
+          edge: true
+          call: is_good_message("Описать изменения в README")
+          expected: "True"
+        - id: t16
+          kind: call
+          title: "Граничный случай: начало слова из списка"
+          edge: true
+          call: is_good_message("Изменен")
+          expected: "True"
+      criteria:
+        - Функция возвращает `True` или `False` через `return`, а не печатает ответ.
+        - Пустое сообщение и сообщение из одних пробелов не годятся.
+        - "Длина считается без пробелов по краям, но вместе с пробелами между словами: 50 символов — ещё можно, 51 — уже нет."
+        - Слова из списка не годятся в любом регистре и с пробелами по краям. Сообщение, где такое слово — лишь часть сообщения или часть другого слова, годится.
+      hints:
+        - >-
+          Все три правила смотрят на одно и то же: сообщение без пробелов по краям и без разницы
+          между большими и маленькими буквами. Подготовь такую версию один раз в начале функции и
+          дальше проверяй только её. Что функция должна вернуть, как только правило нарушено, и
+          что — когда все проверки пройдены?
+        - |-
+          Приёмы на других примерах:
+
+          ```python
+          answer = "  Да ".strip().lower()
+          print(answer)                   # да
+          print("кот" in ["кот", "пёс"])  # True
+          print("от" in ["кот", "пёс"])   # False
+          print("от" in "кот")            # True
+          ```
+
+          `in` со списком сравнивает значение с каждым элементом целиком, а `in` со строкой ищет
+          кусок внутри неё. Функция с несколькими проверками:
+
+          ```python
+          def is_valid_age(age):
+              if age < 0:
+                  return False
+              if age > 120:
+                  return False
+              return True
+          ```
+
+          Каждый `return` сразу заканчивает функцию: до `return True` дело дойдёт, только если
+          ни одна проверка не сработала.
+        - |-
+          Каркас:
+
+          ```text
+          def is_good_message(message):
+              text = message без пробелов по краям,
+                     маленькими буквами
+              если text пустой: вернуть False
+              если в text больше 50 символов: вернуть False
+              если text есть в списке плохих слов: вернуть False
+              вернуть True
+          ```
+      solution:
+        code: |
+          def is_good_message(message):
+              text = message.strip().lower()
+              if text == "":
+                  return False
+              if len(text) > 50:
+                  return False
+              if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                  return False
+              return True
+
+
+          print(is_good_message("Добавить README с инструкцией запуска"))  # ожидаю True
+          print(is_good_message("fix"))  # ожидаю False
+        explanation: >-
+          Сначала функция один раз готовит удобную версию сообщения: `strip()` убирает пробелы по
+          краям, `lower()` делает буквы маленькими. Результат сохранён в `text` — методы строк
+          возвращают новую строку, а старая не меняется (урок 4.3). Дальше три проверки по
+          очереди: каждая при нарушении сразу возвращает `False`, и функция на этом заканчивается.
+          Если ни одна не сработала, выполняется `return True`. `text in [...]` сравнивает
+          сообщение с каждым словом списка целиком, поэтому «Добавить команду справки» проходит,
+          хотя внутри есть «правки». Проверка формальная: «Изменен» она тоже пропустит, хотя и
+          такое сообщение мало что говорит, — понятность сообщения по-прежнему оценивает человек.
+      altSolutions:
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                return text != "" and len(text) <= 50 and text not in ["fix", "update", "правки", "изменения", "asdf"]
+
+
+            print(is_good_message("Добавить README с инструкцией запуска"))
+            print(is_good_message("fix"))
+          note: Все три правила одним выражением — оно само даёт True или False.
+        - code: |
+            BAD_WORDS = ["fix", "update", "правки", "изменения", "asdf"]
+
+
+            def is_good_message(message):
+                text = message.strip().lower()
+                good = True
+                if len(text) == 0:
+                    good = False
+                elif len(text) > 50:
+                    good = False
+                elif text in BAD_WORDS:
+                    good = False
+                return good
+
+
+            print(is_good_message("Добавить README с инструкцией запуска"))
+            print(is_good_message("fix"))
+          note: Список слов в константе над функцией, один return в конце, пустота через len.
+        - code: |
+            def is_good_message(message):
+                message = message.strip()
+                message = message.lower()
+                if message == "" or len(message) > 50:
+                    return False
+                for word in ["fix", "update", "правки", "изменения", "asdf"]:
+                    if message == word:
+                        return False
+                return True
+
+
+            print(is_good_message("Добавить README с инструкцией запуска"))
+            print(is_good_message("fix"))
+          note: Параметр перезаписан очищенной строкой, слова перебираются циклом и сравниваются через ==.
+        - code: |
+            BAD = {"FIX", "UPDATE", "ПРАВКИ", "ИЗМЕНЕНИЯ", "ASDF"}
+
+
+            def is_good_message(message):
+                cleaned = message.strip().upper()
+                if not cleaned:
+                    return False
+                if len(cleaned) > 50:
+                    return False
+                if cleaned in BAD:
+                    return False
+                return True
+          note: upper() и множество слов заглавными буквами, пустота через not (рецензент проверок).
+        - code: |
+            def clean(text):
+                return text.strip(" ").lower()
+
+
+            def is_good_message(message):
+                text = clean(message)
+                print(f"Проверяю «{text}», длина {len(text)}")
+
+                if len(text) == 0:
+                    return False
+
+                if len(text) >= 51:
+                    return False
+
+                bad_words = "fix update правки изменения asdf".split()
+                if text in bad_words:
+                    return False
+
+                return True
+
+
+            for m in ["Добавить README с инструкцией запуска", "fix", "   ", "Правки"]:
+                print(f"{m} -> {is_good_message(m)}")
+          note: Вспомогательная функция, отладочный print, >= 51, список через split(), проверочный цикл внизу.
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                found = False
+                for word in ("asdf", "изменения", "правки", "update", "fix"):
+                    if text == word:
+                        found = True
+                        break
+                if 0 < len(text) <= 50 and not found:
+                    return True
+                else:
+                    return False
+          note: Кортеж, флаг found с break, двойное сравнение 0 < len <= 50, if/else в конце.
+        - code: |
+            def is_good_message(message):
+                result = True
+                if len(message.strip()) == 0:
+                    result = False
+                elif len(message.strip()) > 50:
+                    result = False
+                elif message.strip().lower() in ["fix", "update", "правки", "изменения", "asdf"]:
+                    result = False
+                return result
+          note: strip() в каждой проверке без переменной, цепочка elif, один return result.
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if len(text) < 51 and text != "" and text != "fix" and text != "update" and text != "правки" and text != "изменения" and text != "asdf":
+                    return True
+                return False
+          note: Одно длинное условие через and и != (рецензент-ученик).
+        - code: |
+            BAD_WORDS = ["fix", "update", "правки", "изменения", "asdf"]
+
+
+            def is_good_message(message):
+                text = message.strip()
+                if len(text) < 1:
+                    return False
+                if len(text) > 50:
+                    return False
+                if text.lower() in BAD_WORDS:
+                    return False
+                return True
+
+
+            msg = "  Исправить деление на ноль  "
+            print(f"«{msg}» — {is_good_message(msg)}")
+          note: lower() только при сравнении со словами, пустота через len < 1, f-строка внизу.
+      wrongSolutions:
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    print(False)
+                elif len(text) > 50:
+                    print(False)
+                elif text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    print(False)
+                else:
+                    print(True)
+
+
+            print(is_good_message("Добавить README с инструкцией запуска"))
+          note: Функция печатает ответ вместо return и возвращает None.
+          expectMistake: prints-result
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "" or len(text) > 50:
+                    return "False"
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return "False"
+                return "True"
+          note: Возвращает строки "True" и "False" вместо логических значений.
+          expectMistake: returns-text
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text == "fix" or "update" or "правки" or "изменения" or "asdf":
+                    return False
+                return True
+          note: Сравнение записано не полностью — непустая строка после or всегда истинна, и функция отклоняет любое сообщение.
+          expectMistake: or-strings
+        - code: |
+            def is_good_message(message):
+                message.strip()
+                message.lower()
+                if message == "":
+                    return False
+                if len(message) > 50:
+                    return False
+                if message in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: strip() и lower() вызваны, но их результат не сохранён.
+          expectMistake: not-saved
+        - code: |
+            def is_good_message(message):
+                text = message.strip.lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: strip без скобок — AttributeError при каждом вызове.
+          expectMistake: no-parens
+        - code: |
+            def is_good_mesage(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Опечатка в имени функции — NameError в каждом тесте. Общий разбор «Нет функции» с похожим именем.
+          expectMistake: null
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Нет проверки на пустое сообщение.
+          expectMistake: no-empty
+        - code: |
+            def is_good_message(message):
+                text = message.lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Пробелы по краям не убраны — строка из пробелов проходит проверку.
+          expectMistake: no-strip
+        - code: |
+            def is_good_message(message):
+                if message == "":
+                    return False
+                text = message.strip().lower()
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Пустота проверяется до strip(), поэтому строка из пробелов проходит.
+          expectMistake: no-strip
+        - code: |
+            def is_good_message(message):
+                text = message.strip()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Нет lower() — «Правки» и «FIX» проходят.
+          expectMistake: no-lower
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(message) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Длина считается у исходного сообщения, вместе с пробелами по краям.
+          expectMistake: raw-length
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) >= 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: ">= 50 отклоняет сообщение ровно из 50 символов."
+          expectMistake: boundary-50
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                for word in ["fix", "update", "правки", "изменения", "asdf"]:
+                    if word in text:
+                        return False
+                return True
+          note: in для строки ищет слово внутри сообщения — «справки» отклоняется из-за «правки».
+          expectMistake: substring
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "" or len(text) > 50:
+                    return False
+                for word in ["fix", "update", "правки", "изменения", "asdf"]:
+                    if text == word:
+                        return False
+                    return True
+          note: return True внутри цикла — функция заканчивается на первом слове списка, «Правки» проходит.
+          expectMistake: return-in-loop
+        - code: |
+            def is_good_message(message):
+                if message.strip() == "":
+                    return False
+                if len(message.strip()) > 50:
+                    return False
+                if message.lower() in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Со словами сравнивается сообщение без strip() — «  fix  » проходит.
+          expectMistake: raw-compare
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+          note: Нет return True в конце — для хорошего сообщения функция возвращает None.
+          expectMistake: no-final-return
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+
+
+            print(is_good_message("Добавить README с инструкцией запуска"))  # ожидаю True
+            print(is_good_message("fix"))  # ожидаю False
+          note: Нет return True, вызовы из стартового кода оставлены (рецензент-ученик, P12) — общий разбор принял бы их за print внутри функции.
+          expectMistake: no-final-return
+        - code: |
+            def is_good_message(message):
+                pass  # верни True или False
+
+
+            print(is_good_message("Добавить README с инструкцией запуска"))  # ожидаю True
+            print(is_good_message("fix"))  # ожидаю False
+          note: Стартовый код без изменений.
+          expectMistake: no-return
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                good = True
+                if text == "":
+                    good = False
+                elif len(text) > 50:
+                    good = False
+                elif text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    good = False
+          note: Флаг good посчитан, но return good забыт — всегда None.
+          expectMistake: no-return
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "" or len(text) > 50:
+                    return False
+                for word in ["fix", "update", "правки", "изменения", "asdf"]:
+                    if text == word:
+                        return False
+                    else:
+                        return True
+          note: else с return True внутри цикла.
+          expectMistake: return-in-loop
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                print("проверяю:", text)
+                if text == "" or len(text) > 50:
+                    return False
+                if text == "fix" or "update" or "правки" or "изменения" or "asdf":
+                    return False
+                return True
+          note: Ловушка с or и отладочный print в функции — разбор про or, а не про print.
+          expectMistake: or-strings
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "" and len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: and вместо or — условие не срабатывает никогда.
+          expectMistake: and-instead-of-or
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text == ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Строка сравнивается со списком через ==.
+          expectMistake: eq-list
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == " ":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Пустота проверяется сравнением с пробелом " ".
+          expectMistake: no-empty
+        - code: |
+            def is_good_message(message):
+                text = message.strip()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                bad = ["fix", "Fix", "update", "Update", "правки", "Правки", "изменения", "Изменения", "asdf", "Asdf"]
+                if text in bad:
+                    return False
+                return True
+          note: Вместо lower() в список добавлены слова с большой буквы — «FIX» проходит.
+          expectMistake: no-lower
+        - code: |
+            def is_good_message(message):
+                text = message.strip().upper()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: upper() вместо lower() при списке маленькими буквами.
+          expectMistake: no-lower
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменение", "asdf"]:
+                    return False
+                return True
+          note: Опечатка в списке — «изменение» вместо «изменения».
+          expectMistake: word-typo
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if message in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Очистил сообщение в text, а со словами сравнивает исходное message.
+          expectMistake: raw-compare
+        - code: |
+            def is_good_message(message):
+                text = message.strip()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                text.lower()
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: strip() сохранён, а lower() вызван отдельной строкой без сохранения.
+          expectMistake: not-saved
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 51:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Граница > 51 — сообщение из 51 символа проходит.
+          expectMistake: boundary-51
+        - code: |
+            def is_good_message(message):
+                text = message.replace(" ", "").lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: replace убирает и пробелы между словами — длинное сообщение становится короче.
+          expectMistake: replace-spaces
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "" or len(text) > 50:
+                    return False
+                for word in text.split():
+                    if word in ["fix", "update", "правки", "изменения", "asdf"]:
+                        return False
+                return True
+          note: Делит сообщение на слова — отклоняет «Описать изменения в README».
+          expectMistake: split-words
+        - code: |
+            BAD = "fix update правки изменения asdf"
+
+
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "" or len(text) > 50:
+                    return False
+                if text in BAD:
+                    return False
+                return True
+          note: Слова в одной строке — in ищет кусок и отклоняет «Изменен».
+          expectMistake: in-string
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                return text and len(text) <= 50 and text not in ["fix", "update", "правки", "изменения", "asdf"]
+          note: return text and … — для пустой строки возвращает '' вместо False. Общий разбор называет тип str.
+          expectMistake: null
+        - code: |
+            def is_good_message(message):
+                if message.strip() == "":
+                    return False
+                return True
+          note: Решение по частям — пока только правило про пустоту.
+          expectMistake: no-words
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                return True
+
+
+            print(is_good_message("Добавить README с инструкцией запуска"))  # ожидаю True
+            print(is_good_message("fix"))  # ожидаю False
+          note: Решение по частям — пустота и длина есть, слов ещё нет.
+          expectMistake: no-words
+        - code: |
+            def is_good_message(message):
+                text = message.lstrip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: lstrip() убирает пробелы только слева — «  fix  » проходит.
+          expectMistake: half-strip
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if len(text) > 50 and not text:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Пустота и длина соединены через and — условие не срабатывает никогда.
+          expectMistake: and-instead-of-or
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return True
+                if len(text) > 50:
+                    return True
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return True
+                return False
+          note: True и False перепутаны местами. Общий разбор «Результат противоположный» точен; no-empty не срабатывает — проверка на пустоту есть.
+          expectMistake: null
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                    return True
+          note: return True с лишним отступом ушёл внутрь последнего if и не выполняется. Общий разбор «нет return или он не выполняется».
+          expectMistake: null
+        - code: |
+            def is_good_message(message):
+                text = mesage.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Опечатка в имени параметра — NameError в каждом тесте. Общий разбор «Неизвестное имя».
+          expectMistake: null
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lover()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: Опечатка в методе — AttributeError в каждом тесте. Общий разбор «Нет такого метода», а не no-lower.
+          expectMistake: null
+        - code: |
+            def is_good_message(message):
+                text = message.trim().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+          note: trim() вместо strip() — AttributeError в каждом тесте. Общий разбор подсказывает strip.
+          expectMistake: null
+        - code: |
+            def is_good_message(message):
+                text = message.strip().lower()
+                if text == "":
+                    return False
+                if len(text) > 50:
+                    return False
+                if text in ["fix", "update", "правки", "изменения", "asdf"]:
+                    return False
+                return True
+
+
+            print(is_good_message(input()))
+          note: Функция верная, но внизу input() — у call-тестов ввода нет, EOFError. Общий разбор про input() в задании с функцией.
+          expectMistake: null
+      mistakes:
+        - id: no-parens
+          when:
+            codeRegex: '^[^#\n]*\.(strip|lower)\b(?!\s*\()'
+          why: >-
+            Метод вызывают со скобками: `message.strip()`. Без скобок `message.strip` — сам метод, а
+            не результат его работы, и на следующем шаге программа падает с AttributeError или
+            TypeError.
+          try: Поставь круглые скобки после каждого метода, даже если внутри ничего нет — `strip()`, `lower()`.
+          verify: Ошибка должна исчезнуть, а примеры — пройти.
+        - id: prints-result
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]+print\(\s*(?:True|False)\s*\)|(?<![\s\S])(?![\s\S]*^[ \t]+return\b)[\s\S]*^[ \t]+print\('
+          where: print внутри функции
+          why: >-
+            Функция показывает ответ на экране, но возвращает `None`: `print` говорит человеку, а
+            проверке и остальной программе значение отдаёт только `return` (урок 5.3).
+          try: Замени каждый `print(...)` с ответом внутри функции на `return` с тем же значением.
+          verify: '`is_good_message("Добавить README с инструкцией запуска")` должен вернуть True, а не None.'
+        - id: no-return
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]+return\b)'
+          where: return в функции
+          why: >-
+            В функции нет ни одного `return`, поэтому любой вызов возвращает `None`: проверки
+            внутри что-то выясняют, но результат из функции не выходит (урок 5.3).
+          try: >-
+            Там, где правило нарушено, напиши `return False`, а в самом конце функции — `return True`.
+            Если завёл переменную-флаг, верни её: `return good`.
+          verify: '`is_good_message("Добавить README с инструкцией запуска")` должен вернуть True, а не None.'
+        - id: returns-text
+          when:
+            codeRegex: 'return\s+["''](True|False)["'']'
+          where: return с кавычками
+          why: >-
+            `"True"` в кавычках — строка из четырёх букв, а не логическое значение. Проверка ждёт
+            `True` или `False` без кавычек — такие же, какие дают сравнения вроде `5 > 3`.
+          try: 'Убери кавычки после `return`: `return False`, `return True`.'
+          verify: В примерах вызов должен вернуть True или False без кавычек.
+        - id: or-strings
+          when:
+            codeRegex: '==\s*["''][^"''\n]*["'']\s+or\s+["'']'
+          where: Условие со словами
+          why: >-
+            Python читает `text == "fix" or "update"` как `(text == "fix") or "update"`. Непустая
+            строка `"update"` сама по себе считается истиной, поэтому условие верно всегда, и
+            функция отклоняет любое сообщение — та же ловушка, что `day == "сб" or "вс"` в уроке 2.4.
+          try: >-
+            Запиши каждое сравнение полностью: `text == "fix" or text == "update" or …` — или
+            проверь всё сразу через список: `text in ["fix", "update", …]`.
+          verify: '`is_good_message("Добавить README с инструкцией запуска")` должен вернуть True.'
+        - id: not-saved
+          when:
+            codeRegex: '^[ \t]+\w+(\.(strip|lower)\(\))+[ \t]*(#.*)?$'
+          why: >-
+            Строку нельзя изменить: `strip()` и `lower()` возвращают **новую** строку (урок 4.3).
+            Если результат никуда не сохранить, он пропадает, и проверки идут по строке без
+            изменений — с пробелами по краям или с большими буквами.
+          try: 'Сохрани результат в переменную и проверяй её: `text = message.strip().lower()`.'
+        - id: return-in-loop
+          when:
+            codeRegex: '^([ \t]*)for\b[^\n]*:[ \t]*\n(?:\1[ \t]+[^\n]*\n|[ \t]*\n)*?\1[ \t]+return\s+True\b'
+          where: return True внутри цикла
+          why: >-
+            `return True` стоит внутри цикла — сразу под `if` или в ветке `else`. Уже на первом
+            слове списка функция возвращает ответ и заканчивается: если сообщение не совпало с этим
+            словом, до остальных проверка не доходит (урок 5.3: return сразу завершает функцию).
+          try: >-
+            Убери `else`, если он есть, а `return True` сдвинь влево — под `for`, после цикла. Тогда
+            он выполнится, только когда цикл сравнит сообщение со всеми словами и ни одно не совпадёт.
+          verify: '`is_good_message("Правки")` должен вернуть False.'
+        - id: no-final-return
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?=[\s\S]*\breturn[ \t]+False\b)(?![\s\S]*\breturn[ \t]+(?!False\b)\S)'
+          where: Конец функции
+          why: >-
+            Каждое нарушение правила возвращает `False`, но когда все проверки пройдены, функция
+            заканчивается без `return` — и для хорошего сообщения возвращает `None`.
+          try: Допиши в конце функции `return True` — на одном уровне с `if`, не внутри него.
+          verify: '`is_good_message("Добавить README с инструкцией запуска")` должен вернуть True, а не None.'
+        - id: eq-list
+          when:
+            failedTest: t2
+            codeRegex: '==\s*\['
+          where: Сравнение со списком
+          why: >-
+            `==` сравнивает строку со всем списком целиком, а строка не бывает равна списку, — поэтому
+            даже «fix» проходит проверку.
+          try: 'Чтобы найти сообщение среди слов списка, нужен `in`: `text in ["fix", …]`.'
+          verify: '`is_good_message("fix")` должен вернуть False.'
+        - id: no-words
+          when:
+            failedTest: t2
+            codeRegex: '(?<![\s\S])(?=[\s\S]*^[ \t]+return\b)(?![\s\S]*\bin\s)(?![\s\S]*==\s*["''](?:fix|Fix|FIX)["''])'
+          where: Правило про слова
+          why: >-
+            Правило про слова из списка пока не проверяется: «fix» проходит как хорошее сообщение.
+            Если ты пишешь функцию по частям — это следующая часть.
+          try: >-
+            Добавь проверку: если очищенное сообщение есть в списке
+            `["fix", "update", "правки", "изменения", "asdf"]`, верни False.
+          verify: '`is_good_message("fix")` должен вернуть False.'
+        - id: and-instead-of-or
+          when:
+            failedTest: t4
+            codeRegex: '(?:==\s*(?:""|'''')|len\([^)]*\)\s*==\s*0|\bnot\s+\w+)\s+and\s+len\([^)]*\)\s*>|len\([^)]*\)\s*>\s*\d+\s+and\s+(?:\w+\s*==\s*(?:""|'''')|len\([^)]*\)\s*==\s*0|not\s+\w)'
+          where: Условие с and
+          why: >-
+            `and` верно, только когда верны обе части. Сообщение не бывает одновременно пустым и
+            длиннее 50 символов, поэтому такое условие не срабатывает никогда — ни для пустого
+            сообщения, ни для длинного.
+          try: 'Здесь нужен `or`: сообщение не годится, если оно пустое **или** длиннее 50 (урок 2.4).'
+          verify: '`is_good_message("")` должен вернуть False, а `is_good_message("Д" * 51)` — тоже False.'
+        - id: no-empty
+          when:
+            failedTest: t4
+            codeRegex: '(?<![\s\S])(?![\s\S]*\.(?!(?:strip|lstrip|rstrip|lower|upper|casefold|split|replace|join|format|append|startswith|endswith|isspace|count|find|index|items|keys|values|get)\()[A-Za-z_]\w*\s*\()(?=[\s\S]*^[ \t]+return[ \t]+(?:False|[A-Za-z_]\w*)[ \t]*(?:#.*)?$)(?![\s\S]*(?:==|!=)\s*(?:""|''''))(?![\s\S]*(?:""|'''')\s*(?:==|!=))(?![\s\S]*len\([^)]*\)\s*(?:==\s*0|<\s*1|>\s*0|>=\s*1))(?![\s\S]*<\s*len\()(?![\s\S]*\bnot\s+(?!in\b)\w)(?![\s\S]*^[ \t]*(?:el)?if\s+\w+\s*:)(?![\s\S]*\bin\s+range\(\s*1\b)'
+          why: >-
+            Пустое сообщение ничего не рассказывает об изменениях, но функция его пропускает:
+            проверки на пустую строку нет или она не срабатывает.
+          try: >-
+            После очистки сообщения проверь, не пустое ли оно: сравни с `""` или проверь
+            `len(...) == 0` — и в этом случае верни False.
+          verify: '`is_good_message("")` должен вернуть False.'
+        - id: no-strip
+          when:
+            failedTest: t5
+            codeRegex: '(?<![\s\S])(?![\s\S]*\.(?!(?:strip|lstrip|rstrip|lower|upper|casefold|split|replace|join|format|append|startswith|endswith|isspace|count|find|index|items|keys|values|get)\()[A-Za-z_]\w*\s*\()(?:(?=[\s\S]*^[ \t]+return\b)(?![\s\S]*\.strip\()|[\s\S]*?\bmessage\s*(?:==|!=)\s*(?:""|'''')|[\s\S]*?len\(\s*message\s*\)\s*(?:==\s*0|<\s*1))'
+          why: >-
+            Строка из пробелов — не пустая: `"   " == ""` даёт False, а её длина — 3. Пробелы
+            нужно убрать **до** проверки на пустоту, иначе они её обходят.
+          try: >-
+            Сначала сделай `strip()` и сохрани результат в переменную, а все проверки — на
+            пустоту, длину и слова — проводи уже с ней.
+          verify: '`is_good_message("   ")` должен вернуть False.'
+        - id: no-lower
+          when:
+            failedTest: t7
+            codeRegex: '(?<![\s\S])(?![\s\S]*\.(?!(?:strip|lstrip|rstrip|lower|upper|casefold|split|replace|join|format|append|startswith|endswith|isspace|count|find|index|items|keys|values|get)\()[A-Za-z_]\w*\s*\()(?=[\s\S]*(?:[\[{,]\s*["''](?:fix|Fix|FIX)["'']|["''](?:fix|Fix|FIX)["'']\s*,|["''](?:fix|Fix|FIX)[ ,]+\w|==\s*["''](?:fix|Fix|FIX)["'']))(?![\s\S]*\.lower\(\))(?![\s\S]*\.casefold\(\))'
+          why: >-
+            Для Python «FIX» и «fix» — разные строки: `"FIX" == "fix"` даёт False. Поэтому слово,
+            набранное большими буквами, не находится в списке.
+          try: >-
+            Приведи сообщение к маленьким буквам через `lower()` перед сравнением — тогда хватит
+            одного списка, записанного маленькими буквами.
+          verify: '`is_good_message("FIX")` и `is_good_message("Правки")` должны вернуть False.'
+        - id: word-typo
+          when:
+            failedTest: t8
+            codeRegex: '(?<![\s\S])(?=[\s\S]*(?:[\[{,]\s*["''](?:fix|Fix|FIX)["'']|["''](?:fix|Fix|FIX)["'']\s*,|["''](?:fix|Fix|FIX)[ ,]+\w|==\s*["''](?:fix|Fix|FIX)["'']))(?![\s\S]*["'' ,]изменения["'' ,\]])'
+          where: Список слов
+          why: >-
+            Сообщение «Изменения» должно не пройти, а функция его пропускает. Скорее всего, слово
+            «изменения» в списке записано не так, как в условии: Python сравнивает строки буква в
+            букву.
+          try: Сверь слова списка с условием — `fix`, `update`, `правки`, `изменения`, `asdf`, все маленькими буквами.
+          verify: '`is_good_message("Изменения")` должен вернуть False.'
+        - id: half-strip
+          when:
+            failedTest: t9
+            codeRegex: '\.[lr]strip\('
+          where: lstrip / rstrip
+          why: >-
+            `lstrip()` убирает пробелы только слева, а `rstrip()` — только справа. У «  fix  » с
+            другой стороны пробелы остаются, и слово не находится в списке.
+          try: Возьми `strip()` — он убирает пробелы с обеих сторон.
+          verify: '`is_good_message("  fix  ")` должен вернуть False.'
+        - id: raw-compare
+          when:
+            failedTest: t9
+            codeRegex: '\bmessage(?:\.lower\(\))?\s+(?:not\s+)?in\s+(?!range\b)[\[(\w]|\bmessage(?:\.lower\(\))?\s*==\s*["''](?:fix|update|правки|изменения|asdf)["'']'
+          where: Сравнение со словами
+          why: >-
+            Со словами сравнивается исходное `message` — с пробелами по краям, — а не очищенная
+            строка. Поэтому «  fix  » не находится в списке.
+          try: >-
+            Сравнивай со списком ту же очищенную строку, что и в остальных проверках: без пробелов
+            по краям и маленькими буквами.
+          verify: '`is_good_message("  fix  ")` должен вернуть False.'
+        - id: raw-length
+          when:
+            failedTest: t12
+            codeRegex: 'len\(\s*message\s*\)'
+          where: len(message)
+          why: >-
+            Длина считается у исходного сообщения — вместе с пробелами по краям. У сообщения из 48
+            букв с тремя пробелами с каждой стороны получается 54 символа, и оно отклоняется.
+          try: Считай `len(...)` у очищенной строки — той, что получилась после `strip()`.
+          verify: '`is_good_message("   " + "Д" * 48 + "   ")` должен вернуть True.'
+        - id: boundary-50
+          when:
+            failedTest: t10
+            codeRegex: '>=\s*50|>\s*49|<\s*50\b'
+          why: >-
+            Сообщение ровно из 50 символов ещё годится: не годится только то, в котором **больше**
+            50. Условие `>= 50` (или `< 50` для хорошего сообщения) отклоняет и сообщение ровно из
+            50 символов.
+          try: 'Проверь границу: «больше 50» — это `len(text) > 50`.'
+          verify: '`is_good_message("Д" * 50)` должен вернуть True, а `is_good_message("Д" * 51)` — False.'
+        - id: boundary-51
+          when:
+            failedTest: t11
+            codeRegex: '>\s*51|<=\s*51|<\s*52|>=\s*52'
+          why: >-
+            Сообщение из 51 символа уже не годится: 51 больше 50. Условие `> 51` (или `<= 51` для
+            хорошего сообщения) пропускает его.
+          try: 'Проверь границу: «больше 50» — это `len(text) > 50`.'
+          verify: '`is_good_message("Д" * 51)` должен вернуть False, а `is_good_message("Д" * 50)` — True.'
+        - id: replace-spaces
+          when:
+            failedTest: t13
+            codeRegex: '\.replace\('
+          where: replace
+          why: >-
+            `replace(" ", "")` убирает все пробелы, в том числе между словами, и длина получается
+            меньше настоящей: от сообщения из 51 символа остаётся 44. По условию не считаются только
+            пробелы по краям.
+          try: Убирай пробелы по краям через `strip()` — пробелы между словами должны остаться.
+          verify: '`is_good_message("Добавить в калькулятор деление с остатком и степень")` должен вернуть False.'
+        - id: substring
+          when:
+            failedTest: t14
+            codeRegex: 'for\s+(\w+)\s+in\b[^\n]*:[ \t]*\n[ \t]*if\s+\1\s+in\b|["''][^"''\n]*["'']\s+in\s+[A-Za-z_]'
+          why: >-
+            У `in` два смысла. `"правки" in text` ищет кусок внутри строки — и находит его в
+            слове «справки». А `text in ["fix", ...]` сравнивает всё сообщение с каждым элементом
+            списка целиком. По условию сообщение не годится, только если оно целиком совпадает со
+            словом.
+          try: >-
+            Сравнивай сообщение целиком: `text in [список слов]` или `text == word` в цикле —
+            вместо `word in text`.
+          verify: '`is_good_message("Добавить команду справки")` должен вернуть True.'
+        - id: split-words
+          when:
+            failedTest: t15
+            codeRegex: '\.split\('
+          why: >-
+            `split()` делит сообщение на слова, и функция отклоняет любое сообщение, где среди слов
+            есть «fix» или «изменения». По условию не годится только сообщение, которое **целиком**
+            совпадает со словом из списка: «Описать изменения в README» годится.
+          try: 'Не разбивай сообщение на слова — сравни со списком всю очищенную строку: `text in [...]`.'
+          verify: '`is_good_message("Описать изменения в README")` должен вернуть True.'
+        - id: in-string
+          when:
+            failedTest: t16
+            codeRegex: '=\s*["''][^"''\n]*(fix|asdf)[^"''\n]*["''][ \t]*$|\bin\s+["''][^"''\n]*(fix|asdf)[^"''\n]*["'']'
+          where: Слова одной строкой
+          why: >-
+            Слова сложены в одну строку, а `in` со строкой ищет кусок внутри неё: «изменен» есть в
+            этой строке — внутри слова «изменения», — поэтому функция отклоняет сообщение. По
+            условию сообщение не годится, только если оно целиком совпадает со словом.
+          try: 'Сложи слова в список — `["fix", "update", …]`: `in` со списком сравнивает сообщение с каждым словом целиком.'
+          verify: '`is_good_message("Изменен")` должен вернуть True.'
+      afterPass: >-
+        Функция проверяет сообщение по трём правилам и не путается ни в пробелах, ни в регистре. Во
+        многих командах разработчиков похожую проверку запускают автоматически при каждом коммите —
+        твои сообщения из чек-листов ниже её пройдут. Одно улучшение: вынеси список слов в константу
+        `BAD_WORDS` над функцией (урок 5.4) — пополнять его будет удобнее.
+      skills: [functions, string-methods]
+
+  - id: install
+    type: checklist
+    title: Установи и настрой Git
+    body: >-
+      Дальше — работа на компьютере. Делай по одному пункту и отмечай сделанное. Инструкция
+      написана для Windows, отличия для macOS и Linux — в первом пункте.
+    items:
+      - id: os
+        text: >-
+          **Уточни свою систему.** Дальше инструкция для Windows. Команды Git во всех системах
+          одинаковые. Как установить Git на macOS и Linux и чем там отличаются другие команды
+          урока — в «Если не получается».
+        help: |-
+          **macOS:** открой приложение «Терминал» и набери `git --version`. Если Git не
+          установлен, система сама предложит установить инструменты разработчика (Command Line
+          Tools) — согласись и дождись конца. Пункты «Скачай» и «Установи» тогда пропусти.
+
+          **Linux:** Git ставят через менеджер пакетов, например `sudo apt install git` в Ubuntu и
+          Debian.
+
+          **В обеих системах** Python запускают командой `python3` (`python3 calc.py`), вместо
+          `dir` пиши `ls`, а на macOS файл сохраняют через Cmd + S. Терминал в папке проекта
+          открывай так же, как в уроке 0.4.
+
+          Если сейчас под рукой только телефон, отложи чек-листы до компьютера: задание про
+          сообщения коммитов работает и в тренажёре.
+      - id: download
+        text: >-
+          **Скачай Git для Windows** с официального сайта
+          [git-scm.com/downloads](https://git-scm.com/downloads): выбери Windows, и сайт предложит
+          установщик — файл вида `Git-2.xx.x-64-bit.exe`.
+        help: >-
+          Скачивай только с git-scm.com, не со сторонних сайтов. Если загрузка не началась сама,
+          на странице есть ссылка на свежую версию для Windows. Нет интернета — остановись здесь и
+          продолжи, когда он появится.
+      - id: setup
+        text: >-
+          **Установи Git.** Запусти скачанный файл. Почти на всех экранах оставляй то, что уже
+          выбрано, и нажимай **Next**. Одно исключение — экран выбора редактора (**Choosing the
+          default editor used by Git**): вместо Vim выбери редактор, с которым умеешь работать,
+          например **Notepad** (Блокнот) или VS Code, если он установлен.
+        help: >-
+          Названия экранов меняются от версии к версии — ищи по смыслу. Экран про PATH (Adjusting
+          your PATH environment) оставь с рекомендованным вариантом: так терминал будет узнавать
+          команду `git`. Редактор Git открывает, если забыть `-m` с сообщением коммита, а выйти из
+          Vim новичку непросто. Уже выбрал Vim — не страшно: в пункте про первый коммит написано,
+          как из него выйти. Если Windows попросит разрешить изменения на компьютере — разреши.
+      - id: version
+        text: >-
+          **Проверь установку.** Если терминал был открыт, закрой его и открой заново. Набери
+          `git --version` и нажми Enter. Должна появиться строка вида `git version 2.xx.x.windows.1`
+          — цифры у тебя будут свои.
+        help: >-
+          Ответ «"git" не является внутренней или внешней командой…» (в PowerShell — «Имя "git"
+          не распознано…») значит, что терминал не нашёл Git. Чаще всего терминал был открыт ещё
+          до установки — закрой все его окна и открой заново. Не помогло — запусти установщик ещё
+          раз и на экране про PATH выбери рекомендованный вариант.
+      - id: name
+        text: |-
+          **Представься Git.** В каждый коммит Git записывает автора. Набери, подставив своё имя:
+
+          ```text
+          git config --global user.name "Имя Фамилия"
+          ```
+
+          `--global` значит «для всех проектов на этом компьютере» — настройка делается один раз.
+        help: >-
+          Команда ничего не отвечает — это нормально: молчание значит, что всё получилось.
+          Кавычки нужны, потому что в имени есть пробел. Имя можно написать и по-русски.
+      - id: email
+        text: |-
+          **Укажи адрес электронной почты:**
+
+          ```text
+          git config --global user.email "адрес@example.com"
+          ```
+
+          Проверь обе настройки командой `git config --global --list`: в списке должны быть
+          строки `user.name=…` и `user.email=…`.
+        help: >-
+          **Про приватность.** Адрес записывается в каждый коммит. Пока проект лежит только на
+          твоём компьютере, его никто не видит. Но если когда-нибудь выложишь проект в интернет,
+          адрес увидит любой, кто откроет историю. Поэтому укажи адрес, который не жалко показать.
+          У GitHub есть специальный адрес для коммитов, который скрывает настоящий, — он
+          пригодится, если будешь публиковать проекты. Ошибся в имени или адресе — просто повтори
+          команду с верным значением.
+    coach: >-
+      Если установка затянулась, остановись здесь. Первый коммит и README займут ещё минут
+      двадцать–тридцать — их можно сделать в другой день.
+
+  - id: first-commit
+    type: checklist
+    title: Первый коммит
+    body: >-
+      Вернулся после перерыва — продолжай с этого блока. Сохраним в Git первый проект. Если у тебя
+      уже есть свой калькулятор или викторина, можешь работать с ним: подставляй в командах имя
+      своего файла вместо `calc.py`. Своего проекта нет — возьми учебный калькулятор из первого
+      пункта. Он и будет твоим первым проектом: в уроке 5.7 ты разобьёшь его на функции.
+    items:
+      - id: project
+        text: |-
+          **Создай папку проекта.** В учебной папке `python-practice` (из урока 0.4) создай папку
+          `calculator`, а в ней — файл `calc.py` с учебным калькулятором:
+
+          ```python
+          print("Калькулятор. Для выхода введи «выход».")
+          count = 0
+          while True:
+              first = input("Первое число: ")
+              if first == "выход":
+                  break
+              a = int(first)
+              op = input("Операция (+ - * /): ")
+              b = int(input("Второе число: "))
+              if op == "+":
+                  print(f"{a} + {b} = {a + b}")
+                  count += 1
+              elif op == "-":
+                  print(f"{a} - {b} = {a - b}")
+                  count += 1
+              elif op == "*":
+                  print(f"{a} * {b} = {a * b}")
+                  count += 1
+              elif op == "/":
+                  if b == 0:
+                      print("На ноль делить нельзя")
+                  else:
+                      print(f"{a} / {b} = {a / b}")
+                      count += 1
+              else:
+                  print(f"Не знаю операцию «{op}»")
+          print(f"Вычислений: {count}")
+          ```
+        help: |-
+          Сохраняй через **File → Save As…** прямо в папку `calculator`. Код можно набрать или
+          скопировать: кавычки-ёлочки «» в сообщениях трудно набрать с клавиатуры. Отступы — по 4
+          пробела, как в тренажёре. В Блокноте при сохранении выбери тип файла «Все файлы», иначе
+          получится `calc.py.txt`.
+
+          Работаешь со своим проектом — проверь, что у него своя отдельная папка. Если его файлы
+          лежат вперемешку с другими учебными файлами, переложи их в новую папку: репозиторием
+          становится вся папка, в которой набрали `git init`, со всеми файлами. Потом отметь пункт.
+      - id: run
+        text: |-
+          **Запусти калькулятор.** Открой терминал в папке `calculator` (правый щелчок по пустому
+          месту папки → «Открыть в терминале», как в уроке 0.4) и набери `python calc.py` (или
+          `py calc.py`). Посчитай 2 + 3 и введи `выход`. В терминале будет так:
+
+          ```text
+          Калькулятор. Для выхода введи «выход».
+          Первое число: 2
+          Операция (+ - * /): +
+          Второе число: 3
+          2 + 3 = 5
+          Первое число: выход
+          Вычислений: 1
+          ```
+        help: |-
+          `can't open file` — терминал открыт не в той папке или имя файла другое: проверь
+          командой `dir`. Ошибка `ValueError` — введено не целое число: учебный калькулятор
+          понимает только целые. `SyntaxError` или `IndentationError` — опечатка в коде: читай
+          сообщение так же, как в уроке 0.3.
+
+          Свой проект — открой терминал в его папке, запусти его и проверь, что он работает.
+      - id: init
+        text: >-
+          **Создай репозиторий:** набери `git init`. Git ответит строкой вида
+          `Initialized empty Git repository in C:/Users/…/calculator/.git/`.
+        help: >-
+          Строки со словом `hint:` — советы Git про имя основной ветки, а не ошибка; о ветках — в
+          модуле 8. Папку `.git` в Проводнике не видно: она скрытая, так и задумано. Если путь в
+          ответе заканчивается не на `calculator/.git/`, ты создал репозиторий не в той папке.
+          Тогда включи в Проводнике показ скрытых элементов: «Просмотреть» → «Показать» →
+          «Скрытые элементы», а в Windows 10 — вкладка «Вид» → галочка «Скрытые элементы». Удали
+          появившуюся папку `.git` именно в той папке и повтори `git init` в папке проекта. Если же
+          ответ начинается с `Reinitialized existing Git repository`, ничего не удаляй:
+          репозиторий там уже был.
+      - id: status
+        text: |-
+          **Спроси Git, что он видит:** `git status`. Файл `calc.py` окажется в разделе
+          `Untracked files` — «неотслеживаемые файлы», обычно красным: Git видит файл, но в снимки
+          его ещё не включал.
+
+          ```text
+          On branch master
+
+          No commits yet
+
+          Untracked files:
+            (use "git add <file>..." to include in what will be committed)
+                  calc.py
+          ```
+        help: >-
+          `fatal: not a git repository` — терминал открыт не в папке проекта или `git init` не
+          выполнялся: сравни путь слева от курсора с папкой `calculator`. Первая строка называет
+          основную ветку: `master` или `main`, это зависит от настроек Git. Дальше в уроке пишем
+          `master`; если у тебя `main`, в ответах Git будет `main`. О ветках — в модуле 8. Git
+          может отвечать и по-русски — это зависит от настроек системы, смысл тот же.
+      - id: add
+        text: >-
+          **Выбери файл для снимка:** `git add calc.py`, затем снова `git status`. Теперь файл в
+          разделе `Changes to be committed` с пометкой `new file: calc.py` — обычно зелёным.
+        help: >-
+          `git add` отвечает молча — это нормально. Предупреждение со словами `LF will be replaced
+          by CRLF` безвредно: Windows и другие системы по-разному отмечают конец строки, и Git это
+          учитывает. `pathspec 'calc.py' did not match any files` — опечатка в имени файла или
+          терминал открыт не в той папке: проверь командой `dir`.
+      - id: commit
+        text: >-
+          **Сделай снимок:** `git commit -m "Первая версия калькулятора"`. Git ответит строкой с
+          коротким номером и сообщением, например `[master (root-commit) 3f9a2c1] Первая версия
+          калькулятора`, и строкой `1 file changed`.
+        help: |-
+          `Author identity unknown` — Git не знает автора: вернись к пунктам про `user.name` и
+          `user.email` в предыдущем блоке.
+
+          `nothing added to commit but untracked files present` — файл не выбран: сначала
+          `git add calc.py`.
+
+          Вместо коммита открылся редактор — значит, в команде не было `-m "…"`. В Блокноте впиши
+          сообщение первой строкой, сохрани и закрой окно — коммит создастся. Если открылся Vim
+          (в окне терминала появились строки с `~` слева), нажми Esc, набери `:q!` и Enter: Git
+          отменит коммит, и можно повторить команду с `-m`.
+      - id: log
+        text: |-
+          **Посмотри историю:** `git log --oneline`. Одна строка: короткий номер, пометка
+          `(HEAD -> master)` — «ты сейчас здесь» — и сообщение:
+
+          ```text
+          3f9a2c1 (HEAD -> master) Первая версия калькулятора
+          ```
+
+          Номер у тебя будет другим: Git вычисляет его сам.
+        help: >-
+          Внизу стоит двоеточие `:` или `(END)`, и команда не заканчивается — Git показывает
+          историю в режиме листания: нажми `q`. Если вместо русских букв видишь значки вроде
+          `<D0><9F>`, это особенность отображения в терминале, а коммит сохранён правильно.
+          Попробуй `git --no-pager log --oneline` — история выведется без режима листания.
+    coach: >-
+      Первый коммит — точка, к которой теперь всегда можно вернуться. Дальше каждая удачная правка
+      — новый коммит с понятным сообщением.
+
+  - id: readme
+    type: theory
+    title: "README: записка к проекту"
+    body: |-
+      **README** (от английского read me — «прочитай меня») — файл, который открывают первым,
+      когда видят проект. Короткий README отвечает на два вопроса: что делает программа и как её
+      запустить. Он нужен другу, которому ты передашь калькулятор, и тебе самому через месяц.
+
+      README обычно пишут в формате **Markdown** — это обычный текст с простыми пометками. У
+      файлов Markdown расширение `.md`, поэтому файл называется `README.md`. Три пометки, которых
+      хватит для начала:
+
+      - `# Калькулятор` — заголовок: решётка и пробел в начале строки. `## Как запустить` —
+        заголовок поменьше.
+      - Пустая строка отделяет один абзац от другого.
+      - Строка с отступом в 4 пробела после пустой строки — блок кода. В нём пишут команды, чтобы
+        их было удобно скопировать. Без пустой строки перед ней такая строка приклеится к абзацу
+        выше.
+
+      В редакторе Markdown выглядит как текст с решётками. Сайты вроде GitHub и многие редакторы
+      показывают его оформленным: заголовки крупно, команды — в рамке.
+    simpler: >-
+      README — записка к проекту: что это за программа и как её запустить. `.md` — текст с
+      пометками: `#` в начале строки — заголовок, пустая строка — новый абзац, отступ в 4 пробела
+      после пустой строки — блок кода, например команда запуска.
+    coach: >-
+      Пиши README для человека, который видит проект впервые. Что нужно знать другу, получившему
+      папку `calculator`, чтобы запустить калькулятор без твоих объяснений?
+
+  - id: readme-commit
+    type: checklist
+    title: README и второй коммит
+    body: >-
+      Добавим в проект README и сохраним его отдельным коммитом: у каждого коммита — одно понятное
+      изменение.
+    items:
+      - id: create
+        text: |-
+          **Создай файл `README.md`** в папке `calculator`, рядом с `calc.py`, по образцу:
+
+          ```text
+          # Калькулятор
+
+          Консольный калькулятор: складывает, вычитает, умножает и делит два целых числа.
+          Работает, пока не введёшь «выход».
+
+          ## Как запустить
+
+          Нужен Python 3. Открой терминал в папке проекта и выполни:
+
+              python calc.py
+          ```
+        help: >-
+          Проект свой — опиши его: что делает и как запустить. В Блокноте при сохранении выбери
+          тип файла «Все файлы», иначе получится `README.md.txt` — проверь командой `dir`. В VS
+          Code сочетание Ctrl + Shift + V показывает, как будет выглядеть оформленный Markdown.
+      - id: status2
+        text: >-
+          **Проверь, что видит Git:** `git status`. В разделе `Untracked files` будет `README.md`,
+          а `calc.py` там нет: после коммита он не менялся.
+        help: >-
+          Если `calc.py` стоит в разделе `Changes not staged for commit` с пометкой `modified`,
+          значит, ты менял его после коммита. Сейчас не добавляй его: этот коммит — только про
+          README. Если изменения случайные, в блоке «Сломай и верни» ты узнаешь, как их выбросить.
+      - id: commit2
+        text: |-
+          **Сделай второй коммит:**
+
+          ```text
+          git add README.md
+          git commit -m "Добавить README с инструкцией запуска"
+          ```
+        help: >-
+          `pathspec 'README.md' did not match any files` — имя файла другое (например,
+          `README.md.txt` или `readme.md`): проверь командой `dir` и напиши имя так же, как в
+          списке.
+      - id: log2
+        text: |-
+          **Посмотри историю:** `git log --oneline`. Теперь две строки, новый коммит сверху:
+
+          ```text
+          8b1d0e4 (HEAD -> master) Добавить README с инструкцией запуска
+          3f9a2c1 Первая версия калькулятора
+          ```
+
+          Пометка `(HEAD -> master)` переехала на новый коммит — «ты здесь» теперь на нём.
+        help: >-
+          Одна строка — второй коммит не создался: вернись к `git status` и посмотри, выбран ли
+          README.md.
+
+  - id: predict-status
+    type: quiz
+    title: Что покажет git status?
+    question: >-
+      В следующем блоке ты удалишь последнюю строку из `calc.py` и сохранишь файл, а `git add`
+      делать не будешь. Как думаешь, где `git status` покажет `calc.py`?
+    options:
+      - "`Untracked files`"
+      - "`Changes to be committed`"
+      - "`Changes not staged for commit`, пометка `modified`"
+      - "Нигде: `nothing to commit, working tree clean`"
+    correct: 2
+    explanation: >-
+      `calc.py` уже есть в коммитах, поэтому он не новый: в `Untracked files` попадают только
+      файлы, которые Git ещё ни разу не сохранял, как `README.md` перед вторым коммитом. В
+      `Changes to be committed` изменение попадает только после `git add`. А сохранённое
+      изменение Git замечает всегда, даже одну удалённую строку. Остаётся `Changes not staged for
+      commit`: файл изменён, но изменение для снимка не выбрано. Проверь это в следующем блоке.
+
+  - id: restore
+    type: checklist
+    title: Сломай и верни
+    body: >-
+      Главная польза истории — к снимку можно вернуться. Проверим на безопасном примере: сломаем
+      файл и вернём его к последнему коммиту.
+    items:
+      - id: break
+        text: >-
+          **Сломай файл.** Открой `calc.py` в редакторе, удали последнюю строку —
+          `print(f"Вычислений: {count}")` — и сохрани. Запусти `python calc.py` и введи `выход`:
+          строки «Вычислений: 0» больше нет.
+        help: >-
+          Работаешь со своим проектом — удали любую заметную строку, например последний `print`.
+          Не забудь сохранить файл: Git видит то, что записано на диске.
+      - id: modified
+        text: >-
+          **Посмотри на изменения глазами Git:** `git status` — совпало с твоим прогнозом? Файл
+          `calc.py` теперь в разделе `Changes not staged for commit` с пометкой `modified`. В
+          скобках Git сам подсказывает команду:
+          `(use "git restore <file>..." to discard changes in working directory)` — «чтобы
+          выбросить изменения в рабочей папке».
+      - id: restore-file
+        text: >-
+          **Верни файл.** Сначала закрой `calc.py` в редакторе, потом набери
+          `git restore calc.py`. Команда отвечает молча. Снова `git status` — теперь там
+          `nothing to commit, working tree clean`: «нечего сохранять, всё как в последнем коммите».
+        help: |-
+          Закрыть файл нужно, чтобы редактор не записал сломанную версию обратно при следующем
+          сохранении. Если он был открыт, открой его заново после restore.
+
+          Файл не вернулся, а `git status` показывает его в разделе `Changes to be committed`, —
+          значит, ты уже сделал `git add calc.py`. Простой `restore` выбрасывает только
+          изменения, которые ещё не выбраны. Сначала отмени выбор командой
+          `git restore --staged calc.py` (Git подсказывает её в скобках), потом снова набери
+          `git restore calc.py`. Подробнее об этом — в модуле 8.
+
+          Помни: выброшенные изменения вернуть нельзя — пользуйся `restore`, когда изменений
+          действительно не жалко.
+      - id: run-again
+        text: >-
+          **Проверь, что всё вернулось:** запусти `python calc.py` и введи `выход` — строка
+          «Вычислений: 0» снова на месте. Открой `calc.py` — последняя строка тоже вернулась.
+    coach: >-
+      Теперь правки не страшны: пока рабочая версия лежит в коммите, неудачную правку, которую ты
+      ещё не выбрал через `git add`, можно отменить одной командой.
+
+  - id: diagnose
+    type: quiz
+    title: Что ответил Git?
+    question: |-
+      Ты набрал `git commit -m "Первая версия калькулятора"`, а Git ответил:
+
+      ```text
+      nothing added to commit but untracked files present (use "git add" to track)
+      ```
+
+      Что это значит?
+    options:
+      - Git не установлен
+      - Терминал открыт не в папке проекта
+      - "Файл не выбран для снимка: перед коммитом не было `git add`"
+      - Сообщение коммита слишком короткое
+    correct: 2
+    explanation: >-
+      `untracked` — «не отслеживается»: Git видит файл, но в снимок его никто не выбирал. Git сам
+      подсказывает команду в скобках — `git add`. Если бы Git не был установлен, терминал ответил
+      бы, что `git` не является командой. В папке без репозитория ответ был бы
+      `fatal: not a git repository`. А длину сообщения Git не проверяет — это делает твоя функция
+      из задания.
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - Репозиторий — папка проекта с историей в скрытой папке `.git`; создаётся один раз командой `git init`.
+      - 'Цикл работы: изменить и сохранить файл → `git add файл` → `git commit -m "что изменилось"`. `git status` показывает, что видит Git, `git log --oneline` — историю.'
+      - "`git restore файл` выбрасывает изменения, которые ещё не выбраны через `git add`, — файл снова такой, как в последнем коммите. Выброшенное не вернуть."
+      - Сообщение коммита отвечает на вопрос «что изменилось?», а README.md — на вопросы «что делает программа?» и «как её запустить?».
+    question: Чем коммит отличается от сохранения файла через Ctrl + S?
+    answer: >-
+      Ctrl + S записывает файл поверх старой версии — старая пропадает. Коммит кладёт снимок
+      проекта в историю с сообщением, автором и временем, и старые снимки при этом остаются.
+      Поэтому к коммиту можно вернуться, а к прошлому Ctrl + S — нет. При этом одно не заменяет
+      другое: Git видит только сохранённый файл, так что сначала Ctrl + S, потом `git add` и
+      `git commit`.

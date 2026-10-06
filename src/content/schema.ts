@@ -8,6 +8,86 @@ const id = z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'id: латиница, ци�
 /** Текст с простой разметкой: абзацы, списки, **жирный**, *курсив*, `код`, ```блоки```, [ссылки](https://…). */
 const markdown = z.string().min(1);
 
+// ------------------------------------------------------------------ окружение запуска
+//
+// Каждый запуск кода (тест, «Запустить», пример, прогноз) идёт в новой пустой рабочей папке.
+// Туда записываются учебные файлы (files) и базы SQLite (databases), random получает seed,
+// а модуль requests отвечает заранее записанными ответами (http) — настоящих запросов нет.
+// Подробно — docs/content-format.md.
+
+/** Путь внутри рабочей папки: относительный, через «/», без «..», «.», пустых частей, «\» и «:». */
+export function isSafeRelativePath(value: string): boolean {
+  if (value === '' || value.startsWith('/') || /[\\:\0]/.test(value)) return false;
+  return value.split('/').every((part) => part !== '' && part !== '.' && part !== '..');
+}
+
+const PATH_RULE = 'нужен относительный путь через «/», без «..», «.», пустых частей, «\\» и «:»';
+
+const relativePath = z.string().refine(isSafeRelativePath, `путь: ${PATH_RULE}`);
+
+/**
+ * Словарь «путь → значение». Ключи проверяются здесь, а не схемой ключа: так в сообщении об ошибке
+ * видна причина, а не общее «Invalid key in record».
+ */
+function pathRecord<T extends z.ZodType>(value: T, kind: 'files' | 'databases') {
+  return z.record(z.string(), value).superRefine((record, ctx) => {
+    for (const key of Object.keys(record)) {
+      if (!isSafeRelativePath(key)) {
+        ctx.addIssue({ code: 'custom', path: [key], message: `путь «${key}»: ${PATH_RULE}` });
+      } else if (kind === 'databases' && !key.endsWith('.db')) {
+        ctx.addIssue({ code: 'custom', path: [key], message: `база «${key}»: имя файла оканчивается на .db` });
+      }
+    }
+  });
+}
+
+/** Ответ учебной симуляции сети на запрос requests.get / requests.post. */
+export const httpMockSchema = z
+  .object({
+    /** Полный адрес с http:// или https://. Query-параметры можно писать прямо в адресе — порядок не важен. */
+    url: z.string().regex(/^https?:\/\/[^\s/?#]+\S*$/, 'url: полный адрес с http:// или https://'),
+    /** По умолчанию GET. */
+    method: z.enum(['GET', 'POST']).optional(),
+    /** По умолчанию 200. */
+    status: z.number().int().min(100).max(599).optional(),
+    /** Тело ответа как JSON — response.json() вернёт это значение. */
+    json: z.json().optional(),
+    /** Тело ответа как текст. */
+    text: z.string().optional(),
+    headers: z.record(z.string(), z.string()).optional(),
+    /** Вместо ответа — ошибка сети: timeout → requests.Timeout, connection → requests.ConnectionError. */
+    error: z.enum(['timeout', 'connection']).optional(),
+  })
+  .strict()
+  .refine((mock) => mock.json === undefined || mock.text === undefined, 'у ответа или json, или text — не оба')
+  .refine(
+    (mock) =>
+      !mock.error ||
+      (mock.status === undefined && mock.json === undefined && mock.text === undefined && mock.headers === undefined),
+    'при error ответа нет: status, json, text и headers не указываются',
+  );
+
+/** Окружение запуска у задания, примера и прогноза. */
+const environmentFields = {
+  /** Учебные файлы: путь → текст (UTF-8). */
+  files: pathRecord(z.string(), 'files').optional(),
+  /** Базы SQLite: имя файла .db → SQL-скрипт, который её создаёт (sqlite3.executescript). */
+  databases: pathRecord(z.string(), 'databases').optional(),
+  /** random.seed(seed) перед запуском — случайные числа повторяются. */
+  seed: z.number().int().optional(),
+  /** Ответы учебной симуляции сети. */
+  http: z.array(httpMockSchema).optional(),
+};
+
+/** У теста то же самое, но поля дополняют окружение задания; null убирает файл или базу задания. */
+const testEnvironmentFields = {
+  files: pathRecord(z.string().nullable(), 'files').optional(),
+  databases: pathRecord(z.string().nullable(), 'databases').optional(),
+  seed: z.number().int().optional(),
+  /** Дополняют ответы задания; ответ с тем же методом и адресом заменяет ответ задания. */
+  http: z.array(httpMockSchema).optional(),
+};
+
 // ------------------------------------------------------------------ тесты
 
 export const compareOptionsSchema = z
@@ -29,6 +109,7 @@ const testBase = {
   /** Граничный случай. */
   edge: z.boolean().optional(),
   stdin: z.string().optional(),
+  ...testEnvironmentFields,
 };
 
 export const ioTestSchema = z
@@ -143,7 +224,9 @@ export const exerciseSchema = z
     /** Ожидаемый результат. */
     output: z.string().optional(),
     constraints: z.array(z.string()).default([]),
-    filename: z.string().default('main.py'),
+    /** Имя файла с кодом ученика; в рабочей папке код лежит под этим именем (import в assert-тестах). */
+    filename: relativePath.default('main.py'),
+    ...environmentFields,
     starterCode: z.string(),
     tests: z.array(testSchema).min(1),
     rules: z.array(ruleSchema).default([]),
@@ -206,6 +289,7 @@ export const exampleStepSchema = z
     body: markdown.optional(),
     code: z.string(),
     stdin: z.string().optional(),
+    ...environmentFields,
     /** Пояснения к существенным строкам. */
     notes: z.array(z.object({ line: z.number().int().positive(), text: z.string() }).strict()).min(1),
     /** Предложение что-нибудь изменить и запустить снова. */
@@ -221,6 +305,7 @@ export const predictStepSchema = z
     prompt: markdown,
     code: z.string(),
     stdin: z.string().optional(),
+    ...environmentFields,
     /** Варианты ответа (необязательно). Если есть — answer совпадает с одним из них. */
     options: z.array(z.string()).optional(),
     /** Что выведет программа. Проверяется запуском при сборке материалов. */
@@ -438,6 +523,7 @@ export const courseSourceSchema = z
 
 // ------------------------------------------------------------------ типы
 
+export type HttpMock = z.infer<typeof httpMockSchema>;
 export type CompareOptions = z.infer<typeof compareOptionsSchema>;
 export type ContentTest = z.infer<typeof testSchema>;
 export type IoTest = z.infer<typeof ioTestSchema>;

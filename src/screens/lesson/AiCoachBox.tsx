@@ -2,7 +2,7 @@
 // (запросы платные). Без сети или при недоступном адаптере вопрос сохраняется черновиком
 // и отправляется вручную, когда связь появится.
 
-import { RefreshCw, Send } from 'lucide-react';
+import { CircleAlert, CircleCheck, LoaderCircle, RefreshCw, Save, Send, Settings, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useOnline, useSettings } from '../../app/hooks.ts';
 import { href, paths } from '../../app/router.ts';
@@ -22,13 +22,14 @@ import {
   useCoachConnection,
 } from '../../coach/connection.ts';
 import { Markdown } from '../../components/Markdown.tsx';
-import { Notice } from '../../components/ui.tsx';
+import { Disclosure, Notice, Tag } from '../../components/ui.tsx';
 import { loadCourse, loadModule } from '../../content/loader.ts';
 import type { Exercise, Lesson } from '../../content/schema.ts';
 import { skillProgress } from '../../progress/model.ts';
 import type { CheckOutcome } from '../../runner/runner.ts';
 import { addCoachDraft, deleteCoachDraft, getAllExercises, getAllLessons, getAllReviews, getCoachDrafts } from '../../storage/repo.ts';
 import type { CoachDraft } from '../../storage/types.ts';
+import { shortConnection } from './coach.tsx';
 import { skillCardLines, skillIdsFor } from './skill-card.ts';
 
 /** Запрос не дошёл из-за связи (а не ИИ отказал) — вопрос стоит сохранить черновиком. */
@@ -155,38 +156,43 @@ export function AiCoachBox({
   ];
   const problem = connection.state === 'unavailable' || connection.state === 'not-configured' ? connection.message : null;
 
+  const StatusIcon = status.tone === 'good' ? CircleCheck : status.tone === 'warn' ? CircleAlert : LoaderCircle;
+
   return (
-    <div className="ai-box">
-      <div className="row-between">
-        <span className="label">ИИ-наставник</span>
+    <section className="ai-box" aria-labelledby={`${exercise.id}-ai-title`}>
+      <div className="ai-head">
+        <h3 id={`${exercise.id}-ai-title`} className="ai-title">
+          <Sparkles aria-hidden="true" />
+          ИИ-наставник
+        </h3>
         <span className={`ai-status tone-${status.tone}`}>
-          <span className="dot" aria-hidden="true" />
-          {status.text}
-          {connection.state === 'ready' && online ? ', по запросу' : ''}
+          <StatusIcon aria-hidden="true" className={status.tone === 'muted' ? 'spin' : undefined} />
+          {shortConnection(connection.state, online)}
         </span>
+        <Tag>платно, по запросу</Tag>
       </div>
       {online && problem && (
-        <div className="stack-sm">
-          <details className="disclosure">
-            <summary>Почему и что проверить</summary>
-            <div className="disclosure-body small">{problem}</div>
-          </details>
-          <span className="row" style={{ gap: 6 }}>
+        <div className="ai-problem">
+          <Disclosure summary="Почему и что проверить">
+            <p className="ai-problem-text">{problem}</p>
+          </Disclosure>
+          <div className="ai-row">
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
+              className="btn btn-sm"
               onClick={() => void refreshCoachConnection(settings.coach.endpoint, settings.coach.accessToken, { force: true })}
             >
               <RefreshCw aria-hidden="true" />
               Проверить связь
             </button>
-            <a className="btn btn-ghost btn-sm" href={href(paths.settings('coach'))}>
-              Настройки наставника
+            <a className="btn btn-sm" href={href(paths.settings('coach'))} aria-label="Настройки наставника">
+              <Settings aria-hidden="true" />
+              Настройки
             </a>
-          </span>
+          </div>
         </div>
       )}
-      <div className="row" style={{ gap: 6 }}>
+      <div className="ai-row">
         {actions.map(([action, label]) => (
           <button
             key={action}
@@ -200,7 +206,7 @@ export function AiCoachBox({
           </button>
         ))}
       </div>
-      <label className="field">
+      <label className="field ai-question">
         <span className="visually-hidden">Вопрос наставнику</span>
         <textarea
           className="textarea"
@@ -214,7 +220,7 @@ export function AiCoachBox({
           }}
         />
       </label>
-      <div className="row">
+      <div className="ai-row">
         {online ? (
           <button
             type="button"
@@ -227,6 +233,7 @@ export function AiCoachBox({
           </button>
         ) : (
           <button type="button" className="btn btn-sm" disabled={!question.trim()} onClick={() => void saveDraft()}>
+            <Save aria-hidden="true" />
             Сохранить черновик
           </button>
         )}
@@ -237,49 +244,59 @@ export function AiCoachBox({
         )}
       </div>
       {drafts.length > 0 && (
-        <div className="stack-sm">
-          <span className="tiny muted">
-            Неотправленные вопросы ({drafts.length}). {online ? 'Отправь нужные вручную — каждый запрос платный.' : 'Отправишь, когда появится сеть.'}
-          </span>
-          {drafts.map((draft) => (
-            <div key={draft.id} className="hint-card stack-sm">
-              <span className="small">{draft.text}</span>
-              <span className="row" style={{ gap: 4 }}>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  disabled={!online || pending !== null}
-                  onClick={() => void send('question', draft.text, draft.id)}
-                >
-                  Отправить
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={async () => {
-                    await deleteCoachDraft(draft.id);
-                    setDrafts((items) => items.filter((item) => item.id !== draft.id));
-                  }}
-                >
-                  Удалить
-                </button>
-              </span>
-            </div>
-          ))}
+        <div className="ai-drafts">
+          <h4 className="ai-subhead">
+            Неотправленные вопросы · <span className="n">{drafts.length}</span>
+          </h4>
+          <ul className="ai-draft-list">
+            {drafts.map((draft) => (
+              <li key={draft.id}>
+                <p className="ai-draft-text">{draft.text}</p>
+                <span className="ai-row">
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={!online || pending !== null}
+                    onClick={() => void send('question', draft.text, draft.id)}
+                  >
+                    Отправить
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={async () => {
+                      await deleteCoachDraft(draft.id);
+                      setDrafts((items) => items.filter((item) => item.id !== draft.id));
+                    }}
+                  >
+                    Удалить
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       {error && (
         <Notice tone="warn">
-          {error} {saved ? 'Вопрос сохранён — отправишь, когда связь появится. ' : ''}Подсказки курса выше работают как обычно.
+          {error}
+          {saved ? ' Вопрос сохранён черновиком.' : ''}
         </Notice>
       )}
-      {!error && saved && <p className="tiny muted" role="status">Вопрос сохранён черновиком.</p>}
+      {!error && saved && (
+        <p className="status-line status-ok" role="status">
+          <CircleCheck aria-hidden="true" />
+          <span>Вопрос сохранён черновиком.</span>
+        </p>
+      )}
       {answer && (
-        <div className="ai-answer stack-sm" aria-live="polite">
-          <span className="tiny muted">Ответ ИИ{answer.model ? ` · ${answer.model}` : ''} — сверяй его с результатами тестов</span>
+        <div className="ai-answer" aria-live="polite">
+          <p className="ai-answer-label">
+            Ответ ИИ{answer.model ? ` · ${answer.model}` : ''} · сверяй с тестами
+          </p>
           <Markdown text={answer.text} className="prose-compact" />
         </div>
       )}
-    </div>
+    </section>
   );
 }

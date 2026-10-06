@@ -71,7 +71,7 @@ test('кнопка «Остановить» прерывает программ�
   await setCode(page, 'while True:\n    pass');
   await page.getByRole('button', { name: 'Проверить', exact: true }).click();
   await page.getByRole('button', { name: 'Остановить' }).click();
-  await expect(page.getByRole('tabpanel').getByText('Проверка остановлена.')).toBeVisible();
+  await expect(page.getByRole('tabpanel').getByText('Проверка остановлена', { exact: true })).toBeVisible();
   await setCode(page, 'print("Привет, Практика!")');
   await check(page);
   await expect(page.getByText('Все проверки пройдены: 1 из 1')).toBeVisible();

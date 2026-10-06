@@ -1,0 +1,619 @@
+/* Владелец: foundation. Оболочка «Мастерской» (спецификация редизайна, раздел 2).
+   Приложение — ровно окно (100dvh): заголовок окна, полоса разделов, баннеры, содержимое, строка состояния —
+   строки и колонки одной сетки, поэтому ничего не закрывает содержимое. Прокручивается только <main>.
+   Телефон и планшет в портрете (< 900 px): верхняя строка и нижняя навигация — тоже строки сетки. */
+
+.app {
+  display: grid;
+  grid-template-columns: var(--activity) minmax(0, 1fr);
+  grid-template-rows: var(--titlebar) auto minmax(0, 1fr) var(--statusbar);
+  grid-template-areas:
+    'title title'
+    'rail banners'
+    'rail main'
+    'status status';
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------ заголовок окна */
+.titlebar {
+  grid-area: title;
+  display: grid;
+  grid-template-columns: var(--activity) minmax(0, 1fr) auto;
+  align-items: stretch;
+  min-width: 0;
+  background: var(--bg-chrome);
+  /* Линия снизу — тенью: активная вкладка документа закрывает её своим фоном и сливается с содержимым. */
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+.brand {
+  display: grid;
+  place-items: center;
+  border-right: 1px solid var(--line);
+  text-decoration: none;
+}
+
+.brand:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Знак «П_»: янтарный, с кареткой. */
+.brand-mark {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding-bottom: 5px;
+  border-radius: var(--r-1);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 700 14px/1 var(--font-code);
+}
+
+.brand-mark::after {
+  content: '';
+  width: 6px;
+  height: 2px;
+  margin-left: 1px;
+  background: currentColor;
+}
+
+/* Вкладки документов: «Сегодня | Урок 0.1 | Раздел». Активная — цвета содержимого, черта сверху. */
+.doc-tabs {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dtab {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--gutter);
+  border-right: 1px solid var(--line);
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dtab svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.dtab:hover {
+  background: var(--nav-hover);
+  color: var(--text);
+}
+
+.dtab[aria-current='page'] {
+  background: var(--bg-panel);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.dtab[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--text-2);
+}
+
+.dtab:focus-visible {
+  outline-offset: -2px;
+}
+
+.dtab .n {
+  color: inherit;
+}
+
+/* Временная вкладка раздела сокращается первой (полное название — в title). */
+.dtab-shrink {
+  flex: 0 1 auto;
+  min-width: 72px;
+}
+
+.dtab-shrink .dtab-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titlebar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--gutter);
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  white-space: nowrap;
+}
+
+.save {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: var(--lh-13);
+}
+
+.save svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.save.tone-ok-icon svg {
+  color: var(--ok);
+}
+
+.save.tone-err {
+  color: var(--err);
+}
+
+/* ------------------------------------------------------------ полоса разделов */
+.activity {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-height: 0;
+  padding: var(--sp-2) 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--bg-chrome);
+  scrollbar-width: none;
+}
+
+.act {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-height: 56px;
+  margin: 0 var(--sp-1);
+  padding: var(--sp-1) 2px;
+  border: 1px solid transparent;
+  border-radius: var(--r-1);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / 16px var(--font-sans);
+  text-align: center;
+  text-decoration: none;
+}
+
+.act svg {
+  width: 20px;
+  height: 20px;
+}
+
+.act:hover {
+  background: var(--nav-hover);
+  color: var(--text);
+}
+
+.act[aria-current='page'] {
+  border-color: var(--line);
+  background: var(--nav-selected);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.act[aria-current='page'] svg {
+  color: var(--accent-edge);
+}
+
+/* Янтарная черта 2 px у края полосы. */
+.act[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: calc(-1 * var(--sp-1) - 1px);
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+.act:focus-visible {
+  outline-offset: -2px;
+}
+
+.act-spacer {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------ баннеры: строка сетки над содержимым */
+.banners {
+  grid-area: banners;
+  min-width: 0;
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--gutter);
+  border-bottom: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  background: var(--bg-raised);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.banner > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 8px;
+  color: var(--text-2);
+}
+
+.banner-text {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 0;
+}
+
+.banner-title {
+  font-weight: 600;
+}
+
+.banner-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+.banner-warn {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.banner-warn > svg {
+  color: var(--warn);
+}
+
+.banner-err {
+  border-left-color: var(--err);
+  background: var(--err-soft);
+}
+
+.banner-err > svg {
+  color: var(--err);
+}
+
+/* ------------------------------------------------------------ содержимое */
+/* position: relative — скрытые подписи для скринридера (.visually-hidden) остаются внутри прокрутки. */
+.main {
+  position: relative;
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg-panel);
+}
+
+/* Как и main: область, куда ведёт «Перейти к содержимому», не обводится целиком. */
+.main:focus,
+[data-skip-target]:focus {
+  outline: none;
+}
+
+/* Урок — рабочее место на всю высоту: прокручиваются его панели, не <main>. */
+.app[data-screen='lesson']:has(.workspace) .main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------ строка состояния */
+.statusbar {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  min-width: 0;
+  padding: 0 var(--gutter);
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  background: var(--bg-chrome);
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+.sb {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.sb svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.sb.tone-ok svg {
+  color: var(--ok);
+}
+
+.sb.tone-err,
+.tone-err {
+  color: var(--err);
+}
+
+.sb.tone-warn,
+.tone-warn {
+  color: var(--warn);
+}
+
+/* Счётчик проверки — как счётчик ошибок в редакторе: кнопка, открывает «Проверку». */
+.sb-tests {
+  gap: var(--sp-3);
+  height: 100%;
+  margin-left: calc(-1 * var(--sp-2));
+  padding: 0 var(--sp-2);
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sb-tests:hover {
+  background: var(--nav-hover);
+}
+
+.sb-tests:focus-visible {
+  outline-offset: -2px;
+}
+
+.sb-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-weight: 600;
+}
+
+.sb-count.tone-ok {
+  color: var(--ok);
+}
+
+.sb-end {
+  display: flex;
+  gap: var(--sp-5);
+  margin-left: auto;
+}
+
+.sb-addr {
+  color: var(--text);
+  font-family: var(--font-code);
+}
+
+/* Не хватает места — уходят сначала минуты, затем наставник. Слова не рвутся. */
+@media (max-width: 1099px) {
+  .sb-minutes {
+    display: none;
+  }
+}
+
+@media (max-width: 999px) {
+  .app[data-screen='lesson'] .sb-coach {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ телефон: верхняя строка и нижняя навигация */
+.topbar,
+.bottombar {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--topbar) auto minmax(0, 1fr) calc(var(--bottombar) + env(safe-area-inset-bottom));
+    grid-template-areas:
+      'top'
+      'banners'
+      'main'
+      'bottom';
+  }
+
+  .titlebar,
+  .activity,
+  .statusbar {
+    display: none;
+  }
+
+  .topbar {
+    grid-area: top;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    padding-right: var(--sp-1);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-chrome);
+  }
+
+  .topbar .brand {
+    width: var(--topbar);
+    height: 100%;
+    border-right: 0;
+  }
+
+  .topbar-title {
+    flex: 1;
+    min-width: 0;
+    color: var(--text);
+    font: 600 var(--fs-16) / var(--lh-16) var(--font-sans);
+  }
+
+  .topbar-offline {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    font: 500 var(--fs-13) / var(--lh-13) var(--font-sans);
+  }
+
+  .topbar-offline svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .topbar-settings[aria-current='page'] {
+    color: var(--text);
+  }
+
+  .topbar-settings[aria-current='page'] svg {
+    color: var(--accent-edge);
+  }
+
+  .bottombar {
+    grid-area: bottom;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-2) env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    background: var(--bg-chrome);
+  }
+
+  .bottombar a {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-width: 56px;
+    min-height: 44px;
+    color: var(--text-2);
+    font: 500 var(--fs-13) / 16px var(--font-sans);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .bottombar svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bottombar a[aria-current='page'] {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .bottombar a[aria-current='page'] svg {
+    color: var(--accent-edge);
+  }
+
+  .bottombar a[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: 20%;
+    left: 20%;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .bottombar a:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* Урок на телефоне: вместо верхней строки и нижней навигации — шапка урока и док (их рисует урок). */
+  .app[data-screen='lesson']:has(.workspace) {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'banners'
+      'main';
+  }
+
+  .app[data-screen='lesson']:has(.workspace) .topbar,
+  .app[data-screen='lesson']:has(.workspace) .bottombar {
+    display: none;
+  }
+
+  .banner > svg {
+    margin-top: 2px;
+  }
+
+  /* Значок — в строке с текстом (и на 320), на новую строку переносятся только действия. */
+  .banner-text {
+    flex: 1 1 0;
+    padding: 0;
+  }
+
+  .banner-actions {
+    justify-content: flex-end;
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------ режим «страницей»
+   Низкое окно (альбомный телефон) или полноразмерные снимки (data-scroll='page'): окно не держит высоту,
+   прокручивается страница целиком. Правила одинаковы. */
+@media (max-height: 559px) {
+  .app {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .main,
+  .app[data-screen='lesson']:has(.workspace) .main {
+    overflow: visible;
+  }
+
+  .activity {
+    overflow: visible;
+  }
+}
+
+:root[data-scroll='page'] .app {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+:root[data-scroll='page'] .main,
+:root[data-scroll='page'] .app[data-screen='lesson']:has(.workspace) .main {
+  overflow: visible;
+}
+
+:root[data-scroll='page'] .activity {
+  overflow: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

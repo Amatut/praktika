@@ -1,0 +1,2998 @@
+id: m5-l5
+module: m5
+number: "5.5"
+title: "Разбиваем задачу на функции"
+objective: >-
+  Раскладывать задачу на несколько небольших функций с понятными именами, каждая из которых
+  делает одно дело, проверять каждую отдельно и собирать из них программу.
+minutes: [25, 30]
+prerequisites: [m5-l4]
+skills: [function-design]
+environment: python
+
+story:
+  title: Программа, в которую страшно вносить правку
+  fictional: true
+  text: >-
+    Программа, которую Злата когда-то написала для метеокружка, за полгода выросла до сорока строк
+    подряд: она считала среднюю температуру за неделю и число морозных дней. Когда руководитель
+    кружка Пётр Андреевич попросил добавить самый тёплый день, Злата вставила новый цикл не туда,
+    и средняя тихо стала неверной — заметили это только через неделю. Тогда Злата разложила
+    программу на маленькие функции — `average`, `count_frosty`, `print_report` — и каждую
+    проверила на коротком списке из трёх чисел, посчитав ответ в уме. Теперь новая
+    характеристика — это новая функция, а старые, уже проверенные, остаются нетронутыми.
+
+why: >-
+  Большую задачу трудно держать в голове целиком, поэтому её делят на части с понятными именами.
+  Например, «отчёт о погоде» = «посчитать среднюю» + «посчитать морозные дни» + «напечатать
+  отчёт», и каждую часть пишут и проверяют отдельно.
+
+usedIn: >-
+  В любом приложении работа поделена между функциями: в интернет-магазине одна считает скидку,
+  другая проверяет адрес доставки, третья отправляет письмо о заказе. Маленькие функции легко
+  проверять автоматическими тестами — ими займёмся в модуле 9 — и использовать повторно в других
+  программах.
+
+steps:
+  - id: split
+    type: theory
+    title: Одна функция — одно дело
+    body: |-
+      Пока программа короткая, её можно писать одним куском. Но если она уже не помещается на
+      экран, в ней появились одинаковые куски или её трудно описать одним предложением, — пора
+      делить её на функции. Это называется **декомпозиция**: большую задачу раскладывают на
+      маленькие части.
+
+      **Как делить.**
+
+      1. Опиши задачу словами по шагам: «посчитать среднюю, посчитать дни с морозом, напечатать
+         отчёт».
+      2. Каждый шаг — функция. Имя говорит, что функция делает или что она возвращает:
+         `print_report`, `count_frosty`, `average`. Если функция отвечает на вопрос «да или
+         нет», имя — вопрос: `is_frosty`, `has_digit`.
+      3. Реши, что функция получает (параметры) и что отдаёт (`return`).
+
+      **Расчёты не печатают.** Функция, которая считает, получает данные через параметры и
+      возвращает результат. Она не вызывает `input()` и ничего не печатает. Спрашивать и
+      печатать — дело основной части программы или отдельной функции вывода, например
+      `print_report`. Тогда расчёт можно вызвать с любыми данными и использовать где угодно: в
+      отчёте, в условии, в другой функции.
+
+      **Проверяй каждую функцию отдельно.** Придумай маленький список, посчитай ответ в уме и
+      сравни с тем, что вернёт функция. Такая строка называется **проверочным вызовом**:
+
+      ```python
+      print(count_frosty([-1, 0, 2]), "ожидаю 1")
+      ```
+
+      Не забывай граничные случаи: ноль, одно значение, все отрицательные. Когда функция
+      проверена, проверочную строку удаляют: в готовой программе ей не место.
+
+      **Основная часть** — строки, которые получают данные и вызывают функции (в прошлых уроках
+      мы называли её основной программой). Её часто тоже кладут в функцию `main()` и вызывают
+      одной строкой в самом конце. Так сразу видно, где программа начинается. Это удобно, но не
+      обязательно:
+
+      ```python
+      def main():
+          week = [-3, -1, 2, 4, 0, -2, 1]
+          print_report(week)
+
+      main()
+      ```
+
+      Писать можно снизу вверх — сначала маленькие функции, потом основную часть — или сверху
+      вниз: сначала основная часть с вызовами, а в остальных функциях пока стоит `pass`.
+
+      Частое заблуждение: «одна большая функция проще, чем пять маленьких». На деле большую
+      функцию нельзя проверить по частям, и ошибка в одном месте прячется среди всего остального.
+    simpler: >-
+      Как с обедом: не «приготовь обед», а «свари суп», «нарежь салат», «накрой на стол». У
+      каждого шага своё имя, и каждый можно проверить отдельно — попробовать суп, пока салат ещё
+      не готов. Функции-расчёты только считают и отдают результат, а печатает функция вывода или
+      основная часть.
+    coach: >-
+      Если описание функции не помещается в одно предложение без «и», это две функции.
+
+  - id: weather
+    type: example
+    title: Отчёт о погоде
+    body: >-
+      Программа Златы после переделки. Три функции, у каждой одно дело, а внизу — данные и один
+      вызов.
+    code: |-
+      def average(temps):
+          return round(sum(temps) / len(temps), 1)
+
+      def count_frosty(temps):
+          count = 0
+          for t in temps:
+              if t < 0:
+                  count += 1
+          return count
+
+      def print_report(temps):
+          print(f"Средняя: {average(temps)}")
+          print(f"Дней с морозом: {count_frosty(temps)}")
+
+      week = [-3, -1, 2, 4, 0, -2, 1]
+      print_report(week)
+    notes:
+      - line: 1
+        text: >-
+          Расчёт: получает список, возвращает среднюю, округлённую до десятых, и ничего не
+          печатает. `sum` и `len` — из модуля 4.
+      - line: 4
+        text: Ещё одно дело — ещё одна функция. По имени понятно, что она считает.
+      - line: 11
+        text: >-
+          Функция вывода: только печатает, а числа берёт у двух расчётов. Сама она ничего не
+          считает.
+      - line: 15
+        text: >-
+          Основная часть: данные и один вызов. Она короткая и читается как оглавление.
+    tryIt: >-
+      Допиши в конец проверочный вызов `print(count_frosty([-1, 0, 2]), "ожидаю 1")` и запусти.
+      Потом проверь `count_frosty` на неделе без мороза — `[2, 4]`, ожидаю 0, — и `average` на
+      одном дне — `[5]`, ожидаю 5.0: деление `/` всегда даёт дробное число.
+    coach: >-
+      Попробуй описать каждую функцию одним предложением. Получилось без «и» — значит, функция
+      делает одно дело.
+
+  - id: check-call
+    type: predict
+    title: Проверочный вызов
+    prompt: >-
+      Здесь одна функция пользуется другой, а внизу стоят три проверки. Как думаешь, что выведет
+      программа?
+    code: |-
+      def is_frosty(t):
+          return t < 0
+
+      def count_frosty(temps):
+          count = 0
+          for t in temps:
+              if is_frosty(t):
+                  count += 1
+          return count
+
+      count_frosty([-2, 3, -1])
+      print(count_frosty([0, -1, 5, -7]), "ожидаю 2")
+      print(is_frosty(0))
+    options:
+      - "2\n2 ожидаю 2\nFalse"
+      - "2 ожидаю 2\nFalse"
+      - "2 ожидаю 2\nTrue"
+      - "3 ожидаю 2\nTrue"
+    answer: "2 ожидаю 2\nFalse"
+    explanation: >-
+      Строка `count_frosty([-2, 3, -1])` посчитала 2 и вернула результат, но его никто не
+      сохранил и не напечатал, поэтому на экране от неё ничего нет. Проверочный вызов работает,
+      только если обернуть его в `print`. `count_frosty` для каждой температуры спрашивает
+      `is_frosty` — одна функция пользуется другой. Ноль не меньше нуля, поэтому `is_frosty(0)`
+      даёт `False`, и морозных дней в списке `[0, -1, 5, -7]` два. Подпись «ожидаю 2» — это
+      только ожидание того, кто писал проверку. Ответ функции печатается рядом как раз затем,
+      чтобы увидеть, совпало ли оно.
+    coach: >-
+      Результат расчёта, который не напечатали и не сохранили, пропадает молча — ошибки не будет.
+
+  - id: too-big
+    type: quiz
+    title: Какую функцию разбить?
+    question: Какую из этих функций стоит разбить на несколько?
+    options:
+      - "`average(temps)` — возвращает среднюю температуру списка, округлённую до десятых"
+      - "`has_digit(password)` — возвращает True, если хотя бы один символ пароля — цифра"
+      - "`process()` — спрашивает оценки, считает среднюю, печатает табель, выбирает лучшего"
+      - "`print_report(temps)` — печатает отчёт о погоде, а числа для него берёт у других функций"
+    correct: 2
+    explanation: >-
+      У `process()` четыре дела, и одним предложением без «и» её не описать. Такую функцию не
+      проверить по частям: чтобы узнать, верно ли считается средняя, придётся вводить оценки и
+      читать весь табель. Её стоит разбить, например, на `ask_marks`, `average`, `pick_best` и
+      `print_marks`. Остальные три функции делают по одному делу, хотя их описания тоже длинные:
+      подробности уточняют, что именно функция делает, а нового дела не добавляют. `print_report`
+      печатает, но сама ничего не считает.
+
+  - id: practice-warmest
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m5-l5-e1
+      kind: repeat
+      title: Самый тёплый день
+      statement: |-
+        Пётр Андреевич просит добавить в отчёт самую высокую температуру недели. `average` и
+        `count_frosty` не трогай: нужны только новая функция и одна строка отчёта.
+
+        1. Допиши функцию `warmest(temps)` — она **возвращает** самую высокую температуру из
+           списка. Список не пустой.
+        2. Добавь в `print_report` третью строку отчёта, число для неё бери у `warmest`.
+
+        Для недели из программы отчёт такой:
+
+        ```text
+        Средняя: 0.1
+        Дней с морозом: 3
+        Максимум: 4
+        ```
+
+        Прежде чем нажимать «Проверить», испытай `warmest` отдельно. В последней строке
+        стартового кода есть проверочный вызов: убери перед ним `#`, нажми «Запустить» и сравни
+        ответ с ожиданием. Потом верни `#` на место или удали строку.
+      input: Функция получает список температур — целые числа, хотя бы одно.
+      output: "`warmest` возвращает самую высокую температуру; программа печатает отчёт из трёх строк."
+      constraints:
+        - Функции `average` и `count_frosty` не меняй.
+        - Температуры бывают отрицательными.
+      starterCode: |
+        def average(temps):
+            return round(sum(temps) / len(temps), 1)
+
+        def count_frosty(temps):
+            count = 0
+            for t in temps:
+                if t < 0:
+                    count += 1
+            return count
+
+        def warmest(temps):
+            pass  # верни самую высокую температуру
+
+        def print_report(temps):
+            print(f"Средняя: {average(temps)}")
+            print(f"Дней с морозом: {count_frosty(temps)}")
+            # добавь строку «Максимум: …»
+
+        week = [-3, -1, 2, 4, 0, -2, 1]
+        print_report(week)
+        # print(warmest([2, 5, -3]), "ожидаю 5")
+      tests:
+        - id: c1
+          kind: call
+          title: Пример 1
+          example: true
+          call: warmest([2, 5, -3])
+          expected: "5"
+        - id: c2
+          kind: call
+          title: Пример 2
+          example: true
+          call: warmest([4, 1])
+          expected: "4"
+        - id: c3
+          kind: call
+          title: "Граничный случай: все дни с морозом"
+          edge: true
+          call: warmest([-5, -2, -9])
+          expected: "-2"
+        - id: c4
+          kind: call
+          title: "Граничный случай: один день"
+          edge: true
+          call: warmest([7])
+          expected: "7"
+        - id: c5
+          kind: call
+          title: "Граничный случай: все дни одинаковые"
+          edge: true
+          call: warmest([3, 3, 3])
+          expected: "3"
+        - id: c6
+          kind: call
+          title: "Граничный случай: самый тёплый — последний день"
+          edge: true
+          call: warmest([-8, 0, 3])
+          expected: "3"
+        - id: t1
+          kind: io
+          title: Отчёт за неделю из программы
+          example: true
+          expected: |-
+            Средняя: 0.1
+            Дней с морозом: 3
+            Максимум: 4
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: a1
+          kind: assert
+          title: Отчёт по другому списку
+          code: |-
+            import io, contextlib
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                print_report([5, -1, 3])
+            lines = [" ".join(line.split()) for line in buf.getvalue().splitlines() if line.strip()]
+            assert lines == ["Средняя: 2.3", "Дней с морозом: 1", "Максимум: 5"]
+          message: >-
+            Для списка [5, -1, 3] print_report должна напечатать «Средняя: 2.3», «Дней с морозом: 1»
+            и «Максимум: 5» — все числа берутся из переданного списка.
+      rules:
+        - id: r-uses
+          use: [call:warmest]
+          message: >-
+            Строку «Максимум» собирай из вызова `warmest(temps)` — так же, как две первые строки
+            берут числа у `average` и `count_frosty`.
+      criteria:
+        - "`warmest` возвращает самую высокую температуру, в том числе когда все дни морозные или день один."
+        - "В отчёте третья строка `Максимум: <число>`, и число в ней даёт вызов `warmest`."
+        - "`average` и `count_frosty` не изменились, проверочного вызова в выводе нет."
+      hints:
+        - >-
+          `warmest` ищет рекорд — как в уроке о накопителях. Какую переменную-«рекордсмена» завести
+          и чем заполнить её до цикла, чтобы функция работала, даже если вся неделя морозная? И не
+          забудь, что функция возвращает рекорд, а печатает его `print_report`.
+        - |-
+          Тот же приём на словах — самое длинное слово:
+          ```python
+          def longest(words):
+              best = words[0]
+              for w in words:
+                  if len(w) > len(best):
+                      best = w
+              return best
+
+          print(longest(["лес", "поляна", "луг"]), "ожидаю поляна")
+          ```
+          Рекорд начинается с первого элемента, а `return` стоит после цикла. Если помнишь `max`
+          из модуля 4, он тоже подойдёт.
+        - |-
+          Каркас:
+          ```text
+          def warmest(temps):
+              рекорд = первая температура списка
+              для каждой t в temps:
+                  если t больше рекорда: рекорд = t
+              вернуть рекорд
+
+          # в print_report — третья строка по образцу двух первых:
+              print(f"Максимум: {…}")
+          ```
+      solution:
+        code: |
+          def average(temps):
+              return round(sum(temps) / len(temps), 1)
+
+          def count_frosty(temps):
+              count = 0
+              for t in temps:
+                  if t < 0:
+                      count += 1
+              return count
+
+          def warmest(temps):
+              best = temps[0]
+              for t in temps:
+                  if t > best:
+                      best = t
+              return best
+
+          def print_report(temps):
+              print(f"Средняя: {average(temps)}")
+              print(f"Дней с морозом: {count_frosty(temps)}")
+              print(f"Максимум: {warmest(temps)}")
+
+          week = [-3, -1, 2, 4, 0, -2, 1]
+          print_report(week)
+          # print(warmest([2, 5, -3]), "ожидаю 5")
+        explanation: >-
+          Рекорд начинается с первой температуры списка, а не с нуля: если вся неделя морозная,
+          ноль оказался бы больше каждого дня, и функция вернула бы температуру, которой не было.
+          `return` стоит после цикла — рекорд отдаётся, когда просмотрены все дни. Короче можно
+          написать `return max(temps)`. В отчёт добавилась одна строка, а `average` и
+          `count_frosty` остались нетронутыми.
+      altSolutions:
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                return max(temps)
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print("Максимум:", warmest(temps))
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: max из модуля 4 и print через запятую; проверочная строка удалена.
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                highest = temps[0]
+                for t in temps[1:]:
+                    if highest < t:
+                        highest = t
+                return highest
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                top = warmest(temps)
+                print(f"Максимум: {top}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Перебор со второго элемента, сравнение записано наоборот, результат сначала в переменной.
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                i = 1
+                while i < len(temps):
+                    if temps[i] > best:
+                        best = temps[i]
+                    i += 1
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+            # print(warmest([-5, -2, -9]), "ожидаю -2")
+          note: while по индексам и другой проверочный вызов, закомментированный.
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                max = temps[0]
+                for t in temps:
+                    if t <= max:
+                        continue
+                    max = t
+                return max
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print("Максимум: " + str(warmest(temps)))
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Рекорд в переменной max, пропуск через continue, склейка через + и str.
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                i = len(temps) - 1
+                best = temps[i]
+                while i >= 0:
+                    if temps[i] > best:
+                        best = temps[i]
+                    i -= 1
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            def main():
+                week = [-3, -1, 2, 4, 0, -2, 1]
+                print_report(week)
+
+            main()
+            # print(warmest([2, 5, -3]), "ожидаю 5")
+            #print(warmest([-5, -2, -9]), "ожидаю -2")
+          note: while с конца списка, основная часть в main(), проверочные вызовы закомментированы.
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                return max(temps)
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print()
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Пустая строка между строками отчёта — формат самих строк не изменился.
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if best < t:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print("Максимум:", warmest(temps))
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Сравнение best < t и print через запятую.
+      wrongSolutions:
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t > best:
+                        best = t
+                    return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: return внутри цикла — функция возвращает первую температуру.
+          expectMistake: return-in-loop
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t < best:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Знак сравнения скопирован из count_frosty — ищется минимум.
+          expectMistake: min-instead
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = 0
+                for t in temps:
+                    if t > best:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Рекорд начинается с 0 — для морозной недели ответ 0.
+          expectMistake: zero-start
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                return max(temps)
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+            # print(warmest([2, 5, -3]), "ожидаю 5")
+          note: Функция готова, но строка в отчёт не добавлена.
+          expectMistake: no-report-line
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t > best:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+            print(warmest([2, 5, -3]), "ожидаю 5")
+          note: Проверочный вызов остался в программе.
+          expectMistake: leftover-check
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t > best:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print("Максимум: 4")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Строка отчёта записана готовым числом, warmest не вызывается.
+          expectMistake: report-not-reused
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for i in range(len(temps) - 1):
+                    if temps[i] > best:
+                        best = temps[i]
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: "Ошибка на единицу: range(len(temps) - 1) не доходит до последнего дня."
+          expectMistake: skip-last
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t > best:
+                        best = t
+                        return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: return внутри if — функция возвращает первое же обновление рекорда.
+          expectMistake: return-in-loop
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if best < t:
+                        best = t
+                print(best)
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: print вместо return при верном сравнении best < t — общий разбор «функция ничего не вернула».
+          expectMistake: null
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = week[0]
+                for t in week:
+                    if t > best:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Внутри warmest берётся week вместо параметра.
+          expectMistake: uses-week
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                return max(temps)
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: warmest без скобок в f-строке — печатается сама функция.
+          expectMistake: no-parens
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                pass  # верни самую высокую температуру
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: "Сверху вниз: строка отчёта уже есть, а в warmest ещё pass."
+          expectMistake: no-return
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                i = 0
+                while i < len(temps):
+                    if temps[i] > best:
+                        best = temps[i]
+                    i += 1
+                print(best)
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: while по индексам с i = 0 и print вместо return — общий разбор, а не zero-start.
+          expectMistake: null
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t > best:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+            print(warmest([-5, -2, -9]), "ожидаю -2")
+          note: Своя проверочная строка с другим списком осталась в программе.
+          expectMistake: leftover-check
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t > best:
+                        best = t
+                return best
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: warmest(temps)")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: f-строка без фигурных скобок — в отчёт попал текст вызова.
+          expectMistake: call-as-text
+        - code: |
+            def average(temps):
+                return round(sum(temps) / len(temps), 1)
+
+            def count_frosty(temps):
+                count = 0
+                for t in temps:
+                    if t < 0:
+                        count += 1
+                return count
+
+            def warmest(temps):
+                best = temps[0]
+                for t in temps:
+                    if t > best:
+                        best = t
+
+
+            def print_report(temps):
+                print(f"Средняя: {average(temps)}")
+                print(f"Дней с морозом: {count_frosty(temps)}")
+                print(f"Максимум: {warmest(temps)}")
+
+            week = [-3, -1, 2, 4, 0, -2, 1]
+            print_report(week)
+          note: Рекорд найден, но return забыт.
+          expectMistake: no-return
+      mistakes:
+        - id: no-return
+          when:
+            failedTest: c1
+            codeRegex: 'def[ \t]+warmest\b[^\n]*:[ \t]*(?:#[^\n]*)?\n(?:(?![ \t]+return\b)(?![ \t]+[^\n]*\bprint\s*\()(?:[ \t]+[^\n]*)?\n)*(?:(?=[^ \t\n])|(?![\s\S]))'
+          where: Функция `warmest`
+          why: >-
+            В `warmest` нет `return`, поэтому функция возвращает `None`: проверка получает `None`,
+            а в отчёте выходит «Максимум: None». Так бывает, если в функции ещё стоит `pass` или
+            рекорд найден, но его забыли вернуть.
+          try: >-
+            Если в функции ещё `pass`, замени его телом: рекорд и цикл. В конце, после цикла и на
+            одном уровне с `for`, верни рекорд через `return`.
+          verify: "«Пример 1» должен вернуть 5."
+        - id: return-in-loop
+          when:
+            codeRegex: '^([ \t]*)for\b[^\n]*\n(?:\1[ \t]+[^\n]*\n|[ \t]*\n)*?\1[ \t]+return\b'
+          where: "`return` внутри цикла `for` в функции `warmest`"
+          why: >-
+            `return` сразу завершает функцию. Он стоит внутри цикла, поэтому функция заканчивает
+            работу раньше, чем просмотрит все дни, — на первом проходе или на первой смене рекорда.
+          try: >-
+            Сдвинь `return` влево — на один уровень с `for`. Рекорд нужно вернуть после того, как
+            цикл просмотрел весь список.
+          verify: "«Пример 1» должен вернуть 5, а «Пример 2» — 4."
+        - id: uses-week
+          when:
+            codeRegex: '(?<=def[ \t]+warmest[ \t]*\((?![^)]*\bweek\b)[^)]*\)[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?)[ \t]+[^\n#]*\bweek\b'
+          where: "`week` внутри функции `warmest`"
+          why: >-
+            Внутри `warmest` используется `week` — список основной части, а не параметр `temps`.
+            Поэтому функция смотрит не на тот список, который ей передали: при любом вызове она
+            ищет максимум недели из программы.
+          try: >-
+            Внутри функции работай только с параметром: `temps[0]`, `for t in temps`. Неделя
+            попадёт в функцию при вызове `warmest(temps)` из `print_report`.
+          verify: "«Пример 1» должен вернуть 5."
+        - id: min-instead
+          when:
+            failedTest: c1
+            codeRegex: '\bif\s+(\w+(?:\[\w+\])?)\s*<=?\s*(\w+)\s*:[ \t]*\n\s*\2\s*=\s*\1[ \t]*$|\bif\s+(\w+)\s*>=?\s*(\w+(?:\[\w+\])?)\s*:[ \t]*\n\s*\3\s*=\s*\4[ \t]*$|\bmin\s*\('
+          where: Условие в `warmest`
+          why: >-
+            Функция находит самую низкую температуру: для `[2, 5, -3]` она возвращает -3. Рекорд
+            меняется, когда новое значение меньше него, а нужен самый тёплый день.
+          try: Обновляй рекорд, когда температура **больше** него.
+          verify: "«Пример 1» должен вернуть 5."
+        - id: zero-start
+          when:
+            failedTest: c3
+            codeRegex: 'def[ \t]+warmest[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+(\w+)[ \t]*=[ \t]*0[ \t]*(?:#[^\n]*)?\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+return[ \t]+\1\b'
+          where: Начальное значение рекорда в `warmest`
+          why: >-
+            Рекорд начинается с 0. Если вся неделя морозная, ни одна температура не больше нуля, и
+            функция возвращает 0 — температуру, которой в списке нет.
+          try: Начни рекорд с первой температуры списка — `temps[0]`.
+          verify: "«Граничный случай: все дни с морозом» должен вернуть -2."
+        - id: skip-last
+          when:
+            failedTest: c6
+            codeRegex: 'len\s*\(\s*\w+\s*\)\s*-\s*1'
+          where: Цикл в `warmest`
+          why: >-
+            Цикл заканчивается на предпоследнем дне: из-за `- 1` в `len(temps) - 1` последний
+            индекс не просматривается. Если самый тёплый день последний, функция его не видит.
+          try: >-
+            Убери `- 1`: `range(len(temps))` перебирает все индексы, от 0 до последнего. Или
+            перебирай сами температуры — `for t in temps`.
+          verify: "«Граничный случай: самый тёплый — последний день» должен вернуть 3."
+        - id: no-report-line
+          when:
+            outputEquals: |-
+              Средняя: 0.1
+              Дней с морозом: 3
+            codeRegex: '^[ \t]*def[ \t]+print_report\b(?:(?<=def[ \t]+warmest\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+return\b[\s\S]*)|(?=[\s\S]*def[ \t]+warmest\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+return\b))'
+          where: Функция `print_report`
+          why: >-
+            `warmest` уже возвращает ответ, но отчёт по-прежнему из двух строк. Сама по себе
+            функция ничего не печатает — её результат должен попасть в отчёт.
+          try: >-
+            Добавь в `print_report` третий `print` по образцу двух первых: с подписью «Максимум:» и
+            вызовом `warmest(temps)` внутри.
+          verify: В «Отчёте за неделю из программы» должна появиться третья строка.
+        - id: no-parens
+          when:
+            outputIncludes: "<function "
+          where: Третья строка в `print_report`
+          why: >-
+            В строке отчёта стоит имя функции без скобок. Без скобок функция не вызывается, и
+            `print` печатает саму функцию — `<function warmest at …>`.
+          try: "Вызови функцию со списком: `warmest(temps)`."
+          verify: "В «Отчёте за неделю из программы» третья строка должна стать «Максимум: 4»."
+        - id: call-as-text
+          when:
+            outputIncludes: "warmest("
+          where: Третья строка в `print_report`
+          why: >-
+            В отчёт попал текст вызова, а не число: `warmest(temps)` стоит внутри строки, как
+            обычные буквы. Python вычисляет выражение внутри строки, только если перед кавычкой
+            стоит `f`, а само выражение — в фигурных скобках.
+          try: >-
+            Запиши строку по образцу двух первых: `f"Максимум: {warmest(temps)}"`.
+          verify: "В «Отчёте за неделю из программы» третья строка должна стать «Максимум: 4»."
+        - id: report-not-reused
+          when:
+            failedRule: r-uses
+            codeRegex: '(?<=def[ \t]+print_report\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?)[ \t]+[^\n#]*Максимум(?:(?<=def[ \t]+warmest\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+return\b[\s\S]*)|(?=[\s\S]*def[ \t]+warmest\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+return\b))'
+          where: Третья строка в `print_report`
+          why: >-
+            Строка «Максимум» в отчёте есть, но число в ней не от `warmest`: оно записано готовым
+            или посчитано заново. Для другой недели такой отчёт соврёт, а если поправить
+            `warmest`, отчёт этого не заметит.
+          try: Подставь в строку отчёта вызов `warmest(temps)`.
+          verify: Требование собирать строку «Максимум» из вызова `warmest` должно выполниться.
+        - id: leftover-check
+          when:
+            outputIncludes: ожидаю
+          where: Строка проверочного вызова
+          why: >-
+            В выводе осталась строка проверочного вызова — со словом «ожидаю». А тест сравнивает
+            весь вывод программы с отчётом.
+          try: >-
+            Сначала сравни в этой строке ответ функции с ожиданием: не совпали — ищи ошибку в
+            функции, совпали — поставь перед строкой `#` или удали её.
+          verify: В выводе программы должны остаться только три строки отчёта.
+      afterPass: >-
+        Новая характеристика — это одна функция и одна строка отчёта, а `average` и `count_frosty`
+        остались нетронутыми. Точно так же можно добавить `coldest(temps)` — самый холодный день.
+      skills: [function-design, accumulators]
+
+  - id: practice-password
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m5-l5-e2
+      kind: modify
+      title: Пароль по правилам
+      statement: |-
+        Для электронного журнала наблюдений каждый кружковец придумывает пароль. Злата уже
+        написала проверку, но одним куском. Вынеси обе проверки в функции-вопросы:
+
+        - `is_long_enough(password)` возвращает `True`, если в пароле не меньше 8 символов, иначе
+          `False`;
+        - `has_digit(password)` возвращает `True`, если в пароле есть хотя бы одна цифра, иначе
+          `False`.
+
+        Основная часть программы должна пользоваться этими функциями, а её вывод — остаться
+        прежним. Напоминание: `ch.isdigit()` даёт `True`, если символ `ch` — цифра.
+
+        Например, для пароля `qwerty` программа печатает:
+
+        ```text
+        Слишком короткий: нужно хотя бы 8 символов
+        Нужна хотя бы одна цифра
+        ```
+
+        а для `qwerty123` — `Пароль подходит`.
+      input: >-
+        Одна строка — пароль. Функции получают пароль через параметр. Когда проверка вызывает сами
+        функции, программе тоже подаётся пароль `qwerty123` — только чтобы она дошла до конца.
+      output: Те же сообщения, что печатает исходная программа; функции возвращают `True` или `False`.
+      constraints:
+        - Функции ничего не печатают и не вызывают `input()`, сообщения печатает основная часть.
+        - Объяви функции выше основной части — к моменту вызова они должны быть известны.
+      starterCode: |
+        password = input("Придумай пароль: ")
+        problems = 0
+        if len(password) < 8:
+            print("Слишком короткий: нужно хотя бы 8 символов")
+            problems += 1
+        digit_found = False
+        for ch in password:
+            if ch.isdigit():
+                digit_found = True
+        if not digit_found:
+            print("Нужна хотя бы одна цифра")
+            problems += 1
+        if problems == 0:
+            print("Пароль подходит")
+      tests:
+        - id: c1
+          kind: call
+          title: "Пример: короткий пароль"
+          example: true
+          stdin: "qwerty123\n"
+          call: is_long_enough("qwerty")
+          expected: "False"
+        - id: c2
+          kind: call
+          title: "Граничный случай: ровно 8 символов"
+          edge: true
+          stdin: "qwerty123\n"
+          call: is_long_enough("abcdefgh")
+          expected: "True"
+        - id: c3
+          kind: call
+          title: "Граничный случай: 7 символов"
+          edge: true
+          stdin: "qwerty123\n"
+          call: is_long_enough("abcdefg")
+          expected: "False"
+        - id: c4
+          kind: call
+          title: "Пример: цифра в конце"
+          example: true
+          stdin: "qwerty123\n"
+          call: has_digit("abc1")
+          expected: "True"
+        - id: c5
+          kind: call
+          title: Цифра в начале
+          stdin: "qwerty123\n"
+          call: has_digit("1abc")
+          expected: "True"
+        - id: c6
+          kind: call
+          title: "Граничный случай: has_digit от пустой строки"
+          edge: true
+          stdin: "qwerty123\n"
+          call: has_digit("")
+          expected: "False"
+        - id: c7
+          kind: call
+          title: Цифр нет
+          stdin: "qwerty123\n"
+          call: has_digit("пароль")
+          expected: "False"
+        - id: t1
+          kind: io
+          title: "Пример: пароль qwerty"
+          example: true
+          stdin: "qwerty\n"
+          expected: |-
+            Слишком короткий: нужно хотя бы 8 символов
+            Нужна хотя бы одна цифра
+        - id: t2
+          kind: io
+          title: "Пример: пароль qwerty123"
+          example: true
+          stdin: "qwerty123\n"
+          expected: Пароль подходит
+        - id: t3
+          kind: io
+          title: "Граничный случай: ровно 8 цифр"
+          edge: true
+          stdin: "12345678\n"
+          expected: Пароль подходит
+        - id: t4
+          kind: io
+          title: "Граничный случай: пустой ввод"
+          edge: true
+          stdin: "\n"
+          expected: |-
+            Слишком короткий: нужно хотя бы 8 символов
+            Нужна хотя бы одна цифра
+        - id: t5
+          kind: io
+          title: "Граничный случай: длинный, но без цифр"
+          edge: true
+          stdin: "парольпароль\n"
+          expected: Нужна хотя бы одна цифра
+        - id: t6
+          kind: io
+          title: "Граничный случай: короткий, но с цифрой"
+          edge: true
+          stdin: "abc123\n"
+          expected: "Слишком короткий: нужно хотя бы 8 символов"
+        - id: a1
+          kind: assert
+          title: Функции ничего не печатают
+          stdin: "qwerty123\n"
+          code: |-
+            import io, contextlib
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                is_long_enough("abc")
+                is_long_enough("abcdefgh")
+                has_digit("abc")
+                has_digit("abc1")
+            assert buf.getvalue() == ""
+          message: >-
+            is_long_enough и has_digit только отвечают True или False и ничего не печатают —
+            сообщения печатает основная часть программы.
+      rules:
+        - id: r-uses
+          use: [call:is_long_enough, call:has_digit]
+          message: >-
+            Основная часть должна вызывать `is_long_enough` и `has_digit`, а не повторять
+            проверки сама.
+      criteria:
+        - "`is_long_enough` и `has_digit` возвращают `True` или `False` и ничего не печатают."
+        - Пароль ровно из 8 символов считается достаточно длинным; пустой пароль не ломает функции.
+        - Основная часть вызывает обе функции, а её вывод совпадает с выводом исходной программы.
+      hints:
+        - >-
+          В программе две проверки, и каждая отвечает на вопрос «да или нет». Найди строки, которые
+          относятся к каждой проверке. Что функция-вопрос должна вернуть вместо того, чтобы менять
+          переменную или печатать сообщение?
+        - |-
+          Функция-вопрос на другом примере — есть ли в тексте пробел:
+          ```python
+          def has_space(text):
+              for ch in text:
+                  if ch == " ":
+                      return True
+              return False
+
+          print(has_space("до свидания"), "ожидаю True")
+          print(has_space("привет"), "ожидаю False")
+          ```
+          `return True` можно сказать сразу, как только пробел нашёлся. А `return False` стоит
+          после цикла: «нет» можно ответить, только просмотрев все символы.
+        - |-
+          Каркас:
+          ```text
+          def is_long_enough(password):
+              return <сравнение длины пароля с 8>
+
+          def has_digit(password):
+              для каждого символа: если это цифра — вернуть True
+              после цикла — вернуть False
+
+          password = input(...)
+          problems = 0
+          if not is_long_enough(password):
+              ... как было ...
+          if not has_digit(password):
+              ... как было ...
+          if problems == 0:
+              ...
+          ```
+      solution:
+        code: |
+          def is_long_enough(password):
+              return len(password) >= 8
+
+          def has_digit(password):
+              for ch in password:
+                  if ch.isdigit():
+                      return True
+              return False
+
+          password = input("Придумай пароль: ")
+          problems = 0
+          if not is_long_enough(password):
+              print("Слишком короткий: нужно хотя бы 8 символов")
+              problems += 1
+          if not has_digit(password):
+              print("Нужна хотя бы одна цифра")
+              problems += 1
+          if problems == 0:
+              print("Пароль подходит")
+        explanation: >-
+          `is_long_enough` возвращает результат сравнения — он сам по себе `True` или `False`.
+          `has_digit` отвечает «да», как только нашла цифру, а «нет» — только после цикла, когда
+          просмотрены все символы; для пустого пароля цикл не выполнится ни разу, и функция вернёт
+          `False`. Основная часть спрашивает `not is_long_enough(...)` — «пароль недостаточно
+          длинный?» — и печатает те же сообщения, что раньше.
+      altSolutions:
+        - code: |
+            def is_long_enough(password):
+                if len(password) >= 8:
+                    return True
+                else:
+                    return False
+
+            def has_digit(password):
+                found = False
+                for ch in password:
+                    if ch.isdigit():
+                        found = True
+                return found
+
+            password = input("Придумай пароль: ")
+            long_ok = is_long_enough(password)
+            digit_ok = has_digit(password)
+            if not long_ok:
+                print("Слишком короткий: нужно хотя бы 8 символов")
+            if not digit_ok:
+                print("Нужна хотя бы одна цифра")
+            if long_ok and digit_ok:
+                print("Пароль подходит")
+          note: if/else с двумя return, флаг в has_digit, ответы сохранены в переменные.
+        - code: |
+            def is_long_enough(password):
+                if len(password) < 8:
+                    return False
+                return True
+
+            def has_digit(password):
+                for d in "0123456789":
+                    if d in password:
+                        return True
+                return False
+
+            def main():
+                password = input("Придумай пароль: ")
+                problems = 0
+                if is_long_enough(password) == False:
+                    print("Слишком короткий: нужно хотя бы 8 символов")
+                    problems += 1
+                if has_digit(password) == False:
+                    print("Нужна хотя бы одна цифра")
+                    problems += 1
+                if problems == 0:
+                    print("Пароль подходит")
+
+            main()
+          note: Перебор цифр через in, сравнение с False и основная часть в main().
+        - code: |
+            def is_long_enough(password):
+                return 8 <= len(password)
+
+            def has_digit(password):
+                i = 0
+                while i < len(password):
+                    if password[i].isdigit():
+                        return True
+                    i += 1
+                return False
+
+            password = input("Придумай пароль: ")
+            ok = True
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                ok = False
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                ok = False
+            if ok:
+                print("Пароль подходит")
+          note: 8 <= len(...), while по индексам, флаг ok вместо счётчика.
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if "0" <= ch <= "9":
+                        return True
+                return False
+
+            def main():
+                password = input("Пароль: ")
+                problems = 0
+                if not is_long_enough(password):
+                    print("Слишком короткий: нужно хотя бы 8 символов")
+                    problems += 1
+                if not has_digit(password):
+                    print("Нужна хотя бы одна цифра")
+                    problems += 1
+                if problems == 0:
+                    print("Пароль подходит")
+
+            main()
+          note: Сравнение символов «0» <= ch <= «9», основная часть в main(), другое приглашение.
+        - code: |
+            def is_long_enough(password):
+                if len(password) >= 8:
+                    return True
+                return False
+
+            def has_digit(password):
+                for d in range(10):
+                    if str(d) in password:
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            errors = []
+            if not is_long_enough(password):
+                errors.append("Слишком короткий: нужно хотя бы 8 символов")
+            if not has_digit(password):
+                errors.append("Нужна хотя бы одна цифра")
+            if len(errors) == 0:
+                print("Пароль подходит")
+            for message in errors:
+                print(message)
+          note: str(d) in password по range(10), сообщения собираются в список.
+        - code: |
+            def is_long_enough(password):
+                return len(password) > 7
+
+            def has_digit(password):
+                digit_found = False
+                for ch in password:
+                    if ch.isdigit():
+                        digit_found = True
+                return digit_found
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Сравнение > 7 и флаг digit_found.
+      wrongSolutions:
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                    else:
+                        return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: return False в ветке else — ответ по первому символу.
+          expectMistake: return-false-in-loop
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                return password.isdigit()
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: isdigit у всего пароля — «все символы цифры», а не «есть цифра».
+          expectMistake: whole-isdigit
+        - code: |
+            def is_long_enough(password):
+                return len(password) < 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Условие скопировано из старой программы — функция отвечает на обратный вопрос.
+          expectMistake: inverted
+        - code: |
+            def is_long_enough(password):
+                return len(password) > 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: "> 8 — пароль ровно из 8 символов считается коротким."
+          expectMistake: boundary-8
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if len(password) < 8:
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            digit_found = False
+            for ch in password:
+                if ch.isdigit():
+                    digit_found = True
+            if not digit_found:
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Функции объявлены, но основная часть их не вызывает.
+          expectMistake: unused
+        - code: |
+            def is_long_enough(password):
+                if len(password) < 8:
+                    print("Слишком короткий: нужно хотя бы 8 символов")
+
+            def has_digit(password):
+                digit_found = False
+                for ch in password:
+                    if ch.isdigit():
+                        digit_found = True
+                if not digit_found:
+                    print("Нужна хотя бы одна цифра")
+
+            password = input("Придумай пароль: ")
+            is_long_enough(password)
+            has_digit(password)
+          note: Функции печатают сообщения вместо ответа True/False.
+          expectMistake: prints-inside
+        - code: |
+            def is_long_enough(password):
+                if len(password) >= 8:
+                    return True
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                return False
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                print("Нужна хотя бы одна цифра")
+                return False
+
+            password = input("Придумай пароль: ")
+            long_ok = is_long_enough(password)
+            digit_ok = has_digit(password)
+            if long_ok and digit_ok:
+                print("Пароль подходит")
+          note: Функции-вопросы сами печатают сообщения, хотя и возвращают True или False.
+          expectMistake: prints-inside
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Нет return False после цикла — для пароля без цифр функция возвращает None.
+          expectMistake: no-return-false
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit:
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: ch.isdigit без скобок — метод всегда «истинный».
+          expectMistake: isdigit-no-parens
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough:
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit:
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: В основной части функция без скобок — if not is_long_enough.
+          expectMistake: no-parens-call
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough():
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Вызов без аргумента is_long_enough() — общий разбор «не хватает аргументов».
+          expectMistake: null
+        - code: |
+            def is_long_enough(password):
+                if len(password) < 8:
+                    return True
+                else:
+                    return False
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Обратный вопрос в форме if/else, основная часть без not.
+          expectMistake: inverted
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Потерян problems += 1 в ветке длины — короткий пароль с цифрой «подходит».
+          expectMistake: null
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            long_ok = is_long_enough(password)
+            digit_ok = has_digit(password)
+            if not long_ok:
+                print("Слишком короткий: нужно хотя бы 8 символов")
+            if not digit_ok:
+                print("Нужна хотя бы одна цифра")
+            if digit_ok:
+                print("Пароль подходит")
+          note: В итоговом условии забыта длина — «Пароль подходит», если есть цифра.
+          expectMistake: null
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                    return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: return False внутри цикла без else.
+          expectMistake: return-false-in-loop
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                digit_found = False
+                for ch in password:
+                    if ch.isdigit():
+                        digit_found = True
+                return digit_found
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Забыт not перед is_long_enough.
+          expectMistake: forgot-not
+        - code: |
+            def is_long_enough(password):
+                if len(password) < 8:
+                    return False
+
+            def has_digit(password):
+                digit_found = False
+                for ch in password:
+                    if ch.isdigit():
+                        digit_found = True
+                return digit_found
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: is_long_enough отвечает только для короткого пароля — return True забыт.
+          expectMistake: one-answer
+        - code: |
+            def is_long_enough(password):
+                return len(password) >= 8
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            print(has_digit("abc1"), "ожидаю True")
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: Проверочный вызов остался в программе.
+          expectMistake: leftover-check
+        - code: |
+            def is_long_enough(password):
+                if len(password) >= 8:
+                    return True
+
+            def has_digit(password):
+                for ch in password:
+                    if ch.isdigit():
+                        return True
+                return False
+
+            password = input("Придумай пароль: ")
+            problems = 0
+            if not is_long_enough(password):
+                print("Слишком короткий: нужно хотя бы 8 символов")
+                problems += 1
+            if not has_digit(password):
+                print("Нужна хотя бы одна цифра")
+                problems += 1
+            if problems == 0:
+                print("Пароль подходит")
+          note: is_long_enough отвечает только для длинного пароля — return False забыт.
+          expectMistake: one-answer
+      mistakes:
+        - id: isdigit-no-parens
+          when:
+            failedTest: c7
+            codeRegex: '\.isdigit\b(?![ \t]*\()'
+          where: "`isdigit` в функции `has_digit`"
+          why: >-
+            После `isdigit` нет скобок. `ch.isdigit` — это сам метод, а не его ответ, и в `if` он
+            всегда считается истинным. Поэтому функция отвечает `True` на первом же символе — даже
+            для слова «пароль».
+          try: "Поставь скобки: `ch.isdigit()` — так метод вызывается и отвечает `True` или `False`."
+          verify: "«Цифр нет» должен вернуть False."
+        - id: whole-isdigit
+          when:
+            failedTest: c4
+            codeRegex: 'def[ \t]+has_digit\([ \t]*(\w+)[ \t]*\)[\s\S]*?\b\1\.isdigit\(\)'
+          where: "`isdigit()` в функции `has_digit`"
+          why: >-
+            `isdigit()`, вызванный у всего пароля, проверяет, что **все** его символы — цифры. У
+            `abc1` это не так, поэтому функция отвечает `False`, хотя цифра в пароле есть.
+          try: >-
+            Перебери символы пароля в цикле и спроси `isdigit()` у каждого: нашлась цифра — сразу
+            верни `True`.
+          verify: "«Пример: цифра в конце» должен вернуть True."
+        - id: return-false-in-loop
+          when:
+            failedTest: c4
+            codeRegex: '^([ \t]*)for\b[^\n]*\n(?:\1[ \t]+[^\n]*\n|[ \t]*\n)*?\1[ \t]+return[ \t]+False\b'
+          where: "`return False` внутри цикла в `has_digit`"
+          why: >-
+            `return` сразу завершает функцию. `return False` стоит внутри цикла — в ветке `else` или
+            сразу после `if`, — поэтому функция отвечает уже на первом символе: для `abc1` она
+            говорит `False`, не дойдя до единицы. А для пустого пароля цикл не выполнится ни разу,
+            и до этого `return` дело не дойдёт.
+          try: >-
+            Поставь `return False` после цикла, на одном уровне с `for`, а `else` убери, если он
+            есть: «нет» можно ответить, только просмотрев все символы.
+          verify: >-
+            «Пример: цифра в конце» должен вернуть True, а «Граничный случай: has_digit от пустой
+            строки» — False.
+        - id: inverted
+          when:
+            failedTest: c3
+            codeRegex: 'return\s+len\s*\([^)]*\)\s*<|if\s+len\s*\([^)]*\)\s*<\s*8\s*:\s*\n\s*return\s+True\b'
+          where: "Ответ функции `is_long_enough`"
+          why: >-
+            Имя `is_long_enough` — вопрос «пароль достаточно длинный?». А функция отвечает на
+            обратный вопрос: для пароля из 7 символов возвращает `True`. Основная часть может
+            печатать и верно, но любой, кто вызовет функцию по имени, получит неверный ответ.
+          try: >-
+            Пусть функция возвращает `True` для длинного пароля, а в основной части поставь `not`
+            перед её вызовом.
+          verify: "«Граничный случай: 7 символов» должен вернуть False."
+        - id: forgot-not
+          when:
+            failedTest: t1
+            codeRegex: '^([ \t]*)if[ \t]+is_long_enough[ \t]*\([^\n()]*\)[ \t]*:[ \t]*\n\1[ \t]+print[ \t]*\([ \t]*["'']Слишком|^([ \t]*)if[ \t]+has_digit[ \t]*\([^\n()]*\)[ \t]*:[ \t]*\n\2[ \t]+print[ \t]*\([ \t]*["'']Нужна'
+          where: Условие перед сообщением в основной части
+          why: >-
+            Функция отвечает `True`, когда пароль **подходит** под правило: `is_long_enough` — когда
+            он достаточно длинный, `has_digit` — когда цифра есть. А сообщение нужно в обратном
+            случае. Старое условие спрашивало «короткий?», а новая функция спрашивает «длинный?» —
+            вопрос перевернулся.
+          try: >-
+            Поставь `not` перед вызовом: `if not is_long_enough(password):` — и так же для
+            `has_digit`.
+          verify: "«Пример: пароль qwerty» должен напечатать оба сообщения."
+        - id: boundary-8
+          when:
+            failedTest: c2
+            codeRegex: 'len\s*\([^)]*\)\s*(?:>|<=)\s*8\b'
+          where: Сравнение длины в `is_long_enough`
+          why: >-
+            В правиле сказано «хотя бы 8 символов», значит, пароль ровно из 8 символов подходит.
+            Сравнение `> 8` считает его коротким.
+          try: Сравни длину с 8 так, чтобы восьмёрка тоже проходила, — через `>=`.
+          verify: "«Граничный случай: ровно 8 символов» должен вернуть True."
+        - id: one-answer
+          when:
+            codeRegex: 'def[ \t]+is_long_enough\b[^\n]*:[ \t]*(?:#[^\n]*)?\n(?:[ \t]*\n)*([ \t]+)if\b[^\n]*\n(?:(?:\1[ \t]+(?![^\n]*\bprint\s*\()[^\n]*)?\n)*(?:(?=[^ \t\n])|(?![\s\S]))'
+          where: Функция `is_long_enough`
+          why: >-
+            Вся функция — одно `if` без `else`, поэтому она отвечает только в одном случае. Когда
+            условие не выполняется, функция доходит до конца без `return` и возвращает `None`, а не
+            `True` или `False`.
+          try: >-
+            Добавь второй ответ: `return` после `if`, на одном уровне с ним, или ветку `else`. Можно
+            и проще — вернуть само сравнение: оно уже `True` или `False`.
+          verify: >-
+            «Пример: короткий пароль» должен вернуть False, а «Граничный случай: ровно 8 символов» —
+            True.
+        - id: no-return-false
+          when:
+            failedTest: c7
+            codeRegex: 'def[ \t]+has_digit\b(?:(?!\n\S)[\s\S])*?\breturn[ \t]+True\b(?:(?!\n\S)(?!return[ \t]+False\b)[\s\S])*(?:\n(?=\S)|(?![\s\S]))'
+          where: Конец функции `has_digit`
+          why: >-
+            Когда цифры нет, цикл заканчивается, а после него в `has_digit` нет `return False`, и
+            функция возвращает `None`. Основная часть при этом может печатать верно, но
+            функция-вопрос должна ответить именно `False`.
+          try: Добавь `return False` после цикла, на одном уровне с `for`.
+          verify: >-
+            «Цифр нет» и «Граничный случай: has_digit от пустой строки» должны вернуть False.
+        - id: no-parens-call
+          when:
+            codeRegex: '^[^#\n]*\b(?:is_long_enough|has_digit)\b(?![ \t]*\()'
+          where: Вызов функции в основной части
+          why: >-
+            После имени функции нет скобок, поэтому функция не вызывается: в условие попадает сама
+            функция, а не её ответ про пароль. Сама функция всегда считается истинной, так что
+            `not is_long_enough` всегда даёт `False`, и сообщение не печатается.
+          try: >-
+            Вызови функцию с паролем: `if not is_long_enough(password):` — и так же для
+            `has_digit`.
+          verify: "«Пример: пароль qwerty» должен напечатать оба сообщения."
+        - id: unused
+          when:
+            failedRule: r-uses
+            codeRegex: '(?<=def[ \t]+is_long_enough\b[\s\S]*)(?<=def[ \t]+has_digit\b[\s\S]*)^(?![ \t#\n]|def\b)[^\n]+'
+          where: Основная часть программы
+          why: >-
+            Функции объявлены, но основная часть не вызывает одну из них или обе и проверяет сама.
+            Получились две копии одной логики: поменяешь правило в функции — программа этого не
+            заметит.
+          try: >-
+            Замени проверки в основной части вызовами функций: `if not is_long_enough(password):` и
+            такой же вызов для цифр. Цикл по символам останется только внутри `has_digit`.
+          verify: >-
+            Требование вызывать `is_long_enough` и `has_digit` должно выполниться, а вывод на всех
+            примерах — остаться прежним.
+        - id: prints-inside
+          when:
+            failedTest: a1
+            codeRegex: '(?<=def[ \t]+(?:is_long_enough|has_digit)\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?)[ \t]+print\s*\('
+          where: Функции `is_long_enough` и `has_digit`
+          why: >-
+            Функция-вопрос сама печатает сообщение. А её дело — только ответить `True` или `False`
+            через `return`. Тогда её можно вызвать где угодно — в проверочном вызове, в другой
+            проверке — без лишнего текста на экране.
+          try: >-
+            Пусть функции только возвращают ответ через `return`, а `print` с сообщениями останется
+            в основной части — как в исходной программе.
+          verify: Должна пройти проверка «Функции ничего не печатают».
+        - id: leftover-check
+          when:
+            outputIncludes: ожидаю
+          where: Строка проверочного вызова
+          why: >-
+            В выводе осталась строка проверочного вызова — со словом «ожидаю». А тест сравнивает
+            весь вывод программы с сообщениями о пароле.
+          try: >-
+            Сначала сравни в этой строке ответ функции с ожиданием: не совпали — ищи ошибку в
+            функции, совпали — поставь перед строкой `#` или удали её.
+          verify: В выводе программы должны остаться только сообщения о пароле.
+      afterPass: >-
+        Вывод программы тот же, но проверки теперь названы: `if not has_digit(password)` читается
+        почти как фраза. Новое правило, например «есть заглавная буква», — это ещё одна маленькая
+        функция-вопрос и одна проверка в основной части.
+      skills: [function-design, functions, boolean-logic]
+
+  - id: plan-screen
+    type: quiz
+    title: План до кода
+    question: >-
+      Следующая задача: по экранному времени за неделю (минуты по дням) и дневному лимиту
+      напечатать отчёт — сколько минут всего и сколько дней лимит был превышен. Какой план
+      лучше?
+    options:
+      - "Одна функция `report(minutes, limit)`: считает сумму, считает дни сверх лимита и печатает обе строки"
+      - "`total(minutes)` и `days_over_limit(minutes, limit)` возвращают числа, а `print_report(minutes, limit)` их печатает"
+      - "`total(minutes)` печатает сумму минут, а `days_over_limit(minutes, limit)` печатает число дней сверх лимита"
+      - "`total()` и `days_over_limit()` берут список `week` и лимит 120 прямо из программы, `print_report()` печатает"
+    correct: 1
+    explanation: >-
+      Во втором плане у каждой функции одно дело: два расчёта получают данные через параметры и
+      возвращают числа, а печатает только функция вывода. Расчёты легко проверить отдельно —
+      `print(total([30, 45]), "ожидаю 75")`. В первом плане три дела в одной функции. В третьем
+      расчёты печатают сами, и их ответ нельзя подставить в отчёт или в условие. В четвёртом
+      функции привязаны к одной неделе и одному лимиту — с другими данными их не вызвать.
+    coach: >-
+      Сначала план словами, потом код: так видно, какие функции нужны и что каждая получает.
+
+  - id: practice-screen
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m5-l5-e3
+      kind: write
+      title: Экранное время за неделю
+      statement: |-
+        В семье договорились: не больше 120 минут за экраном телефона в день. Телефон записывает
+        экранное время по дням, а нужен короткий отчёт за неделю. Напиши три функции — по плану
+        из вопроса выше:
+
+        - `total(minutes)` — **возвращает** сумму минут за все дни;
+        - `days_over_limit(minutes, limit)` — **возвращает**, сколько дней время было **больше**
+          лимита (ровно лимит — не превышение);
+        - `print_report(minutes, limit)` — **печатает** отчёт из двух строк, а числа берёт у двух
+          первых функций.
+
+        Для недели из стартового кода и лимита 120 отчёт такой:
+
+        ```text
+        Всего за неделю: 635 мин
+        Дней сверх лимита: 2
+        ```
+      input: >-
+        Функции получают список минут по дням (целые неотрицательные числа, список может быть
+        пустым), а две последние — ещё и лимит.
+      output: "Две строки: `Всего за неделю: <сумма> мин` и `Дней сверх лимита: <число>`."
+      constraints:
+        - "`total` и `days_over_limit` ничего не печатают — только возвращают число."
+        - "`total`, `days_over_limit` и `print_report` работают со своими параметрами, а не с переменной `week`."
+        - Проверочные вызовы писать можно, но перед проверкой убери их.
+      starterCode: |
+        # Напиши здесь функции total, days_over_limit и print_report
+
+        week = [45, 150, 0, 90, 200, 120, 30]
+        print_report(week, 120)
+      tests:
+        - id: c1
+          kind: call
+          title: "Пример: сумма"
+          example: true
+          call: total([30, 45])
+          expected: "75"
+        - id: c2
+          kind: call
+          title: "Граничный случай: пустая неделя"
+          edge: true
+          call: total([])
+          expected: "0"
+        - id: c3
+          kind: call
+          title: "Пример: дни сверх лимита"
+          example: true
+          call: days_over_limit([150, 60, 120], 120)
+          expected: "1"
+        - id: c4
+          kind: call
+          title: "Граничный случай: ровно лимит"
+          edge: true
+          call: days_over_limit([120, 121, 119], 120)
+          expected: "1"
+        - id: c5
+          kind: call
+          title: "Граничный случай: пустой список"
+          edge: true
+          call: days_over_limit([], 60)
+          expected: "0"
+        - id: c6
+          kind: call
+          title: "Граничный случай: другой лимит"
+          edge: true
+          call: days_over_limit([100, 90, 70, 60], 60)
+          expected: "3"
+        - id: t1
+          kind: io
+          title: Отчёт за неделю из программы
+          example: true
+          expected: |-
+            Всего за неделю: 635 мин
+            Дней сверх лимита: 2
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: a1
+          kind: assert
+          title: Отчёт по другим данным
+          code: |-
+            import io, contextlib
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                print_report([100, 200, 50], 50)
+            lines = [" ".join(line.split()) for line in buf.getvalue().splitlines() if line.strip()]
+            assert lines == ["Всего за неделю: 350 мин", "Дней сверх лимита: 2"]
+          message: >-
+            print_report должна работать с любыми данными: для списка [100, 200, 50] и лимита 50
+            отчёт — «Всего за неделю: 350 мин» и «Дней сверх лимита: 2».
+      rules:
+        - id: r-reuse
+          use: [call:total, call:days_over_limit]
+          message: >-
+            `print_report` должна брать числа у `total` и `days_over_limit`, а не считать их
+            заново.
+      criteria:
+        - "`total` и `days_over_limit` возвращают числа и ничего не печатают; для пустого списка ответ 0."
+        - День ровно с лимитом не считается превышением.
+        - "`print_report` печатает две строки отчёта и берёт числа у `total` и `days_over_limit`."
+        - Функции работают со своими параметрами, поэтому отчёт верен для любой недели и любого лимита.
+      hints:
+        - >-
+          Начни с самой маленькой функции и проверь её проверочным вызовом, посчитав ответ в уме.
+          Потом следующую. Какие из трёх функций возвращают число, а какая печатает? И что каждая
+          получает через параметры?
+        - |-
+          Тот же расклад на оценках — сколько пятёрок и отчёт о них:
+          ```python
+          def count_fives(marks):
+              count = 0
+              for m in marks:
+                  if m == 5:
+                      count += 1
+              return count
+
+          def print_marks_report(marks):
+              print(f"Пятёрок: {count_fives(marks)}")
+
+          print(count_fives([5, 4, 5]), "ожидаю 2")
+          print_marks_report([5, 3])
+          ```
+          Расчёт возвращает число, отчёт печатает и берёт число у расчёта.
+        - |-
+          Каркас:
+          ```text
+          def total(minutes):
+              вернуть сумму списка
+
+          def days_over_limit(minutes, limit):
+              счётчик = 0
+              для каждого m в minutes:
+                  если m больше limit: счётчик + 1
+              вернуть счётчик
+
+          def print_report(minutes, limit):
+              print(f"Всего за неделю: {вызов total} мин")
+              print(f"Дней сверх лимита: {вызов days_over_limit}")
+          ```
+      solution:
+        code: |
+          def total(minutes):
+              return sum(minutes)
+
+          def days_over_limit(minutes, limit):
+              count = 0
+              for m in minutes:
+                  if m > limit:
+                      count += 1
+              return count
+
+          def print_report(minutes, limit):
+              print(f"Всего за неделю: {total(minutes)} мин")
+              print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+          week = [45, 150, 0, 90, 200, 120, 30]
+          print_report(week, 120)
+        explanation: >-
+          Два расчёта получают данные только через параметры и возвращают числа, поэтому их можно
+          проверить отдельно на любых маленьких списках. `sum` пустого списка даёт 0, а счётчик
+          пустого списка остаётся 0 — цикл не выполнится ни разу. Сравнение `m > limit` не считает
+          день ровно с лимитом. `print_report` только печатает: числа она берёт у расчётов, а
+          список и лимит — из своих параметров, поэтому отчёт верен для любой недели.
+      altSolutions:
+        - code: |
+            def total(minutes):
+                result = 0
+                for m in minutes:
+                    result += m
+                return result
+
+            def days_over_limit(minutes, limit):
+                days = 0
+                for m in minutes:
+                    if m > limit:
+                        days = days + 1
+                return days
+
+            def print_report(minutes, limit):
+                spent = total(minutes)
+                over = days_over_limit(minutes, limit)
+                print("Всего за неделю:", spent, "мин")
+                print("Дней сверх лимита:", over)
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Сумма циклом, результаты расчётов сначала в переменных, print через запятую.
+        - code: |
+            def total(minutes):
+                total = 0
+                for m in minutes:
+                    total += m
+                return total
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if not m <= limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            def main():
+                week = [45, 150, 0, 90, 200, 120, 30]
+                print_report(week, 120)
+
+            main()
+          note: Внутри total локальная переменная с тем же именем (работает), not и main().
+        - code: |
+            def total(values):
+                return sum(values)
+
+            def days_over_limit(values, max_minutes):
+                n = 0
+                for v in values:
+                    if v > max_minutes:
+                        n += 1
+                return n
+
+            def print_report(values, max_minutes):
+                print("Всего за неделю: " + str(total(values)) + " мин")
+                print("Дней сверх лимита: " + str(days_over_limit(values, max_minutes)))
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Другие имена параметров, склейка через + и str.
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit=120):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week)
+          note: Лимит по умолчанию (урок 5.2) и вызов print_report(week).
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print()
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Пустая строка между строками отчёта.
+        - code: |
+            def total(days):
+                s = 0
+                for d in days:
+                    s = s + d
+                return s
+
+            def days_over_limit(days, lim):
+                n = 0
+                for d in days:
+                    if d > lim:
+                        n = n + 1
+                return n
+
+            def print_report(days, lim):
+                print(f"Всего за неделю: {total(days)} мин\nДней сверх лимита: {days_over_limit(days, lim)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Отчёт одной f-строкой с переводом строки, параметры названы days и lim.
+        - code: |
+            def total(minutes):
+                s = 0
+                for m in minutes:
+                    s += m
+                return s
+
+            def days_over_limit(minutes, limit):
+                days = 0
+                for m in minutes:
+                    if m > limit:
+                        days += 1
+                return days
+
+            def print_report(minutes, limit):
+                print("Всего за неделю:", total(minutes), "мин")
+                print("Дней сверх лимита:", days_over_limit(minutes, limit))
+
+            def main():
+                week = [45, 150, 0, 90, 200, 120, 30]
+                print_report(week, 120)
+
+            main()
+          note: Сумма циклом, print через запятую, основная часть в main().
+      wrongSolutions:
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                total = total(minutes)
+                days = days_over_limit(minutes, limit)
+                print(f"Всего за неделю: {total} мин")
+                print(f"Дней сверх лимита: {days}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Переменная total заслоняет функцию total — UnboundLocalError.
+          expectMistake: name-clash
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(week)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(week, 120)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: print_report берёт week и 120 снаружи, а не свои параметры.
+          expectMistake: uses-global
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m >= limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: ">= — день ровно с лимитом считается превышением."
+          expectMistake: boundary
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                return f"Всего за неделю: {total(minutes)} мин\nДней сверх лимита: {days_over_limit(minutes, limit)}"
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: print_report возвращает текст, а вызов внизу без print — вывода нет.
+          expectMistake: no-output
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                spent = 0
+                over = 0
+                for m in minutes:
+                    spent += m
+                    if m > limit:
+                        over += 1
+                print(f"Всего за неделю: {spent} мин")
+                print(f"Дней сверх лимита: {over}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: print_report считает всё заново и не вызывает расчёты.
+          expectMistake: reuse
+        - code: |
+            def total(minutes):
+                result = 0
+                for m in minutes:
+                    result += m
+                print(result)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: total печатает вместо return — общий разбор «функция ничего не вернула».
+          expectMistake: null
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m >= limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            def main():
+                week = [45, 150, 0, 90, 200, 120, 30]
+                print_report(week, 120)
+
+            main()
+          note: main() и >= — ошибка только в границе, week внутри main не мешает разбору.
+          expectMistake: boundary
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                    return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: return внутри цикла в days_over_limit.
+          expectMistake: return-in-loop
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > 120:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Лимит 120 записан числом внутри days_over_limit.
+          expectMistake: fixed-limit
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(limit, minutes)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Аргументы перепутаны местами — days_over_limit(limit, minutes).
+          expectMistake: swapped-args
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: days_over_limit без скобок в f-строке.
+          expectMistake: no-parens
+        - code: |
+            def total(minutes):
+                result = 0
+                for m in minutes:
+                    result += m
+                    return result
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: return внутри цикла в total.
+          expectMistake: return-in-loop
+        - code: |
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+          note: Функции дописаны после вызова print_report — общий разбор «используется до создания».
+          expectMistake: null
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+          note: Строка print_report(week, 120) удалена — программа ничего не печатает.
+          expectMistake: no-output
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                return f"Всего за неделю: {total(minutes)} мин\nДней сверх лимита: {days_over_limit(minutes, limit)}"
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print(print_report(week, 120))
+          note: print_report возвращает текст, а внизу print(print_report(...)).
+          expectMistake: returns-text
+        - code: |
+            def total(minutes):
+                pass
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: "Сверху вниз: в total ещё pass."
+          expectMistake: no-return
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+            print(total([30, 45]), "ожидаю 75")
+          note: Проверочный вызов остался в программе.
+          expectMistake: leftover-check
+        - code: |
+            def total(minutes):
+                s = 0
+                for m in minutes:
+                    s += m
+                print(s)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            def main():
+                week = [45, 150, 0, 90, 200, 120, 30]
+                print_report(week, 120)
+
+            main()
+          note: main() и print вместо return в total — общий разбор «функция ничего не вернула».
+          expectMistake: null
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+                return count
+
+            def print_report(minutes, limit):
+                print("Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Забыта буква f — в отчёт попал текст вызова total(minutes).
+          expectMistake: call-as-text
+        - code: |
+            def total(minutes):
+                return sum(minutes)
+
+            def days_over_limit(minutes, limit):
+                count = 0
+                for m in minutes:
+                    if m > limit:
+                        count += 1
+
+            def print_report(minutes, limit):
+                print(f"Всего за неделю: {total(minutes)} мин")
+                print(f"Дней сверх лимита: {days_over_limit(minutes, limit)}")
+
+            week = [45, 150, 0, 90, 200, 120, 30]
+            print_report(week, 120)
+          note: Счётчик посчитан, но return в days_over_limit забыт.
+          expectMistake: no-return
+      mistakes:
+        - id: swapped-args
+          when:
+            errorIncludes: not iterable
+            codeRegex: '\bdays_over_limit\s*\(\s*(?:limit|\d+)\s*,'
+          where: Порядок аргументов `days_over_limit`
+          why: >-
+            Аргументы передаются по порядку: первый попадает в первый параметр, второй — во второй.
+            Здесь первым стоит лимит, поэтому параметр для списка получает число, и цикл `for` не
+            может его перебрать.
+          try: >-
+            Поставь список первым, а лимит вторым — и в `def days_over_limit(minutes, limit)`, и в
+            вызове `days_over_limit(minutes, limit)`.
+          verify: "В «Отчёте за неделю из программы» должно появиться «Дней сверх лимита: 2»."
+        - id: name-clash
+          when:
+            codeRegex: '^[ \t]*total[ \t]*=[ \t]*total[ \t]*\('
+          where: "Строка `total = total(...)`"
+          why: >-
+            Переменная получила то же имя, что и функция. Внутри функции присваивание делает имя
+            `total` локальным (урок 5.4), и до функции `total` уже не дотянуться — отсюда
+            UnboundLocalError. Снаружи функций такая строка просто заменяет функцию числом.
+          try: >-
+            Назови переменную иначе, например `spent = total(minutes)`, или подставь вызов прямо в
+            f-строку.
+          verify: Ошибка должна исчезнуть, а отчёт — напечататься.
+        - id: no-return
+          when:
+            codeRegex: 'def[ \t]+(?:total|days_over_limit)\b[^\n]*:[ \t]*(?:#[^\n]*)?\n(?:(?![ \t]+return\b)(?![ \t]+[^\n]*\bprint\s*\()(?:[ \t]+[^\n]*)?\n)*(?:(?=[^ \t\n])|(?![\s\S]))'
+          where: Функция без `return`
+          why: >-
+            В этой функции нет `return`, поэтому она возвращает `None`: проверка получает `None`, а
+            в отчёте вместо числа печатается «None». Так бывает, если в функции ещё стоит `pass`
+            или ответ посчитан, но его забыли вернуть.
+          try: >-
+            Если в функции ещё `pass`, замени его телом. В конце, после цикла и на одном уровне с
+            `for`, верни результат через `return`.
+          verify: "«Пример: сумма» должен вернуть 75, а «Пример: дни сверх лимита» — 1."
+        - id: uses-global
+          when:
+            codeRegex: '(?<=def[ \t]+(?:total|days_over_limit|print_report)[ \t]*\((?![^)]*\bweek\b)[^)]*\)[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?)[ \t]+[^\n#]*\bweek\b'
+          where: "`week` внутри функции"
+          why: >-
+            Внутри функции используется `week` — переменная основной части, а не параметр. Для
+            недели из кода ответ совпадает, но с другими данными функция всё равно посчитает
+            `week`.
+          try: >-
+            В `total`, `days_over_limit` и `print_report` работай только с их параметрами —
+            `minutes` и `limit`. Неделя и лимит попадают в `print_report` при вызове внизу
+            программы.
+          verify: Должна пройти проверка «Отчёт по другим данным».
+        - id: return-in-loop
+          when:
+            codeRegex: '^([ \t]*)for\b[^\n]*\n(?:\1[ \t]+[^\n]*\n|[ \t]*\n)*?\1[ \t]+return\b'
+          where: "`return` внутри цикла `for`"
+          why: >-
+            `return` сразу завершает функцию. Он стоит внутри цикла, поэтому функция отвечает
+            раньше, чем просмотрит все дни. А если список пустой, цикл не выполнится ни разу, и до
+            этого `return` дело не дойдёт.
+          try: >-
+            Сдвинь `return` влево — на один уровень с `for`: ответ отдаётся, когда просмотрены все
+            дни.
+          verify: "«Пример: сумма» должен вернуть 75, а «Пример: дни сверх лимита» — 1."
+        - id: fixed-limit
+          when:
+            failedTest: c6
+            codeRegex: '(?<=def[ \t]+days_over_limit\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?)[ \t]+if\b[^\n]*(?:[<>]=?[ \t]*\d+|\d+[ \t]*[<>])'
+          where: Сравнение в `days_over_limit`
+          why: >-
+            Лимит записан в сравнении числом, а параметр `limit` не используется. Для недели из
+            программы ответ совпадает, но с другим лимитом функция всё равно сравнивает минуты с
+            тем же числом.
+          try: "Сравнивай с параметром: `if m > limit:` — тогда лимит приходит из вызова."
+          verify: "«Граничный случай: другой лимит» должен вернуть 3."
+        - id: boundary
+          when:
+            failedTest: c4
+            codeIncludes: ">="
+          where: Сравнение в `days_over_limit`
+          why: >-
+            День, когда экранное время ровно 120 минут, — не превышение: договорённость
+            соблюдена. Сравнение `>=` считает такой день лишним.
+          try: Считай только дни, где минут строго больше лимита.
+          verify: "«Граничный случай: ровно лимит» должен вернуть 1."
+        - id: no-output
+          when:
+            outputEquals: ""
+          where: "`print_report` и вызов в конце программы"
+          why: >-
+            Программа ничего не напечатала. `print_report` — функция вывода: она сама печатает обе
+            строки отчёта. Если она только возвращает текст, а вызов внизу стоит без `print`,
+            текст пропадает.
+          try: >-
+            Напечатай обе строки внутри `print_report` через `print`, а внизу оставь вызов
+            `print_report(week, 120)`.
+          verify: В «Отчёте за неделю из программы» должны появиться две строки.
+        - id: no-parens
+          when:
+            outputIncludes: "<function "
+          where: Строка отчёта в `print_report`
+          why: >-
+            В строке отчёта стоит имя функции без скобок. Без скобок функция не вызывается, и
+            `print` печатает саму функцию — `<function … at …>`.
+          try: "Вызови функцию с аргументами: `total(minutes)`, `days_over_limit(minutes, limit)`."
+          verify: В «Отчёте за неделю из программы» должны появиться числа 635 и 2.
+        - id: call-as-text
+          when:
+            outputIncludes: "("
+          where: Строка отчёта в `print_report`
+          why: >-
+            В отчёт попал текст вызова, а не число: вызов стоит внутри строки, как обычные буквы.
+            Python вычисляет выражение внутри строки, только если перед кавычкой стоит `f`, а само
+            выражение — в фигурных скобках.
+          try: >-
+            Проверь обе строки отчёта: в `f"Всего за неделю: {total(minutes)} мин"` есть буква `f`
+            перед кавычкой и вызов в `{}`.
+          verify: В «Отчёте за неделю из программы» должны появиться числа 635 и 2.
+        - id: returns-text
+          when:
+            failedTest: a1
+            codeRegex: 'def[ \t]+print_report\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+return\b'
+          where: Функция `print_report`
+          why: >-
+            `print_report` возвращает текст отчёта через `return`, а не печатает его. Внизу ты
+            печатаешь результат, поэтому отчёт за неделю виден. Но проверка «Отчёт по другим
+            данным» вызывает `print_report` без `print` — и на экране ничего не появляется.
+          try: >-
+            Напечатай обе строки внутри `print_report` через `print`, а внизу вызывай её без
+            `print`: `print_report(week, 120)`.
+          verify: Должна пройти проверка «Отчёт по другим данным».
+        - id: reuse
+          when:
+            failedRule: r-reuse
+            codeRegex: 'def[ \t]+print_report\b'
+          where: Функция `print_report`
+          why: >-
+            В программе не вызывается `total` или `days_over_limit`. Значит, число в отчёте
+            посчитано заново, записано готовым — или строки с ним вовсе нет. Копия расчёта опасна:
+            исправишь ошибку в функции, а отчёт этого не заметит.
+          try: >-
+            Проверь, что в отчёте две строки, и подставь в них вызовы `total(minutes)` и
+            `days_over_limit(minutes, limit)`.
+          verify: >-
+            Требование брать числа у `total` и `days_over_limit` должно выполниться, а «Отчёт по
+            другим данным» — пройти.
+        - id: leftover-check
+          when:
+            outputIncludes: ожидаю
+          where: Строка проверочного вызова
+          why: >-
+            В выводе осталась строка проверочного вызова — со словом «ожидаю». А тест сравнивает
+            весь вывод программы с отчётом.
+          try: >-
+            Сначала сравни в этой строке ответ функции с ожиданием: не совпали — ищи ошибку в
+            функции, совпали — поставь перед строкой `#` или удали её.
+          verify: В выводе программы должны остаться только две строки отчёта.
+      afterPass: >-
+        Программа из трёх частей, и каждая проверена отдельно: два расчёта — вызовами с маленькими
+        списками, отчёт — на другой неделе. Если захочешь, добавь функцию `longest_day(minutes)` —
+        самое большое время за день — и третью строку отчёта: это одна новая функция и одна строка
+        в `print_report`.
+      skills: [function-design, functions, accumulators]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Большую задачу делят на функции: одна функция — одно дело. Имя говорит, что функция делает или возвращает (`count_frosty`, `average`), а для «да или нет» — вопрос (`is_frosty`, `has_digit`)."
+      - Расчёты получают данные через параметры и возвращают результат; печатает функция вывода или основная часть программы.
+      - "Каждую функцию проверяют отдельно на маленьких и граничных данных: `print(count_frosty([-1, 0, 2]), \"ожидаю 1\")`. Потом проверочную строку убирают."
+      - Новое требование — новая маленькая функция и одна строка там, где её вызывают; проверенные функции не трогают.
+    question: >-
+      Почему `has_digit(password)` проще проверить, чем кусок программы, который сам вызывает
+      `input()` и печатает сообщения?
+    answer: >-
+      Функцию можно вызвать прямо в коде с любым паролем — `has_digit("abc1")`, `has_digit("")` —
+      и сравнить возвращённое значение с ожиданием. Не нужно каждый раз вводить пароль и читать
+      сообщения на экране. Такая проверка занимает секунды, и её легко повторить после любой
+      правки.

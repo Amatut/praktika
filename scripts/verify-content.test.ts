@@ -408,6 +408,50 @@ describe('predict и example с заглушкой Python', () => {
   });
 });
 
+describe('окружение запуска из материалов', () => {
+  it('проверка задания передаёт файл кода, файлы, базы, seed и сеть задания; тест несёт свои поля сам', async () => {
+    const payloads: CheckPayload[] = [];
+    const runs: { code: string; environment: unknown }[] = [];
+    const py: PythonExecutor = {
+      async run(code, _stdin, _limitMs, environment) {
+        runs.push({ code, environment });
+        return { status: 'done', result: { stdout: '1\n', transcript: [], error: null, limit: false } };
+      },
+      async check(payload) {
+        payloads.push(payload);
+        const tests = payload.tests as { id: string }[];
+        return { status: 'done', result: { compileError: null, rules: [], tests: tests.map((test) => testResult(test.id)) } };
+      },
+    };
+    const exercise = makeExercise({
+      filename: 'calc.py',
+      files: { 'data.txt': '1' },
+      databases: { 'shop.db': 'CREATE TABLE t (a);' },
+      seed: 7,
+      http: [{ url: 'https://api.example.com/x', json: 1 }],
+      tests: [{ id: 't1', kind: 'io', example: true, expected: '5', files: { 'data.txt': null } }],
+    });
+    await checkCode(py, exercise, SOLUTION, 1000);
+    expect(payloads).toHaveLength(2);
+    for (const payload of payloads) {
+      expect(payload).toMatchObject({
+        filename: 'calc.py',
+        files: { 'data.txt': '1' },
+        databases: { 'shop.db': 'CREATE TABLE t (a);' },
+        seed: 7,
+        http: [{ url: 'https://api.example.com/x', json: 1 }],
+      });
+    }
+    expect(payloads[1]?.tests).toEqual([expect.objectContaining({ id: 't1', files: { 'data.txt': null } })]);
+
+    const problems: Problem[] = [];
+    await verifyPredict(context(py, problems), predictStep({ seed: 3, files: { 'a.txt': 'x' } }));
+    await verifyPredict(context(py, problems), predictStep({}));
+    expect(runs.map((item) => item.environment)).toEqual([{ seed: 3, files: { 'a.txt': 'x' } }, undefined]);
+    expect(problems).toEqual([]);
+  });
+});
+
 describe('verifyContent: причины, по которым проверка не состоялась', () => {
   let tmp = '';
 
@@ -666,6 +710,43 @@ describe('NodePython и проверки с настоящим Python', () => {
     await verifyPredict(ctx, { ...step, answer: 'Привет, Боря' });
     expect(problems.map((problem) => problem.message)).toEqual(['ответ не совпадает с тем, что выводит программа']);
   }, PYTHON_TIMEOUT);
+
+  it('predict с файлами, базой, seed и сетью сверяется с настоящим выводом', async () => {
+    const problems: Problem[] = [];
+    const ctx = { py, lesson: fakeLesson(), stepId: 'guess', timeoutMs: 5000, problems };
+    const step = predictStep({
+      code: [
+        'import random, requests, sqlite3',
+        'print(open("menu.txt", encoding="utf-8").read().strip())',
+        'print(sqlite3.connect("shop.db").execute("SELECT COUNT(*) FROM orders").fetchone()[0])',
+        'print(random.randint(1, 6))',
+        'print(requests.get("https://api.example.com/temp", timeout=5).json()["temp"])',
+      ].join('\n'),
+      files: { 'menu.txt': 'чай\n' },
+      databases: { 'shop.db': "CREATE TABLE orders (item TEXT);\nINSERT INTO orders VALUES ('чай'), ('пирог');" },
+      seed: 7,
+      http: [{ url: 'https://api.example.com/temp', json: { temp: 12 } }],
+      answer: 'чай\n2\n3\n12',
+    });
+    await verifyPredict(ctx, step);
+    expect(problems).toEqual([]);
+    await verifyPredict(ctx, { ...step, answer: 'чай\n2\n3\n13' });
+    expect(problems.map((problem) => problem.message)).toEqual(['ответ не совпадает с тем, что выводит программа']);
+    // Без окружения того же кода файла нет — это ошибка в материалах, а не «верный ответ».
+    await verifyPredict(ctx, { ...step, files: undefined });
+    expect(problems[1]?.message).toBe('программа завершается ошибкой, а ответ записан как её вывод');
+    expect(problems[1]?.details[0]).toContain('FileNotFoundError');
+  }, PYTHON_TIMEOUT);
+
+  it('учебные файлы живут в памяти Pyodide: процесс проверки по-прежнему не пишет на диск', async () => {
+    const outcome = await py.run(`open("result.txt", "w").write("x")\nprint(open("data.txt").read())`, '', 5000, {
+      files: { 'data.txt': 'учебный' },
+    });
+    expect(outcome.status === 'done' && outcome.result.stdout).toBe('учебный\n');
+    expect(outcome.status === 'done' && outcome.result.files?.map((file) => file.path)).toEqual(['result.txt']);
+    expect(existsSync(path.join(projectRoot, 'result.txt'))).toBe(false);
+    expect(existsSync(path.join(projectRoot, 'data.txt'))).toBe(false);
+  }, PYTHON_TIMEOUT);
 });
 
 // ------------------------------------------------------------------ командная строка на фикстурах
@@ -731,6 +812,30 @@ describe('node scripts/verify-content.ts', () => {
     expect(text).toContain('задание bx-double, другое верное решение №1: верное решение не проходит проверку');
     expect(text).toContain("если это строка, нужны кавычки: 'ok'");
     expect(text).toContain('Есть ошибки');
+  }, PYTHON_TIMEOUT);
+
+  it('принимает урок-образец с файлами, модулями, базой, seed и учебной сетью', async () => {
+    const run = await runCli(['--root', 'scripts/fixtures/engine', '--json']);
+    expect(run.stderr).toBe('');
+    const report = JSON.parse(run.stdout) as VerifyReport;
+    expect(errorsOf(report)).toEqual([]);
+    expect(report.ok).toBe(true);
+    expect(run.code).toBe(0);
+    expect(report.totals).toMatchObject({ lessons: 1, exercises: 6, errors: 0, warnings: 0, pythonRestarts: 0 });
+    const lesson = report.lessons[0];
+    expect(lesson?.contentWarnings).toEqual([]);
+    // Каждое неверное решение ловится, и срабатывает именно ожидаемый разбор.
+    const matched = Object.fromEntries(
+      (lesson?.exercises ?? []).map((exercise) => [exercise.id, exercise.wrongSolutions.map((wrong) => wrong.matchedMistake)]),
+    );
+    expect(matched).toEqual({
+      'fe-bill': ['hardcoded', 'no-label', 'plus-count'],
+      'fe-total': ['header-as-data', 'no-total-file', 'no-file-check'],
+      'fe-module': ['prints-on-import', 'discount-only'],
+      'fe-weather': ['no-timeout', 'no-status-check', 'timeout-not-caught'],
+      'fe-orders': ['ascending', 'no-empty-check'],
+      'fe-dice': ['one-roll'],
+    });
   }, PYTHON_TIMEOUT);
 
   it('сообщает о ненайденном уроке кодом 1, а о неверных аргументах — кодом 2', async () => {

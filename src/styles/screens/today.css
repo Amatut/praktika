@@ -1,0 +1,576 @@
+/* Владелец: today; экран «Сегодня» (спецификация редизайна, 4.1).
+   Стартовая вкладка «Мастерской»: слева рабочая область (до 1000 px) — «Продолжить» и маршрут, справа боковая
+   панель — повторение и направления. Уже 900 px — .today-one: одна колонка, разметка уже в видимом порядке
+   (Продолжить → На повторение → Маршрут → Направления → состояние), без перестановки через order.
+   Только токены; тексты не накладываются на код и картинки; между текстовыми блоками ≥ 8 px. */
+
+.today {
+  --side-w: 400px;
+}
+
+.today-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  width: 100%;
+  max-width: 1000px;
+  padding: var(--sp-6) var(--sp-8) var(--sp-10);
+}
+
+/* Названия уроков и подписи рядов: без висячего слова и без переноса перед тире. */
+.today-names h2,
+.today .row-title,
+.today .row-sub {
+  text-wrap: pretty;
+}
+
+/* ------------------------------------------------------------ «Продолжить» */
+.today-resume {
+  container: today-resume / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.today-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-4);
+  min-height: 24px;
+}
+
+/* Минуты сегодня: подпись, шкала, значение — через 12 px. */
+.today-minutes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.today-minutes-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding-bottom: var(--sp-1);
+}
+
+.today-minutes-bar > span {
+  display: inline-flex;
+  gap: 2px;
+}
+
+/* Деления отличаются формой, а не только цветом: пустое — контур, заполненное — заливка (в обеих темах). */
+.today-minutes-bar i {
+  width: 6px;
+  height: 14px;
+  border-radius: 1px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-control);
+}
+
+.today-minutes-bar i.is-on {
+  background: var(--accent-edge);
+  box-shadow: none;
+}
+
+/* Зона цели 20–30: отделена зазором и подчёркнута. */
+.today-minutes-goal {
+  position: relative;
+}
+
+.today-minutes-goal::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+  height: 2px;
+  background: var(--line-control);
+}
+
+.today-minutes-value {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  white-space: nowrap;
+}
+
+.today-minutes-value .n {
+  font-weight: 600;
+}
+
+.today-minutes-value .n:first-child {
+  color: var(--text);
+}
+
+/* Урок: превью иллюстрации истории, адрес «0.1 · main.py», название, модуль. */
+.today-id {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.today-id.no-thumb {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.today-thumb {
+  width: 128px;
+  height: 72px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--bg-raised);
+}
+
+.today-names {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+/* Адрес — главный элемент экрана: моноширинный, с кареткой. Длинное имя файла переносится, не обрезается. */
+.today-addr {
+  margin: 0;
+  color: var(--text);
+  font: 500 var(--fs-28) / var(--lh-28) var(--font-code);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.today-addr-num {
+  color: var(--text-2);
+}
+
+.today-addr-file {
+  font-weight: 600;
+}
+
+.today-addr-sep {
+  margin: 0 0.3em;
+  color: var(--text-3);
+}
+
+.today-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  background: var(--accent-edge);
+  vertical-align: -0.12em;
+  animation: caret-blink 1s steps(1) 3s infinite;
+}
+
+.today-names h2 {
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+.today-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.today-meta a {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Конвейер шагов: строка «Шаг 7 из 10 · …» и справа длительность урока, под ними — линия узлов во всю ширину.
+   Блок FlowSteps растворяется в сетке, чтобы метка длительности стояла у строки шага, а не сжимала линию. */
+.today-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0 var(--sp-4);
+}
+
+.today-flow > .flow-home {
+  display: contents;
+}
+
+.today-flow .flow-label {
+  grid-column: 1;
+  grid-row: 1;
+  margin-bottom: var(--sp-2);
+}
+
+.today-flow .today-len {
+  grid-column: 2;
+  grid-row: 1;
+  white-space: nowrap;
+}
+
+.today-flow .flow-line,
+.today-flow .mbar-wrap {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.today-flow .mbar-wrap {
+  display: none;
+}
+
+@container today-resume (max-width: 759px) {
+  .today-flow .flow-cap {
+    display: none;
+  }
+
+  .today-flow .flow-cap + ol > li:first-child::before {
+    content: none;
+  }
+
+  .today-flow .flow-group + .flow-group::before {
+    width: 8px;
+    visibility: hidden;
+  }
+
+  .today-flow .flow-group + .flow-group > ol > li:first-child::before {
+    content: '';
+    width: 12px;
+    height: 2px;
+    flex: none;
+  }
+}
+
+@container today-resume (max-width: 519px) {
+  .today-flow .flow-line {
+    display: none;
+  }
+
+  .today-flow .mbar-wrap {
+    display: flex;
+  }
+
+  /* «Шаг 7 из 10» уже есть в подписи над полосой. */
+  .today-flow .mbar-count {
+    display: none;
+  }
+}
+
+/* Превью файла: вкладка с именем и бейдж проверки, код ученика, подвал с единственной кнопкой. */
+.today-peek {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+}
+
+.today-peek-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--sp-3);
+  min-height: 40px;
+  padding-right: var(--sp-3);
+  background: var(--bg-panel);
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+/* Бейдж проверки: на узком экране переносится под вкладку файла — с отступами, не впритык к краю и линии. */
+.today-peek-bar .badge {
+  margin: var(--sp-2) 0 var(--sp-2) var(--sp-3);
+}
+
+/* Вкладка файла сливается с кодом, как активная вкладка редактора. */
+.today-peek-tab {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--sp-2);
+  min-height: 40px;
+  padding: 0 var(--sp-4);
+  border-right: 1px solid var(--line);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-code);
+  overflow-wrap: anywhere;
+}
+
+.today-peek-tab svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.today-peek .code-block {
+  padding: var(--sp-3) 0;
+}
+
+.today-peek-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  min-height: 56px;
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  border-top: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.today-when {
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.today-go {
+  margin-left: auto;
+}
+
+/* Текущий шаг не задание: строка «Цель урока» (учебный текст) и та же кнопка — без рамки и фона. */
+.today-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3) var(--sp-6);
+}
+
+.today-goal {
+  display: grid;
+  flex: 1 1 280px;
+  gap: var(--sp-2);
+  max-width: 68ch;
+}
+
+.today-objective {
+  margin: 0;
+  color: var(--text);
+  font: 400 var(--fs-16) / var(--lh-16) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ маршрут */
+.today-route {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--line);
+}
+
+
+/* ------------------------------------------------------------ боковая панель */
+.today-side {
+  display: flex;
+  flex-direction: column;
+}
+
+.today-sec + .today-sec {
+  border-top: 1px solid var(--line);
+}
+
+.today-sec .rows .row {
+  align-items: center;
+}
+
+.today-sec .row-ic {
+  margin-block: 0;
+}
+
+/* Заголовок ряда и подпись — одна группа, но строки не слипаются. */
+.today-sec .row-main {
+  gap: var(--sp-1);
+}
+
+/* Номер урока в квадрате: «12.7» помещается. */
+.today-num {
+  width: 40px;
+}
+
+/* Пусто: та же колонка, что у рядов — значок по центру колонки 40, текст с края заголовков рядов. */
+.today-empty {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 48px;
+  margin: 0;
+  padding: var(--sp-3) var(--gutter);
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.today-empty-ic {
+  display: grid;
+  place-items: center;
+}
+
+.today-empty svg {
+  width: 16px;
+  height: 16px;
+}
+
+.today-empty + .rows {
+  border-top: 1px solid var(--line);
+}
+
+.today-short .btn {
+  flex: none;
+}
+
+/* Подпись направления и отметка интереса: в одной строке, переносятся с зазором. */
+.today-dir-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+}
+
+.today-lock {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.rows .row > svg.today-lock {
+  color: var(--text-3);
+}
+
+.today-more {
+  margin: 0;
+  padding: var(--sp-3) var(--gutter) var(--sp-5);
+  border-top: 1px solid var(--line);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.today-more a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 28px;
+}
+
+.today-more svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ------------------------------------------------------------ ноутбук и планшет в альбоме */
+@media (max-width: 1199px) {
+  .today {
+    --side-w: 340px;
+  }
+
+  .today-main {
+    padding: var(--sp-5) var(--sp-5) var(--sp-10);
+  }
+}
+
+/* ------------------------------------------------------------ телефон и планшет в портрете: одна колонка */
+.today-one {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.today-one .today-resume {
+  padding: var(--sp-4) var(--gutter) var(--sp-6);
+}
+
+.today-one .today-notice {
+  padding: 0 var(--gutter) var(--sp-6);
+}
+
+.today-one .today-route {
+  padding: var(--sp-6) var(--gutter);
+}
+
+.today-one .today-sec {
+  border-top: 1px solid var(--line);
+}
+
+/* Состояние (Python, сеть, наставник) строкой — внизу. «Без сети» уже в верхней строке — здесь не повторяется. */
+.today-status {
+  padding: var(--sp-4) var(--gutter) var(--sp-6);
+  border-top: 1px solid var(--line);
+}
+
+.today-status .sb-network.tone-warn {
+  display: none;
+}
+
+.today-one .today-meta a,
+.today-one .today-more a {
+  min-height: 44px;
+}
+
+.today-one .today-meta a {
+  display: inline-flex;
+  align-items: center;
+}
+
+.today-one .today-more {
+  padding-bottom: var(--sp-3);
+}
+
+@media (max-width: 599px) {
+  /* Превью рядом с адресом и названием, строка модуля — во всю ширину под ними. */
+  .today-id {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--sp-2) var(--sp-3);
+  }
+
+  .today-names {
+    display: contents;
+  }
+
+  .today-thumb {
+    grid-row: 1 / span 2;
+    width: 96px;
+    height: 54px;
+    margin-top: var(--sp-1);
+  }
+
+  .today-id.no-thumb .today-addr,
+  .today-id.no-thumb h2 {
+    grid-column: 1 / -1;
+  }
+
+  .today-meta {
+    grid-column: 1 / -1;
+  }
+
+  .today-addr {
+    font-size: 22px;
+    line-height: 30px;
+  }
+
+  .today-peek-foot {
+    padding: var(--sp-3);
+  }
+
+  .today-go {
+    flex: 1 1 100%;
+  }
+
+  .today-next .today-go {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 359px) {
+  .today-addr {
+    font-size: 20px;
+    line-height: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .today-caret {
+    animation: none;
+  }
+}

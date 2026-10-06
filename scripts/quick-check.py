@@ -4,18 +4,26 @@
     python scripts/quick-check.py m0-l2 m0-l3      # отдельные уроки
     python scripts/quick-check.py m1               # весь модуль
     python scripts/quick-check.py                  # все готовые уроки
+    python scripts/quick-check.py --root <папка>   # материалы, собранные в <папка>/public/content
 
 Проверяет: эталон и другие верные решения (altSolutions) проходят все тесты и правила,
 стартовый код не проходит, каждое неверное решение проваливает хотя бы одну проверку, прогнозы совпадают
-с настоящим выводом, примеры выполняются без ошибок.
+с настоящим выводом, примеры выполняются без ошибок. Всё запускается с окружением из материалов:
+учебные файлы, базы SQLite, seed и ответы сети (requests всегда учебный — настоящей сети нет).
 Главная проверка материалов — npm run verify:content (настоящий Pyodide);
 этот скрипт нужен для быстрой самопроверки при написании уроков.
+
+Каждый запуск — отдельный процесс Python в режиме UTF-8 (как Pyodide: open() без encoding читает
+UTF-8, а не кодировку Windows). Рабочие папки запусков лежат во временной папке, которую скрипт удаляет
+сам — даже если программа зависла и процесс пришлось завершить.
 """
 
 import json
 import multiprocessing as mp
+import os
 import runpy
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,24 +31,40 @@ HARNESS = ROOT / "src" / "runner" / "harness.py"
 TIMEOUT = 8
 
 
-def _worker(kind, payload, queue):
+ENVIRONMENT_FIELDS = ("files", "databases", "seed", "http")
+
+
+def _worker(kind, payload, queue, temp_root):
+    # Рабочие папки harness.py (tempfile.mkdtemp) — внутри temp_root, её удаляет основной процесс.
+    tempfile.tempdir = temp_root
     harness = runpy.run_path(str(HARNESS))
     if kind == "check":
         queue.put(harness["check_program"](json.dumps(payload)))
     else:
-        queue.put(harness["run_program"](payload["code"], payload.get("stdin", "")))
+        environment = payload.get("environment")
+        queue.put(harness["run_program"](payload["code"], payload.get("stdin", ""), 20_000,
+                                         json.dumps(environment) if environment else None))
 
 
 def execute(kind, payload):
     queue = mp.Queue()
-    process = mp.Process(target=_worker, args=(kind, payload, queue))
-    process.start()
-    process.join(TIMEOUT)
-    if process.is_alive():
-        process.terminate()
-        process.join()
-        return None
-    return json.loads(queue.get()) if not queue.empty() else None
+    with tempfile.TemporaryDirectory(prefix="quick-check-", ignore_cleanup_errors=True) as temp_root:
+        process = mp.Process(target=_worker, args=(kind, payload, queue, temp_root))
+        process.start()
+        process.join(TIMEOUT)
+        if process.is_alive():
+            process.terminate()
+            process.join()
+            return None
+        return json.loads(queue.get()) if not queue.empty() else None
+
+
+def environment_of(source, filename=None):
+    """Окружение запуска из задания или шага: учебные файлы, базы, seed, ответы сети."""
+    environment = {field: source[field] for field in ENVIRONMENT_FIELDS if source.get(field) is not None}
+    if filename:
+        environment["filename"] = filename
+    return environment
 
 
 def passed(result):
@@ -78,14 +102,22 @@ def normalize(text):
 
 
 def main():
-    course = json.loads((ROOT / "public" / "content" / "course.json").read_text(encoding="utf-8"))
-    wanted = set(sys.argv[1:])
+    args = sys.argv[1:]
+    public = ROOT / "public"
+    if "--root" in args:
+        index = args.index("--root")
+        if index + 1 >= len(args):
+            sys.exit("--root: укажи папку, в которой лежит public/content")
+        public = Path(args[index + 1]).resolve() / "public"
+        del args[index:index + 2]
+    course = json.loads((public / "content" / "course.json").read_text(encoding="utf-8"))
+    wanted = set(args)
     problems = 0
     checked = 0
     for module in course["modules"]:
         if not module.get("file"):
             continue
-        data = json.loads((ROOT / "public" / module["file"]).read_text(encoding="utf-8"))
+        data = json.loads((public / module["file"]).read_text(encoding="utf-8"))
         for lesson in data["lessons"]:
             if wanted and lesson["id"] not in wanted and module["id"] not in wanted:
                 continue
@@ -93,7 +125,8 @@ def main():
             for step in lesson["steps"]:
                 if step["type"] == "exercise":
                     exercise = step["exercise"]
-                    base = {"tests": exercise["tests"], "rules": exercise.get("rules", [])}
+                    base = {"tests": exercise["tests"], "rules": exercise.get("rules", []),
+                            **environment_of(exercise, exercise.get("filename"))}
                     checked += 1
                     solution = execute("check", dict(base, code=exercise["solution"]["code"]))
                     if not passed(solution):
@@ -118,7 +151,8 @@ def main():
                         else:
                             print("    · неверное {} ({}): {}".format(index, wrong["note"], describe(result)))
                 elif step["type"] == "predict":
-                    result = execute("run", {"code": step["code"], "stdin": step.get("stdin", "")})
+                    result = execute("run", {"code": step["code"], "stdin": step.get("stdin", ""),
+                                             "environment": environment_of(step)})
                     if result is None:
                         problems += 1
                         print("  ✗ прогноз {}: код не завершился".format(step["id"]))
@@ -133,7 +167,8 @@ def main():
                         error = (result.get("compileError") or result.get("error") or {}).get("summary")
                         print("  · прогноз {} (не вывод): {}".format(step["id"], error or normalize(result.get("stdout", ""))))
                 elif step["type"] == "example":
-                    result = execute("run", {"code": step["code"], "stdin": step.get("stdin", "")})
+                    result = execute("run", {"code": step["code"], "stdin": step.get("stdin", ""),
+                                             "environment": environment_of(step)})
                     if result is None or result.get("compileError") or result.get("error"):
                         problems += 1
                         print("  ✗ пример {} падает: {}".format(step["id"], describe(result) if result and result.get("compileError") else (result or {}).get("error")))
@@ -145,4 +180,6 @@ def main():
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
+    # Дочерние процессы наследуют окружение: Python в них запускается в режиме UTF-8.
+    os.environ["PYTHONUTF8"] = "1"
     main()

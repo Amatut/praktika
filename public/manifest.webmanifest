@@ -8,8 +8,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#111318",
-  "theme_color": "#5B50D6",
+  "background_color": "#1a1815",
+  "theme_color": "#110f0d",
   "categories": ["education", "developer"],
   "icons": [
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },

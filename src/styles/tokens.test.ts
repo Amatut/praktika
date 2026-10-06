@@ -1,5 +1,7 @@
-// Контраст пар токенов из tokens.css в обеих темах: текст — не ниже 4.5:1 (WCAG 1.4.3),
-// границы полей ввода, кружки вариантов и акцент выбранного элемента — не ниже 3:1 (WCAG 1.4.11).
+// Контраст пар токенов из tokens.css в обеих темах — правило «текст не сливается с фоном»:
+// основной текст ≥ 10:1, вторичный ≥ 7:1, третичный (номера строк, короткие метки) ≥ 4.5:1,
+// цветные статусы и текст на цветных подложках ≥ 6:1, подсветка кода ≥ 6:1, комментарии в коде ≥ 4.5:1,
+// не-текст (рамки контролов, кольцо фокуса, каретка) ≥ 3:1 (WCAG 1.4.11). Формула — WCAG 2.x.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -31,41 +33,87 @@ const light = tokens(':root {');
 const darkMedia = tokens(":root:not([data-theme='light'])");
 const dark = { ...light, ...tokens(":root[data-theme='dark']") };
 
-const TEXT_PAIRS: [string, string][] = [
-  ...['text', 'muted', 'accent-text', 'good', 'error', 'warn'].flatMap((fg): [string, string][] =>
-    ['surface', 'surface-2', 'bg'].map((bg): [string, string] => [fg, bg]),
-  ),
-  ['accent-text', 'accent-soft'],
-  ['good', 'good-soft'],
-  ['error', 'error-soft'],
-  ['warn', 'warn-soft'],
-  ['on-accent', 'accent'],
-  ['text', 'surface-hover'],
+/** Нейтральные фоны, на которых стоит текст интерфейса. */
+const SURFACES = ['bg-chrome', 'bg-panel', 'bg-editor', 'bg-raised', 'bg-sunken', 'bg-line'];
+/** Код никогда не стоит на --bg-chrome (заголовок окна, полосы) — эти пары не проверяются. */
+const CODE_SURFACES = ['bg-panel', 'bg-editor', 'bg-raised', 'bg-sunken', 'bg-line', 'err-line-bg'];
+
+type Pair = [fg: string, bg: string, min: number];
+
+const PAIRS: Pair[] = [
+  // Текст интерфейса и цветные статусы на нейтральных фонах
+  ...SURFACES.flatMap((bg): Pair[] => [
+    ['text', bg, 10],
+    ['text-2', bg, 7],
+    ['text-3', bg, 4.5],
+    ['err', bg, 6],
+    ['ok', bg, 6],
+    ['warn', bg, 6],
+    ['accent-text', bg, 6],
+  ]),
+  // Подсветка кода
+  ...CODE_SURFACES.flatMap((bg): Pair[] => [
+    ['syn-fn', bg, 6],
+    ['syn-str', bg, 6],
+    ['syn-num', bg, 6],
+    ['syn-kw', bg, 6],
+    ['syn-op', bg, 6],
+    ['syn-com', bg, 4.5],
+    ['text', bg, 10],
+  ]),
+  // Цветные подложки: тон подложки и обычный текст на ней
+  ['accent-ink', 'accent', 7],
+  ['accent-ink', 'accent-hover', 7],
+  ['err', 'err-soft', 6],
+  ['ok', 'ok-soft', 6],
+  ['warn', 'warn-soft', 6],
+  ['accent-text', 'accent-soft', 6],
+  ['text', 'accent-soft', 10],
+  ['text', 'err-soft', 10],
+  ['text', 'ok-soft', 10],
+  ['text', 'warn-soft', 10],
+  ['text-2', 'accent-soft', 7],
+  ['text-2', 'err-soft', 7],
+  ['text-2', 'ok-soft', 7],
+  ['text-2', 'warn-soft', 7],
+  ['text', 'selection', 7],
 ];
 
-const CONTROL_PAIRS: [string, string][] = [
-  ['border-control', 'surface'],
-  ['border-control', 'surface-2'],
-  ['border-control', 'bg'],
-  ['accent', 'surface'],
-];
+/** Не-текст: рамки контролов и узлов, кольцо фокуса, каретка и черта активного — ≥ 3:1 к любому фону. */
+const NON_TEXT: Pair[] = SURFACES.flatMap((bg): Pair[] => [
+  ['line-control', bg, 3],
+  ['focus', bg, 3],
+  ['accent-edge', bg, 3],
+]);
 
 describe.each([
   ['светлая', light],
   ['тёмная', dark],
 ])('тема %s', (_name, theme) => {
-  it.each(TEXT_PAIRS)('текст --%s на --%s — не ниже 4.5:1', (fg, bg) => {
+  it.each(PAIRS)('текст --%s на --%s — не ниже %s:1', (fg, bg, min) => {
     expect(theme[fg], fg).toBeDefined();
     expect(theme[bg], bg).toBeDefined();
-    expect(contrast(theme[fg], theme[bg])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(theme[fg], theme[bg])).toBeGreaterThanOrEqual(min);
   });
 
-  it.each(CONTROL_PAIRS)('граница --%s на --%s — не ниже 3:1', (fg, bg) => {
+  it.each(NON_TEXT)('--%s на --%s — не ниже %s:1', (fg, bg, min) => {
     expect(theme[fg], fg).toBeDefined();
-    expect(contrast(theme[fg], theme[bg])).toBeGreaterThanOrEqual(3);
+    expect(theme[bg], bg).toBeDefined();
+    expect(contrast(theme[fg], theme[bg])).toBeGreaterThanOrEqual(min);
+  });
+
+  it('поверхности различимы: хром, панель и редактор — разные цвета', () => {
+    const surfaces = new Set(['bg-chrome', 'bg-panel', 'bg-editor', 'bg-sunken'].map((name) => theme[name]));
+    expect(surfaces.size).toBe(4);
   });
 });
 
 it('тёмная тема одинакова для системной настройки и явного выбора', () => {
   expect(darkMedia).toEqual(tokens(":root[data-theme='dark']"));
+  expect(Object.keys(darkMedia).length).toBeGreaterThan(30);
+});
+
+it('у каждого цветового токена дневной темы есть значение в тёмной', () => {
+  const missing = Object.keys(light).filter((name) => !(name in darkMedia));
+  expect(missing).toEqual([]);
 });

@@ -22,3 +22,7 @@ Thumbs.db
 # Служебное: настройки локальных инструментов и кеш Python
 .claude/
 __pycache__/
+
+# Аудит читаемости (scripts/ui-audit.ts)
+screenshots/audit*/
+screenshots/ui-audit.json

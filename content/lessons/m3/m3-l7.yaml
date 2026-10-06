@@ -1,0 +1,1747 @@
+id: m3-l7
+module: m3
+number: "3.7"
+title: "Самостоятельная работа: тренажёр таблицы умножения"
+objective: >-
+  Самостоятельно написать программу с циклом, счётчиками, случайными числами и досрочным
+  выходом и по трассировке найти ошибку на единицу в чужом цикле.
+minutes: [20, 30]
+prerequisites: [m3-l6]
+skills: [for-range, accumulators, loop-control, import-basics, while-loops, loop-tracing]
+environment: python
+
+story:
+  title: Карточки на холодильнике
+  fictional: true
+  text: >-
+    Младшая сестра Тимура, третьеклассница Соня, учит таблицу умножения по карточкам: они висят
+    на холодильнике, и каждый вечер мама снимает их по одной и спрашивает. Карточки теряются, мама
+    устаёт, а верные ответы считают на пальцах и сбиваются. Тимур — тот самый, что копил на
+    велосипед, — после темы про циклы написал тренажёр: компьютер сам придумывает пример,
+    проверяет ответ и в конце говорит, сколько было верных. Сегодня ты напишешь такой тренажёр
+    сам — от пустого файла до зелёной проверки.
+
+why: >-
+  Самостоятельная работа показывает, что уже получается без подсказок: повторить действие нужное
+  число раз, досрочно выйти из цикла, посчитать итог и взять случайные числа. Из таких частей
+  собирают тренажёры, викторины и простые игры.
+
+usedIn: >-
+  Обучающие приложения и тренажёры, викторины, игры с раундами и счётом. Каркас «N раундов, счёт
+  и досрочный выход» пригодится в проекте «Калькулятор или консольная викторина» после модуля 4.
+
+steps:
+  - id: reminder
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа — финиш модуля «Циклы». Главную программу ты пишешь с нуля,
+      а во второй задаче ищешь ошибки в чужом цикле. Подсказки в обоих заданиях откроются только
+      после первой проверки. Это не запрет на помощь — просто сначала попробуй сам.
+
+      Всё нужное ты уже знаешь:
+
+      - `while условие:` повторяет тело, пока условие верно. Внутри должно меняться то, от чего
+        условие зависит, иначе цикл не кончится.
+      - `for i in range(a, b):` перебирает a, a + 1, …, b − 1 — правая граница не входит. Чтобы
+        дойти до n включительно, пиши `range(1, n + 1)`.
+      - Счётчик и накопитель: начальное значение — до цикла, обновление — внутри, итог — после.
+      - `break` сразу выходит из цикла, `continue` пропускает остаток шага и переходит к
+        следующему.
+      - Слово из ввода сравнивают как строку: `answer == "стоп"`. А `int("стоп")` — это
+        ValueError.
+      - `import random` пишут в начале программы. `random.randint(a, b)` даёт целое число от a до
+        b, **обе границы входят**. В проверке каждый тест задаёт зерно, поэтому «случайные» числа
+        в нём всегда одни и те же. С примером они совпадут, если вызывать `randint` столько раз и
+        в том порядке, как сказано в условии. Сам `random.seed` не вызывай.
+      - Ошибка на единицу прячется на первом и последнем шаге цикла. Трассировочная таблица её
+        показывает.
+
+      Как работать над заданием:
+
+      1. Прочитай условие и примеры: что приходит на вход, что печатается и в каком порядке.
+      2. Составь план: что делается до цикла, что повторяется на каждом шаге, что печатается
+         после.
+      3. Нажми «Запустить». В поле «Ввод для „Запустить“» уже стоит ввод из первого примера, и
+         случайные числа будут те же, что в нём. Сравни вывод с примером построчно.
+      4. Когда вывод совпал — нажми «Проверить».
+
+      Если на вторую задачу не осталось сил, вернись к ней завтра — это нормально.
+    simpler: >-
+      Нового материала сегодня нет. Собери из знакомых частей — цикла, счётчиков, break и random —
+      одну программу. Сначала план «до цикла / в цикле / после», потом код, потом «Запустить» с
+      вводом из примера.
+    coach: >-
+      Ошибиться на первой попытке нормально. Самостоятельная работа показывает, что уже
+      получается само, а что стоит повторить.
+
+  - id: warmup
+    type: predict
+    title: Разминка
+    prompt: >-
+      Разомнись на трассировке: сколько раз выполнится тело цикла и что останется в `n` после
+      него? Как думаешь, что выведет программа?
+    code: |-
+      count = 0
+      for n in range(10, 0, -3):
+          count = count + 1
+      print(count, n)
+    options:
+      - "3 1"
+      - "4 1"
+      - "4 -2"
+    answer: "4 1"
+    explanation: |-
+      Выпиши шаги в таблицу:
+
+      ```text
+      шаг   n    count
+      1     10   1
+      2     7    2
+      3     4    3
+      4     1    4
+      ```
+
+      Следующим было бы -2, но оно уже за границей 0, и range его не выдаёт. Тело выполнилось
+      4 раза. После цикла в переменной цикла остаётся последнее значение, которое она получила, то
+      есть 1. Ответ «4 -2» — привычка от while: там ты сам вычисляешь следующее значение, и после
+      цикла в переменной лежит первое, при котором условие ложно. Ответ «3 1» — ловушка из
+      правила забора: от 10 до 1 три промежутка по 3, а значений, на которых выполняется тело, на
+      одно больше — четыре.
+    coach: >-
+      Сначала первое и последнее значение, потом количество шагов — так проверяется любой range.
+
+  - id: plan
+    type: order
+    title: "План: сколько шестёрок"
+    prompt: >-
+      Перед большой задачей разложи на шаги задачу поменьше. Программа бросает кубик n раз и
+      считает, сколько раз выпала шестёрка. Расставь действия программы по порядку.
+    items:
+      - id: import
+        text: Подключить модуль random
+      - id: read
+        text: Прочитать n — сколько раз бросать кубик
+      - id: counter
+        text: Завести счётчик шестёрок и положить в него 0
+      - id: loop
+        text: "Повторить n раз то, что ниже:"
+      - id: roll
+        text: "…бросить кубик: random.randint(1, 6)"
+      - id: check
+        text: …если выпала шестёрка — прибавить 1 к счётчику
+      - id: show
+        text: После цикла вывести счётчик
+    before:
+      - [import, loop]
+      - [read, loop]
+      - [counter, loop]
+      - [loop, roll]
+      - [roll, check]
+      - [check, show]
+    explanation: >-
+      Модуль подключают до первого использования — обычно самой первой строкой. Число n и
+      счётчик нужны до цикла: range берёт n, а счётчик должен появиться один раз и не обнуляться
+      на каждом шаге. Между собой их можно поменять местами. Бросок и проверка — внутри цикла,
+      именно в таком порядке: проверить можно только то, что уже выпало. Итог печатается один
+      раз, после цикла.
+    coach: >-
+      Разложи так же и тренажёр: что до цикла, что повторяется для каждого вопроса, что после.
+
+  - id: main-task
+    type: exercise
+    title: Самостоятельная работа
+    exercise:
+      id: m3-l7-e1
+      kind: write
+      title: Тренажёр таблицы умножения
+      statement: |-
+        Напиши тренажёр таблицы умножения для Сони.
+
+        Программа читает n — сколько вопросов задать. Для каждого вопроса она берёт два
+        множителя — `random.randint(2, 9)`, сначала первый, потом второй, — печатает вопрос и
+        читает ответ:
+
+        - если ответ — `стоп`, тренировка сразу заканчивается, а этот вопрос не считается;
+        - если ответ верный — печатает `Верно!`;
+        - если неверный — `Неверно, правильно: <произведение>`.
+
+        В конце — строка `Правильных ответов: X из Y`, где Y — сколько вопросов получили ответ
+        («стоп» не в счёт). Начало вывода выглядит так:
+
+        ```text
+        Вопрос 1: 4 * 3 = ?
+        Верно!
+        Вопрос 2: 6 * 3 = ?
+        Неверно, правильно: 18
+        ```
+
+        Зерно для случайных чисел задаёт проверка, поэтому вопросы в примерах проверки всегда
+        одни и те же. «Запустить» использует те же числа, что «Пример 1».
+      input: >-
+        Первая строка — n, сколько вопросов (от 0 до 20). Дальше по строке на каждый вопрос: ответ
+        — целое число или слово `стоп` (точно так, маленькими буквами).
+      output: >-
+        Для каждого вопроса — строка `Вопрос k: a * b = ?`, затем `Верно!` или `Неверно, правильно:
+        <произведение>`. В конце — `Правильных ответов: X из Y`.
+      constraints:
+        - "На каждый вопрос — два вызова `random.randint(2, 9)`: сначала первый множитель, потом второй. Сам `random.seed` не вызывай — зерно задаёт проверка."
+        - Вопрос печатай через `print`, а ответ читай отдельным `input()` — текст внутри `input(...)` в проверку не попадает.
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+      seed: 1
+      starterCode: |
+        # Тренажёр таблицы умножения
+        # Ввод: n — сколько вопросов, дальше ответы (числа или «стоп»)
+        # Множители: два вызова random.randint от 2 до 9 — сначала первый, потом второй
+
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreBlankLines: true, ignoreSpaces: true }
+          title: Пример 1
+          example: true
+          seed: 1
+          stdin: "3\n12\n17\n81\n"
+          expected: |-
+            Вопрос 1: 4 * 3 = ?
+            Верно!
+            Вопрос 2: 6 * 3 = ?
+            Неверно, правильно: 18
+            Вопрос 3: 9 * 9 = ?
+            Верно!
+            Правильных ответов: 2 из 3
+        - id: t2
+          kind: io
+          compare: { ignoreBlankLines: true, ignoreSpaces: true }
+          title: "Пример 2: «стоп» на втором вопросе"
+          example: true
+          seed: 3
+          stdin: "2\n20\nстоп\n"
+          expected: |-
+            Вопрос 1: 5 * 4 = ?
+            Верно!
+            Вопрос 2: 7 * 9 = ?
+            Правильных ответов: 1 из 1
+        - id: t3
+          kind: io
+          compare: { ignoreBlankLines: true, ignoreSpaces: true }
+          title: Все ответы верные
+          seed: 4
+          stdin: "4\n30\n24\n36\n9\n"
+          expected: |-
+            Вопрос 1: 5 * 6 = ?
+            Верно!
+            Вопрос 2: 3 * 8 = ?
+            Верно!
+            Вопрос 3: 9 * 4 = ?
+            Верно!
+            Вопрос 4: 3 * 3 = ?
+            Верно!
+            Правильных ответов: 4 из 4
+        - id: t4
+          kind: io
+          compare: { ignoreBlankLines: true, ignoreSpaces: true }
+          title: "Граничный случай: ноль вопросов"
+          edge: true
+          seed: 5
+          stdin: "0\n"
+          expected: "Правильных ответов: 0 из 0"
+        - id: t5
+          kind: io
+          compare: { ignoreBlankLines: true, ignoreSpaces: true }
+          title: "Граничный случай: «стоп» на первом вопросе"
+          edge: true
+          seed: 7
+          stdin: "5\nстоп\n"
+          expected: |-
+            Вопрос 1: 7 * 4 = ?
+            Правильных ответов: 0 из 0
+        - id: t6
+          kind: io
+          compare: { ignoreBlankLines: true, ignoreSpaces: true }
+          title: Неверный ответ на последний вопрос
+          seed: 7
+          stdin: "3\n28\n16\n10\n"
+          expected: |-
+            Вопрос 1: 7 * 4 = ?
+            Верно!
+            Вопрос 2: 8 * 2 = ?
+            Верно!
+            Вопрос 3: 3 * 3 = ?
+            Неверно, правильно: 9
+            Правильных ответов: 2 из 3
+        - id: t7
+          kind: io
+          compare: { ignoreBlankLines: true, ignoreSpaces: true }
+          title: "Граничный случай: один вопрос"
+          edge: true
+          seed: 56
+          stdin: "1\n18\n"
+          expected: |-
+            Вопрос 1: 2 * 9 = ?
+            Верно!
+            Правильных ответов: 1 из 1
+      criteria:
+        - "Вопросы нумеруются с 1, на каждый — два вызова `random.randint(2, 9)`: сначала первый множитель, потом второй."
+        - Вопрос печатается через `print`, ответ читается отдельным `input()`.
+        - «Стоп» проверяется до превращения ответа в число и сразу заканчивает тренировку; этот вопрос не считается.
+        - "Итог «X из Y» печатается один раз, после цикла; Y — число вопросов, на которые дан ответ."
+        - n = 0 и «стоп» на первом вопросе не ломают программу.
+      hints:
+        - >-
+          Разложи программу на три части, как в плане с шестёрками: что делается один раз до
+          цикла, что повторяется для каждого вопроса и что печатается один раз после. И реши, в
+          какой момент проверять «стоп» — до превращения ответа в число или после?
+        - |-
+          Тот же приём на другой задаче. Пункт выдачи принимает не больше 5 заказов; слово
+          «хватит» заканчивает приём, а считаются только принятые заказы:
+
+          ```python
+          orders = 0
+          for i in range(1, 6):
+              line = input()
+              if line == "хватит":
+                  break
+              orders = orders + 1
+              print(f"Заказ {i}: {int(line)} шт.")
+          print(f"Принято заказов: {orders}")
+          ```
+
+          Слово проверяется раньше, чем `int()`, а счётчик растёт уже после проверки — туда
+          `break` не пускает.
+        - |-
+          Каркас:
+
+          ```text
+          import random
+          n = …
+          asked = 0
+          correct = 0
+          for question in range(1, n + 1):
+              a = …   (первый вызов random.randint(2, 9))
+              b = …   (второй вызов)
+              print(f"Вопрос {question}: …")
+              answer = input()
+              если answer == "стоп" → break
+              asked увеличить на 1
+              если int(answer) равно a * b → «Верно!» и correct + 1
+              иначе → f"Неверно, правильно: {…}"
+          после цикла: print(f"Правильных ответов: {correct} из {asked}")
+          ```
+      solution:
+        code: |
+          import random
+
+          n = int(input())
+          asked = 0
+          correct = 0
+          for question in range(1, n + 1):
+              a = random.randint(2, 9)
+              b = random.randint(2, 9)
+              print(f"Вопрос {question}: {a} * {b} = ?")
+              answer = input()
+              if answer == "стоп":
+                  break
+              asked = asked + 1
+              if int(answer) == a * b:
+                  print("Верно!")
+                  correct = correct + 1
+              else:
+                  print(f"Неверно, правильно: {a * b}")
+          print(f"Правильных ответов: {correct} из {asked}")
+        explanation: >-
+          Число вопросов известно заранее, поэтому здесь цикл `for` с `range(1, n + 1)`: номера
+          сразу идут с 1, а при n = 0 тело не выполнится ни разу. Множители сохраняются в `a` и
+          `b`: они нужны дважды — в вопросе и в проверке. Ответ сначала сравнивается со словом
+          «стоп» как строка и только потом превращается в число. Счётчик `asked` растёт после
+          проверки на «стоп», поэтому вопрос со «стоп» в итог не попадает. Итог печатается один
+          раз, после цикла.
+      altSolutions:
+        - code: |
+            import random
+
+            n = int(input())
+            question = 1
+            asked = 0
+            correct = 0
+            while question <= n:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked += 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct += 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                question += 1
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: while со счётчиком вопросов и +=.
+        - code: |
+            from random import randint
+
+            n = int(input())
+            correct = 0
+            wrong = 0
+            for i in range(n):
+                a = randint(2, 9)
+                b = randint(2, 9)
+                right = a * b
+                print(f"Вопрос {i + 1}: {a} * {b} = ?")
+                answer = input("Ответ: ")
+                if answer == "стоп":
+                    break
+                if int(answer) == right:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {right}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct} из {correct + wrong}")
+          note: from random import randint, range(n) с номером i + 1, Y как сумма верных и неверных, подсказка в input().
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print("Вопрос", str(question) + ":", a, "*", b, "= ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked += 1
+                if answer == str(a * b):
+                    print("Верно!")
+                    correct += 1
+                else:
+                    print("Неверно, правильно:", a * b)
+            print("Правильных ответов:", correct, "из", asked)
+          note: Сравнение строк через str(a * b) и print через запятую вместо f-строк.
+        - code: |
+            # Тренажёр таблицы умножения
+            # Ввод: n — сколько вопросов, дальше ответы (числа или «стоп»)
+            # Множители: два вызова random.randint от 2 до 9 — сначала первый, потом второй
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer != "стоп":
+                    asked = asked + 1
+                    if int(answer) == a * b:
+                        print("Верно!")
+                        correct = correct + 1
+                    else:
+                        print(f"Неверно, правильно: {a * b}")
+                    print()
+                else:
+                    break
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Стартовые комментарии оставлены, проверка != "стоп" с break в else, пустая строка print() после каждого ответа.
+        - code: |
+            import random
+
+            n = int(input())
+            asked = n
+            correct = 0
+            for q in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {q}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    asked = q - 1
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Y сначала равно n, а при «стоп» — номер вопроса минус 1; переменная цикла читается только внутри цикла, поэтому n = 0 не ломает программу.
+      wrongSolutions:
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = int(input())
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if answer == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: int() сразу при вводе — «стоп» падает с ValueError.
+          expectMistake: int-before-stop
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    continue
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: continue вместо break — после «стоп» цикл идёт дальше и просит ввод, которого нет.
+          expectMistake: stop-continues
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                if input() == "стоп":
+                    break
+                answer = int(input())
+                asked = asked + 1
+                if answer == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Два input() на один вопрос — ввод кончается раньше вопросов.
+          expectMistake: extra-input
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                answer = input(f"Вопрос {question}: {a} * {b} = ? ")
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Вопрос спрятан в подсказку input() — в выводе его нет.
+          expectMistake: question-in-input
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 10)
+                b = random.randint(2, 10)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: randint(2, 10) — граница записана «как у range», числа другие.
+          expectMistake: bounds
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                print(f"Вопрос {question}: {random.randint(2, 9)} * {random.randint(2, 9)} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                right = random.randint(2, 9) * random.randint(2, 9)
+                if int(answer) == right:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {right}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Множители не сохранены — для проверки randint вызывается ещё раз, числа другие.
+          expectMistake: extra-randint
+        - code: |
+            # Тренажёр таблицы умножения
+            # Ввод: n — сколько вопросов, дальше ответы (числа или «стоп»)
+            # Множители: два вызова random.randint от 2 до 9 — сначала первый, потом второй
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(n):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Стартовые комментарии оставлены; range(n) — нумерация с нуля.
+          expectMistake: from-zero
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if answer == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Строка сравнивается с числом — любой ответ «неверный».
+          expectMistake: no-int
+        - code: |
+            # Тренажёр таблицы умножения
+            # Множители: random.randint(2, 9) — сначала первый, потом второй
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                print(f"Правильных ответов: {correct} из {asked}")
+          note: Итог внутри цикла — печатается после каждого вопроса. Сверху комментарий с randint( — вместе с двумя вызовами три вхождения, extra-randint срабатывать не должен.
+          expectMistake: total-inside
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            for question in range(1, n + 1):
+                correct = 0
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Счётчик верных обнуляется на каждом вопросе.
+          expectMistake: reset-inside
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: range(1, n) — последнего вопроса нет.
+          expectMistake: one-short
+        - code: |
+            import random
+
+            n = int(input())
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {n}")
+          note: В итоге n вместо числа отвеченных — вопрос со «стоп» посчитан.
+          expectMistake: stop-counted
+        - code: |
+            import random
+
+            n = int(input())
+            correct = 0
+            for i in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {i}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {i}")
+          note: Y — номер вопроса из переменной цикла (приём из 3.4) — вопрос со «стоп» посчитан.
+          expectMistake: stop-counted
+        - code: |
+            import random
+
+            n = int(input())
+            correct = 0
+            for i in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {i}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    i = i - 1
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {i}")
+          note: Y из переменной цикла, при «стоп» i - 1 — при n = 0 переменная цикла не получает значения, NameError.
+          expectMistake: loop-var-empty
+        - code: |
+            import random
+
+            random.seed(1)
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Свой random.seed(1), чтобы числа совпали с примером, — в остальных тестах вопросы не те.
+          expectMistake: own-seed
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 10)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Граница «как у range» только у первого множителя — ловит граничный случай «один вопрос».
+          expectMistake: bounds
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(n):
+                # a = random.randint(1, 10)
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: range(n); старая строка с randint(1, 10) закомментирована — ни bounds, ни extra-randint срабатывать не должны.
+          expectMistake: from-zero
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == стоп:
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: «стоп» без кавычек — NameError; общий разбор «Текст без кавычек?» точнее, чем int-before-stop.
+          expectMistake: null
+        - code: |
+            import random
+
+            n = int(input())
+            question = 0
+            asked = 0
+            correct = 0
+            while question <= n:
+                question += 1
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked += 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct += 1
+                    continue
+                print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: while с лишним вопросом; continue после «Верно!» законный — stop-continues срабатывать не должен.
+          expectMistake: extra-input
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            a = random.randint(2, 9)
+            b = random.randint(2, 9)
+            for question in range(1, n + 1):
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Множители выбраны до цикла — все вопросы одинаковые.
+          expectMistake: roll-once
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                correct = correct + 1
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Счётчик верных растёт после if/else — за любой ответ.
+          expectMistake: correct-always
+        - code: |
+            import random
+
+            n = int(input())
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    print(f"Правильных ответов: {correct} из {asked}")
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: Итог печатается и в ветке «стоп», и после цикла — при «стоп» дважды.
+          expectMistake: total-twice
+        - code: |
+            import random
+
+            n = input()
+            asked = 0
+            correct = 0
+            for question in range(1, n + 1):
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                asked = asked + 1
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+            print(f"Правильных ответов: {correct} из {asked}")
+          note: n = input() без int — TypeError в range ещё до первого вопроса.
+          expectMistake: n-text
+      mistakes:
+        - id: own-seed
+          when:
+            codeRegex: '^[^#\n]*\bseed\s*\('
+          where: Строка с `random.seed`
+          why: >-
+            Зерно уже задаёт проверка, в каждом тесте своё. Твой `random.seed(...)` заменяет его:
+            во всех тестах выпадают те же числа, что в «Примере 1», а ответы в остальных тестах
+            рассчитаны на другие вопросы.
+          try: >-
+            Удали строку с `random.seed`. «Запустить» и без неё берёт числа «Примера 1».
+          verify: "«Пример 2» начинается с «Вопрос 1: 5 * 4 = ?»."
+        - id: int-before-stop
+          when:
+            errorType: ValueError
+            errorIncludes: "'стоп'"
+          where: Строка, где ответ превращается в число
+          why: >-
+            Слово «стоп» попало в `int()`, а превратить его в число нельзя — отсюда ValueError.
+            Значит, проверка на «стоп» не сработала: её нет, она стоит после `int()` или слово в
+            ней записано иначе, чем во вводе.
+          try: >-
+            Прочитай ответ как строку и сначала сравни его с `"стоп"` — точно так, маленькими
+            буквами. Только если это не «стоп», вызывай `int(answer)`.
+          verify: "«Пример 2» не падает и заканчивается строкой «Правильных ответов: 1 из 1»."
+        - id: stop-continues
+          when:
+            errorType: EOFError
+            codeRegex: 'стоп["''][^\n]*:\s*continue\b'
+          where: Ветка, где проверяется «стоп»
+          why: >-
+            После «стоп» стоит `continue`: он пропускает только остаток шага, и цикл задаёт
+            следующий вопрос. Ввода больше нет, поэтому `input()` падает с EOFError.
+          try: «Стоп» заканчивает всю тренировку — для выхода из цикла нужен `break`.
+          verify: "В граничном случае со «стоп» на первом вопросе после вопроса сразу идёт «Правильных ответов: 0 из 0»."
+        - id: extra-input
+          when:
+            errorType: EOFError
+          why: >-
+            Программа ждёт строку ввода, которой уже нет, — EOFError. Значит, `input()`
+            вызывается больше раз, чем строк во вводе: цикл делает лишний шаг или на один вопрос
+            читаются две строки.
+          try: >-
+            Посчитай вызовы `input()`: один — для n и ровно один — на каждый вопрос. Ответ
+            прочитай один раз в переменную и дальше работай с ней. Проверь и сам цикл: вопросов
+            ровно n — у `range` конец `n + 1`, у `while` сверь условие с тем, где растёт номер.
+          verify: "«Пример 1» проходит без ошибки: три вопроса и итог."
+        - id: n-text
+          when:
+            errorType: TypeError
+            outputEquals: ""
+          where: Строка, где читается n
+          why: >-
+            Программа упала ещё до первого вопроса: n осталось строкой. `input()` всегда
+            возвращает текст, а `range` нужно целое число.
+          try: Преврати ввод в число сразу при чтении — `n = int(input())`.
+          verify: "«Пример 1» печатает три вопроса и итог."
+        - id: question-in-input
+          when:
+            failedTest: t1
+            codeRegex: 'input\(\s*f?["'']Вопрос'
+          where: Строка с `input(...)`
+          why: >-
+            Вопрос стоит внутри `input(...)`. Текст в скобках `input(...)` — подсказка для
+            человека, в проверку он не входит: сравнивается только то, что напечатал `print`.
+            Поэтому строк «Вопрос …» проверка не видит.
+          try: Напечатай вопрос отдельным `print(...)`, а ответ читай пустым `input()`.
+          verify: "Первая строка «Примера 1» — «Вопрос 1: 4 * 3 = ?»."
+        - id: bounds
+          when:
+            codeRegex: '(?<!#[^\n]*)randint\(\s*(?!2\s*,\s*9\s*\))-?\d+\s*,\s*-?\d+\s*\)'
+          where: Вызовы `random.randint`
+          why: >-
+            Множители берутся не из `random.randint(2, 9)`. Даже с тем же зерном тогда выпадают
+            другие числа — иногда почти те же, но рано или поздно вопросы расходятся с примером.
+            У randint обе границы входят — это не range, и 9 не нужно записывать как 10.
+          try: Для каждого множителя вызывай ровно `random.randint(2, 9)`.
+          verify: "В «Примере 2» вопросы 5 * 4 и 7 * 9, а в граничном случае «один вопрос» — 2 * 9."
+        - id: roll-once
+          when:
+            outputIncludes: "Вопрос 1: 4 * 3 = ?\nВерно!\nВопрос 2: 4 * 3 = ?"
+          where: Вызовы `random.randint`
+          why: >-
+            Все вопросы одинаковые: множители выбраны один раз, до цикла. Цикл повторяет только
+            то, что внутри него, поэтому новые числа не выпадают.
+          try: Перенеси оба вызова `random.randint(2, 9)` внутрь цикла, перед печатью вопроса.
+          verify: "В «Примере 1» вопросы 4 * 3, 6 * 3 и 9 * 9."
+        - id: extra-randint
+          when:
+            failedTest: t1
+            codeRegex: '(?<!#[^\n]*)randint\s*\([\s\S]*(?<!#[^\n]*)randint\s*\([\s\S]*(?<!#[^\n]*)randint\s*\('
+          where: Вызовы `random.randint`
+          why: >-
+            randint вызывается больше двух раз на вопрос. Каждый вызов — новое случайное число:
+            для проверки берутся не те числа, что в вопросе, а все следующие вопросы сдвигаются.
+          try: >-
+            Брось множители один раз: сохрани их в переменные `a` и `b` и используй эти
+            переменные и в вопросе, и в проверке.
+          verify: "В «Примере 1» вопросы 4 * 3, 6 * 3 и 9 * 9, а на ответ 12 — «Верно!»."
+        - id: reset-inside
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]+\w+\s*=\s*0\s*$'
+          where: Строка со счётчиком внутри цикла
+          why: >-
+            Счётчик получает 0 внутри цикла, то есть заново на каждом вопросе, и всё, что он
+            накопил раньше, стирается. В итог попадает только последний вопрос.
+          try: Перенеси `= 0` выше цикла — счётчик создаётся один раз, до первого вопроса.
+          verify: "«Пример 1» заканчивается строкой «Правильных ответов: 2 из 3»."
+        - id: from-zero
+          when:
+            outputIncludes: "Вопрос 0:"
+          where: Цикл и номер вопроса
+          why: >-
+            Вопросы нумеруются с нуля: `range(n)` начинает с 0 — или номер печатается раньше,
+            чем увеличивается.
+          try: Начни нумерацию с 1, например `range(1, n + 1)`, или печатай номер на 1 больше.
+          verify: "Первая строка «Примера 1» — «Вопрос 1: 4 * 3 = ?»."
+        - id: no-int
+          when:
+            failedTest: t1
+            outputIncludes: "Неверно, правильно: 12\nВопрос 2"
+          where: Проверка ответа
+          why: >-
+            На верный ответ 12 программа сказала «Неверно», значит, сравнение не работает. Чаще
+            всего причина такая: `input()` вернул строку `"12"`, а `a * b` — число 12, и строка
+            никогда не равна числу.
+          try: Сравнивай число с числом — `int(answer)`, но только после проверки на «стоп».
+          verify: "В «Примере 1» после первого вопроса — «Верно!»."
+        - id: total-inside
+          when:
+            outputIncludes: "Правильных ответов: 1 из 1\nВопрос 2"
+          where: Строка с итогом
+          why: >-
+            Итог печатается после каждого вопроса: строка с `print` стоит внутри цикла, у неё
+            отступ.
+          try: Убери отступ у строки с итогом — тогда она выполнится один раз, после цикла.
+          verify: "В «Примере 1» строка «Правильных ответов» одна — последняя."
+        - id: correct-always
+          when:
+            outputIncludes: "Неверно, правильно: 18\nВопрос 3: 9 * 9 = ?\nВерно!\nПравильных ответов: 3 из 3"
+          where: Строка, где растёт счётчик верных ответов
+          why: >-
+            В «Примере 1» на второй вопрос ответ неверный, а в итоге «3 из 3»: счётчик верных
+            вырос и за неверный ответ. Похоже, `correct = correct + 1` стоит не в ветке «Верно!»,
+            а после всего if/else.
+          try: >-
+            Перенеси увеличение счётчика верных в ветку, где печатается «Верно!», — с тем же
+            отступом, что у этого print.
+          verify: "«Пример 1» заканчивается строкой «Правильных ответов: 2 из 3»."
+        - id: total-twice
+          when:
+            outputIncludes: "Правильных ответов: 1 из 1\nПравильных ответов: 1 из 1"
+          where: Ветка, где проверяется «стоп»
+          why: >-
+            После «стоп» итог напечатан дважды: в ветке «стоп» и после цикла. `break` и так
+            переходит к строкам после цикла.
+          try: Оставь в ветке «стоп» только `break` — итог печатается один раз, после цикла.
+          verify: "«Пример 2» заканчивается одной строкой «Правильных ответов: 1 из 1»."
+        - id: one-short
+          when:
+            outputIncludes: "Неверно, правильно: 18\nПравильных ответов:"
+          where: Границы цикла
+          why: >-
+            В «Примере 1» n = 3, а вопросов задано только два. Цикл делает на шаг меньше: у
+            `range(1, n)` правая граница не входит, и последнего вопроса нет (у while так бывает
+            с `<` вместо `<=`).
+          try: Чтобы номера шли от 1 до n включительно, конец range должен быть `n + 1`.
+          verify: "В «Примере 1» три вопроса и итог «2 из 3»."
+        - id: stop-counted
+          when:
+            outputIncludes: "Вопрос 2: 7 * 9 = ?\nПравильных ответов: 1 из 2"
+          where: Счётчик отвеченных вопросов
+          why: >-
+            В «Примере 2» ответ дан на один вопрос, а в итоге «из 2»: вопрос, на который ввели
+            «стоп», попал в Y. Так бывает, если вместо счётчика отвеченных стоит n или номер
+            вопроса из переменной цикла, или если счётчик растёт раньше проверки на «стоп».
+          try: >-
+            Заведи счётчик отвеченных вопросов и увеличивай его после проверки на «стоп» — туда
+            `break` уже не пустит.
+          verify: "«Пример 2» заканчивается строкой «Правильных ответов: 1 из 1»."
+        - id: loop-var-empty
+          when:
+            errorType: NameError
+            failedTest: t4
+            codeRegex: '(?<=^for\s+(\w+)\s+in\b[\s\S]*)^(?![ \t#])[^\n]*\b\1\b'
+          where: Строка после цикла, где используется переменная цикла
+          why: >-
+            При n = 0 range пустой: тело цикла не выполнилось ни разу, и переменная цикла так и
+            не получила значения. Строка после цикла обращается к ней — отсюда NameError.
+          try: >-
+            Номер вопроса для Y не подходит. Заведи до цикла отдельный счётчик отвеченных
+            вопросов и увеличивай его после проверки на «стоп».
+          verify: "«Граничный случай: ноль вопросов» печатает «Правильных ответов: 0 из 0»."
+      afterPass: >-
+        Тренажёр готов, и написал его ты сам: цикл на n вопросов, два счётчика, случайные примеры
+        и досрочный выход по «стоп». Улучшение на будущее — печатать в конце процент верных
+        ответов. Подумай, что делать, если ни на один вопрос не ответили: делить на 0 нельзя.
+      skills: [for-range, accumulators, loop-control, import-basics, conditions]
+      noHintsBeforeAttempt: true
+
+  - id: second-task
+    type: exercise
+    title: "Вторая задача: найди ошибки"
+    exercise:
+      id: m3-l7-e2
+      kind: fix
+      title: Марафон до трёх промахов
+      statement: |-
+        Тимур добавил в тренажёр второй режим — марафон. Вопросов сколько угодно: марафон идёт,
+        пока Соня не ответит неверно три раза или не введёт `стоп`. После каждого ответа
+        программа пишет `Верно!` или `Неверно, правильно: …`, в конце — `Правильных ответов: X`.
+        Вопросы нумеруются с 1, множители — те же `random.randint(2, 9)`.
+
+        Но в программе две ошибки на единицу: после третьего неверного ответа марафон задаёт ещё
+        один вопрос, а нумерация вопросов начинается с 0. Составь трассировочную таблицу для
+        `wrong` и `question` на «Примере 1» и исправь обе ошибки, не переписывая программу.
+        Если для трассировки добавишь временный `print`, перед проверкой убери его.
+      input: >-
+        По строке на каждый вопрос: ответ — целое число или `стоп`. Ответов ровно столько, сколько
+        нужно, чтобы марафон закончился.
+      output: >-
+        Для каждого вопроса — `Вопрос k: a * b = ?` и `Верно!` или `Неверно, правильно:
+        <произведение>`. В конце — `Правильных ответов: X`.
+      constraints:
+        - Исправь две ошибки на единицу, остальное не переписывай.
+        - Подсказки откроются после первой проверки — сначала составь таблицу сам.
+      seed: 10
+      starterCode: |
+        import random
+
+        wrong = 0
+        correct = 0
+        question = 0
+        while wrong <= 3:
+            a = random.randint(2, 9)
+            b = random.randint(2, 9)
+            print(f"Вопрос {question}: {a} * {b} = ?")
+            question = question + 1
+            answer = input()
+            if answer == "стоп":
+                break
+            if int(answer) == a * b:
+                print("Верно!")
+                correct = correct + 1
+            else:
+                print(f"Неверно, правильно: {a * b}")
+                wrong = wrong + 1
+        print(f"Правильных ответов: {correct}")
+      tests:
+        - id: t1
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 1: три промаха подряд"
+          example: true
+          seed: 10
+          stdin: "1\n2\n3\n"
+          expected: |-
+            Вопрос 1: 2 * 8 = ?
+            Неверно, правильно: 16
+            Вопрос 2: 9 * 2 = ?
+            Неверно, правильно: 18
+            Вопрос 3: 5 * 9 = ?
+            Неверно, правильно: 45
+            Правильных ответов: 0
+        - id: t2
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Пример 2: промахи вперемешку"
+          example: true
+          seed: 2
+          stdin: "6\n1\n24\n2\n3\n"
+          expected: |-
+            Вопрос 1: 2 * 3 = ?
+            Верно!
+            Вопрос 2: 3 * 7 = ?
+            Неверно, правильно: 21
+            Вопрос 3: 4 * 6 = ?
+            Верно!
+            Вопрос 4: 6 * 5 = ?
+            Неверно, правильно: 30
+            Вопрос 5: 2 * 4 = ?
+            Неверно, правильно: 8
+            Правильных ответов: 2
+        - id: t3
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: "Граничный случай: «стоп» на втором вопросе"
+          edge: true
+          seed: 8
+          stdin: "35\nстоп\n"
+          expected: |-
+            Вопрос 1: 5 * 7 = ?
+            Верно!
+            Вопрос 2: 8 * 4 = ?
+            Правильных ответов: 1
+        - id: t4
+          kind: io
+          compare: { ignoreSpaces: true }
+          title: Длинный марафон
+          seed: 11
+          stdin: "81\n45\n1\n12\n0\n0\n"
+          expected: |-
+            Вопрос 1: 9 * 9 = ?
+            Верно!
+            Вопрос 2: 9 * 5 = ?
+            Верно!
+            Вопрос 3: 4 * 9 = ?
+            Неверно, правильно: 36
+            Вопрос 4: 4 * 3 = ?
+            Верно!
+            Вопрос 5: 9 * 6 = ?
+            Неверно, правильно: 54
+            Вопрос 6: 4 * 3 = ?
+            Неверно, правильно: 12
+            Правильных ответов: 3
+      rules:
+        - id: fix-condition
+          max:
+            Break: 1
+          message: >-
+            Второй `break` прячет ошибку, а не исправляет её: условие while по-прежнему пускает
+            лишний шаг. Убери добавленный `break` и исправь само условие цикла.
+      criteria:
+        - Марафон заканчивается сразу после третьего неверного ответа или после «стоп».
+        - Вопросы нумеруются с 1.
+        - Исправлены причины — условие цикла и нумерация — без второго `break`; остальная программа прежняя.
+        - Временных print для трассировки в коде не осталось.
+      hints:
+        - >-
+          Составь таблицу для «Примера 1»: сколько неверных ответов накопилось после каждого
+          вопроса и что даёт условие while перед следующим. Сколько вопросов задаётся после
+          третьего промаха? Отдельно отметь, какое число лежит в счётчике вопросов в тот момент,
+          когда вопрос печатается.
+        - |-
+          Та же ловушка на другом примере. У игрока три жизни:
+
+          ```python
+          lives = 3
+          level = 0
+          while lives >= 0:
+              print(f"Уровень {level}, жизней: {lives}")
+              level = level + 1
+              lives = lives - 1
+          ```
+
+          Цикл пройдёт четыре раза — при lives = 3, 2, 1 и 0, — хотя жизней три: `>= 0` пускает
+          в цикл и при нуле. А уровни начнутся с 0, потому что номер печатается раньше, чем
+          увеличивается.
+        - >-
+          Нужны две правки. Первая — знак сравнения в условии while (строка 6): при `wrong`,
+          равном 3, условие должно стать ложным. Вторая — поменять местами строки 9 и 10, чтобы
+          номер увеличивался до печати (или вместо этого начать счёт с `question = 1`).
+      solution:
+        code: |
+          import random
+
+          wrong = 0
+          correct = 0
+          question = 0
+          while wrong < 3:
+              a = random.randint(2, 9)
+              b = random.randint(2, 9)
+              question = question + 1
+              print(f"Вопрос {question}: {a} * {b} = ?")
+              answer = input()
+              if answer == "стоп":
+                  break
+              if int(answer) == a * b:
+                  print("Верно!")
+                  correct = correct + 1
+              else:
+                  print(f"Неверно, правильно: {a * b}")
+                  wrong = wrong + 1
+          print(f"Правильных ответов: {correct}")
+        explanation: |-
+          Таблица для «Примера 1» в исходной программе:
+
+          ```text
+          вопрос  question в print  ответ  wrong после  условие дальше
+          1-й     0                 1      1            1 <= 3 → True
+          2-й     1                 2      2            2 <= 3 → True
+          3-й     2                 3      3            3 <= 3 → True ← лишний вопрос
+          ```
+
+          С `wrong < 3` в последней строке будет False, и марафон закончится сразу после третьего
+          промаха. А `question` в момент печати на 1 меньше номера вопроса, поэтому увеличение
+          перенесено выше `print`. Можно было и начать с `question = 1`, оставив порядок строк, —
+          но не обе правки сразу.
+      altSolutions:
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 1
+            while wrong < 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                question = question + 1
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Счёт вопросов с 1, порядок строк прежний.
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong != 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question + 1}: {a} * {b} = ?")
+                question += 1
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct += 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong += 1
+            print(f"Правильных ответов: {correct}")
+          note: Условие wrong != 3 и номер question + 1 в f-строке.
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong <= 2:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                question = question + 1
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Условие wrong <= 2 — то же, что wrong < 3.
+        - code: |
+            import random
+
+            wrong = 1
+            correct = 0
+            question = 1
+            while wrong <= 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                question = question + 1
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+                # print(wrong, question)
+            print(f"Правильных ответов: {correct}")
+          note: Условие <= 3 оставлено, а счёт начат с wrong = 1 и question = 1; трассировочный print закомментирован.
+      wrongSolutions:
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong <= 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                question = question + 1
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Ничего не исправлено.
+          expectMistake: both-bugs
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong <= 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                question = question + 1
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Нумерация исправлена, условие while — нет.
+          expectMistake: condition
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong < 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                question = question + 1
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Условие исправлено, нумерация — нет.
+          expectMistake: numbering
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 1
+            while wrong < 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                question = question + 1
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Нумерацию исправили дважды — счёт начинается с 2.
+          expectMistake: numbering-twice
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong < 2:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                question = question + 1
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Условие перетянуто — марафон кончается после второго промаха.
+          expectMistake: too-strict
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong < 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                question = question + 1
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+                print(wrong, question)
+            print(f"Правильных ответов: {correct}")
+          note: Обе ошибки исправлены, но остался трассировочный print.
+          expectMistake: trace-left
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 1
+            while wrong < 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question}: {a} * {b} = ?")
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+            print(f"Правильных ответов: {correct}")
+          note: Счёт с question = 1, но строка увеличения номера удалена — все вопросы «Вопрос 1».
+          expectMistake: number-stuck
+        - code: |
+            import random
+
+            wrong = 0
+            correct = 0
+            question = 0
+            while wrong <= 3:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                print(f"Вопрос {question + 1}: {a} * {b} = ?")
+                question = question + 1
+                answer = input()
+                if answer == "стоп":
+                    break
+                if int(answer) == a * b:
+                    print("Верно!")
+                    correct = correct + 1
+                else:
+                    print(f"Неверно, правильно: {a * b}")
+                    wrong = wrong + 1
+                    if wrong == 3:
+                        break
+            print(f"Правильных ответов: {correct}")
+          note: Условие while не исправлено, лишний шаг закрыт вторым break — тесты проходят, правило fix-condition — нет.
+          expectMistake: null
+      mistakes:
+        - id: both-bugs
+          when:
+            errorType: EOFError
+            outputIncludes: "Вопрос 0:"
+          where: "Цикл while: номер первого вопроса и шаг после третьего промаха"
+          why: >-
+            Обе ошибки пока на месте. Первый вопрос выходит под номером 0, а после третьего
+            неверного ответа марафон задаёт ещё один вопрос. Ввода для него уже нет, поэтому
+            `input()` падает с EOFError.
+          try: >-
+            Составь таблицу для «Примера 1»: `wrong` после каждого ответа и значение условия
+            while перед следующим вопросом. Отдельно отметь, чему равен `question`, когда
+            печатается вопрос.
+          verify: "В «Примере 1» три вопроса с номерами 1, 2, 3 и сразу итог."
+        - id: condition
+          when:
+            errorType: EOFError
+          where: "Строка 6: условие while"
+          why: >-
+            После третьего неверного ответа `wrong` равно 3, а условие while всё ещё True (в
+            исходной программе `3 <= 3` — верно). Цикл задаёт четвёртый вопрос, ввода для него
+            нет, и `input()` падает с EOFError.
+          try: >-
+            Условие должно стать ложным, как только `wrong` дойдёт до 3. Какой знак сравнения
+            это даёт?
+          verify: "В «Примере 1» после третьего «Неверно» сразу идёт «Правильных ответов: 0»."
+        - id: numbering
+          when:
+            outputIncludes: "Вопрос 0:"
+          where: "Строки 9–10: печать вопроса и `question = question + 1`"
+          why: >-
+            Номер печатается, когда `question` ещё 0: print стоит раньше строки, которая
+            увеличивает счётчик.
+          try: Поменяй эти две строки местами — или начни счёт с `question = 1`. Нужна одна из двух правок.
+          verify: "Первая строка «Примера 1» — «Вопрос 1: 2 * 8 = ?»."
+        - id: numbering-twice
+          when:
+            outputIncludes: "Вопрос 2: 2 * 8 = ?"
+          where: Строки с `question`
+          why: >-
+            Первый вопрос получил номер 2: нумерацию исправили дважды. Счёт уже начинается с 1,
+            и при этом номер ещё раз увеличивается до печати (или печатается как `question + 1`).
+            Каждая из этих правок по отдельности сдвигает номер на 1.
+          try: Оставь только одну из двух правок.
+          verify: "Первая строка «Примера 1» — «Вопрос 1: 2 * 8 = ?»."
+        - id: number-stuck
+          when:
+            outputIncludes: "Неверно, правильно: 16\nВопрос 1:"
+          where: Строки с `question`
+          why: >-
+            Все вопросы получили номер 1: счётчик вопросов больше не растёт. Похоже, вместе с
+            правкой нумерации пропала строка `question = question + 1`.
+          try: >-
+            Верни строку `question = question + 1` в цикл. Правка нумерации нужна одна: начать
+            с `question = 1` или увеличивать номер до печати, — а сама строка с увеличением
+            остаётся.
+          verify: "В «Примере 1» вопросы с номерами 1, 2 и 3."
+        - id: too-strict
+          when:
+            outputIncludes: "Неверно, правильно: 18\nПравильных ответов:"
+          where: Условие while
+          why: >-
+            Марафон закончился после второго неверного ответа — на шаг раньше, чем нужно:
+            условие стало ложным, когда `wrong` было 2.
+          try: >-
+            Проверь по таблице: при `wrong`, равном 0, 1 и 2, условие должно давать True, а при
+            3 — False. Поправь знак или число в условии (и начальное значение `wrong`, если
+            меняли его).
+          verify: "В «Примере 1» три вопроса и три «Неверно»."
+        - id: trace-left
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]*print\((?!\s*f?["''](Вопрос|Верно|Неверно|Правильных))'
+          where: Временный print для трассировки
+          why: >-
+            В выводе лишние строки — похоже, остался print для трассировки. Проверка сравнивает
+            вывод построчно, и любая лишняя строка — несовпадение.
+          try: Трассировка своё дело сделала — убери строку с временным print.
+          verify: "Вывод «Примера 1» совпадает с образцом строка в строку."
+      afterPass: >-
+        Обе ошибки на единицу исправлены. Так их ищут в любом цикле: смотрят на первый и
+        последний шаг и на значение условия на пороге.
+      skills: [loop-tracing, while-loops, loop-control]
+      noHintsBeforeAttempt: true
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - "Если обе задачи получились без подсказок, навыки модуля твои: цикл на нужное число шагов, счётчики, досрочный выход, случайные числа и поиск ошибки на единицу. Можно переходить к модулю 4."
+      - "Программа зависала, падала с EOFError или «стоп» не срабатывал — повтори урок 3.1 (условие while) и урок 3.4 (break и continue)."
+      - "«Вопрос 0», лишний или недостающий вопрос, четвёртый промах в марафоне — повтори урок 3.2 (границы range) и урок 3.6 (трассировка)."
+      - "Неверное «X из Y» — повтори урок 3.3 (где счётчик создаётся, меняется и печатается). NameError про random или другие числа в вопросах — урок 3.5 (import, границы и порядок вызовов randint)."
+    question: Почему в тренажёре «стоп» проверяют до `int(answer)`?
+    answer: >-
+      `int("стоп")` останавливает программу с ValueError. Сначала нужно понять, что пришло, —
+      команда или число, — и только число превращать в `int`. Поэтому ответ читают строкой,
+      сравнивают со словом «стоп» и лишь потом переводят в число.

@@ -1,0 +1,4183 @@
+id: m7-l7
+module: m7
+number: "7.7"
+title: "Самостоятельная работа: журнал расходов"
+objective: >-
+  Самостоятельно написать программу, которая загружает журнал расходов из JSON-файла, принимает
+  новую запись с проверкой ввода, сохраняет журнал и не падает, если файла нет или он повреждён.
+minutes: [25, 30]
+prerequisites: [m7-l6]
+skills: [files-json, exceptions, input-validation, files-paths]
+environment: python
+
+story:
+  title: Листочки на холодильнике
+  fictional: true
+  text: >-
+    Орловы записывали расходы на листочках и прикрепляли их магнитами к холодильнику, но к концу
+    месяца половина листочков терялась. Сумму считали на калькуляторе дважды — и получали разные
+    числа. Старшая дочь Ксюша решила завести журнал: программа спрашивает категорию и сумму,
+    сохраняет запись в файл и сразу показывает итог. Если кто-то напишет «триста» или «-50»,
+    программа переспросит, а если файл потеряется или испортится, начнёт новый и не сломается.
+    Сегодня ты напишешь такой журнал сам.
+
+why: >-
+  Самостоятельная работа проверяет весь модуль сразу: файлы, JSON, исключения и проверку ввода.
+  По схеме «загрузить → изменить → сохранить» работают почти все программы, которые что-то помнят:
+  например, список дел, который не теряет задачи после закрытия.
+
+usedIn: >-
+  Трекеры расходов и привычек, списки задач, заметки, сохранения в играх — и проект «Список задач
+  с сохранением в JSON», который идёт сразу после этого модуля.
+
+steps:
+  - id: reminder
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа: журнал расходов ты пишешь сам, а подсказки в обоих
+      заданиях откроются только после первой проверки. Это не запрет на помощь — просто сначала
+      попробуй сам.
+
+      Всё нужное уже было в этом модуле:
+
+      - `with open("имя", encoding="utf-8") as f:` открывает файл и сам закрывает его после
+        блока. Режим `"w"` **стирает** файл в момент открытия, `"a"` дописывает в конец (урок 7.1).
+      - `json.load(f)` читает из файла список или словарь, а
+        `json.dump(data, f, ensure_ascii=False, indent=2)` записывает его — русскими буквами и
+        с отступами (урок 7.6).
+      - Файла нет — `FileNotFoundError`. Файл пустой или испорчен — `json.JSONDecodeError`. Лови
+        конкретные типы, а не всё подряд (уроки 7.3 и 7.6).
+      - «Спросить → превратить → проверить → принять»: цикл `while True`, `try` и
+        `except ValueError` вокруг `int()`, `continue` после сообщения об ошибке, `break` или
+        `return` для верного ответа (урок 7.4).
+      - Функции с понятными именами помогают разложить программу на части и проверить каждую
+        отдельно (модуль 5).
+
+      Как работать над заданием:
+
+      1. Прочитай условие, примеры и блок «Файлы задания» — там лежит журнал `expenses.json`.
+      2. Разложи решение на шаги и пиши по одному: загрузка, вопросы, сохранение, итог.
+      3. Перед «Проверить» нажимай «Запустить». Поле «Ввод для „Запустить“» уже заполнено
+         вводом из первого примера — меняй его, чтобы попробовать неверные ответы.
+      4. Что программа записала, смотри в «Файлах после запуска». В тренажёре каждый запуск
+         начинается с чистой папки: записанное пропадает, и два запуска подряд записи не копят.
+         На компьютере файл остаётся — это можно проверить в чек-листе в конце урока.
+
+      Главное задание — основа урока. Если время кончается, остановись после него:
+      «Усложнение» и чек-лист можно сделать в другой день. Урок засчитается целиком, когда будут
+      решены оба задания.
+    simpler: >-
+      Журнал — это пять действий подряд: загрузить список из файла, спросить категорию и сумму
+      (переспрашивая, пока ответ неверный), добавить запись, сохранить список и показать итог.
+      Каждое из них ты уже делал по отдельности — сегодня соберёшь их вместе.
+    coach: >-
+      Ошибиться на первой попытке — нормально. Самостоятельная работа показывает, что уже
+      получается само, а что стоит повторить.
+
+  - id: warmup
+    type: predict
+    title: Разминка
+    prompt: >-
+      Ксюша нашла в папке журнала файл `expenses.json` без единого символа — он совсем пустой
+      (загляни в «Файлы задания»). Как думаешь, что выведет программа?
+    code: |-
+      import json
+
+
+      def load(path):
+          try:
+              with open(path, encoding="utf-8") as f:
+                  return json.load(f)
+          except FileNotFoundError:
+              return []
+          except json.JSONDecodeError:
+              print("Файл повреждён")
+              return []
+
+
+      print(len(load("expenses.json")))
+    files:
+      expenses.json: ""
+    options:
+      - "0"
+      - |-
+        Файл повреждён
+        0
+      - Ошибка FileNotFoundError
+    answer: |-
+      Файл повреждён
+      0
+    explanation: >-
+      Файл есть, поэтому FileNotFoundError не случается. Но пустой файл — это не JSON: в нём нет
+      ни списка, ни словаря, и `json.load` выбрасывает `json.JSONDecodeError`. Срабатывает второй
+      `except`: сообщение и пустой список, а его длина — 0. Для программы пустой файл такой же
+      повреждённый, как файл с оборванной скобкой, и журнал должен пережить оба случая.
+    coach: Файла нет и файл пустой — разные беды, и ловят их разные `except`.
+
+  - id: plan
+    type: order
+    title: "План: дневник чтения"
+    prompt: >-
+      Прежде чем писать журнал, разложи на шаги похожую задачу. Программа ведёт дневник чтения:
+      в файле `books.json` хранится список прочитанных книг, а после каждой новой книги программа
+      спрашивает название и число страниц, записывает книгу в дневник и показывает итог. Расставь
+      действия программы по порядку.
+    items:
+      - id: load
+        text: Загрузить список книг из `books.json`, а если файла нет — начать с пустого списка
+      - id: ask-title
+        text: Спрашивать название, пока не введут непустое
+      - id: ask-pages
+        text: Спрашивать число страниц, пока не введут целое число больше нуля
+      - id: append
+        text: Добавить новую книгу в конец списка
+      - id: save
+        text: Сохранить весь список в `books.json`
+      - id: show
+        text: Напечатать, сколько книг и страниц в дневнике
+    before:
+      - [load, append]
+      - [ask-title, ask-pages]
+      - [ask-pages, append]
+      - [append, save]
+      - [append, show]
+    explanation: >-
+      Добавлять книгу можно только в уже загруженный список: если начать с пустого, сохранение
+      сотрёт старый дневник. Загрузить список можно и сразу, и после вопросов — главное, до
+      добавления. Сохраняют весь список, а не одну новую книгу: режим `"w"` стирает файл, но в
+      списке уже есть и старые книги, и новая. Итог печатают, когда новая книга уже в списке, —
+      до сохранения или после, не важно.
+    coach: >-
+      В журнале расходов шаги те же — поменяются только названия: категория вместо названия,
+      сумма вместо страниц.
+
+  - id: main-task
+    type: exercise
+    title: Самостоятельная работа
+    exercise:
+      id: m7-l7-e1
+      kind: write
+      title: Журнал расходов
+      statement: |-
+        Напиши журнал расходов для семьи Орловых. Журнал хранится в файле `expenses.json` —
+        это список записей, например:
+
+        ```text
+        [
+          {"категория": "продукты", "сумма": 1200},
+          {"категория": "транспорт", "сумма": 300}
+        ]
+        ```
+
+        Программа делает пять вещей по порядку:
+
+        1. **Загружает журнал.** Файла нет — начинает с пустого списка и ничего не печатает: это
+           первый запуск. Файл пустой или испорчен — печатает `Файл журнала повреждён, начинаю новый`
+           и тоже начинает с пустого списка.
+        2. **Спрашивает категорию** и убирает пробелы по краям. Если осталась пустая строка —
+           печатает `Категория не может быть пустой` и спрашивает снова.
+        3. **Спрашивает сумму** — целое число рублей больше нуля. Не целое число — печатает
+           `Нужна сумма целым числом, например 350`, ноль или меньше — `Сумма должна быть больше нуля`.
+           В обоих случаях спрашивает снова.
+        4. **Добавляет запись** `{"категория": …, "сумма": …}` в конец списка и **сохраняет весь
+           журнал** в `expenses.json`: русские буквы — как есть, а не `\u0430`, сумма — числом.
+        5. **Печатает итог** — число записей и сумму всех расходов в журнале.
+
+        Для журнала из «Файлов задания» и ввода `кафе` и `450` итог такой:
+
+        ```text
+        Записей: 3
+        Всего: 1950 руб.
+        ```
+
+        Сообщения и строки итога — точно как в условии: их удобнее скопировать отсюда.
+      input: >-
+        Категория, затем сумма — каждая на своей строке. Если ответ неверный, программа
+        спрашивает снова, и следующая строка ввода — новый ответ.
+      output: >-
+        Сообщения об ошибках, если были, затем итог — строки `Записей: N` и `Всего: S руб.`;
+        журнал сохранён в `expenses.json`.
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Текст подсказок в `input()` может быть любым.
+        - Лови конкретные исключения, без `except:` и `except Exception`.
+        - У каждого `open()` укажи `encoding="utf-8"`.
+      files:
+        expenses.json: |
+          [
+            {"категория": "продукты", "сумма": 1200},
+            {"категория": "транспорт", "сумма": 300}
+          ]
+      starterCode: |
+        # Журнал расходов
+        # Файл журнала: expenses.json
+        # Ввод: категория, затем сумма (на неверный ответ — спросить снова)
+
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: новая запись"
+          example: true
+          stdin: "кафе\n450\n"
+          expected: |-
+            Записей: 3
+            Всего: 1950 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t2
+          kind: io
+          title: "Пример 2: неверные ответы"
+          example: true
+          stdin: "\nкафе\nтриста\n-50\n300\n"
+          expected: |-
+            Категория не может быть пустой
+            Нужна сумма целым числом, например 350
+            Сумма должна быть больше нуля
+            Записей: 3
+            Всего: 1800 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t3
+          kind: io
+          title: "Пример 3: журнала ещё нет"
+          example: true
+          files:
+            expenses.json: null
+          stdin: "аптека\n450\n"
+          expected: |-
+            Записей: 1
+            Всего: 450 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: файл испорчен"
+          edge: true
+          files:
+            expenses.json: '[{"категория": "продукты", "сумма": 1200},'
+          stdin: "аптека\n450\n"
+          expected: |-
+            Файл журнала повреждён, начинаю новый
+            Записей: 1
+            Всего: 450 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: пустой файл"
+          edge: true
+          files:
+            expenses.json: ""
+          stdin: "аптека\n450\n"
+          expected: |-
+            Файл журнала повреждён, начинаю новый
+            Записей: 1
+            Всего: 450 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t6
+          kind: io
+          title: "Граничный случай: пробелы и ноль"
+          edge: true
+          stdin: "   \n  кафе  \n0\n 250 \n"
+          expected: |-
+            Категория не может быть пустой
+            Сумма должна быть больше нуля
+            Записей: 3
+            Всего: 1750 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t12
+          kind: io
+          title: "Граничный случай: два неверных ответа подряд"
+          edge: true
+          stdin: "\n   \nкафе\n0\n-5\n200\n"
+          expected: |-
+            Категория не может быть пустой
+            Категория не может быть пустой
+            Сумма должна быть больше нуля
+            Сумма должна быть больше нуля
+            Записей: 3
+            Всего: 1700 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t13
+          kind: io
+          title: "Граничный случай: дробная сумма"
+          edge: true
+          stdin: "кафе\n12.5\n450\n"
+          expected: |-
+            Нужна сумма целым числом, например 350
+            Записей: 3
+            Всего: 1950 руб.
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t7
+          kind: assert
+          title: Журнал сохранён целиком
+          example: true
+          stdin: "кафе\n450\n"
+          code: |
+            import json
+            import os
+
+            assert os.path.exists("expenses.json")
+            with open("expenses.json", encoding="utf-8") as f:
+                text = f.read()
+            try:
+                data = json.loads(text)
+            except ValueError:
+                data = None
+            assert data == [
+                {"категория": "продукты", "сумма": 1200},
+                {"категория": "транспорт", "сумма": 300},
+                {"категория": "кафе", "сумма": 450},
+            ]
+          message: >-
+            После ввода «кафе» и «450» в `expenses.json` лежит весь журнал: две старые записи и
+            новая в конце.
+        - id: t8
+          kind: assert
+          title: Сумма сохранена числом
+          stdin: "кафе\n450\n"
+          code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    data = json.load(f)
+            except (OSError, ValueError):
+                data = None
+            assert isinstance(data, list) and len(data) > 0 and isinstance(data[-1], dict)
+            assert type(data[-1].get("сумма")) is int
+          message: >-
+            В записи сумма хранится числом — `450`, а не текстом `"450"`: превращай ответ через
+            `int()` и сохраняй результат.
+        - id: t9
+          kind: assert
+          title: Старые записи на месте
+          stdin: "кафе\n450\n"
+          code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    data = json.load(f)
+            except (OSError, ValueError):
+                data = None
+            assert isinstance(data, list)
+            assert data[:2] == [
+                {"категория": "продукты", "сумма": 1200},
+                {"категория": "транспорт", "сумма": 300},
+            ]
+          message: >-
+            Две старые записи журнала должны остаться в файле: сохраняй весь список, а не только
+            новую запись.
+        - id: t10
+          kind: assert
+          title: Русские буквы в файле — как есть
+          stdin: "кафе\n450\n"
+          code: |
+            import os
+
+            assert os.path.exists("expenses.json")
+            with open("expenses.json", encoding="utf-8") as f:
+                text = f.read()
+            assert "\\u" not in text
+          message: >-
+            В файле журнала русские буквы записаны как есть, без кодов вида `\u043a`: у
+            `json.dump` должен быть аргумент `ensure_ascii=False`.
+        - id: t11
+          kind: assert
+          title: Новый журнал создан
+          files:
+            expenses.json: null
+          stdin: "аптека\n450\n"
+          code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    data = json.load(f)
+            except (OSError, ValueError):
+                data = None
+            assert data == [{"категория": "аптека", "сумма": 450}]
+          message: >-
+            Если журнала не было, программа создаёт `expenses.json` с одной новой записью.
+        - id: t-cat
+          kind: assert
+          title: Категория без пробелов и не пустая
+          stdin: "\n  кино  \n500\n"
+          code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    data = json.load(f)
+            except (OSError, ValueError):
+                data = None
+            assert isinstance(data, list) and len(data) > 0
+            assert data[-1] == {"категория": "кино", "сумма": 500}
+          message: >-
+            После ввода пустой строки, «  кино  » и «500» последняя запись журнала —
+            `{"категория": "кино", "сумма": 500}`: пустую категорию программа не принимает, а
+            пробелы по краям убирает.
+        - id: t-except
+          kind: assert
+          title: Ловятся конкретные исключения
+          stdin: "кафе\n450\n"
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    assert not (isinstance(node.type, ast.Name) and node.type.id in ("Exception", "BaseException"))
+          message: >-
+            Здесь ловится «всё подряд»: `except` без типа или `except Exception`. Укажи
+            конкретный тип — например, `ValueError`, `FileNotFoundError` или `json.JSONDecodeError`.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          stdin: "кафе\n450\n"
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+
+
+            def has_encoding(call):
+                if any(k.arg == "encoding" for k in call.keywords):
+                    return True
+                name = getattr(call.func, "id", None) or call.func.attr
+                # Кодировка по позиции: open(file, mode, buffering, encoding),
+                # Path.open(mode, buffering, encoding), read_text(encoding), write_text(data, encoding)
+                position = {"open": 3 if isinstance(call.func, ast.Attribute) else 4, "read_text": 1, "write_text": 2}[name]
+                return len(call.args) >= position
+
+
+            assert all(has_encoding(c) for c in calls)
+          message: >-
+            В одном из `open()` (или `read_text`/`write_text`) не указана кодировка. Добавь
+            `encoding="utf-8"` — иначе программа зависит от настроек компьютера: на Windows со
+            старым Python (до 3.15) русский текст превратится в кракозябры.
+      criteria:
+        - Файла нет — журнал молча начинается с пустого списка; файл пустой или испорчен — сообщение и пустой список.
+        - Категория без пробелов по краям и не пустая, сумма — целое число больше нуля; на неверный ответ программа объясняет, что не так, и спрашивает снова.
+        - Новая запись добавляется в конец, и в `expenses.json` сохраняется весь журнал — русскими буквами, сумма числом.
+        - Итог — две строки точно как в примере.
+        - Ловятся только конкретные исключения, у каждого `open()` указана кодировка.
+      hints:
+        - >-
+          Разложи программу на части, как в шаге «План: дневник чтения», и пиши их по одной:
+          загрузка, два вопроса, добавление, сохранение, итог. После каждой части нажимай
+          «Запустить» с разным вводом и заглядывай в «Файлы после запуска». Какие части удобно
+          сделать отдельными функциями?
+        - |-
+          Те же приёмы на списке покупок. Загрузить или начать заново:
+
+          ```python
+          import json
+
+          try:
+              with open("shopping.json", encoding="utf-8") as f:
+                  items = json.load(f)
+          except FileNotFoundError:
+              items = []
+          except json.JSONDecodeError:
+              print("Список испорчен, начинаю новый")
+              items = []
+          ```
+
+          Спрашивать, пока ответ не подойдёт:
+
+          ```python
+          while True:
+              try:
+                  count = int(input("Сколько штук: "))
+              except ValueError:
+                  print("Нужно целое число")
+                  continue
+              if count > 0:
+                  break
+              print("Нужно больше нуля")
+          ```
+        - |-
+          Каркас:
+
+          ```text
+          def load_expenses(path):
+              try: открыть файл, вернуть json.load(f)
+              except FileNotFoundError: вернуть []
+              except json.JSONDecodeError: сообщение, вернуть []
+
+          def ask_category():
+              while True: input → strip → пустая? сообщение, continue → return
+
+          def ask_amount():
+              while True: input → try int(…) → except ValueError: сообщение, continue
+                          сумма <= 0? сообщение, continue → return
+
+          def save_expenses(path, expenses):
+              открыть в режиме "w" с encoding, json.dump(…, ensure_ascii=False, indent=2)
+
+          expenses = load_expenses("expenses.json")
+          спросить категорию и сумму, добавить словарь в expenses, сохранить
+          сложить суммы в цикле, напечатать «Записей: …» и «Всего: … руб.»
+          ```
+      solution:
+        code: |
+          import json
+
+          FILE_NAME = "expenses.json"
+
+
+          def load_expenses(path):
+              try:
+                  with open(path, encoding="utf-8") as f:
+                      return json.load(f)
+              except FileNotFoundError:
+                  return []
+              except json.JSONDecodeError:
+                  print("Файл журнала повреждён, начинаю новый")
+                  return []
+
+
+          def ask_category():
+              while True:
+                  category = input("Категория: ").strip()
+                  if category == "":
+                      print("Категория не может быть пустой")
+                      continue
+                  return category
+
+
+          def ask_amount():
+              while True:
+                  text = input("Сумма, руб.: ")
+                  try:
+                      amount = int(text)
+                  except ValueError:
+                      print("Нужна сумма целым числом, например 350")
+                      continue
+                  if amount <= 0:
+                      print("Сумма должна быть больше нуля")
+                      continue
+                  return amount
+
+
+          def save_expenses(path, expenses):
+              with open(path, "w", encoding="utf-8") as f:
+                  json.dump(expenses, f, ensure_ascii=False, indent=2)
+
+
+          expenses = load_expenses(FILE_NAME)
+          category = ask_category()
+          amount = ask_amount()
+          expenses.append({"категория": category, "сумма": amount})
+          save_expenses(FILE_NAME, expenses)
+
+          total = 0
+          for record in expenses:
+              total += record["сумма"]
+          print(f"Записей: {len(expenses)}")
+          print(f"Всего: {total} руб.")
+        explanation: >-
+          Каждая часть — своя функция, и её можно проверить отдельно. Загрузка ловит два разных
+          исключения: нет файла — это первый запуск, поэтому молча возвращается пустой список, а
+          испорченный или пустой файл — поломка, о ней сообщается. Вопросы крутятся в
+          `while True`, пока ответ не пройдёт все проверки: `continue` возвращает к вопросу, а
+          `return` выходит и из цикла, и из функции. Запись добавляется в загруженный список,
+          и в файл уходит весь журнал: режим `"w"` стирает старое, но старые записи уже в
+          списке. `ensure_ascii=False` оставляет русские буквы читаемыми.
+      altSolutions:
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+
+            total = 0
+            for record in expenses:
+                total = total + record["сумма"]
+            print("Записей:", len(expenses))
+            print("Всего:", total, "руб.")
+          note: Без функций, одним потоком, с break вместо return.
+        - code: |
+            import json
+            from pathlib import Path
+
+            path = Path("expenses.json")
+            expenses = []
+            if path.exists():
+                try:
+                    expenses = json.loads(path.read_text(encoding="utf-8"))
+                except ValueError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    expenses = []
+
+            category = ""
+            while category == "":
+                category = input("Категория: ").strip()
+                if category == "":
+                    print("Категория не может быть пустой")
+
+            amount = 0
+            while amount <= 0:
+                text = input("Сумма: ")
+                try:
+                    amount = int(text)
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount <= 0:
+                    print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            path.write_text(json.dumps(expenses, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            amounts = []
+            for record in expenses:
+                amounts.append(record["сумма"])
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {sum(amounts)} руб.")
+          note: >-
+            pathlib: exists() вместо FileNotFoundError, except ValueError ловит и
+            json.JSONDecodeError (это его подвид), циклы с условием вместо while True.
+        - code: |
+            import json
+
+
+            def ask_category():
+                while True:
+                    text = input("Категория: ")
+                    category = text.strip()
+                    if len(category) > 0:
+                        return category
+                    print("Категория не может быть пустой")
+
+
+            def ask_amount():
+                while True:
+                    text = input("Сумма: ")
+                    try:
+                        amount = int(text)
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount > 0:
+                        return amount
+                    print("Сумма должна быть больше нуля")
+
+
+            def load_expenses():
+                try:
+                    with open("expenses.json", encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            category = ask_category()
+            amount = ask_amount()
+            expenses = load_expenses()
+            expenses.append({"категория": category, "сумма": amount})
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+          note: >-
+            Журнал загружается после вопросов, итог печатается до сохранения; повреждённым
+            считается и файл в чужой кодировке.
+        - code: |
+            import json
+            from pathlib import Path
+
+            journal_file = Path("expenses.json")
+            try:
+                expenses = json.loads(journal_file.read_text("utf-8"))
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input().strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input())
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            journal_file.write_text(json.dumps(expenses, ensure_ascii=False, indent=2), "utf-8")
+            total = 0
+            for expense in expenses:
+                total += expense["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: >-
+            read_text("utf-8") и write_text(текст, "utf-8") — кодировка передана по позиции, без
+            encoding= (находка рецензента проверок).
+        - code: |
+            import json
+
+
+            def load(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except FileNotFoundError:
+                    data = []
+                except json.decoder.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    data = []
+                return data
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                        if amount <= 0:
+                            print("Сумма должна быть больше нуля")
+                        else:
+                            return amount
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+
+
+            def ask_category():
+                category = input("Категория: ").strip()
+                while category == "":
+                    print("Категория не может быть пустой")
+                    category = input("Категория: ").strip()
+                return category
+
+
+            def save(path, data):
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+            def main():
+                expenses = load("expenses.json")
+                expenses.append({"категория": ask_category(), "сумма": ask_amount()})
+                save("expenses.json", expenses)
+                total = 0
+                for e in expenses:
+                    total += e["сумма"]
+                print("Записей:", len(expenses))
+                print("Всего:", total, "руб.")
+                print()
+
+
+            main()
+          note: >-
+            main(), проверка «больше нуля» внутри try, except json.decoder.JSONDecodeError,
+            while по условию для категории, return из цикла, пустой print() в конце.
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print()
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Пустая строка перед итогом «для красоты» — формат итога она не меняет (ignoreBlankLines).
+      wrongSolutions:
+        - code: |
+            import json
+
+            try:
+                with open("expense.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Опечатка в имени файла, и FileNotFoundError не ловится — падает даже «Пример 1».
+          expectMistake: file-name
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Нет except FileNotFoundError — первый запуск падает.
+          expectMistake: missing-crash
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Нет except json.JSONDecodeError — испорченный и пустой файл роняют программу.
+          expectMistake: damaged-crash
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    text = input("Сумма: ")
+                    try:
+                        amount = int(text)
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: После сообщения о неверной сумме нет continue — UnboundLocalError.
+          expectMistake: no-continue
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    amount = int(input("Сумма: "))
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: int() без try — на «триста» ValueError.
+          expectMistake: amount-crash
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount <= 0:
+                    print("Сумма должна быть больше нуля")
+                    continue
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: У цикла суммы нет break — он спрашивает, пока не кончится ввод (EOFError).
+          expectMistake: loop-no-exit
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "a", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Журнал сохраняется в режиме «a» — второй список дописывается после первого.
+          expectMistake: append-mode
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            with open("expenses.json", "w", encoding="utf-8") as out:
+                expenses = load_expenses("expenses.json")
+                category = ask_category()
+                amount = ask_amount()
+                expenses.append({"категория": category, "сумма": amount})
+                json.dump(expenses, out, ensure_ascii=False, indent=2)
+
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Файл открыт в режиме «w» до загрузки — журнал стёрт раньше, чем прочитан.
+          expectMistake: wiped-before-load
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expense.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Опечатка в имени при загрузке, FileNotFoundError молча ловится — журнал не загружен.
+          expectMistake: not-loaded
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Один except на обе беды — при первом запуске программа пугает «повреждённым» файлом.
+          expectMistake: message-on-missing
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        return int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Нет проверки «больше нуля» — принимается -50.
+          expectMistake: negative-accepted
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    text = input("Сумма: ").strip()
+                    if not text.isdigit():
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    amount = int(text)
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Проверка через isdigit() — на «-50» не то сообщение.
+          expectMistake: isdigit-negative
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = input("Категория: ").strip()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Категория не проверяется — пустая принимается.
+          expectMistake: empty-category
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    text = input("Категория: ")
+                    if text == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return text.strip()
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Пустота проверяется до strip() — строка из пробелов проходит.
+          expectMistake: strip-first
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount < 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Граница «< 0» пропускает ноль.
+          expectMistake: zero-accepted
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    text = input("Сумма: ").strip()
+                    try:
+                        amount = int(text)
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return text
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += int(record["сумма"])
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Функция возвращает текст ответа, и сумма сохраняется строкой «450».
+          expectMistake: amount-as-str
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            record = {"категория": category, "сумма": amount}
+            expenses.append(record)
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump([record], f, ensure_ascii=False, indent=2)
+            total = 0
+            for item in expenses:
+                total += item["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: В файл сохраняется только новая запись — старые пропадают.
+          expectMistake: only-new-saved
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: json.dump без ensure_ascii=False — в файле коды \u.
+          expectMistake: ascii-escapes
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Голый except у суммы.
+          expectMistake: bare-except
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path) as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Журнал читается без encoding.
+          expectMistake: no-encoding
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total}")
+          note: В строке итога нет «руб.».
+          expectMistake: format
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ")
+                    if category.strip() == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: >-
+            strip() только в проверке — в журнал попадает категория с пробелами. Отдельного разбора
+            нет: объясняет сообщение проверки «Категория без пробелов и не пустая».
+          expectMistake: null
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: В except для испорченного файла нет return [] — функция возвращает None.
+          expectMistake: no-return
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, "w", encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Журнал открыт для чтения в режиме «w».
+          expectMistake: read-with-w
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Журнал сохраняется в файл, открытый без режима «w».
+          expectMistake: write-without-w
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Журнал сохраняется до того, как в список добавлена запись.
+          expectMistake: not-saved
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    text = input("Сумма: ")
+                    try:
+                        amount = int(txt)
+                    except:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Голый except прячет опечатку txt — программа переспрашивает, пока не кончится ввод.
+          expectMistake: bare-hides-error
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = float(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Сумма читается через float() — итог 1950.0.
+          expectMistake: float-amount
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total = total + record["сумма"]
+            print("Записей:", len(expenses))
+            print("Всего:", total, "руб.")
+          note: Без функций, в except ValueError нет continue — NameError (находка методиста).
+          expectMistake: no-continue-flat
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            amount = 0
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total = total + record["сумма"]
+            print("Записей:", len(expenses))
+            print("Всего:", total, "руб.")
+          note: >-
+            NameError «вылечен» начальным значением amount = 0, а continue так и нет — на «триста»
+            два сообщения подряд (находка методиста).
+          expectMistake: double-message
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            category = input("Категория: ").strip()
+            if category == "":
+                print("Категория не может быть пустой")
+                category = input("Категория: ").strip()
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount <= 0:
+                    print("Сумма должна быть больше нуля")
+                break
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print("Записей:", len(expenses))
+            print("Всего:", total, "руб.")
+          note: >-
+            Сообщение «больше нуля» печатается, но continue нет — цикл доходит до break, и -50
+            принимается (первая попытка ученика-рецензента).
+          expectMistake: negative-no-retry
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category == "":
+                    print("Категория не может быть пустой")
+                break
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount <= 0:
+                    print("Сумма должна быть больше нуля")
+                    continue
+                break
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print("Записей:", len(expenses))
+            print("Всего:", total, "руб.")
+          note: >-
+            Сообщение о пустой категории печатается, но break срабатывает при любом ответе —
+            пустая категория принимается (попытка ученика-рецензента).
+          expectMistake: category-no-retry
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            category = input("Категория: ").strip()
+            if category == "":
+                print("Категория не может быть пустой")
+                category = input("Категория: ").strip()
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Категория переспрашивается один раз, через if вместо цикла — второй пустой ответ проходит.
+          expectMistake: category-once
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(input("Сумма: "))
+                    break
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+
+            if amount <= 0:
+                print("Сумма должна быть больше нуля")
+                amount = int(input("Сумма: "))
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: >-
+            Цикл только «пока не число», а «больше нуля» проверяется один раз после него — второй
+            неверный ответ (-5) проходит.
+          expectMistake: amount-recheck-once
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    amount = int(float(input("Сумма: ")))
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: int(float(...)) — «12.5» молча принимается как 12.
+          expectMistake: float-truncated
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                text = input("Сумма: ").strip()
+                if not text.isnumeric():
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                amount = int(text)
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: isnumeric() вместо int() в try — на «-50» не то сообщение.
+          expectMistake: isdigit-negative
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses = expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: expenses = expenses.append(...) — в переменной оказывается None.
+          expectMistake: append-assigned
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount > 0:
+                        break
+                    print("Сумма должна быть больше нуля")
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: ask_amount() выходит из цикла через break, но сумму не возвращает — в записи None.
+          expectMistake: none-value
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category != "":
+                        break
+                    print("Категория не может быть пустой")
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: ask_category() выходит из цикла через break без return — в файл уходит "категория" null.
+          expectMistake: not-saved
+        - code: |
+            import json
+
+
+            def load_expenses(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл журнала повреждён, начинаю новый")
+                    return []
+
+
+            def ask_category():
+                while True:
+                    category = input("Категория: ").strip()
+                    if category == "":
+                        print("Категория не может быть пустой")
+                        continue
+                    return category
+
+
+            def ask_amount():
+                while True:
+                    try:
+                        amount = int(input("Сумма: "))
+                    except ValueError:
+                        print("Нужна сумма целым числом, например 350")
+                        continue
+                    if amount <= 0:
+                        print("Сумма должна быть больше нуля")
+                        continue
+                    return amount
+
+
+            expenses = load_expenses("expenses.json")
+            count = len(expenses)
+            category = ask_category()
+            amount = ask_amount()
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {count}")
+            print(f"Всего: {total} руб.")
+          note: Число записей запомнено до append — в итоге на одну меньше (находка методиста).
+          expectMistake: count-before-append
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                print("Введи категорию:")
+                category = input().strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                print("Введи сумму:")
+                try:
+                    amount = int(input())
+                except ValueError:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: Подсказки для ввода печатаются через print(), а не внутри input() — лишние строки в выводе.
+          expectMistake: format
+        - code: |
+            import json
+
+            try:
+                with open("expenses.json", encoding="utf-8") as f:
+                    expenses = json.load(f)
+            except FileNotFoundError:
+                expenses = []
+            except json.JSONDecodeError:
+                print("Файл журнала повреждён, начинаю новый")
+                expenses = []
+
+            while True:
+                category = input("Категория: ").strip()
+                if category != "":
+                    break
+                print("Категория не может быть пустой")
+
+            while True:
+                try:
+                    text = input("Сумма: ")
+                    amount = int(txt)
+                except:
+                    print("Нужна сумма целым числом, например 350")
+                    continue
+                if amount > 0:
+                    break
+                print("Сумма должна быть больше нуля")
+
+            expenses.append({"категория": category, "сумма": amount})
+            with open("expenses.json", "w", encoding="utf-8") as f:
+                json.dump(expenses, f, ensure_ascii=False, indent=2)
+            total = 0
+            for record in expenses:
+                total += record["сумма"]
+            print(f"Записей: {len(expenses)}")
+            print(f"Всего: {total} руб.")
+          note: >-
+            Голый except, а input() внутри try: он ловит и опечатку txt, и конец ввода — цикл
+            печатает сообщение без конца, пока не сработает лимит вывода.
+          expectMistake: bare-loop
+      mistakes:
+        - id: file-name
+          when:
+            errorType: FileNotFoundError
+            failedTest: t1
+          where: Строка с `open()`, где загружается журнал
+          why: >-
+            Даже в «Примере 1», где журнал лежит рядом с программой, `open()` его не находит.
+            Значит, имя в коде не совпадает с именем файла: опечатка, другое расширение или лишний
+            пробел.
+          try: >-
+            Сверь имя с блоком «Файлы задания» — ровно `expenses.json` — а лучше скопируй его
+            оттуда.
+          verify: «Пример 1» не должен падать с FileNotFoundError.
+        - id: missing-crash
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            В «Примере 3» файла `expenses.json` нет — так бывает при самом первом запуске. Прочитать
+            несуществующий файл нельзя, поэтому Python выбрасывает FileNotFoundError, а программа
+            его не ловит.
+          try: >-
+            Оберни загрузку в `try` и добавь `except FileNotFoundError:` — в нём просто начни с
+            пустого списка, без сообщения. Шаблон «загрузить или начать заново» — в уроке 7.6.
+          verify: "В «Примере 3» должно получиться «Записей: 1»."
+        - id: damaged-crash
+          when:
+            errorType: JSONDecodeError
+          why: >-
+            Файл есть, но в нём не JSON: он пустой или оборван на середине. `json.load` не может
+            его разобрать и выбрасывает json.JSONDecodeError — это другая ошибка, не
+            FileNotFoundError, и её нужно ловить отдельно.
+          try: >-
+            Добавь к загрузке второй `except json.JSONDecodeError:` — напечатай в нём
+            `Файл журнала повреждён, начинаю новый` и начни с пустого списка.
+          verify: Граничные случаи «файл испорчен» и «пустой файл» должны пройти.
+        - id: no-continue
+          when:
+            errorType: UnboundLocalError
+          why: >-
+            После сообщения о неверной сумме программа не вернулась к вопросу, а пошла дальше — к
+            проверке «больше нуля». Но `int()` не сработал, значения у переменной нет, отсюда
+            UnboundLocalError.
+          try: >-
+            Поставь `continue` сразу после сообщения в `except ValueError:` — он вернёт к новому
+            вопросу (урок 7.4).
+          verify: «Пример 2» не должен падать.
+        - id: no-continue-flat
+          when:
+            errorType: NameError
+            outputIncludes: Нужна сумма целым числом
+          why: >-
+            Сообщение о неверной сумме напечатано, но программа не вернулась к вопросу, а пошла
+            дальше — к проверке «больше нуля». `int()` не сработал, у переменной с суммой нет
+            значения, отсюда NameError — как в прогнозе «Буквы вместо числа» из урока 7.4.
+          try: >-
+            Допиши `continue` в `except ValueError:` сразу после сообщения — он вернёт к вопросу.
+            Начальное значение суммы до цикла не поможет: программа проверит старое значение и
+            напечатает лишнее сообщение.
+          verify: «Пример 2» не должен падать, а после «триста» должно появиться одно сообщение.
+        - id: double-message
+          when:
+            failedTest: t2
+            outputIncludes: "например 350\nСумма должна быть больше нуля\nСумма должна быть больше нуля"
+          why: >-
+            На «триста» программа напечатала два сообщения подряд: после неверного ввода она не
+            вернулась к вопросу, а проверила «больше нуля» старое значение суммы — то, что было
+            до `int()`.
+          try: >-
+            Допиши `continue` в `except ValueError:` сразу после сообщения — тогда после неверного
+            ввода программа сразу спросит снова (урок 7.4).
+          verify: "В «Примере 2» после «Нужна сумма целым числом, например 350» должна идти одна строка «Сумма должна быть больше нуля»."
+        - id: amount-crash
+          when:
+            errorType: ValueError
+          why: >-
+            На ответ «триста» программа упала: `int()` не превращает слова в число и выбрасывает
+            ValueError, а программа его не ловит.
+          try: >-
+            Поставь `int()` внутрь `try` и добавь `except ValueError:` с сообщением
+            `Нужна сумма целым числом, например 350` и `continue` — пусть программа спросит снова
+            (урок 7.4).
+          verify: "«Пример 2» должен дойти до итога «Всего: 1800 руб.»."
+        - id: bare-hides-error
+          when:
+            errorType: EOFError
+            codeRegex: '\bexcept\s*:|\bexcept\s+(Base)?Exception\b'
+          why: >-
+            Программа переспрашивает даже на верный ответ, пока не кончится ввод (EOFError). Похоже,
+            `except` без типа прячет настоящую ошибку в коде — например, опечатку в имени
+            переменной: любая ошибка внутри `try` выглядит для программы как неверный ввод.
+          try: >-
+            Укажи в `except` конкретный тип — `ValueError`. Тогда Python покажет настоящую ошибку,
+            и её можно будет исправить (урок 7.3).
+          verify: «Пример 1» должен дойти до итога.
+        - id: loop-no-exit
+          when:
+            errorType: EOFError
+          why: >-
+            Программа спрашивает снова даже после верного ответа — цикл не заканчивается. В
+            тренажёре ввод записан заранее: когда строки кончаются, `input()` выбрасывает EOFError.
+            На компьютере программа просто ждала бы ответа вечно.
+          try: >-
+            Когда ответ прошёл все проверки, выйди из цикла: `break` или `return` (урок 7.4).
+          verify: «Пример 1» должен дойти до итога.
+        - id: no-return
+          when:
+            errorType: AttributeError
+            errorIncludes: append
+          why: >-
+            Загрузка вернула `None` — «ничего». Так бывает, когда в одном из `except` нет
+            `return []` и функция заканчивается без ответа. У `None` нет метода `append`, отсюда
+            ошибка про NoneType.
+          try: >-
+            Проверь оба `except` при загрузке: в каждом должен быть `return []` (или присваивание
+            пустого списка, если загрузка без функции).
+          verify: «Пример 3» и граничные случаи «файл испорчен» и «пустой файл» не должны падать.
+        - id: append-assigned
+          when:
+            errorIncludes: NoneType
+            codeRegex: '^\s*(\w+)\s*=\s*\1\.append\('
+          where: Строка, где запись добавляется в список
+          why: >-
+            `append()` меняет сам список и ничего не возвращает — то есть возвращает `None`.
+            Строка `expenses = expenses.append(…)` добавляет запись, а потом кладёт в `expenses`
+            этот `None`, и список пропадает.
+          try: "Вызывай `append` отдельной строкой, без присваивания: `expenses.append({…})`."
+          verify: «Пример 1» не должен падать.
+        - id: none-value
+          when:
+            errorIncludes: NoneType
+          why: >-
+            Там, где нужно значение, оказалось `None` — «ничего». Чаще всего так бывает, когда
+            функция заканчивается без `return`: например, `ask_amount()` выходит из цикла через
+            `break`, а сумму не возвращает, и в запись попадает `None` вместо числа.
+          try: >-
+            Проверь, что каждая функция возвращает свой результат: `return amount` вместо `break`.
+            Нажми «Запустить» и посмотри в «Файлах после запуска», нет ли в новой записи `null` —
+            так JSON записывает `None`.
+          verify: «Пример 1» не должен падать.
+        - id: read-with-w
+          when:
+            errorIncludes: not readable
+          why: >-
+            Журнал для чтения открыт в режиме `"w"`. Из такого файла читать нельзя (not readable),
+            а сам режим `"w"` в момент открытия уже стёр журнал.
+          try: >-
+            При загрузке открывай файл без режима или с `"r"` — это чтение. Режим `"w"` нужен
+            только при сохранении.
+          verify: «Пример 1» не должен падать.
+        - id: write-without-w
+          when:
+            errorIncludes: not writable
+          why: >-
+            При сохранении файл открыт без режима `"w"` — значит, для чтения, и записать в него
+            нельзя (not writable).
+          try: Для сохранения открывай журнал с режимом `"w"` и `encoding="utf-8"`.
+          verify: «Пример 1» не должен падать.
+        - id: append-mode
+          when:
+            failedTest: t7
+            outputIncludes: "Всего: 1950 руб."
+            codeRegex: 'open\([^)\n]*["'']a["'']'
+          where: '`open()`, которым сохраняется журнал'
+          why: >-
+            Режим `"a"` дописывает в конец: после старого списка в файле появляется второй,
+            `[…][…]`, и файл перестаёт быть JSON. Следующий запуск решит, что журнал повреждён.
+          try: >-
+            Сохраняй весь список заново в режиме `"w"`: он стирает старое содержимое, но в списке
+            уже есть и старые записи, и новая.
+          verify: Проверка «Журнал сохранён целиком» должна пройти.
+        - id: wiped-before-load
+          when:
+            failedTest: t1
+            outputIncludes: Файл журнала повреждён
+          why: >-
+            Программа говорит, что журнал повреждён, хотя в «Примере 1» файл в порядке. Скорее
+            всего, файл открывается в режиме `"w"` раньше загрузки — например, общим `with` вокруг
+            всей программы. Режим `"w"` стирает файл в момент открытия, и загрузка читает уже
+            пустой файл.
+          try: >-
+            Разнеси по времени: сначала загрузи журнал (файл закроется после `with`), а в самом
+            конце открой его в режиме `"w"` и сохрани весь список.
+          verify: "В «Примере 1» должно получиться «Записей: 3»."
+        - id: not-loaded
+          when:
+            failedTest: t1
+            outputIncludes: "Записей: 1"
+          why: >-
+            Программа начала с пустого журнала, хотя в `expenses.json` уже две записи. Загрузка
+            ничего не принесла: либо имя файла написано с ошибкой и молча сработал
+            `except FileNotFoundError`, либо загруженный список не попал в переменную, с которой
+            программа работает дальше.
+          try: >-
+            Сверь имя файла с «Файлами задания» и проверь, что результат загрузки сохраняется в
+            переменную, в которую потом добавляется запись.
+          verify: "В «Примере 1» должно получиться «Записей: 3»."
+        - id: message-on-missing
+          when:
+            failedTest: t3
+            outputIncludes: Файл журнала повреждён
+          why: >-
+            Когда файла нет, программа пишет, что он повреждён. Но это первый запуск, а не
+            поломка: журнала ещё не было, и пугать человека незачем.
+          try: >-
+            Раздели `except`: для FileNotFoundError — молча пустой список, для
+            json.JSONDecodeError — сообщение и пустой список.
+          verify: "В «Примере 3» должны остаться только строки «Записей: 1» и «Всего: 450 руб.»."
+        - id: negative-no-retry
+          when:
+            outputIncludes: "Сумма должна быть больше нуля\nЗаписей: 3\nВсего: 1450 руб."
+          why: >-
+            Программа напечатала «Сумма должна быть больше нуля», но не спросила снова: -50 ушло
+            в журнал, и итог получился 1450 вместо 1800. После сообщения не хватает `continue`,
+            и цикл дошёл до `break`.
+          try: >-
+            Допиши `continue` сразу после сообщения «Сумма должна быть больше нуля» — или выходи
+            из цикла через `break` только тогда, когда сумма больше нуля (урок 7.4).
+          verify: "В «Примере 2» итог должен стать «Всего: 1800 руб.»."
+        - id: negative-accepted
+          when:
+            outputIncludes: "Всего: 1450 руб."
+          why: >-
+            Программа приняла сумму -50. Это целое число, и `int()` не возражает, но расход не
+            бывает отрицательным — итог получился 1450 вместо 1800.
+          try: >-
+            После `int()` проверь смысл: если сумма меньше или равна нулю, напечатай
+            `Сумма должна быть больше нуля` и спроси снова.
+          verify: "В «Примере 2» итог должен стать «Всего: 1800 руб.»."
+        - id: isdigit-negative
+          when:
+            failedTest: t2
+            outputIncludes: "Всего: 1800 руб."
+            codeRegex: '\.is(digit|numeric|decimal)\('
+          why: >-
+            На «-50» программа отвечает, что нужно целое число, хотя -50 — целое, просто
+            отрицательное. `isdigit()` (и похожие `isnumeric()`, `isdecimal()`) не считает минус
+            цифрой, поэтому человек получает не то объяснение.
+          try: >-
+            Превращай ответ через `int()` внутри `try`: он понимает и минус, и пробелы по краям. А
+            ноль и отрицательные числа отсей отдельной проверкой после превращения (урок 7.4).
+          verify: "В «Примере 2» после «-50» должно появиться «Сумма должна быть больше нуля»."
+        - id: category-no-retry
+          when:
+            failedTest: t-cat
+            outputIncludes: "Категория не может быть пустой\nНужна сумма целым числом, например 350\nНужна сумма целым числом"
+          why: >-
+            Программа напечатала «Категория не может быть пустой», но не спросила снова: пустая
+            категория ушла в журнал, а следующая строка ввода, «кафе», — в вопрос о сумме. Похоже,
+            после сообщения нет `continue`, и цикл дошёл до `break`.
+          try: >-
+            Выходи из цикла через `break` (или `return`) только тогда, когда категория не пустая,
+            а после сообщения возвращайся к вопросу — `continue` (урок 7.4).
+          verify: Проверка «Категория без пробелов и не пустая» должна пройти.
+        - id: empty-category
+          when:
+            failedTest: t-cat
+            outputIncludes: "Всего: 1800 руб."
+          why: >-
+            Программа приняла пустую категорию. Следующая строка ввода, «кафе», ушла в вопрос о
+            сумме, а в журнале появилась запись без категории.
+          try: >-
+            После `strip()` проверь категорию: если она равна `""`, напечатай
+            `Категория не может быть пустой` и спроси снова.
+          verify: Проверка «Категория без пробелов и не пустая» должна пройти.
+        - id: strip-first
+          when:
+            failedTest: t6
+            outputIncludes: "Всего: 1750 руб."
+          why: >-
+            Строка из одних пробелов прошла проверку на пустоту: пока пробелы не убраны, она не
+            равна `""`. В журнал попала пустая категория, а «  кафе  » ушло в вопрос о сумме.
+          try: Сначала убери пробелы через `strip()`, потом проверяй, не пустая ли строка.
+          verify: Граничный случай «пробелы и ноль» должен начаться с «Категория не может быть пустой».
+        - id: zero-accepted
+          when:
+            failedTest: t6
+            outputIncludes: "Категория не может быть пустой\nЗаписей: 3"
+          why: >-
+            Сумма 0 прошла проверку. Скорее всего, в проверке суммы стоит `< 0`, и ноль оказался
+            на «разрешённой» стороне границы. А расход в ноль рублей — не расход.
+          try: Отсекай и ноль — сумма должна быть строго больше нуля.
+          verify: "В граничном случае «пробелы и ноль» итог должен стать «Всего: 1750 руб.»."
+        - id: category-once
+          when:
+            failedTest: t12
+            outputIncludes: "Категория не может быть пустой\nНужна сумма целым числом"
+          why: >-
+            После второй пустой категории программа не переспросила: строка из пробелов ушла в
+            журнал как пустая категория, а «кафе» — в вопрос о сумме. Похоже, категория
+            проверяется один раз, через `if`, а не в цикле.
+          try: >-
+            Спрашивай категорию в цикле `while True` и выходи из него только после непустого
+            ответа — сколько бы пустых ответов ни было подряд (урок 7.4).
+          verify: Граничный случай «два неверных ответа подряд» должен пройти.
+        - id: amount-recheck-once
+          when:
+            failedTest: t12
+            outputIncludes: "Всего: 1495 руб."
+          why: >-
+            После суммы 0 программа спросила снова, но следующий ответ, -5, уже не проверила.
+            Похоже, «больше нуля» проверяется один раз — после цикла для `int()`, а не внутри него.
+          try: >-
+            Держи обе проверки в одном цикле: превратить через `int()`, потом проверить «больше
+            нуля» — и выходить из цикла, только когда ответ прошёл обе.
+          verify: Граничный случай «два неверных ответа подряд» должен пройти.
+        - id: float-truncated
+          when:
+            failedTest: t13
+            outputIncludes: "Всего: 1512 руб."
+          why: >-
+            Ответ 12.5 принят как 12: `int(float(…))` молча отбрасывает дробную часть. А сумма по
+            условию — целое число рублей, и на 12.5 программа должна переспросить.
+          try: >-
+            Превращай ответ сразу через `int()` — на «12.5» он сам выбросит ValueError, и сработает
+            `except ValueError`.
+          verify: Граничный случай «дробная сумма» должен пройти.
+        - id: amount-as-str
+          when:
+            failedTest: t8
+            outputIncludes: "Всего: 1950 руб."
+          why: >-
+            Вывод верный, но в файле сумма сохранена текстом — в кавычках, `"450"`. Для JSON это
+            строка, и при следующем запуске её не сложить с числами без лишних превращений.
+          try: Сохраняй в запись число — результат `int()`, а не строку, которую вернул `input()`.
+          verify: Проверка «Сумма сохранена числом» должна пройти.
+        - id: only-new-saved
+          when:
+            failedTest: t9
+            outputIncludes: "Всего: 1950 руб."
+          why: >-
+            Вывод верный, но в файле осталась только новая запись — старые расходы пропали. Режим
+            `"w"` стирает файл, поэтому сохранять нужно весь журнал, а не одну запись.
+          try: Добавь запись в загруженный список и сохрани в файл весь список.
+          verify: Проверка «Старые записи на месте» должна пройти.
+        - id: ascii-escapes
+          when:
+            failedTest: t10
+            outputIncludes: "Всего: 1950 руб."
+          why: >-
+            В файле вместо русских букв коды вроде `\u043a\u0430\u0444\u0435`. Python прочитает их
+            правильно, а человек в Блокноте — нет. Так `json.dump` пишет по умолчанию.
+          try: Добавь в `json.dump` аргумент `ensure_ascii=False`, а для отступов — `indent=2`.
+          verify: Проверка «Русские буквы в файле — как есть» должна пройти.
+        - id: not-saved
+          when:
+            failedTest: t7
+            outputIncludes: "Всего: 1950 руб."
+          why: >-
+            Вывод верный, но в `expenses.json` после запуска не тот журнал. Либо новой записи в
+            файле нет (например, журнал сохраняется раньше, чем в список добавлена запись), либо
+            она записана иначе — с другими ключами или с `null` вместо категории или суммы. `null`
+            появляется, когда функция вопроса заканчивается без `return`.
+          try: >-
+            Нажми «Запустить» и загляни в «Файлы после запуска». Сохраняй после добавления: открой
+            файл в режиме `"w"` и запиши через `json.dump` весь список. Проверь ключи записи —
+            ровно `"категория"` и `"сумма"` — и что функции вопросов возвращают ответ через
+            `return`.
+          verify: Проверка «Журнал сохранён целиком» должна пройти.
+        - id: bare-except
+          when:
+            failedTest: t-except
+            outputIncludes: "Всего: 1950 руб."
+          why: >-
+            `except:` без типа или `except Exception` ловит всё подряд — и неверный ввод, и
+            опечатки в самом коде. Опечатка превратится в «неверную сумму», и причину будет не
+            найти (урок 7.3).
+          try: >-
+            Укажи конкретный тип: `ValueError` для суммы, `FileNotFoundError` и
+            `json.JSONDecodeError` для загрузки.
+          verify: Проверка «Ловятся конкретные исключения» должна пройти.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Всего: 1950 руб."
+          why: >-
+            В одном из `open()` не указана кодировка. В тренажёре это незаметно, но тогда
+            программа зависит от настроек компьютера: на русской Windows со старым Python (до
+            3.15) журнал прочитается кракозябрами, и программа упадёт или посчитает не то.
+          try: >-
+            Добавь `encoding="utf-8"` в каждый `open()` — и для чтения, и для записи. Если пишешь
+            через `read_text`/`write_text`, им кодировка нужна тоже.
+          verify: Проверка «Кодировка указана» должна пройти.
+        - id: float-amount
+          when:
+            failedTest: t1
+            outputIncludes: "1950.0"
+          why: >-
+            Итог напечатан как `1950.0`: сумма прочитана через `float()` и стала дробной. А в
+            журнале суммы — целые рубли, и ответ вроде `12.5` программа должна отвергать.
+          try: Превращай ответ через `int()` — он не примет ни `12.5`, ни `триста`.
+          verify: "В «Примере 1» должно получиться «Всего: 1950 руб.»."
+        - id: count-before-append
+          when:
+            failedTest: t1
+            outputIncludes: "Записей: 2"
+          why: >-
+            В журнале уже три записи, а программа насчитала две: новая запись не попала в список к
+            моменту подсчёта. Похоже, число записей считается до `append` — или запись в список не
+            добавляется вовсе.
+          try: >-
+            Считай итог — и число записей, и сумму — после того, как новая запись добавлена в
+            список.
+          verify: "В «Примере 1» должно получиться «Записей: 3»."
+        - id: format
+          when:
+            failedTest: t1
+            outputIncludes: "1950"
+          why: >-
+            Сумма верная, но вывод не совпадает с образцом, а проверка сравнивает строки
+            посимвольно.
+          try: >-
+            Сравни с образцом: `Записей: 3` и `Всего: 1950 руб.` — число записей, двоеточие,
+            пробелы, «руб.» с точкой. Лишних строк быть не должно: подсказки для ввода пиши внутри
+            `input("…")`, а не отдельным `print` — иначе они попадают в вывод.
+          verify: Вывод «Примера 1» должен совпасть с образцом строка в строку.
+        - id: bare-loop
+          when:
+            failedTest: t1
+            codeRegex: '\bexcept\s*:|\bexcept\s+(Base)?Exception\b'
+          why: >-
+            «Пример 1» не прошёл, а в коде есть `except` без типа. Он ловит всё подряд: неверный
+            ответ, опечатку в имени переменной и даже конец ввода. Для программы всё это выглядит
+            как неверный ответ, поэтому она может без конца печатать одно и то же сообщение, пока
+            её не остановят, — а настоящая ошибка спрятана.
+          try: >-
+            Укажи в `except` конкретный тип — `ValueError` для суммы. Тогда Python покажет
+            настоящую ошибку, и её можно будет исправить (урок 7.3).
+          verify: «Пример 1» должен дойти до итога.
+      afterPass: >-
+        Журнал переживает первый запуск, пустой и испорченный файл, неверные ответы — и хранит
+        записи между запусками. Одно улучшение: перед тем как начать новый журнал вместо
+        испорченного, сохрани испорченный файл под другим именем, например
+        `expenses_broken.json` (`read_text` и `write_text` из урока 7.2), — вдруг записи ещё
+        можно спасти вручную.
+      skills: [files-json, exceptions, input-validation, function-design, files-paths]
+      noHintsBeforeAttempt: true
+
+  - id: bonus-task
+    type: exercise
+    title: Усложнение
+    exercise:
+      id: m7-l7-e2
+      kind: write
+      title: Отчёт по категориям в CSV
+      statement: |-
+        Это задание по желанию: если на сегодня хватит главного, вернись к нему в другой день.
+
+        Орловы хотят понять, на что уходят деньги. Напиши программу, которая читает журнал
+        `expenses.json` (в этом задании он всегда в порядке) и складывает суммы по категориям.
+        Затем программа:
+
+        1. печатает по строке на категорию — например, `продукты: 2000` — в том порядке, в каком
+           категории впервые встречаются в журнале;
+        2. последней строкой печатает `Категорий в отчёте: N`;
+        3. записывает отчёт в файл `report.csv`: первая строка — заголовок из двух ячеек,
+           `категория` и `сумма`, дальше по строке на категорию в том же порядке. Если
+           `report.csv` остался от прошлого запуска, отчёт пишется заново, а не дописывается в
+           конец.
+
+        Для журнала из «Файлов задания» вывод такой:
+
+        ```text
+        продукты: 2000
+        транспорт: 300
+        кафе: 450
+        Категорий в отчёте: 3
+        ```
+
+        Словарь помнит порядок, в котором в него добавляли ключи (урок 4.4), поэтому нужный
+        порядок получится сам. Сам журнал `expenses.json` не меняй — отчёт пишется в отдельный
+        файл.
+      input: Ввода нет — только файл `expenses.json` со списком записей.
+      output: >-
+        Строки `категория: сумма` и `Категорий в отчёте: N`; файл `report.csv` с заголовком и
+        строками отчёта.
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Категория может содержать запятую — например, «кино, театр».
+        - Файл для CSV открывай с `newline=""`, у каждого `open()` — `encoding="utf-8"`.
+      files:
+        expenses.json: |
+          [
+            {"категория": "продукты", "сумма": 1200},
+            {"категория": "транспорт", "сумма": 300},
+            {"категория": "продукты", "сумма": 800},
+            {"категория": "кафе", "сумма": 450}
+          ]
+      starterCode: |
+        import csv
+        import json
+
+        # Прочитай expenses.json, сложи суммы по категориям,
+        # выведи отчёт и запиши его в report.csv
+
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: отчёт на экране"
+          example: true
+          expected: |-
+            продукты: 2000
+            транспорт: 300
+            кафе: 450
+            Категорий в отчёте: 3
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t2
+          kind: assert
+          title: "Пример 2: файл report.csv"
+          example: true
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("report.csv")
+            with open("report.csv", encoding="utf-8", newline="") as f:
+                rows = list(csv.reader(f))
+            assert rows == [
+                ["категория", "сумма"],
+                ["продукты", "2000"],
+                ["транспорт", "300"],
+                ["кафе", "450"],
+            ]
+          message: >-
+            В `report.csv` первая строка — заголовок `категория,сумма`, дальше по строке на
+            категорию в порядке первого появления.
+        - id: t3
+          kind: io
+          title: "Граничный случай: журнал пустой"
+          edge: true
+          files:
+            expenses.json: "[]\n"
+          expected: "Категорий в отчёте: 0"
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t4
+          kind: assert
+          title: "Граничный случай: в отчёте только заголовок"
+          edge: true
+          files:
+            expenses.json: "[]\n"
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("report.csv")
+            with open("report.csv", encoding="utf-8", newline="") as f:
+                rows = list(csv.reader(f))
+            assert rows == [["категория", "сумма"]]
+          message: >-
+            Даже для пустого журнала в `report.csv` есть строка заголовка `категория,сумма`.
+        - id: t5
+          kind: io
+          title: "Граничный случай: запятая в категории"
+          edge: true
+          files:
+            expenses.json: |
+              [
+                {"категория": "кино, театр", "сумма": 500},
+                {"категория": "такси", "сумма": 300},
+                {"категория": "кино, театр", "сумма": 200}
+              ]
+          expected: |-
+            кино, театр: 700
+            такси: 300
+            Категорий в отчёте: 2
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t6
+          kind: assert
+          title: Запятая в категории — одно значение
+          files:
+            expenses.json: |
+              [
+                {"категория": "кино, театр", "сумма": 500},
+                {"категория": "такси", "сумма": 300},
+                {"категория": "кино, театр", "сумма": 200}
+              ]
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("report.csv")
+            with open("report.csv", encoding="utf-8", newline="") as f:
+                rows = list(csv.reader(f))
+            assert rows == [["категория", "сумма"], ["кино, театр", "700"], ["такси", "300"]]
+          message: >-
+            Категория «кино, театр» читается из `report.csv` одним значением: в каждой строке
+            ровно два столбца.
+        - id: t-old
+          kind: assert
+          title: Старый отчёт заменяется новым
+          files:
+            report.csv: "категория,сумма\nстарое,1\n"
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("report.csv")
+            with open("report.csv", encoding="utf-8", newline="") as f:
+                rows = list(csv.reader(f))
+            assert rows == [
+                ["категория", "сумма"],
+                ["продукты", "2000"],
+                ["транспорт", "300"],
+                ["кафе", "450"],
+            ]
+          message: >-
+            Перед запуском в папке уже лежал `report.csv` от прошлого раза. После запуска в нём
+            должен быть только новый отчёт: заголовок и три строки, без старых строк.
+        - id: t-src
+          kind: assert
+          title: Журнал не изменился
+          code: |
+            import os
+
+            original = (
+                "[\n"
+                '  {"категория": "продукты", "сумма": 1200},\n'
+                '  {"категория": "транспорт", "сумма": 300},\n'
+                '  {"категория": "продукты", "сумма": 800},\n'
+                '  {"категория": "кафе", "сумма": 450}\n'
+                "]\n"
+            )
+            assert os.path.exists("expenses.json")
+            with open("expenses.json", encoding="utf-8") as f:
+                assert f.read() == original
+          message: >-
+            Файл `expenses.json` после запуска такой же, как был: отчёт пишется в новый файл.
+        - id: t-newline
+          kind: assert
+          title: Файл для CSV открыт с newline=""
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "open":
+                    mode = "r"
+                    if len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
+                        mode = node.args[1].value
+                    for k in node.keywords:
+                        if k.arg == "mode" and isinstance(k.value, ast.Constant):
+                            mode = k.value.value
+                    if "w" in mode or "a" in mode:
+                        assert any(k.arg == "newline" for k in node.keywords)
+          message: >-
+            Файл `report.csv` открыт для записи без `newline=""`. Добавь его — иначе на Windows
+            между строками таблицы появятся пустые строки.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+
+
+            def has_encoding(call):
+                if any(k.arg == "encoding" for k in call.keywords):
+                    return True
+                name = getattr(call.func, "id", None) or call.func.attr
+                # Кодировка по позиции: open(file, mode, buffering, encoding),
+                # Path.open(mode, buffering, encoding), read_text(encoding), write_text(data, encoding)
+                position = {"open": 3 if isinstance(call.func, ast.Attribute) else 4, "read_text": 1, "write_text": 2}[name]
+                return len(call.args) >= position
+
+
+            assert all(has_encoding(c) for c in calls)
+          message: >-
+            В одном из `open()` (или `read_text`/`write_text`) не указана кодировка. Добавь
+            `encoding="utf-8"` — иначе программа зависит от настроек компьютера: на Windows со
+            старым Python (до 3.15) русский текст превратится в кракозябры.
+      criteria:
+        - Суммы складываются по категориям, каждая категория — одна строка, в порядке первого появления.
+        - "Последняя строка вывода — `Категорий в отчёте: N`."
+        - "`report.csv` начинается с заголовка, значение с запятой остаётся одним столбцом."
+        - "`expenses.json` не меняется; CSV открыт с `newline=\"\"`, у каждого `open()` указана кодировка."
+      hints:
+        - >-
+          Раздели работу на три части: прочитать журнал, сложить суммы по категориям в словаре,
+          потом вывести и записать отчёт. Что должно случиться со словарём, когда категория
+          встречается впервые, а что — когда она встречается снова?
+        - |-
+          Похожий приём — подсчёт голосов из урока 4.4:
+
+          ```python
+          votes = {}
+          for color in ["синий", "красный", "синий"]:
+              votes[color] = votes.get(color, 0) + 1
+          ```
+
+          А таблица записывается, как в уроке 7.5:
+
+          ```python
+          with open("votes.csv", "w", encoding="utf-8", newline="") as f:
+              writer = csv.writer(f)
+              writer.writerow(["цвет", "голоса"])
+          ```
+        - |-
+          Каркас:
+
+          ```text
+          открыть expenses.json для чтения → expenses = json.load(f)
+          totals = {}
+          для каждой записи: totals[категория] = totals.get(категория, 0) + сумма
+          открыть report.csv в режиме "w" с encoding и newline=""
+              writer = csv.writer(f), заголовок
+              для каждой пары из totals.items(): writer.writerow([…, …])
+          для каждой пары: print(f"{…}: {…}")
+          print(f"Категорий в отчёте: {…}")
+          ```
+      solution:
+        code: |
+          import csv
+          import json
+
+          with open("expenses.json", encoding="utf-8") as f:
+              expenses = json.load(f)
+
+          totals = {}
+          for record in expenses:
+              category = record["категория"]
+              totals[category] = totals.get(category, 0) + record["сумма"]
+
+          with open("report.csv", "w", encoding="utf-8", newline="") as f:
+              writer = csv.writer(f)
+              writer.writerow(["категория", "сумма"])
+              for category, amount in totals.items():
+                  writer.writerow([category, amount])
+
+          for category, amount in totals.items():
+              print(f"{category}: {amount}")
+          print(f"Категорий в отчёте: {len(totals)}")
+        explanation: >-
+          `totals.get(category, 0)` возвращает ноль, когда категория встречается впервые, поэтому
+          сумма просто прибавляется к старой. Словарь хранит категории в порядке добавления, и
+          `items()` отдаёт их в том же порядке. `csv.writer` сам превращает числа в текст и берёт
+          «кино, театр» в кавычки, а `newline=""` не даёт Windows вставить пустые строки. Журнал
+          только читается — отчёт уходит в новый файл.
+      altSolutions:
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                if record["категория"] in totals:
+                    totals[record["категория"]] += record["сумма"]
+                else:
+                    totals[record["категория"]] = record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category in totals:
+                    writer.writerow([category, totals[category]])
+                    print(category + ":", totals[category])
+            print("Категорий в отчёте:", len(totals))
+          note: Проверка in вместо get, печать внутри цикла записи.
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["категория", "сумма"])
+                writer.writeheader()
+                for category, amount in totals.items():
+                    writer.writerow({"категория": category, "сумма": amount})
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: csv.DictWriter вместо csv.writer.
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as source:
+                journal = json.load(source)
+
+            sums = {}
+            for item in journal:
+                name = item["категория"]
+                if name not in sums:
+                    sums[name] = 0
+                sums[name] = sums[name] + item["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as target:
+                out = csv.writer(target)
+                out.writerow(["категория", "сумма"])
+                out.writerows(sums.items())
+
+            n = 0
+            for name in sums:
+                print(name + ": " + str(sums[name]))
+                n += 1
+            print("Категорий в отчёте: " + str(n))
+          note: writerows(sums.items()), склейка через str(), счётчик категорий.
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print()
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Пустая строка перед последней строкой вывода — формат она не меняет (ignoreBlankLines).
+      wrongSolutions:
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                totals[record["категория"]] += record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: += по ключу, которого ещё нет, — KeyError.
+          expectMistake: get-default
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                totals[record["категория"]] = record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Присваивание вместо сложения — остаётся последняя сумма категории.
+          expectMistake: replaced-not-added
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("expenses.json", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Отчёт записан в expenses.json — журнал стёрт.
+          expectMistake: overwrote-source
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Нет строки заголовка.
+          expectMistake: no-header
+        - code: |
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                f.write("категория,сумма\n")
+                for category, amount in totals.items():
+                    f.write(f"{category},{amount}\n")
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: CSV собран вручную через запятую — «кино, театр» разваливается на два столбца.
+          expectMistake: manual-join
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Нет newline="" при записи CSV.
+          expectMistake: no-newline-arg
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Журнал читается без encoding.
+          expectMistake: no-encoding
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(expenses)}")
+          note: Число категорий посчитано как число записей.
+          expectMistake: count-records
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow("категория", "сумма")
+                for category, amount in totals.items():
+                    writer.writerow(category, amount)
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: writerow получает два аргумента вместо одного списка.
+          expectMistake: writerow-list
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: totals.get(категория) без запасного нуля — TypeError с NoneType.
+          expectMistake: get-no-default
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow("категория,сумма")
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Заголовок передан в writerow одной строкой — по букве в ячейке.
+          expectMistake: header-as-string
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow({"категория": category, "сумма": amount})
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: DictWriter без writeheader() — заголовка нет.
+          expectMistake: no-header
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    print(f"{category}: {amount}")
+                writer.writerow([category, amount])
+
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: >-
+            writerow с данными стоит после цикла — в CSV попадает только последняя категория, а на
+            пустом журнале NameError. Общий разбор движка и сообщение проверки «файл report.csv»
+            здесь уместны.
+          expectMistake: null
+        - code: |
+            import csv
+            import json
+
+            with open("expenses.json", encoding="utf-8") as f:
+                expenses = json.load(f)
+
+            totals = {}
+            for record in expenses:
+                category = record["категория"]
+                totals[category] = totals.get(category, 0) + record["сумма"]
+
+            with open("report.csv", "a", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["категория", "сумма"])
+                for category, amount in totals.items():
+                    writer.writerow([category, amount])
+
+            for category, amount in totals.items():
+                print(f"{category}: {amount}")
+            print(f"Категорий в отчёте: {len(totals)}")
+          note: Отчёт открыт в режиме «a» — второй запуск дописывает отчёт после старого.
+          expectMistake: report-append
+      mistakes:
+        - id: get-default
+          when:
+            errorType: KeyError
+            errorIncludes: продукты
+          why: >-
+            На первой же записи программа упала с KeyError: `totals[категория] += …` сначала
+            читает старое значение, а когда категория встречается впервые, её в словаре ещё нет.
+          try: >-
+            Бери старое значение с запасным нулём — `totals.get(категория, 0)` — или сначала
+            проверь, есть ли категория в словаре (урок 4.4).
+          verify: «Пример 1» не должен падать с KeyError.
+        - id: get-no-default
+          when:
+            errorType: TypeError
+            errorIncludes: NoneType
+            codeRegex: '\.get\(\s*[^,()]+\)'
+          why: >-
+            Когда категория встречается впервые, `totals.get(категория)` возвращает `None` —
+            «ничего», а к `None` нельзя прибавить число.
+          try: "Дай `get` запасное значение вторым аргументом: `totals.get(категория, 0)` (урок 4.4)."
+          verify: «Пример 1» не должен падать.
+        - id: writerow-list
+          when:
+            errorIncludes: writerow
+          why: >-
+            `writerow` принимает одно значение — список всех ячеек строки. Если передать категорию
+            и сумму через запятую как два отдельных аргумента, получится TypeError.
+          try: >-
+            Оберни ячейки в квадратные скобки — один список на строку таблицы, и для заголовка
+            тоже.
+          verify: «Пример 1» не должен падать с TypeError.
+        - id: overwrote-source
+          when:
+            failedTest: t-src
+            outputIncludes: "Категорий в отчёте: 3"
+          why: >-
+            После запуска `expenses.json` изменился: программа записала в него, а не в новый файл.
+            Исходные данные портить нельзя — отчёт всегда пишут в отдельный файл.
+          try: >-
+            Проверь имя в `open()` с режимом `"w"`: там должен быть `report.csv`. Журнал
+            открывай только для чтения.
+          verify: Проверка «Журнал не изменился» должна пройти.
+        - id: report-append
+          when:
+            failedTest: t-old
+            outputIncludes: "Категорий в отчёте: 3"
+            codeRegex: 'open\([^)\n]*["'']a["'']'
+          where: '`open()`, которым записывается `report.csv`'
+          why: >-
+            Отчёт открыт в режиме `"a"` — он дописывает в конец. В этой проверке в папке уже лежал
+            старый `report.csv`, и новый отчёт дописался после его строк. На компьютере так будет
+            при каждом запуске: заголовки и строки отчётов станут копиться в одном файле.
+          try: >-
+            Отчёт каждый раз пишется целиком, поэтому открывай `report.csv` в режиме `"w"`: он
+            стирает старое содержимое (урок 7.1).
+          verify: Проверка «Старый отчёт заменяется новым» должна пройти.
+        - id: replaced-not-added
+          when:
+            outputIncludes: "продукты: 800"
+          why: >-
+            У продуктов 800 вместо 2000: вторая запись о продуктах заменила первую. Присваивание
+            кладёт в словарь новое значение, а нужно прибавить сумму к старому.
+          try: Новое значение — это старое (или 0, если категории ещё нет) плюс сумма записи.
+          verify: "В «Примере 1» должно получиться «продукты: 2000»."
+        - id: count-records
+          when:
+            outputIncludes: "Категорий в отчёте: 4"
+          why: >-
+            Посчитаны записи журнала, а не категории: в журнале четыре записи, но категорий только
+            три — продукты встречаются дважды.
+          try: Число категорий — это число ключей в словаре с суммами, а не длина списка записей.
+          verify: "В «Примере 1» последняя строка должна стать «Категорий в отчёте: 3»."
+        - id: header-as-string
+          when:
+            failedTest: t2
+            codeRegex: 'writerow\(\s*f?["'']'
+          why: >-
+            `writerow` получил одну строку, а не список ячеек. Строку csv перебирает по буквам, и
+            каждая буква попадает в свою ячейку: `к,а,т,е,г,о,р,и,я,…`. Запятую внутри строки csv
+            разделителем не считает.
+          try: >-
+            Передавай в `writerow` список: `writer.writerow(["категория", "сумма"])` — две
+            ячейки, два элемента.
+          verify: "Проверка «Пример 2: файл report.csv» должна пройти."
+        - id: no-header
+          when:
+            failedTest: t4
+            outputIncludes: "Категорий в отчёте: 3"
+            codeIncludes: report.csv
+            codeRegex: '(?<![\s\S])(?![\s\S]*(writeheader\s*\(|writerow\(\s*\[\s*["'']категория))'
+          why: >-
+            В `report.csv` нет строки заголовка: первой идёт сразу строка с данными, а для пустого
+            журнала файл совсем пустой. Без заголовка непонятно, что лежит в столбцах.
+          try: >-
+            Сразу после создания `csv.writer` запиши заголовок — строку со значениями
+            `"категория"` и `"сумма"`, — а потом строки отчёта. У `csv.DictWriter` для этого есть
+            `writeheader()`.
+          verify: Проверки «файл report.csv» и «в отчёте только заголовок» должны пройти.
+        - id: manual-join
+          when:
+            failedTest: t6
+            outputIncludes: "Категорий в отчёте: 2"
+            codeRegex: '(?<![\s\S])(?![\s\S]*csv\.writer)'
+          why: >-
+            Строки CSV собраны вручную, через запятую. Для «кино, театр» получилось три значения
+            вместо двух: запятая внутри названия стала разделителем столбцов.
+          try: >-
+            Пиши строки через `csv.writer` и `writerow([…, …])` — он сам возьмёт значение с
+            запятой в кавычки (урок 7.5).
+          verify: Проверка «Запятая в категории — одно значение» должна пройти.
+        - id: no-newline-arg
+          when:
+            failedTest: t-newline
+            outputIncludes: "Категорий в отчёте: 3"
+          why: >-
+            Файл для CSV открыт без `newline=""`. В тренажёре разницы не видно, но на Windows
+            между строками отчёта появятся пустые строки.
+          try: Добавь в `open()` для `report.csv` аргумент `newline=""` (урок 7.5).
+          verify: Проверка «Файл для CSV открыт с newline=""» должна пройти.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Категорий в отчёте: 3"
+          why: >-
+            В одном из `open()` не указана кодировка. В тренажёре это незаметно, но тогда
+            программа зависит от настроек компьютера: на русской Windows со старым Python (до
+            3.15) русские категории прочитаются или запишутся кракозябрами.
+          try: >-
+            Добавь `encoding="utf-8"` в каждый `open()` — и для журнала, и для отчёта. Если
+            читаешь через `read_text`, ему кодировка нужна тоже.
+          verify: Проверка «Кодировка указана» должна пройти.
+      afterPass: >-
+        Отчёт готов: JSON удобен программе, а CSV — таблицам. `report.csv` откроется в Google
+        Таблицах, а в Excel — через «Данные → Из текстового/CSV-файла» с кодировкой UTF-8 и
+        разделителем-запятой: двойным щелчком русский Excel может склеить столбцы и испортить
+        буквы (урок 7.5). Одно улучшение: допиши в отчёт последнюю строку `итого` с общей суммой
+        всех расходов.
+      skills: [files-json, dicts]
+      noHintsBeforeAttempt: true
+
+  - id: on-computer
+    type: checklist
+    title: Журнал на компьютере
+    body: >-
+      По желанию, можно в другой день. На компьютере файлы настоящие: журнал остаётся между
+      запусками, и видно то, что тренажёр прячет. Инструкция для Windows; где на macOS и Linux
+      иначе, сказано в «Если не получается».
+    items:
+      - id: folder
+        text: >-
+          **Сохрани журнал на компьютер.** В учебной папке `python-practice` открой папку `m7` из
+          урока 7.2 (если её нет — создай) и сохрани туда свою программу из главного задания под
+          именем `journal.py`.
+        help: >-
+          Скопируй код из редактора тренажёра целиком и вставь в новый файл в IDLE или VS Code.
+          Имя — латиницей, с расширением `.py`.
+      - id: run-twice
+        text: >-
+          **Запусти дважды.** Открой терминал в папке `m7`, выполни `python journal.py`, введи
+          категорию и сумму. Запусти ещё раз: теперь «Записей» на одну больше — на компьютере
+          файл остаётся между запусками, а в тренажёре каждый запуск начинается с чистой папки.
+        help: >-
+          На macOS и Linux команда — `python3 journal.py`. Как открыть терминал в папке — в уроке
+          0.4. Если записей столько же, проверь, в какой папке появился `expenses.json`: возможно,
+          терминал открыт не в `m7` (об этом последний пункт). Если у тебя работает только `py`,
+          пиши `py journal.py` — и так же в остальных пунктах.
+      - id: open-file
+        text: >-
+          **Загляни в файл.** Открой `expenses.json` в Блокноте или VS Code: русские буквы
+          читаются, каждая запись — с отступами.
+        help: >-
+          Видишь `\u0430` вместо букв — в `json.dump` не хватает `ensure_ascii=False`. Всё в одну
+          строку — не хватает `indent=2`.
+      - id: damage-copy
+        text: >-
+          **Испорти журнал, но сначала сделай копию.** Скопируй журнал в файл `expenses_backup.json`.
+          В `expenses.json` сотри последнюю `]`, сохрани и запусти программу: она сообщит, что
+          журнал повреждён, и начнёт новый. Затем удали `expenses.json` и переименуй
+          `expenses_backup.json` обратно в `expenses.json`.
+        help: >-
+          Копия в проводнике — Ctrl+C и Ctrl+V, потом переименование. Заметь: после запуска
+          старые записи пропали — программа записала поверх испорченного файла новый журнал.
+          Поэтому эксперименты — только на копиях.
+      - id: encoding
+        text: >-
+          **Проверь кодировку (Windows).** Снова сделай копию журнала — `expenses_backup.json`.
+          Убери `encoding="utf-8"` из `open()`, которым журнал читается, и запусти командой
+          `python -X utf8=0 journal.py`. Буквы из файла прочитаются кракозябрами: ключи в файле
+          перестанут совпадать с ключами в программе, и она упадёт — например, с
+          `KeyError: 'сумма'`. Верни `encoding` на место и восстанови журнал из копии, как в
+          прошлом пункте.
+        help: >-
+          Ключ `-X utf8=0` выключает режим UTF-8, и Python читает файлы в кодировке Windows — до
+          Python 3.15 так было по умолчанию. С Python 3.15 UTF-8 — кодировка по умолчанию и на
+          Windows, поэтому без ключа ошибки не будет. `encoding` всё равно пишем: программу
+          запустят и на старом Python, и там, где кодировка другая, — без него она «работает у
+          автора и ломается у других». Копия нужна, потому что программа может успеть сохранить
+          журнал с кракозябрами до ошибки — загляни в `expenses.json` и проверь. На macOS и Linux
+          ошибки не будет и с ключом: там UTF-8 — кодировка системы.
+      - id: other-folder
+        text: >-
+          **Запусти из другой папки.** В терминале поднимись на папку выше — `cd ..` — и запусти
+          `python m7\journal.py`. Журнал начнётся заново: `expenses.json` создастся в текущей
+          папке `python-practice`, а не рядом с программой. Исправь путь, как в уроке 7.2:
+          добавь `from pathlib import Path` и везде вместо `"expenses.json"` пиши
+          `Path(__file__).parent / "expenses.json"`. Запусти снова из обеих папок — журнал один и
+          тот же.
+        help: >-
+          На macOS и Linux — `python3 m7/journal.py`. Лишний `expenses.json` в `python-practice`
+          после проверки можно удалить.
+    coach: >-
+      Этот шаг не проверяется автоматически — отмечай пункты сам. Его можно пройти в другой
+      день: задания в тренажёре от него не зависят.
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - "Главное задание получилось без подсказок — модуль 7 твой, можно браться за проект «Список задач с сохранением в JSON». Если получилось и усложнение, ты умеешь превращать данные программы в таблицу для людей."
+      - "Программа падала на отсутствующем, пустом или испорченном файле — повтори урок 7.3 и шаблон «загрузить или начать заново» из урока 7.6."
+      - "Программа не переспрашивала или переспрашивала только один раз, падала на «триста», принимала -50, 0 или 12.5 — повтори урок 7.4."
+      - "Пропадали старые записи, в файле появлялись `\\u0430`, сумма сохранялась текстом — повтори режимы в уроке 7.1 и сохранение в 7.6; трудности с CSV-отчётом — урок 7.5, с путями на компьютере — урок 7.2."
+    question: Какие исключения ловит твой журнал, почему именно их и почему не стоит писать просто `except:`?
+    answer: >-
+      FileNotFoundError — первый запуск, журнала ещё нет: молча начинаем с пустого списка.
+      json.JSONDecodeError — файл пустой или испорчен: сообщаем человеку и начинаем новый журнал.
+      ValueError — сумма не целое число: объясняем, что не так, и спрашиваем снова. Голый
+      `except:` поймал бы и ошибки в самом коде — например, опечатку в имени переменной, — и
+      программа молча делала бы не то, а причину было бы не найти.

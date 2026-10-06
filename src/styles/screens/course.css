@@ -1,0 +1,441 @@
+/* Владелец: course; экраны «Карта курса» и «Модуль». Язык — проводник редактора: ряды на линиях, моноширинные
+   номера в квадратах, статус — значок + слово. Общие классы (.rows, .row-*, .badge, .page, .side) не переписываются —
+   здесь только уточнения внутри своих контейнеров (.cmap, .module-*). Цвета и размеры — только токены. */
+
+/* ------------------------------------------------------------ карта курса */
+.cmap {
+  max-width: 1080px;
+}
+
+.cmap > .page-head {
+  margin-bottom: 0;
+}
+
+/* Счёт написанных материалов: метка «Материалы», затем «Уроки 88 / 88 · Модули 14 / 14 · …» — подпись и число
+   через 8, группы через 16 и точку. */
+.cmap-materials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2) var(--sp-4);
+}
+
+.cmap-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.cmap-counts li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  white-space: nowrap;
+}
+
+.cmap-counts li:not(:last-child)::after {
+  content: '·';
+  margin-left: var(--sp-2);
+  color: var(--text-3);
+}
+
+.cmap-count-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.cmap-section {
+  margin-top: var(--sp-8);
+}
+
+.cmap-label {
+  margin-bottom: var(--sp-4);
+}
+
+/* Шапка части: h2 слева, короткая сводка справа (переносится под заголовок, если не помещается). */
+.cmap-part-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.cmap-part-head h2 {
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+.cmap-part-meta {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* Ряды — во всю ширину колонки: текст ряда на одной линии с текстом страницы, подсветка наведения — до краёв. */
+.cmap-rows {
+  margin-inline: calc(-1 * var(--gutter));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.cmap-rows .row {
+  display: grid;
+  grid-template-areas: 'ic main badges chev';
+  grid-template-columns: 32px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  column-gap: var(--sp-3);
+  min-height: 56px;
+}
+
+.cmap-rows .row-ic {
+  grid-area: ic;
+  margin: 0;
+}
+
+.cmap-rows .row-main {
+  grid-area: main;
+}
+
+.cmap-title {
+  font-size: var(--fs-16);
+  line-height: var(--lh-16);
+}
+
+.cmap-rows .row-sub {
+  margin-top: var(--sp-1);
+}
+
+.cmap-badges {
+  display: flex;
+  flex-wrap: wrap;
+  grid-area: badges;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+.cmap-chevron {
+  grid-area: chev;
+  width: 16px;
+  height: 16px;
+  color: var(--text-2);
+}
+
+/* Модуль или урок, который ещё пишется: не ссылка — без наведения. */
+.cmap-rows .row.is-planned {
+  cursor: default;
+}
+
+.cmap-rows .row.is-planned .row-title {
+  color: var(--text-2);
+}
+
+/* Номер: текущий — янтарный квадрат (слово «Сейчас» или состояние — в бейдже ряда), освоенный — зелёная подложка. */
+.cmap-num.is-current {
+  border-color: var(--accent-edge);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.cmap-num.is-mastered {
+  border-color: var(--ok-line);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+/* ------------------------------------------------------------ модуль */
+.module-split {
+  --side-w: 360px;
+}
+
+.module-back {
+  margin: 0 0 var(--sp-3) calc(-1 * var(--sp-3));
+}
+
+.module-head {
+  gap: var(--sp-4);
+  margin-bottom: 0;
+}
+
+/* «Модуль 0 ·» — шрифтом заголовка с цифрами одной ширины (моноширинный ноль с точкой читался как «θ»). */
+.module-h1-num {
+  color: var(--text-2);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.module-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.module-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.module-lessons {
+  margin-top: var(--sp-8);
+}
+
+/* Шапка списка уроков: метка и счётчик — на одной линии с кнопкой «Скачать модуль», даже когда под кнопкой
+   стоит вторая строка («включая Python · 12,9 МБ»). */
+.module-lessons-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-2) var(--sp-3);
+  min-height: var(--control);
+  margin-bottom: var(--sp-2);
+}
+
+.module-lessons-head > .plabel,
+.module-lessons-meta {
+  padding-block: calc((var(--control) - var(--lh-13)) / 2);
+}
+
+.module-lessons-meta {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.module-offline {
+  display: flex;
+  align-items: center;
+  min-height: var(--control);
+  margin-left: auto;
+}
+
+/* Номер урока «10.4» шире номера модуля: колонка 40. */
+.module-lessons .cmap-rows .row {
+  grid-template-columns: 40px minmax(0, 1fr) auto 16px;
+}
+
+.module-lessons .cmap-num {
+  width: 40px;
+}
+
+/* Соседние модули: «‹ Модуль 0» и под ним название — оно видно на касании и с клавиатуры, не только в title. */
+.module-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin: var(--sp-4) calc(-1 * var(--sp-3)) 0;
+}
+
+.module-pager-link {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  max-width: 50%;
+  min-height: var(--touch);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-1);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.module-pager-link:hover {
+  background: var(--bg-raised);
+}
+
+.module-pager-link:focus-visible {
+  outline-offset: 0;
+}
+
+.module-pager-link svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--text-2);
+}
+
+.module-pager-link.is-next {
+  flex-direction: row-reverse;
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Соседний модуль только один (первый или последний модуль) — название не сжимается в узкую колонку. */
+.module-pager > span:empty + .module-pager-link,
+.module-pager > .module-pager-link:only-child {
+  max-width: 75%;
+}
+
+.module-pager-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.module-pager-num {
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.module-pager-title {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Боковая панель «О модуле»: секции на линиях, как у «Сегодня» и «Прогресса» — метка панели со значком
+   (PaneHead), под ней содержимое. */
+.module-sec + .module-sec {
+  border-top: 1px solid var(--line);
+}
+
+.module-sec-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--gutter) var(--sp-5);
+}
+
+.module-sec-body > * {
+  max-width: 100%;
+}
+
+.module-sec-body > ul {
+  align-self: stretch;
+}
+
+/* Учебное содержание модуля (навыки на выходе, критерий завершения, раскрывающиеся блоки) — размером текста урока. */
+.module-text {
+  color: var(--text);
+  font: 400 var(--lesson-size) / var(--lh-prose) var(--font-sans);
+}
+
+/* Навыки модуля: название, под ним описание; состояние справа; ряды разделены линией. */
+.module-skills {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.module-skills li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.module-skills li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Первый навык — сразу под линией метки панели, без двойного отступа. */
+.module-skills li:first-child {
+  padding-top: 0;
+}
+
+.module-skill-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.module-skill-name {
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.module-skill-text {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.module-skills .badge {
+  flex: none;
+}
+
+.module-more {
+  padding: 0 var(--gutter) var(--sp-5);
+}
+
+@media (max-width: 1199px) {
+  .module-split {
+    --side-w: 300px;
+  }
+}
+
+/* Телефон: бейджи ряда — строкой под подписью, номер 28. На планшете (600–899) ряд остаётся в одну линию. */
+@media (max-width: 599px) {
+  .cmap-rows .row {
+    grid-template-areas:
+      'ic main chev'
+      'ic badges chev';
+    grid-template-columns: 28px minmax(0, 1fr) 16px;
+    align-items: start;
+    row-gap: var(--sp-2);
+  }
+
+  .cmap-rows .row-ic {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Ряд без бейджей (не начатый урок, «Не начат» только для скринридера) — без пустой второй строки и её отступа. */
+  .cmap-rows .row:not(:has(> .cmap-badges)) {
+    grid-template-areas: 'ic main chev';
+  }
+
+  .cmap-chevron {
+    align-self: center;
+  }
+
+  .cmap-badges {
+    justify-content: flex-start;
+  }
+
+  .module-lessons .cmap-rows .row {
+    grid-template-columns: 40px minmax(0, 1fr) 16px;
+  }
+
+  .module-lessons .cmap-rows .row-ic {
+    width: 40px;
+  }
+
+  /* Соседние модули — друг под другом: каждой ссылке вся ширина, название в 1–2 строки. */
+  .module-pager {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+  }
+
+  .module-pager > span:empty {
+    display: none;
+  }
+
+  .module-pager-link,
+  .module-pager > span:empty + .module-pager-link {
+    max-width: 100%;
+  }
+
+  /* Метка «Материалы» над счётчиками, счётчики — сеткой 2 × 2, без точек в конце строки. */
+  .cmap-materials {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cmap-counts {
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    column-gap: var(--sp-6);
+  }
+
+  .cmap-counts li:not(:last-child)::after {
+    content: none;
+  }
+}

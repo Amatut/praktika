@@ -1,0 +1,2981 @@
+id: m8-l6
+module: m8
+number: "8.6"
+title: "Самостоятельная работа: проект с нуля в чистой папке"
+objective: >-
+  Самостоятельно написать модуль сроков, который можно импортировать без лишних действий, и
+  развернуть свой проект в чистой папке только по README и requirements.txt.
+minutes: [25, 30]
+prerequisites: [m8-l5]
+skills: [venv-deps, git-workflow, modules-imports, dates-datetime, readme-docs]
+environment: external
+
+story:
+  title: README из одной строки
+  fictional: true
+  text: >-
+    Надежда, координатор волонтёрского центра, два года вела учёт задач в своей программе на
+    старом ноутбуке. Когда ноутбук сломался, код нашёлся в копии репозитория, но README говорил
+    только «запусти main.py». Какие библиотеки ставить и каких версий, помнил один старый ноутбук,
+    и вечер ушёл на угадывание. Теперь у Надежды правило: проект готов, только когда его удаётся
+    развернуть в пустой папке строго по README — без памяти и без старых файлов. Сегодня ты
+    проверишь по этому правилу свой проект.
+
+why: >-
+  Проверка в чистой папке находит пробелы в инструкции раньше, чем их найдёт другой человек.
+  Например, если без `python -m pip install -r requirements.txt` программа падает, а в README
+  этой строки нет, README нужно дописать.
+
+usedIn: >-
+  Так проверяют проект перед тем, как передать его коллеге или заказчику. Автоматические сборки
+  (CI) каждый раз разворачивают проект с нуля в чистой папке и запускают тесты — к тестам мы
+  придём в модуле 9.
+
+steps:
+  - id: before-start
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа из двух частей:
+
+      1. **Модуль сроков** — задание в тренажёре, около 20 минут, его можно решать и с телефона.
+         За ним идёт усложнение — **по желанию**, ещё 5–10 минут. Подсказки в обоих заданиях
+         откроются после первой проверки. Это не запрет на помощь — просто сначала попробуй сам.
+      2. **Проект в чистой папке** — задача на порядок шагов и чек-лист на компьютере, 10–15
+         минут. Для `pip install` нужен интернет, поэтому эту часть удобно сделать другим
+         заходом.
+
+      Шпаргалка модуля — по строке на урок:
+
+      - **8.1:** `date.fromisoformat("2026-10-05")` превращает строку в дату; дата минус дата —
+        промежуток, число дней в нём — `.days`.
+      - **8.2:** модуль — файл `.py`; `import deadlines` выполняет его сверху вниз, поэтому код
+        запуска прячут под `if __name__ == "__main__":`.
+      - **8.3:** `python -m venv .venv`, затем `.venv\Scripts\activate` и
+        `python -m pip install -r requirements.txt`.
+      - **8.4:** перед коммитом — `git status` и `git diff`; `.gitignore` не пускает в
+        репозиторий `.venv`, `__pycache__` и личный `tasks.json`.
+      - **8.5:** эксперимент — в ветке: `git switch -c имя`, удачный сливают через `git merge`.
+      - **Модуль 7:** `with open("tasks.json", encoding="utf-8") as file:` и
+        `json.load(file)`.
+      - **Новое сегодня:** `git clone папка новая-папка` копирует репозиторий в новую папку —
+        только то, что есть в коммитах. Из папки на компьютере клон делается без интернета.
+
+      Как работать над модулем сроков:
+
+      1. Прочитай условие и примеры: что приходит на вход, что лежит в файле, что нужно
+         вывести. Файл виден в блоке «Файлы задания».
+      2. Начни с функции `days_left` и проверь её через «Запустить», временно напечатав
+         результат для пары дат, — а перед «Проверить» убери эту строку: при `import` она тоже
+         напечатается. Потом — `describe`, потом код запуска.
+      3. Перед «Проверить» нажми «Запустить»: поле «Ввод для „Запустить“» уже заполнено датой
+         из первого примера.
+
+      Для части на компьютере нужен твой проект «Список задач» в Git — таким, каким он стал
+      после уроков 8.2–8.5. Своего проекта нет — сначала пройди на учебном мини-проекте из
+      урока 8.2 чек-листы уроков 8.2–8.4: пакет `todo`, окружение с requirements.txt, раздел
+      «Установка» в README, `.gitignore` и коммиты. Клонировать нужно уже такой проект.
+    simpler: >-
+      Сегодня две проверки. Первая — сможешь ли ты сам написать модуль, который считает сроки
+      задач и молча подключается через import. Вторая — поднимется ли твой проект в пустой папке
+      строго по README. Нового почти нет: всё нужное было в уроках 8.1–8.5.
+    coach: >-
+      Ошибиться на первой попытке — нормально. Самостоятельная работа показывает, что уже
+      получается само, а что стоит повторить.
+
+  - id: main-task
+    type: exercise
+    title: Самостоятельная работа
+    exercise:
+      id: m8-l6-e1
+      kind: write
+      title: Модуль сроков
+      filename: deadlines.py
+      statement: |-
+        Список задач научился хранить сроки. Напиши модуль `deadlines.py`, который подскажет,
+        что пора делать. Задачи лежат в файле `tasks.json` (он в блоке «Файлы задания»): у каждой
+        есть название `title`, срок `due` в виде строки ГГГГ-ММ-ДД и отметка `done` — выполнена
+        ли задача.
+
+        В модуле две функции:
+
+        - `days_left(due, today)` — обе даты приходят строками ГГГГ-ММ-ДД. Функция возвращает,
+          сколько дней осталось до срока, целым числом. Если срок прошёл, число
+          отрицательное: `days_left("2026-10-03", "2026-10-05")` возвращает `-2`.
+        - `describe(title, due, today)` возвращает строку об одной задаче — одну из трёх:
+
+        ```text
+        Просрочено: <название> (<сколько дней назад> дн.)
+        Сегодня: <название>
+        Через <сколько дней> дн.: <название>
+        ```
+
+        **При запуске файла** программа читает из ввода сегодняшнюю дату, загружает `tasks.json`
+        и для каждой **невыполненной** задачи печатает строку `describe` — в порядке файла.
+        Если невыполненных задач нет, печатает `Незакрытых задач нет`. Например, если сегодня
+        `2026-10-05`, для файла задания вывод такой:
+
+        ```text
+        Просрочено: Вернуть дрель соседу (2 дн.)
+        Сегодня: Оплатить интернет
+        Через 7 дн.: Купить подарок маме
+        ```
+
+        **При `import deadlines`** модуль ничего не печатает, не ждёт ввода и не читает
+        `tasks.json`: всё это — код запуска, а другая программа подключает модуль ради функций.
+      input: Одна строка — сегодняшняя дата в виде ГГГГ-ММ-ДД. Задачи — в файле `tasks.json`.
+      output: >-
+        По строке на каждую невыполненную задачу в порядке файла или одна строка
+        `Незакрытых задач нет`.
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Файл читай с `encoding="utf-8"`.
+        - У каждой задачи в файле есть `title`, `due` и `done`. Сортировать задачи не нужно.
+        - Текст подсказки в `input()` может быть любым — он не проверяется.
+      files:
+        tasks.json: |
+          [
+            {"title": "Вернуть дрель соседу", "due": "2026-10-03", "done": false},
+            {"title": "Оплатить интернет", "due": "2026-10-05", "done": false},
+            {"title": "Купить подарок маме", "due": "2026-10-12", "done": false},
+            {"title": "Записаться к врачу", "due": "2026-10-01", "done": true}
+          ]
+      starterCode: |
+        # Модуль сроков deadlines.py
+        # 1. days_left(due, today) — сколько дней до срока (целое число)
+        # 2. describe(title, due, today) — строка о задаче
+        # 3. Код запуска: дата из ввода, задачи из tasks.json, строки для невыполненных
+
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: файл задания"
+          example: true
+          stdin: "2026-10-05\n"
+          expected: |-
+            Просрочено: Вернуть дрель соседу (2 дн.)
+            Сегодня: Оплатить интернет
+            Через 7 дн.: Купить подарок маме
+          compare: { ignoreBlankLines: true }
+        - id: t2
+          kind: io
+          title: "Пример 2: срок в следующем месяце"
+          example: true
+          stdin: "2026-10-30\n"
+          files:
+            tasks.json: |
+              [
+                {"title": "Продлить абонемент в бассейн", "due": "2026-11-02", "done": false}
+              ]
+          expected: "Через 3 дн.: Продлить абонемент в бассейн"
+          compare: { ignoreBlankLines: true }
+        - id: t3
+          kind: io
+          title: "Граничный случай: всё выполнено"
+          edge: true
+          stdin: "2026-10-05\n"
+          files:
+            tasks.json: |
+              [
+                {"title": "Вернуть дрель соседу", "due": "2026-10-03", "done": true},
+                {"title": "Записаться к врачу", "due": "2026-10-01", "done": true}
+              ]
+          expected: Незакрытых задач нет
+          compare: { ignoreBlankLines: true }
+        - id: t4
+          kind: io
+          title: "Граничный случай: пустой список"
+          edge: true
+          stdin: "2026-10-05\n"
+          files:
+            tasks.json: "[]\n"
+          expected: Незакрытых задач нет
+          compare: { ignoreBlankLines: true }
+        - id: t-order
+          kind: io
+          title: "Граничный случай: сроки в файле не по порядку"
+          edge: true
+          stdin: "2026-10-05\n"
+          files:
+            tasks.json: |
+              [
+                {"title": "Купить подарок маме", "due": "2026-10-12", "done": false},
+                {"title": "Вернуть дрель соседу", "due": "2026-10-03", "done": false}
+              ]
+          expected: |-
+            Через 7 дн.: Купить подарок маме
+            Просрочено: Вернуть дрель соседу (2 дн.)
+          compare: { ignoreBlankLines: true }
+        - id: t5
+          kind: call
+          title: "Пример 3: дней до срока"
+          example: true
+          stdin: "2026-10-05\n"
+          call: days_left("2026-10-12", "2026-10-05")
+          expected: "7"
+        - id: t6
+          kind: call
+          title: "Граничный случай: срок прошёл"
+          edge: true
+          stdin: "2026-10-05\n"
+          call: days_left("2026-10-03", "2026-10-05")
+          expected: "-2"
+        - id: t7
+          kind: call
+          title: Строка «Сегодня»
+          stdin: "2026-10-05\n"
+          call: describe("Оплатить интернет", "2026-10-05", "2026-10-05")
+          expected: "'Сегодня: Оплатить интернет'"
+        - id: t8
+          kind: call
+          title: Строка «Просрочено»
+          edge: true
+          stdin: "2026-10-05\n"
+          call: describe("Вернуть дрель соседу", "2026-10-03", "2026-10-05")
+          expected: "'Просрочено: Вернуть дрель соседу (2 дн.)'"
+        - id: t9
+          kind: assert
+          title: Импорт без лишних действий
+          example: true
+          stdin: "2026-10-05\n"
+          code: |
+            import contextlib
+            import io
+            import os
+
+            # Другая программа подключает модуль из своей папки — там нет tasks.json.
+            os.rename("tasks.json", "tasks-hidden.json")
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                import deadlines
+            assert buffer.getvalue() == ""
+            assert hasattr(deadlines, "days_left") and hasattr(deadlines, "describe")
+            assert deadlines.days_left("2026-10-12", "2026-10-05") == 7
+            assert deadlines.describe("Купить подарок маме", "2026-10-12", "2026-10-05") == "Через 7 дн.: Купить подарок маме"
+          message: >-
+            При `import deadlines` модуль ничего не печатает, не ждёт ввода и не читает
+            `tasks.json`, а `deadlines.days_left` и `deadlines.describe` работают.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          stdin: "2026-10-05\n"
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            Файл открывается с `encoding="utf-8"` — иначе на Windows со старым Python (до 3.15)
+            русские названия задач превратятся в кракозябры.
+      criteria:
+        - "`days_left` превращает строки в даты и возвращает целое число дней: положительное, ноль или отрицательное."
+        - "`describe` возвращает одну из трёх строк точно в формате условия; у просроченной задачи число дней без минуса."
+        - Код запуска печатает строки только для невыполненных задач, в порядке файла, а если таких нет — «Незакрытых задач нет».
+        - При `import deadlines` ничего не печатается, ввод и файл не читаются, функции доступны.
+        - Файл читается с `encoding="utf-8"`.
+      hints:
+        - >-
+          Посмотри на три места, где чаще всего ошибаются. Что возвращает `days_left` — число или
+          промежуток? Что стоит под проверкой `__name__`, а что снаружи — и не остался ли снаружи
+          временный `print`? Где решается, печатать ли «Незакрытых задач нет», — внутри
+          цикла или после него?
+        - |-
+          Тот же приём на другом модуле — `prices.py` с функцией и кодом запуска:
+
+          ```python
+          import json
+
+
+          def total(prices):
+              result = 0
+              for price in prices:
+                  result += price
+              return result
+
+
+          if __name__ == "__main__":
+              with open("prices.json", encoding="utf-8") as file:
+                  prices = json.load(file)
+              print(total(prices))
+          ```
+
+          И напоминание про даты: `(date(2026, 5, 9) - date(2026, 5, 1)).days` даёт `8`, а в
+          обратном порядке — `-8`.
+        - |-
+          Каркас модуля:
+
+          ```text
+          import json
+          from datetime import date
+
+          def days_left(due, today):
+              обе строки → даты, вычесть «срок минус сегодня», вернуть .days
+
+          def describe(title, due, today):
+              left = days_left(due, today)
+              три ветки: left < 0 / left == 0 / иначе — return f"…"
+              (у просрочки число без минуса: -left)
+
+          if __name__ == "__main__":
+              today = input()
+              загрузить tasks.json через json.load
+              счётчик = 0
+              для каждой задачи: если не выполнена — print(describe(…)), счётчик += 1
+              если счётчик == 0 — print("Незакрытых задач нет")
+          ```
+      solution:
+        code: |
+          import json
+          from datetime import date
+
+
+          def days_left(due, today):
+              left = date.fromisoformat(due) - date.fromisoformat(today)
+              return left.days
+
+
+          def describe(title, due, today):
+              left = days_left(due, today)
+              if left < 0:
+                  return f"Просрочено: {title} ({-left} дн.)"
+              elif left == 0:
+                  return f"Сегодня: {title}"
+              else:
+                  return f"Через {left} дн.: {title}"
+
+
+          if __name__ == "__main__":
+              today = input("Сегодня (ГГГГ-ММ-ДД): ")
+              with open("tasks.json", encoding="utf-8") as file:
+                  tasks = json.load(file)
+              shown = 0
+              for task in tasks:
+                  if not task["done"]:
+                      print(describe(task["title"], task["due"], today))
+                      shown += 1
+              if shown == 0:
+                  print("Незакрытых задач нет")
+        explanation: >-
+          `days_left` превращает обе строки в даты и вычитает «срок минус сегодня»: получается
+          промежуток, а `.days` даёт из него целое число. `describe` выбирает одну из трёх строк
+          по знаку этого числа; у просрочки число отрицательное, поэтому в текст идёт `-left`.
+          Код запуска — ввод даты, чтение файла и печать — стоит под
+          `if __name__ == "__main__":`: при `import deadlines` он не выполняется, и другая
+          программа получает только функции. Счётчик `shown` помнит,
+          напечатана ли хоть одна строка: если нет — нужна фраза «Незакрытых задач нет».
+      altSolutions:
+        - code: |
+            import json
+            from datetime import datetime
+
+
+            def days_left(due, today):
+                return (datetime.fromisoformat(due) - datetime.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left == 0:
+                    return f"Сегодня: {title}"
+                if left > 0:
+                    return f"Через {left} дн.: {title}"
+                return f"Просрочено: {title} ({abs(left)} дн.)"
+
+
+            def main():
+                today = input("Сегодня: ").strip()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                lines = []
+                for task in tasks:
+                    if task["done"] == False:
+                        lines.append(describe(task["title"], task["due"], today))
+                if len(lines) == 0:
+                    print("Незакрытых задач нет")
+                for line in lines:
+                    print(line)
+
+
+            if __name__ == "__main__":
+                main()
+          note: from datetime import datetime, код запуска в функции main(), строки сначала собираются в список, abs() вместо минуса.
+        - code: |
+            import datetime
+            import json
+            from pathlib import Path
+
+
+            def days_left(due, today):
+                delta = datetime.date.fromisoformat(due) - datetime.date.fromisoformat(today)
+                return delta.days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    text = "Просрочено: " + title + " (" + str(-left) + " дн.)"
+                elif left == 0:
+                    text = "Сегодня: " + title
+                else:
+                    text = "Через " + str(left) + " дн.: " + title
+                return text
+
+
+            if __name__ == "__main__":
+                today = input()
+                tasks = json.loads(Path("tasks.json").read_text(encoding="utf-8"))
+                found = False
+                for task in tasks:
+                    if task["done"]:
+                        continue
+                    found = True
+                    print(describe(task["title"], task["due"], today))
+                if not found:
+                    print("Незакрытых задач нет")
+          note: import datetime целиком, pathlib и json.loads, флаг вместо счётчика, continue для выполненных.
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                due_date = date.fromisoformat(due)
+                today_date = date.fromisoformat(today)
+                if due_date < today_date:
+                    return f"Просрочено: {title} ({(today_date - due_date).days} дн.)"
+                if due_date == today_date:
+                    return f"Сегодня: {title}"
+                return f"Через {(due_date - today_date).days} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                text = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    data = json.load(file)
+                open_tasks = []
+                for task in data:
+                    if not task.get("done"):
+                        open_tasks.append(task)
+                if len(open_tasks) == 0:
+                    print("Незакрытых задач нет")
+                else:
+                    for task in open_tasks:
+                        print(describe(task["title"], task["due"], text))
+          note: describe сравнивает сами даты, невыполненные задачи сначала отбираются в список.
+      wrongSolutions:
+        - code: |
+            import json
+
+
+            def days_left(due, today):
+                return due - today
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Вычитаются строки, а не даты.
+          expectMistake: string-dates
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return date.fromisoformat(due) - date.fromisoformat(today)
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: days_left возвращает промежуток timedelta, его сравнивают с числом.
+          expectMistake: timedelta-compare
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("task.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Опечатка в имени файла — task.json.
+          expectMistake: wrong-file
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["name"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Ключ name вместо title.
+          expectMistake: wrong-key
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = str(date.today())
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Сегодняшняя дата берётся с устройства, а не из ввода.
+          expectMistake: today-from-device
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return date.fromisoformat(due) - date.fromisoformat(today)
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left.days < 0:
+                    return f"Просрочено: {title} ({-left.days} дн.)"
+                elif left.days == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: В строку «Через …» подставлен сам промежуток — 7 days, 0:00:00.
+          expectMistake: delta-in-text
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(today) - date.fromisoformat(due)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Вычитание в обратном порядке — «сегодня минус срок».
+          expectMistake: reversed
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: У просрочки печатается отрицательное число — (-2 дн.).
+          expectMistake: minus-in-text
+        - code: |
+            import json
+
+
+            def days_left(due, today):
+                return int(due.split("-")[2]) - int(today.split("-")[2])
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Дни считаются по номеру дня в месяце — через границу месяца ошибка.
+          expectMistake: manual-days
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                if len(tasks) == 0:
+                    print("Незакрытых задач нет")
+                for task in tasks:
+                    print(describe(task["title"], task["due"], today))
+          note: Выполненные задачи тоже выводятся.
+          expectMistake: done-shown
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+          note: Нет фразы «Незакрытых задач нет».
+          expectMistake: no-empty-message
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return date.fromisoformat(due) - date.fromisoformat(today)
+
+
+            def describe(title, due, today):
+                left = days_left(due, today).days
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Вывод верный, но days_left возвращает промежуток, а .days берёт describe.
+          expectMistake: days-left-value
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    print(f"Просрочено: {title} ({-left} дн.)")
+                elif left == 0:
+                    print(f"Сегодня: {title}")
+                else:
+                    print(f"Через {left} дн.: {title}")
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        describe(task["title"], task["due"], today)
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: describe печатает строку вместо return — вывод верный, а функция возвращает None.
+          expectMistake: describe-returns
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    print(f"Просрочено: {title} ({-left} дн.)")
+                elif left == 0:
+                    print(f"Сегодня: {title}")
+                else:
+                    print(f"Через {left} дн.: {title}")
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: describe печатает, а код запуска печатает её результат — в выводе появляется None.
+          expectMistake: describe-returns
+        - code: |
+            import json
+            from datetime import date
+
+            if __name__ == "__main__":
+                def days_left(due, today):
+                    return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+                def describe(title, due, today):
+                    left = days_left(due, today)
+                    if left < 0:
+                        return f"Просрочено: {title} ({-left} дн.)"
+                    elif left == 0:
+                        return f"Сегодня: {title}"
+                    else:
+                        return f"Через {left} дн.: {title}"
+
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Функции спрятаны под if вместе с кодом запуска — при импорте их нет.
+          expectMistake: functions-inside
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            today = input()
+            with open("tasks.json", encoding="utf-8") as file:
+                tasks = json.load(file)
+            shown = 0
+            for task in tasks:
+                if not task["done"]:
+                    print(describe(task["title"], task["due"], today))
+                    shown += 1
+            if shown == 0:
+                print("Незакрытых задач нет")
+          note: Код запуска не спрятан под if __name__ — при импорте модуль ждёт ввода.
+          expectMistake: no-guard
+        - code: |
+            import datetime
+            import json
+
+
+            def days_left(due, today):
+                return (datetime.fromisoformat(due) - datetime.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: import datetime, а fromisoformat вызывается у самого модуля.
+          expectMistake: module-attr
+        - code: |
+            import datetime
+            import json
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: import datetime, а в коде просто date.
+          expectMistake: date-not-imported
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                tasks = json.load("tasks.json")
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: В json.load передано имя файла, а не открытый файл.
+          expectMistake: load-by-name
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if task["done"] == "false":
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: done сравнивается со строкой "false", а в данных логическое False.
+          expectMistake: done-compare
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                    else:
+                        print("Незакрытых задач нет")
+          note: Фраза «Незакрытых задач нет» печатается в цикле, на каждой выполненной задаче.
+          expectMistake: message-in-loop
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Файл открыт без encoding.
+          expectMistake: no-encoding
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left <= 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Ноль дней попал в ветку просрочки — нет ветки «Сегодня».
+          expectMistake: zero-overdue
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left >= 0:
+                    return f"Через {left} дн.: {title}"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Просрочено: {title} ({-left} дн.)"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Ветка left >= 0 стоит раньше проверки на ноль.
+          expectMistake: zero-ahead
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], input()))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: input() вызывается в цикле — на второй задаче ввод кончается.
+          expectMistake: input-in-loop
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "main":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Опечатка "main" вместо "__main__" — код запуска не выполняется.
+          expectMistake: main-typo
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+          note: Только функции, кода запуска нет.
+          expectMistake: silent
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, now):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Параметр describe назван now, а в теле — глобальная today из кода запуска; при import её нет.
+          expectMistake: global-today
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, now):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: days_left берёт глобальную today вместо своего параметра.
+          expectMistake: global-today
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"] and days_left(task["due"], today) < 0:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                for task in tasks:
+                    if not task["done"] and days_left(task["due"], today) == 0:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                for task in tasks:
+                    if not task["done"] and days_left(task["due"], today) > 0:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Три прохода — сначала просрочка, потом сегодня, потом будущее; порядок файла нарушен.
+          expectMistake: file-order
+        - code: |
+            import json
+
+
+            def days_left(due, today):
+                year1, month1, day1 = due.split("-")
+                year2, month2, day2 = today.split("-")
+                return int(month1) * 30 + int(day1) - (int(month2) * 30 + int(day2))
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Дни считаются вручную — месяц × 30 плюс день; через границу месяца ошибка.
+          expectMistake: manual-days
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            print(days_left("2026-10-12", "2026-10-05"))
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Забыта временная проверка — print(days_left(...)) на верхнем уровне модуля.
+          expectMistake: debug-print
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                left = (date.fromisoformat(due) - date.fromisoformat(today)).days
+                print(left)
+                return left
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Забыта временная печать внутри days_left.
+          expectMistake: debug-print
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        describe(task["title"], task["due"], today)
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: describe вызвана без print — возвращённая строка теряется.
+          expectMistake: result-not-printed
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - today).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: В дату превращён только срок, сегодняшняя дата осталась строкой.
+          expectMistake: string-dates
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return int(date.fromisoformat(due) - date.fromisoformat(today))
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Промежуток превращается в число через int(), а не через .days.
+          expectMistake: timedelta-compare
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).day
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: .day вместо .days — у промежутка нет .day; общий разбор подсказывает «days».
+          expectMistake: null
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = date.fromisoformat(input())
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Код запуска сам превращает ввод в дату, а days_left ждёт строку.
+          expectMistake: today-as-date
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.loads(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: json.loads вместо json.load для открытого файла.
+          expectMistake: loads-file
+        - code: |
+            import json
+            from datetime import date
+
+            with open("tasks.json", encoding="utf-8") as file:
+                tasks = json.load(file)
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: tasks.json читается при импорте — снаружи if __name__.
+          expectMistake: file-at-import
+      mistakes:
+        - id: string-dates
+          when:
+            errorIncludes: "unsupported operand type(s) for -"
+          where: Функция days_left
+          why: >-
+            Даты пришли строками, а вычитать можно только дату из даты: Python не знает, что
+            `"2026-10-12"` — это дата. Отсюда TypeError.
+          try: >-
+            Преврати в даты обе строки — и срок, и сегодня — через `date.fromisoformat(...)`
+            (урок 8.1), а потом вычитай.
+          verify: 'В «Примере 3» `days_left("2026-10-12", "2026-10-05")` должна вернуть 7.'
+        - id: timedelta-compare
+          when:
+            errorType: TypeError
+            errorIncludes: datetime.timedelta
+          why: >-
+            Дата минус дата — это не число, а промежуток `timedelta`: ни сравнить его с числом, ни
+            превратить в число через `int()` нельзя. Число дней лежит в промежутке отдельно — в
+            `.days`.
+          try: >-
+            Пусть `days_left` сама возвращает число: возьми у промежутка `.days` перед `return`.
+          verify: 'В «Примере 3» `days_left("2026-10-12", "2026-10-05")` должна вернуть число 7, а не промежуток.'
+        - id: today-as-date
+          when:
+            errorIncludes: "argument must be str"
+          why: >-
+            В `date.fromisoformat` попала не строка. Чаще всего это уже готовая дата: код запуска
+            сам превратил ввод через `fromisoformat`, а `days_left` по условию получает строки
+            ГГГГ-ММ-ДД и превращает их сама.
+          try: >-
+            Передавай в `describe` и `days_left` строки как есть: срок `task["due"]` из файла и
+            сегодняшнюю дату из `input()`. Превращать их в даты — работа `days_left`.
+          verify: В «Примере 1» программа не должна падать.
+        - id: module-attr
+          when:
+            errorIncludes: "module 'datetime' has no attribute"
+          why: >-
+            После `import datetime` имя `datetime` — это весь модуль, а дата внутри него
+            называется `datetime.date`. У самого модуля нет `fromisoformat`, отсюда AttributeError.
+          try: >-
+            Напиши `from datetime import date` и дальше `date.fromisoformat(...)` — или оставь
+            `import datetime` и пиши полностью: `datetime.date.fromisoformat(...)`.
+          verify: В «Примере 1» программа не должна падать.
+        - id: date-not-imported
+          when:
+            errorIncludes: "name 'date' is not defined"
+          why: >-
+            Имя `date` не подключено. `import datetime` даёт только имя модуля, а `date` без
+            приставки появляется после `from datetime import date` (урок 8.1).
+          try: Добавь в начало модуля `from datetime import date`.
+          verify: В «Примере 1» программа не должна падать.
+        - id: global-today
+          when:
+            failedTest: t9
+            errorIncludes: "name 'today' is not defined"
+          why: >-
+            Функция берёт `today` не из своего параметра, а из кода запуска. При запуске файла это
+            сходит с рук: там переменная `today` есть. А при `import deadlines` код запуска не
+            выполняется — и имени `today` нет.
+          try: >-
+            Внутри функции пользуйся только её параметрами: имя в теле должно совпадать с именем
+            параметра в `def` (урок 5.4).
+          verify: Тест «Импорт без лишних действий» должен стать зелёным.
+        - id: load-by-name
+          when:
+            errorIncludes: "has no attribute 'read'"
+          why: >-
+            `json.load` ждёт открытый файл, а получил строку с его именем — и не смог из неё
+            читать.
+          try: >-
+            Открой файл через `with open("tasks.json", encoding="utf-8") as file:` и передай в
+            `json.load` сам `file` (модуль 7).
+          verify: В «Примере 1» программа не должна падать.
+        - id: loads-file
+          when:
+            errorIncludes: "not TextIOWrapper"
+          why: >-
+            `json.loads` — с буквой s на конце — разбирает строку, а получил открытый файл.
+          try: >-
+            Для открытого файла есть `json.load(file)` — без s (модуль 7).
+          verify: В «Примере 1» программа не должна падать.
+        - id: input-in-loop
+          when:
+            errorType: EOFError
+            failedTest: t1
+          why: >-
+            Программа попросила ввод больше одного раза, а во вводе одна строка — сегодняшняя
+            дата. Похоже, `input()` стоит в цикле или внутри функции и срабатывает на каждой задаче.
+          try: >-
+            Прочитай дату один раз — в коде запуска, до цикла, — и передавай её в функции
+            параметром `today`.
+          verify: В «Примере 1» программа не должна падать.
+        - id: file-at-import
+          when:
+            errorType: FileNotFoundError
+            errorIncludes: "'tasks.json'"
+            failedTest: t9
+          why: >-
+            Модуль читает `tasks.json` сразу при `import deadlines`: `open` стоит снаружи
+            `if __name__ == "__main__":`. Программе, которая подключает модуль из другой папки,
+            нужны только функции, а файла рядом с ней может не быть — тогда импорт падает с
+            FileNotFoundError, как в этой проверке.
+          try: >-
+            Перенеси чтение файла под `if __name__ == "__main__":` — это часть кода запуска, как
+            ввод даты и печать.
+          verify: Тест «Импорт без лишних действий» должен стать зелёным.
+        - id: wrong-file
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            В рабочей папке нет файла с таким именем. Файл задания называется `tasks.json` — он
+            лежит рядом с `deadlines.py`, его видно в блоке «Файлы задания».
+          try: Сверь имя в `open(...)` с именем файла посимвольно — `tasks.json`, вместе с расширением.
+          verify: В «Примере 1» программа не должна падать.
+        - id: wrong-key
+          when:
+            errorType: KeyError
+          why: >-
+            У задачи нет ключа, по которому ты обращаешься. В `tasks.json` у каждой задачи ровно
+            три ключа: `title`, `due` и `done`.
+          try: Открой блок «Файлы задания» и сверь ключи в `task[...]` с ключами в файле.
+          verify: В «Примере 1» программа не должна падать.
+        - id: today-from-device
+          when:
+            codeRegex: '^[^#\n]*\.today\(\)'
+          why: >-
+            `date.today()` берёт дату с устройства, а проверка подставляет свою через ввод: в
+            «Примере 1» это 5 октября 2026 года, в «Примере 2» — 30 октября. С датой устройства
+            строки не совпадут.
+          try: >-
+            Прочитай сегодняшнюю дату через `input()`, как сказано в условии. На компьютере в своём
+            проекте можно будет подставить `date.today()`.
+          verify: 'В «Примере 1» должна появиться строка «Сегодня: Оплатить интернет».'
+        - id: delta-in-text
+          when:
+            outputIncludes: "0:00:00 дн."
+          why: >-
+            В строку попал сам промежуток: print и f-строка показывают его как `7 days, 0:00:00`.
+            Число дней хранится в промежутке отдельно — в `.days`.
+          try: Пусть `days_left` возвращает `.days`, и в строки подставляй уже это число.
+          verify: 'В «Примере 1» должно быть «Через 7 дн.: Купить подарок маме».'
+        - id: reversed
+          when:
+            outputIncludes: "Через 2 дн.: Вернуть дрель"
+          why: >-
+            Дрель нужно было вернуть 3 октября, а сегодня 5-е — срок прошёл, но программа пишет
+            «Через 2 дн.». Где-то перепутан порядок: либо в `days_left` вычитается «сегодня минус
+            срок», либо даты переданы в функцию наоборот — сначала сегодня, потом срок.
+          try: >-
+            Проверь оба места: внутри `days_left` — «срок минус сегодня», а в вызовах — сначала
+            срок, потом сегодня: `days_left(due, today)`, `describe(title, due, today)`.
+          verify: 'В «Примере 3» `days_left("2026-10-12", "2026-10-05")` должна вернуть 7.'
+        - id: minus-in-text
+          when:
+            outputIncludes: "(-"
+          why: >-
+            `days_left` для просроченной задачи верно даёт отрицательное число, но в тексте нужно
+            «сколько дней назад» — без минуса: `(2 дн.)`, а не `(-2 дн.)`.
+          try: В ветке просрочки подставь в строку число с обратным знаком — `-left`.
+          verify: 'В «Примере 1» первой строкой должно быть «Просрочено: Вернуть дрель соседу (2 дн.)».'
+        - id: zero-overdue
+          when:
+            outputIncludes: Оплатить интернет (0 дн.)
+          why: >-
+            Срок «Оплатить интернет» — сегодня, а программа пишет «Просрочено … (0 дн.)». Ноль
+            попал в ветку просрочки: условие вроде `left <= 0` захватывает и сегодняшний день
+            (граничные значения — урок 2.5).
+          try: >-
+            Просрочка — только `left < 0`. Для нуля нужна своя ветка `left == 0` со строкой
+            «Сегодня: …».
+          verify: 'В «Примере 1» второй строкой должно быть «Сегодня: Оплатить интернет».'
+        - id: zero-ahead
+          when:
+            outputIncludes: "Через 0 дн.: Оплатить интернет"
+          why: >-
+            Срок «Оплатить интернет» — сегодня, а программа пишет «Через 0 дн.». Ноль перехватила
+            ветка будущих сроков: условие вроде `left >= 0` стоит раньше проверки на ноль (граничные
+            значения — урок 2.5).
+          try: >-
+            Сначала проверь `left == 0` — или сделай условие будущего строгим: `left > 0`.
+          verify: 'В «Примере 1» второй строкой должно быть «Сегодня: Оплатить интернет».'
+        - id: main-typo
+          when:
+            codeRegex: '__name__\s*==\s*["'']main["'']'
+          why: >-
+            В проверке `if` стоит `"main"`, а Python называет запущенный файл `"__main__"` — с
+            двумя подчёркиваниями с каждой стороны. Сравнение всегда ложно, и код запуска молча не
+            выполняется.
+          try: 'Исправь строку на `if __name__ == "__main__":`.'
+          verify: В «Примере 1» должны появиться три строки.
+        - id: result-not-printed
+          when:
+            failedTest: t1
+            outputEquals: ""
+            codeRegex: '^[ \t]+describe\('
+          why: >-
+            `describe` возвращает строку, но код запуска её никуда не выводит: `return` отдаёт
+            значение, а не печатает его (урок 5.3).
+          try: 'Оберни вызов в печать: `print(describe(...))`.'
+          verify: В «Примере 1» должны появиться три строки.
+        - id: silent
+          when:
+            failedTest: t1
+            outputEquals: ""
+          why: >-
+            При запуске файла программа ничего не печатает: кода запуска нет, он не выполняется
+            или результат `describe` не передан в `print`.
+          try: >-
+            Проверь, что после функций есть блок `if __name__ == "__main__":`, а в нём с отступом —
+            ввод даты, чтение файла, цикл и `print`.
+          verify: В «Примере 1» должны появиться три строки.
+        - id: done-shown
+          when:
+            outputIncludes: Записаться к врачу
+          why: >-
+            «Записаться к врачу» уже выполнена — у неё `"done": true`, — а программа всё равно о
+            ней пишет. Выводить нужно только невыполненные задачи.
+          try: Перед печатью проверь отметку `done` у задачи и пропускай выполненные.
+          verify: В «Примере 1» должно остаться три строки — без врача.
+        - id: done-compare
+          when:
+            failedTest: t1
+            outputEquals: Незакрытых задач нет
+          why: >-
+            Программа не нашла ни одной невыполненной задачи, хотя их три. Проверка `done` не
+            срабатывает: в JSON `false` становится логическим значением `False`, а не строкой
+            `"false"`.
+          try: >-
+            Проверяй само логическое значение: `if not task["done"]:` — «если задача не
+            выполнена».
+          verify: В «Примере 1» должны появиться три строки о задачах.
+        - id: message-in-loop
+          when:
+            failedTest: t1
+            outputIncludes: Незакрытых задач нет
+          why: >-
+            Задачи напечатаны, а за ними ещё и «Незакрытых задач нет». Эта фраза — итог всего
+            списка, а решение о ней принимается внутри цикла, на каждой задаче отдельно.
+          try: >-
+            Убери фразу из цикла. После цикла проверь счётчик напечатанных строк: печатай её,
+            только если он равен нулю.
+          verify: В «Примере 1» должно быть ровно три строки.
+        - id: no-empty-message
+          when:
+            failedTest: t3
+            outputEquals: ""
+          why: >-
+            Когда все задачи выполнены или список пуст, программа молчит. А в этом случае она
+            должна сказать `Незакрытых задач нет`.
+          try: >-
+            Считай напечатанные строки (или заведи флаг) и после цикла проверь: если не напечатано
+            ни одной — выведи эту фразу.
+          verify: В граничных случаях «всё выполнено» и «пустой список» должна появиться фраза «Незакрытых задач нет».
+        - id: days-left-value
+          when:
+            failedTest: t5
+            outputIncludes: "Сегодня: Оплатить интернет"
+          why: >-
+            Вывод может быть верным, но сама функция `days_left` возвращает не то. Посмотри в отчёте
+            теста, что она вернула: `datetime.timedelta(days=7)` — это промежуток, а нужно число;
+            `-7` — вычитание в обратном порядке.
+          try: >-
+            Верни из `days_left` целое число: «срок минус сегодня», а затем `.days`. Другие модули
+            будут вызывать эту функцию напрямую и ждут именно число.
+          verify: 'В «Примере 3» `days_left("2026-10-12", "2026-10-05")` должна вернуть 7.'
+        - id: describe-returns
+          when:
+            failedTest: t7
+            outputIncludes: "Сегодня: Оплатить интернет"
+          why: >-
+            `describe` должна **вернуть** строку через `return`, а она, похоже, печатает её сама.
+            Тогда функция возвращает `None` — его и получит программа, которая подключит модуль
+            (урок 5.3).
+          try: >-
+            Замени в `describe` каждый `print(...)` на `return ...`, а печатай в коде запуска:
+            `print(describe(...))`.
+          verify: 'Тест «Строка „Сегодня“» должен стать зелёным: функция вернёт «Сегодня: Оплатить интернет».'
+        - id: functions-inside
+          when:
+            failedTest: t9
+            codeRegex: '^[ \t]+def (days_left|describe)\b'
+          why: >-
+            Функции определены внутри `if __name__ == "__main__":`. При запуске файла они есть, а
+            при `import deadlines` условие ложно — и в модуле нет ни одной функции.
+          try: >-
+            Вынеси оба `def` наверх, без отступа. Под `if` оставь только код запуска: ввод, чтение
+            файла и печать.
+          verify: Тест «Импорт без лишних действий» должен стать зелёным.
+        - id: no-guard
+          when:
+            errorType: EOFError
+            failedTest: t9
+          why: >-
+            При `import deadlines` Python выполняет файл сверху вниз — вместе с `input()`, чтением
+            файла и печатью (урок 8.2). Программе, которая подключает модуль ради функций, это
+            мешает: он ждёт ввода или печатает лишнее.
+          try: >-
+            Спрячь код запуска под `if __name__ == "__main__":` — с отступом. Функции оставь
+            снаружи.
+          verify: Тест «Импорт без лишних действий» должен стать зелёным, а «Пример 1» — остаться зелёным.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Сегодня: Оплатить интернет"
+          why: >-
+            Файл открыт без кодировки. В тренажёре это сходит с рук, а на Windows Python 3.14 и
+            раньше по умолчанию читает файлы в другой кодировке — русские названия задач
+            превратятся в кракозябры или программа упадёт (модуль 7).
+          try: Добавь в `open(...)` аргумент `encoding="utf-8"`.
+          verify: Тест «Кодировка указана» должен стать зелёным.
+        - id: file-order
+          when:
+            failedTest: t-order
+            outputEquals: |-
+              Просрочено: Вернуть дрель соседу (2 дн.)
+              Через 7 дн.: Купить подарок маме
+          why: >-
+            В файле подарок стоит первым, а дрель — второй, но программа вывела их наоборот. Похоже,
+            задачи сгруппированы по видам или отсортированы, а нужно — в порядке файла.
+          try: >-
+            Пройди по списку один раз и для каждой невыполненной задачи сразу печатай её строку.
+          verify: В граничном случае «сроки в файле не по порядку» первой должна идти строка про подарок.
+        - id: manual-days
+          when:
+            failedTest: t2
+            outputIncludes: Продлить абонемент в бассейн
+          why: >-
+            Внутри одного месяца счёт сходится, а через границу — нет: от 30 октября до 2 ноября
+            3 дня. Похоже, дни считаются по числам из строки, а не по календарю.
+          try: >-
+            Преврати строки в даты через `date.fromisoformat(...)` и вычитай даты: длину месяцев
+            datetime знает сам (урок 8.1).
+          verify: 'В «Примере 2» должно быть «Через 3 дн.: Продлить абонемент в бассейн».'
+        - id: debug-print
+          when:
+            failedTest: t1
+            codeRegex: '^print\(|print\(\s*days_left\(|^def days_left\b[^\n]*\n(?:(?:[ \t]+[^\n]*)?\n)*?[ \t]+print\('
+          why: >-
+            В выводе лишние строки — похоже, осталась временная проверка: `print` снаружи
+            `if __name__ == "__main__":` или внутри `days_left`. Такая печать срабатывает при
+            каждом запуске, а снаружи `if` — ещё и при `import deadlines`.
+          try: >-
+            Удали временный `print` — он своё отработал. Функция пусть только возвращает число, а
+            печатает код запуска.
+          verify: В «Примере 1» должно быть ровно три строки.
+      afterPass: >-
+        Модуль готов: функции можно подключить к другой программе, а при запуске он сам читает
+        задачи и говорит, что пора делать. Подключи его к своему списку задач —
+        `from deadlines import describe`. Улучшение на будущее: показывать задачи по порядку
+        сроков — сортировку по ключу разберём в модуле 10.
+      skills: [dates-datetime, modules-imports, files-json, functions]
+      noHintsBeforeAttempt: true
+
+  - id: bonus-task
+    type: exercise
+    title: Усложнение (по желанию)
+    exercise:
+      id: m8-l6-e2
+      kind: modify
+      title: Задачи без срока
+      filename: deadlines.py
+      statement: |-
+        В старых задачах списка сроков нет: у одних в файле нет ключа `"due"`, у других он
+        пустой — `"due": ""`. Сейчас модуль на таких задачах падает. Скопируй сюда свой
+        `deadlines.py` из шага «Самостоятельная работа» (выдели весь код в редакторе того шага и
+        скопируй) и доработай его.
+
+        Для невыполненной задачи без срока печатай `Без срока: <название>` — на её месте, в
+        порядке файла. Выполненные задачи, со сроком или без, по-прежнему не выводятся. Функции
+        `days_left` и `describe` для задач со сроком работают как раньше, импорт модуля — всё
+        так же без лишних действий.
+
+        Если сегодня `2026-10-05`, для файла задания вывод такой:
+
+        ```text
+        Просрочено: Вернуть дрель соседу (2 дн.)
+        Сегодня: Оплатить интернет
+        Без срока: Разобрать антресоль
+        Через 7 дн.: Купить подарок маме
+        ```
+      input: Одна строка — сегодняшняя дата в виде ГГГГ-ММ-ДД. Задачи — в файле `tasks.json`.
+      output: >-
+        По строке на каждую невыполненную задачу в порядке файла или одна строка
+        `Незакрытых задач нет`.
+      constraints:
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+        - Задача без срока — та, у которой нет ключа `"due"` или он равен пустой строке `""`.
+        - "`title` и `done` есть у каждой задачи."
+      files:
+        tasks.json: |
+          [
+            {"title": "Вернуть дрель соседу", "due": "2026-10-03", "done": false},
+            {"title": "Оплатить интернет", "due": "2026-10-05", "done": false},
+            {"title": "Разобрать антресоль", "done": false},
+            {"title": "Купить подарок маме", "due": "2026-10-12", "done": false},
+            {"title": "Записаться к врачу", "due": "2026-10-01", "done": true}
+          ]
+      starterCode: |
+        # Вставь сюда свой модуль deadlines.py из шага «Самостоятельная работа»
+        # и доработай его: задачи без срока
+
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: файл задания"
+          example: true
+          stdin: "2026-10-05\n"
+          expected: |-
+            Просрочено: Вернуть дрель соседу (2 дн.)
+            Сегодня: Оплатить интернет
+            Без срока: Разобрать антресоль
+            Через 7 дн.: Купить подарок маме
+          compare: { ignoreBlankLines: true }
+        - id: t2
+          kind: io
+          title: "Пример 2: только задачи без срока"
+          example: true
+          stdin: "2026-10-05\n"
+          files:
+            tasks.json: |
+              [
+                {"title": "Разобрать антресоль", "done": false},
+                {"title": "Починить велосипед", "done": false}
+              ]
+          expected: |-
+            Без срока: Разобрать антресоль
+            Без срока: Починить велосипед
+          compare: { ignoreBlankLines: true }
+        - id: t3
+          kind: io
+          title: "Граничный случай: выполненная задача без срока"
+          edge: true
+          stdin: "2026-10-05\n"
+          files:
+            tasks.json: |
+              [
+                {"title": "Помыть окна", "done": true},
+                {"title": "Вернуть дрель соседу", "due": "2026-10-03", "done": false}
+              ]
+          expected: "Просрочено: Вернуть дрель соседу (2 дн.)"
+          compare: { ignoreBlankLines: true }
+        - id: t4
+          kind: io
+          title: "Граничный случай: пустой срок"
+          edge: true
+          stdin: "2026-10-05\n"
+          files:
+            tasks.json: |
+              [
+                {"title": "Передать показания счётчиков", "due": "", "done": false}
+              ]
+          expected: "Без срока: Передать показания счётчиков"
+          compare: { ignoreBlankLines: true }
+        - id: t5
+          kind: io
+          title: "Граничный случай: всё выполнено"
+          edge: true
+          stdin: "2026-10-05\n"
+          files:
+            tasks.json: |
+              [
+                {"title": "Помыть окна", "done": true}
+              ]
+          expected: Незакрытых задач нет
+          compare: { ignoreBlankLines: true }
+        - id: t6
+          kind: call
+          title: describe не изменилась
+          stdin: "2026-10-05\n"
+          call: describe("Купить подарок маме", "2026-10-12", "2026-10-05")
+          expected: "'Через 7 дн.: Купить подарок маме'"
+        - id: t7
+          kind: assert
+          title: Импорт без лишних действий
+          stdin: "2026-10-05\n"
+          code: |
+            import contextlib
+            import io
+            import os
+
+            # Другая программа подключает модуль из своей папки — там нет tasks.json.
+            os.rename("tasks.json", "tasks-hidden.json")
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                import deadlines
+            assert buffer.getvalue() == ""
+            assert deadlines.days_left("2026-10-12", "2026-10-05") == 7
+            assert deadlines.describe("Купить подарок маме", "2026-10-12", "2026-10-05") == "Через 7 дн.: Купить подарок маме"
+          message: >-
+            При `import deadlines` модуль ничего не печатает, не ждёт ввода и не читает
+            `tasks.json`, а функции доступны.
+      criteria:
+        - "Невыполненная задача без ключа `due` или с пустым сроком печатается как «Без срока: …» на своём месте."
+        - Выполненные задачи не выводятся, в том числе без срока.
+        - Задачи со сроком и фраза «Незакрытых задач нет» работают, как раньше.
+        - Функции модуля работают как раньше, импорт по-прежнему ничего не печатает и не читает файл.
+      hints:
+        - >-
+          Найди в своём коде место, где читается срок задачи. Что случится в этой строке, если у
+          задачи нет ключа `"due"`? А если срок — пустая строка?
+        - |-
+          Приём из урока 4.4 на другом словаре:
+
+          ```python
+          person = {"name": "Аня"}
+          print(person.get("city", ""))   # пустая строка — ключа нет
+          print("city" in person)         # False
+          ```
+
+          А `person["city"]` остановил бы программу с KeyError.
+        - |-
+          Каркас цикла:
+
+          ```text
+          для каждой задачи:
+              если выполнена — пропустить
+              due = срок через get, пустая строка по умолчанию
+              если due == "" — print(f"Без срока: …")
+              иначе — print(describe(…))
+              счётчик += 1
+          ```
+      solution:
+        code: |
+          import json
+          from datetime import date
+
+
+          def days_left(due, today):
+              left = date.fromisoformat(due) - date.fromisoformat(today)
+              return left.days
+
+
+          def describe(title, due, today):
+              left = days_left(due, today)
+              if left < 0:
+                  return f"Просрочено: {title} ({-left} дн.)"
+              elif left == 0:
+                  return f"Сегодня: {title}"
+              else:
+                  return f"Через {left} дн.: {title}"
+
+
+          if __name__ == "__main__":
+              today = input("Сегодня (ГГГГ-ММ-ДД): ")
+              with open("tasks.json", encoding="utf-8") as file:
+                  tasks = json.load(file)
+              shown = 0
+              for task in tasks:
+                  if not task["done"]:
+                      due = task.get("due", "")
+                      if due == "":
+                          print(f"Без срока: {task['title']}")
+                      else:
+                          print(describe(task["title"], due, today))
+                      shown += 1
+              if shown == 0:
+                  print("Незакрытых задач нет")
+        explanation: >-
+          `task.get("due", "")` не падает, когда ключа нет, и возвращает пустую строку — поэтому
+          один `if due == ""` ловит оба случая: ключа нет и срок пустой. Проверка `done` стоит
+          первой: выполненная задача пропускается, есть у неё срок или нет. Функции модуля не
+          тронуты — поменялся только код запуска.
+      altSolutions:
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if task["done"]:
+                        continue
+                    shown += 1
+                    if "due" not in task or task["due"] == "":
+                        print("Без срока: " + task["title"])
+                    else:
+                        print(describe(task["title"], task["due"], today))
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Проверка ключа через in и continue для выполненных задач.
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                lines = []
+                for task in tasks:
+                    if task["done"] == False:
+                        due = task.get("due")
+                        if due is None or due == "":
+                            lines.append(f"Без срока: {task['title']}")
+                        else:
+                            lines.append(describe(task["title"], due, today))
+                if len(lines) == 0:
+                    lines.append("Незакрытых задач нет")
+                for line in lines:
+                    print(line)
+          note: get() без значения по умолчанию, проверка на None и пустую строку, строки собираются в список.
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                found = False
+                for task in tasks:
+                    if task["done"]:
+                        continue
+                    found = True
+                    if not task.get("due"):
+                        print(f"Без срока: {task['title']}")
+                    else:
+                        print(describe(task["title"], task["due"], today))
+                if not found:
+                    print("Незакрытых задач нет")
+          note: Одно условие not task.get("due") на оба случая — нет ключа и пустая строка; флаг вместо счётчика.
+      wrongSolutions:
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Модуль из самостоятельной работы без изменений — KeyError на задаче без срока.
+          expectMistake: key-error
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        print(describe(task["title"], task.get("due"), today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: get() без проверки — в fromisoformat попадает None.
+          expectMistake: none-to-date
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        if "due" in task:
+                            print(describe(task["title"], task["due"], today))
+                        else:
+                            print(f"Без срока: {task['title']}")
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Пустой срок "" не учтён — ValueError в fromisoformat.
+          expectMistake: empty-due
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if task.get("due", "") == "":
+                        print(f"Без срока: {task['title']}")
+                        shown += 1
+                    elif not task["done"]:
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Срок проверяется раньше отметки done — выполненная задача без срока выводится.
+          expectMistake: done-no-due-shown
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"] and task.get("due", "") != "":
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Задачи без срока молча пропускаются.
+          expectMistake: skipped
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"] and task.get("due", "") != "":
+                        print(describe(task["title"], task["due"], today))
+                        shown += 1
+                for task in tasks:
+                    if not task["done"] and task.get("due", "") == "":
+                        print(f"Без срока: {task['title']}")
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Задачи без срока выводятся отдельным циклом — в конце, а не на своём месте.
+          expectMistake: at-end
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        due = task.get("due", "")
+                        if due == "":
+                            print(f"Без срока: {task['title']}")
+                        else:
+                            print(describe(task["title"], due, today))
+                            shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Счётчик растёт только на задачах со сроком.
+          expectMistake: counter-missed
+        - code: |
+            import json
+            from datetime import date
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, now):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                with open("tasks.json", encoding="utf-8") as file:
+                    tasks = json.load(file)
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        due = task.get("due", "")
+                        if due == "":
+                            print(f"Без срока: {task['title']}")
+                        else:
+                            print(describe(task["title"], due, today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: Параметр describe назван now, а в теле — глобальная today из кода запуска.
+          expectMistake: global-today
+        - code: |
+            import json
+            from datetime import date
+
+            with open("tasks.json", encoding="utf-8") as file:
+                tasks = json.load(file)
+
+
+            def days_left(due, today):
+                return (date.fromisoformat(due) - date.fromisoformat(today)).days
+
+
+            def describe(title, due, today):
+                left = days_left(due, today)
+                if left < 0:
+                    return f"Просрочено: {title} ({-left} дн.)"
+                elif left == 0:
+                    return f"Сегодня: {title}"
+                else:
+                    return f"Через {left} дн.: {title}"
+
+
+            if __name__ == "__main__":
+                today = input()
+                shown = 0
+                for task in tasks:
+                    if not task["done"]:
+                        due = task.get("due", "")
+                        if due == "":
+                            print(f"Без срока: {task['title']}")
+                        else:
+                            print(describe(task["title"], due, today))
+                        shown += 1
+                if shown == 0:
+                    print("Незакрытых задач нет")
+          note: tasks.json читается при импорте — снаружи if __name__.
+          expectMistake: file-at-import
+      mistakes:
+        - id: key-error
+          when:
+            errorType: KeyError
+            errorIncludes: "'due'"
+          why: >-
+            У задачи «Разобрать антресоль» нет ключа `"due"`, и `task["due"]` останавливает
+            программу с KeyError: квадратные скобки требуют, чтобы ключ был.
+          try: >-
+            Читай срок через `task.get("due", "")` — без ключа получишь пустую строку — или проверь
+            ключ через `"due" in task` (урок 4.4).
+          verify: В «Примере 1» программа не должна падать.
+        - id: none-to-date
+          when:
+            errorIncludes: argument must be str
+          why: >-
+            `task.get("due")` без второго аргумента вернул `None`, и `None` попал в
+            `date.fromisoformat`, а она принимает только строку.
+          try: >-
+            Сначала проверь срок, а в `describe` отправляй только настоящую дату. Удобно так:
+            `task.get("due", "")` и сравнение с `""`.
+          verify: 'В «Примере 1» третьей строкой должно быть «Без срока: Разобрать антресоль».'
+        - id: empty-due
+          when:
+            errorIncludes: "Invalid isoformat string: ''"
+          why: >-
+            Ключ `"due"` есть, но срок пустой — `""`. Из пустой строки дата не получается, и
+            `fromisoformat` останавливает программу с ValueError.
+          try: Считай задачей без срока и ту, у которой срок равен `""`, — проверь оба случая.
+          verify: 'В граничном случае «пустой срок» должно быть «Без срока: Передать показания счётчиков».'
+        - id: global-today
+          when:
+            failedTest: t7
+            errorIncludes: "name 'today' is not defined"
+          why: >-
+            Функция берёт `today` не из своего параметра, а из кода запуска. При запуске файла это
+            сходит с рук: там переменная `today` есть. А при `import deadlines` код запуска не
+            выполняется — и имени `today` нет.
+          try: >-
+            Внутри функции пользуйся только её параметрами: имя в теле должно совпадать с именем
+            параметра в `def` (урок 5.4).
+          verify: Тест «Импорт без лишних действий» должен стать зелёным.
+        - id: file-at-import
+          when:
+            errorType: FileNotFoundError
+            errorIncludes: "'tasks.json'"
+            failedTest: t7
+          why: >-
+            Модуль читает `tasks.json` сразу при `import deadlines`: `open` стоит снаружи
+            `if __name__ == "__main__":`. Программе, которая подключает модуль из другой папки,
+            нужны только функции, а файла рядом с ней может не быть — тогда импорт падает с
+            FileNotFoundError, как в этой проверке.
+          try: >-
+            Перенеси чтение файла под `if __name__ == "__main__":` — это часть кода запуска, как
+            ввод даты и печать.
+          verify: Тест «Импорт без лишних действий» должен стать зелёным.
+        - id: done-no-due-shown
+          when:
+            outputIncludes: "Без срока: Помыть окна"
+          why: >-
+            «Помыть окна» уже выполнена, но программа её показывает: проверка срока стоит раньше
+            проверки `done`, и выполненная задача без срока проходит мимо фильтра.
+          try: Сначала отсей выполненные задачи, а уже потом выбирай между «Без срока» и `describe`.
+          verify: В граничном случае «выполненная задача без срока» должна остаться одна строка — про дрель.
+        - id: skipped
+          when:
+            outputEquals: |-
+              Просрочено: Вернуть дрель соседу (2 дн.)
+              Сегодня: Оплатить интернет
+              Через 7 дн.: Купить подарок маме
+          why: >-
+            Программа больше не падает, но задача «Разобрать антресоль» пропала из вывода. Её
+            тоже нужно показать — строкой «Без срока: …».
+          try: 'Для невыполненной задачи без срока напечатай `Без срока: <название>` вместо того, чтобы пропускать её.'
+          verify: В «Примере 1» должно быть четыре строки.
+        - id: counter-missed
+          when:
+            failedTest: t2
+            outputIncludes: Незакрытых задач нет
+          why: >-
+            Строки «Без срока» напечатаны, а за ними — «Незакрытых задач нет». Счётчик не
+            увеличился на задачах без срока, и программа решила, что показать было нечего.
+          try: Увеличивай счётчик для каждой напечатанной строки — и со сроком, и без срока.
+          verify: В «Примере 2» должно быть ровно две строки.
+        - id: at-end
+          when:
+            outputEquals: |-
+              Просрочено: Вернуть дрель соседу (2 дн.)
+              Сегодня: Оплатить интернет
+              Через 7 дн.: Купить подарок маме
+              Без срока: Разобрать антресоль
+          why: >-
+            Все строки на месте, но «Без срока» оказалась в конце. В файле антресоль стоит третьей
+            — и в выводе должна быть третьей.
+          try: Обрабатывай задачу со сроком и без срока в одном цикле — каждую на её месте.
+          verify: 'В «Примере 1» третьей строкой должно быть «Без срока: Разобрать антресоль».'
+      afterPass: >-
+        Задачи без срока больше не ломают модуль. Старые записи без нового поля — частая
+        ситуация, и `get` со значением по умолчанию — первый инструмент для неё. Улучшение:
+        вынеси выбор строки для одной задачи в функцию `task_line(task, today)` — код запуска
+        станет короче, а новую функцию можно проверить отдельно.
+      skills: [dicts, dates-datetime, modules-imports]
+      noHintsBeforeAttempt: true
+
+  - id: deploy-order
+    type: order
+    title: Порядок развёртывания
+    prompt: >-
+      Ты хочешь проверить, что проект разворачивается на «чужом» компьютере. Расставь шаги по
+      порядку — от готового репозитория до работающей программы.
+    items:
+      - id: clone
+        text: "Склонировать проект в новую папку: `git clone todo-json todo-check`"
+      - id: enter
+        text: "Перейти в новую папку: `cd todo-check`"
+      - id: venv
+        text: "Создать окружение: `python -m venv .venv`"
+      - id: activate
+        text: "Включить окружение: `.venv\\Scripts\\activate` — в начале строки видно `(.venv)`"
+      - id: install
+        text: "Поставить зависимости: `python -m pip install -r requirements.txt`"
+      - id: run
+        text: Запустить программу командой из README
+    explanation: >-
+      Клон — первым: только в новой папке нет старого окружения, кешей и личных файлов. Окружение
+      создают внутри проекта, поэтому сначала переходят в папку клона. Пакеты ставят во
+      включённое окружение — иначе они уйдут в другой Python (урок 8.3). Запуск — последним, когда
+      всё на месте.
+    coach: >-
+      Эти же шаги должны быть в README — в том же порядке. Если какого-то там нет, это находка.
+
+  - id: clean-folder
+    type: checklist
+    title: Проект в чистой папке
+    body: |-
+      Самостоятельная часть модуля на компьютере: отмечаешь сам, тренажёр её не проверяет.
+      Главное правило — следуй **только** README. Если какого-то шага в нём нет, это не твоя
+      ошибка, а находка: такой README подвёл бы и другого человека.
+
+      - Нужен интернет для `pip install`. Без него дойди до установки и продолжи позже.
+      - Команды — в «Командной строке» (cmd), как в уроке 8.3. Git работает в любом терминале.
+      - Если под рукой только телефон — вернись к этому блоку позже.
+      - Своего проекта нет — возьми учебный мини-проект из урока 8.2, но сначала пройди с ним
+        чек-листы уроков 8.2–8.4: пакет `todo`, requirements.txt, раздел «Установка» в README и
+        `.gitignore` появляются именно там. Без них в чистой папке проверять нечего.
+      - Вместо `todo-json` в командах подставляй имя папки своего проекта.
+    items:
+      - id: ready
+        text: >-
+          **Проверь исходный проект.** В папке проекта набери `git status` — должно быть
+          `nothing to commit, working tree clean`. Затем `git log --oneline` и прочитай последние
+          пять сообщений глазами постороннего: понятно ли, что и зачем менялось?
+        help: >-
+          Есть незакоммиченные изменения — посмотри `git diff` и закоммить их (урок 8.4). Неудачные
+          старые сообщения не переписывай, просто новые пиши понятнее. Длинная история листается
+          пробелом, выход — клавиша `q`. Если Git пишет по-русски — ищи те же разделы по смыслу.
+      - id: new-window
+        text: >-
+          **Открой новое окно cmd** в папке, где лежит папка проекта, — на уровень выше. В начале
+          строки не должно быть `(.venv)`.
+        help: >-
+          В старом окне могло остаться включённым окружение проекта. Тогда проверка обманет:
+          программа найдёт пакеты старого окружения, даже если README о них молчит. Как открыть:
+          в Проводнике зайди в папку, где лежит проект (например, `python-practice`), набери в
+          адресной строке `cmd` и нажми Enter. Можно и в старом окне: `deactivate`, затем
+          `cd ..`. macOS и Linux — обычный терминал и `cd` в нужную папку.
+      - id: clone
+        text: >-
+          **Склонируй проект:** `git clone todo-json todo-check`. Git ответит
+          `Cloning into 'todo-check'...` и `done.`
+        help: >-
+          `git clone` из папки работает без интернета и копирует только то, что есть в коммитах:
+          `.venv`, `__pycache__` и `tasks.json` в клон не попадут — как у другого человека.
+          Ответ `fatal: repository 'todo-json' does not exist` — терминал не в той папке: команда
+          `dir` должна показать папку проекта. Имя с пробелами бери в кавычки:
+          `git clone "мой проект" todo-check`. Предупреждение `You appear to have cloned an empty
+          repository` значит, что в проекте нет ни одного коммита (урок 8.4).
+      - id: look
+        text: >-
+          **Посмотри, что приехало:** `cd todo-check`, затем `dir`. Должны быть README.md,
+          requirements.txt, main.py, папка todo и .gitignore (у твоего проекта набор может
+          немного отличаться). Не должно быть .venv и tasks.json.
+        help: |-
+          - Не хватает файла — он не закоммичен: вернись в исходный проект, добавь его через
+            `git add` и закоммить, затем удали todo-check и склонируй заново.
+          - requirements.txt или раздела «Установка» в README нет совсем — значит, чек-лист урока
+            8.3 ещё не пройден: вернись к нему.
+          - Есть лишнее — проверь `.gitignore`. Уже закоммиченное Git перестанет отслеживать после
+            `git rm --cached tasks.json` для файла или `git rm -r --cached .venv` для папки (урок
+            8.4). Затем закоммить, удали todo-check и склонируй заново.
+          - macOS и Linux: `ls -a` вместо `dir`.
+      - id: readme-only
+        text: >-
+          **Выполни шаги README** по порядку: создать окружение, включить его,
+          `python -m pip install -r requirements.txt`, запустить. Если какого-то шага в README нет
+          (например, создать и включить окружение), сделай его сам — по задаче «Порядок
+          развёртывания» — и запиши как находку для пункта «Допиши README». Каждое место, где
+          пришлось догадываться, тоже запиши.
+        help: |-
+          Что может случиться:
+
+          - `ERROR: Could not open requirements file: [Errno 2] No such file or directory` —
+            requirements.txt не закоммичен (урок 8.4).
+          - `ModuleNotFoundError: No module named 'tabulate'` — окружение не включено или
+            зависимости не поставлены (урок 8.3).
+          - `No module named 'todo'` — программа запущена не из папки проекта (урок 8.2).
+          - PowerShell не даёт включить окружение — перейди в cmd (урок 8.3).
+          - macOS и Linux: `python3` вместо `python`, `source .venv/bin/activate`.
+      - id: works
+        text: >-
+          **Проверь, что программа работает.** Список задач пуст — личный tasks.json в клон не
+          попал. Добавь задачу, покажи список, выйди и запусти программу снова — задача на месте.
+        help: >-
+          Программа падает с FileNotFoundError, потому что нет tasks.json, — значит, она не умеет
+          стартовать с пустого места. Почини загрузку в **основном** проекте: поймай
+          FileNotFoundError и начни с пустого списка (модуль 7), закоммить и проверь клон заново.
+      - id: fix-readme
+        text: >-
+          **Допиши README основного проекта.** Всё, чего не хватило, внеси в README в исходной
+          папке (не в клоне) и закоммить: `git add README.md`,
+          `git commit -m "Дополнить README: установка"`. Если угадывать ничего не пришлось — отметь
+          пункт и иди дальше.
+        help: |-
+          Образец раздела — подстрой под свой проект:
+
+          ```markdown
+          ## Установка
+
+          1. Создай окружение: `python -m venv .venv`
+          2. Включи его (Windows, cmd): `.venv\Scripts\activate`
+             macOS и Linux: `source .venv/bin/activate`
+          3. Поставь зависимости: `python -m pip install -r requirements.txt`
+
+          ## Запуск
+
+          Из папки проекта: `python main.py`
+          ```
+
+          Правки в todo-check не сохраняй: это черновая копия, её удалят.
+      - id: retry
+        text: >-
+          **Проверь ещё раз с нуля.** Удали папку todo-check в Проводнике, склонируй заново и
+          пройди шаги README — теперь без единой догадки.
+        help: >-
+          Если окно терминала открыто в todo-check, сначала `deactivate` и `cd ..`, иначе Windows
+          не даст удалить папку. На macOS папку удаляют в Finder — перетащи её в Корзину. Удаляй
+          только клон todo-check, а не папку проекта.
+    coach: >-
+      Каждая догадка, которую ты дописал в README, — шаг, на котором споткнулся бы другой человек.
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - "Модуль сроков получился без подсказок, а проект развернулся по README с первой или второй попытки — модуль 8 пройден. Если получилось и усложнение, старые записи без нового поля тебя уже не остановят. Дальше модуль 9: pytest ставится в окружение тем же pip."
+      - "Путался с `timedelta`, `.days` или порядком вычитания — повтори урок 8.1."
+      - "Импорт печатал лишнее, ждал ввода или читал файл, функций не было при import, `No module named` — повтори урок 8.2."
+      - "В чистой папке ModuleNotFoundError, не нашёлся requirements.txt, в клон попали .venv или tasks.json либо не попал нужный файл — повтори уроки 8.3 и 8.4: окружение, `.gitignore` и `git add`."
+    question: Почему развёртывание проверяют в новой папке через git clone, а не в своей рабочей?
+    answer: >-
+      В рабочей папке уже есть окружение с пакетами, личный tasks.json и файлы, которые ты мог
+      забыть закоммитить, — там всё работает «по памяти» компьютера. Клон содержит только то, что
+      лежит в репозитории, — ровно то, что получит другой человек. Если по README проект
+      поднимается в клоне, он поднимется и у него.

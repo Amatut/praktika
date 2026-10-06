@@ -1,0 +1,894 @@
+# Урок-образец для справочника docs/content-format.md: все примеры YAML из справочника взяты отсюда
+# (это проверяет scripts/content-format-doc.test.ts), а сам урок проверяется настоящим Python:
+#   node scripts/verify-content.ts --root scripts/fixtures/engine
+id: fe-l1
+module: fe
+number: "1.1"
+title: Файлы, модули, база и сеть
+objective: Работать с файлами, своими модулями, базой SQLite и ответами сервера.
+minutes: [25, 35]
+prerequisites: []
+skills: [fe-files, fe-modules, fe-http, fe-sqlite, fe-random, fe-basics]
+environment: python
+
+story:
+  title: Кафе переезжает в программу
+  fictional: true
+  text: >-
+    Лена ведёт учёт кафе в тетради, а цены — в таблице. Артём предлагает перенести всё в программу.
+    Она будет читать цены из файла, заказы — из базы, а погоду для летней веранды — с сервера.
+    Сегодня они соберут такую программу по частям.
+
+why: Настоящие программы берут данные из файлов, баз и с серверов, а не только из ввода.
+usedIn: Отчёты, боты, учёт заказов, любые программы, которые работают с данными.
+
+steps:
+  - id: intro
+    type: theory
+    title: Данные вокруг программы
+    body: >-
+      Программа редко живёт одна: она читает файлы, подключает свои модули, берёт данные из базы
+      и с сервера. В этом уроке всё настоящее, кроме сети: ответы сервера записаны заранее.
+    simpler: Программа берёт данные не только из ввода, но и из файлов, базы и интернета.
+    coach: Сначала посмотри примеры, потом пробуй сам.
+
+  - id: show-file
+    type: example
+    title: Чтение файла
+    body: Файл `menu.txt` лежит рядом с программой — его содержимое видно в блоке «Файлы задания».
+    code: |-
+      with open("menu.txt", encoding="utf-8") as file:
+          for line in file:
+              print(line.strip().upper())
+    files:
+      menu.txt: |
+        чай
+        кофе
+    notes:
+      - line: 1
+        text: Файл открывается по имени — он в той же папке, что и программа.
+      - line: 3
+        text: strip() убирает перевод строки в конце.
+    tryIt: Убери `.upper()` и запусти снова.
+
+  - id: show-write
+    type: example
+    title: Запись файла
+    code: |-
+      with open("log.txt", "w", encoding="utf-8") as file:
+          file.write("Заказ принят\n")
+      print("Готово")
+    notes:
+      - line: 1
+        text: Режим "w" создаёт файл заново — он появится в «Файлах после запуска».
+
+  - id: guess-missing
+    type: predict
+    title: Файла нет
+    prompt: Файла `notes.txt` рядом с программой нет. Что произойдёт?
+    code: |-
+      with open("notes.txt", encoding="utf-8") as file:
+          print(file.read())
+    options: ["Выведется пустая строка", "Ошибка FileNotFoundError"]
+    answer: Ошибка FileNotFoundError
+    answerIsNotOutput: true
+    explanation: Открыть на чтение можно только существующий файл.
+
+  - id: guess-dice
+    type: predict
+    title: Кубик с seed
+    prompt: Перед запуском вызывается `random.seed(7)`. Что выведет программа?
+    code: |-
+      import random
+
+      print(random.randint(1, 6), random.randint(1, 6))
+    seed: 7
+    answer: "3 2"
+    explanation: С одним и тем же seed «случайные» числа каждый раз одни и те же.
+
+  - id: guess-weather
+    type: predict
+    title: Ответ сервера
+    prompt: 'Сервер отвечает `{"temp": 12}`. Что выведет программа?'
+    code: |-
+      import requests
+
+      response = requests.get("https://api.example.com/weather", params={"city": "Казань"}, timeout=5)
+      print(response.status_code, response.json()["temp"])
+    http:
+      - url: https://api.example.com/weather?city=Казань
+        json:
+          temp: 12
+    answer: "200 12"
+    explanation: Код 200 значит «всё в порядке», а json() превращает ответ в словарь.
+
+  - id: guess-orders
+    type: predict
+    title: Запрос к базе
+    prompt: Что выведет программа?
+    code: |-
+      import sqlite3
+
+      connection = sqlite3.connect("shop.db")
+      count, total = connection.execute("SELECT COUNT(*), SUM(price) FROM orders").fetchone()
+      print(count, total)
+    databases:
+      shop.db: |
+        CREATE TABLE orders (id INTEGER PRIMARY KEY, item TEXT, price INTEGER);
+        INSERT INTO orders (item, price) VALUES ('чай', 120), ('пирог', 250);
+    answer: "2 370"
+    explanation: COUNT считает строки, SUM складывает цены.
+
+  - id: plan-request
+    type: order
+    title: Порядок запроса
+    prompt: Расставь шаги работы с сервером по порядку.
+    items:
+      - id: send
+        text: Отправить запрос с timeout
+      - id: status
+        text: Проверить код ответа
+      - id: parse
+        text: Разобрать JSON
+      - id: show
+        text: Показать результат
+    explanation: Пока код ответа не проверен, разбирать JSON рано — в ответе может быть ошибка.
+
+  - id: quiz-seed
+    type: quiz
+    title: Зачем seed
+    question: Что даёт `random.seed(7)` перед бросками кубика?
+    options:
+      - Числа становятся больше
+      - Каждый запуск даёт те же «случайные» числа
+      - Кубик перестаёт быть случайным навсегда
+    correct: 1
+    explanation: seed задаёт начальное состояние генератора — последовательность повторяется, и программу можно проверить.
+
+  - id: practice-bill
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: fe-bill
+      kind: write
+      title: Счёт за пиццу
+      statement: >-
+        В переменных `price`, `count` и `drink` лежат цена пиццы, число пицц и цена напитка.
+        Посчитай в переменной `total` сумму заказа и выведи её с подписью.
+      output: 'Строка «Итого: 1950».'
+      constraints:
+        - Сумма считается из переменных, а не готовым числом.
+      starterCode: |
+        price = 540
+        count = 3
+        drink = 330
+        # посчитай total и выведи его
+      tests:
+        - id: t1
+          kind: io
+          example: true
+          expected: "Итого: 1950"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Подпись и число
+          expected: 'Итого: \d+'
+          expectedLabel: «Итого:» и число
+          compare:
+            mode: regex
+      rules:
+        - id: from-variables
+          fromNumbers:
+            total: [540, 3, 330]
+          message: Посчитай total из переменных price, count и drink, а не готовым числом.
+        - id: print-total
+          dependsOn:
+            print: [price, count, drink]
+          message: Выведи сумму, посчитанную из price, count и drink.
+        - id: one-print
+          use: [call:print]
+          avoid: [For, While]
+          max:
+            "call:print": 1
+          message: Хватит одного print, без циклов.
+      criteria:
+        - Выводится «Итого:» и сумма заказа.
+        - total посчитан из переменных.
+      hints:
+        - Сколько стоят все пиццы вместе — и что к этому прибавить?
+        - Пример на другом заказе — `cost = tea * cups + cake`.
+        - Умножь price на count, прибавь drink и выведи total с подписью «Итого:».
+      solution:
+        code: |
+          price = 540
+          count = 3
+          drink = 330
+          total = price * count + drink
+          print("Итого:", total)
+        explanation: Сумма считается из переменных, поэтому при другой цене программа не сломается.
+      altSolutions:
+        - code: |
+            price = 540
+            count = 3
+            drink = 330
+            total = drink + count * price
+            print(f"Итого: {total}")
+          note: Другой порядок слагаемых и f-строка.
+      wrongSolutions:
+        - code: |
+            price = 540
+            count = 3
+            drink = 330
+            total = 1950
+            print("Итого:", total)
+          note: Готовое число вместо формулы.
+          expectMistake: hardcoded
+        - code: |
+            price = 540
+            count = 3
+            drink = 330
+            total = price * count + drink
+            print(total)
+          note: Нет подписи «Итого:».
+          expectMistake: no-label
+        - code: |
+            price = 540
+            count = 3
+            drink = 330
+            total = price + count + drink
+            print("Итого:", total)
+          note: Цена сложена с количеством.
+          expectMistake: plus-count
+      mistakes:
+        - id: hardcoded
+          when:
+            failedRule: from-variables
+          why: Готовое число верно только для этого заказа — при другой цене программа ошибётся.
+          try: Запиши total формулой из price, count и drink.
+        - id: no-label
+          when:
+            outputEquals: "1950"
+          why: Число верное, но в задании нужна подпись «Итого:».
+          try: Выведи подпись и число — print("Итого:", total).
+        - id: plus-count
+          when:
+            codeIncludes: price + count
+          where: Строка с total
+          why: Число пицц нужно умножить на цену, а не прибавить к ней.
+          try: Замени первый + на *.
+          verify: 'Нажми «Проверить» — должно получиться «Итого: 1950».'
+      afterPass: Сумма считается из переменных — поменяй цену, и итог пересчитается сам.
+      skills: [fe-basics]
+      noHintsBeforeAttempt: true
+
+  - id: practice-total
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: fe-total
+      kind: write
+      title: Сумма из CSV
+      statement: >-
+        В файле `prices.csv` — товары и цены (первая строка — заголовок `name,price`). Посчитай сумму цен,
+        выведи «Итого: N» и запиши число N в файл `total.txt`. Если файла `prices.csv` нет —
+        выведи «Нет файла prices.csv».
+      files:
+        prices.csv: |
+          name,price
+          чай,120
+          пирог,250
+      starterCode: |
+        import csv
+
+        # прочитай prices.csv, выведи «Итого: …» и запиши сумму в total.txt
+      tests:
+        - id: t1
+          kind: io
+          example: true
+          expected: "Итого: 370"
+        - id: t2
+          kind: io
+          title: Другие цены
+          files:
+            prices.csv: |
+              name,price
+              суп,300
+              хлеб,40
+              сок,95
+          expected: "Итого: 435"
+        - id: t3
+          kind: assert
+          title: Файл с итогом
+          code: |
+            import os
+
+            assert os.path.exists("total.txt"), "файла total.txt нет"
+            with open("total.txt", encoding="utf-8") as file:
+                assert file.read().strip() == "370"
+          message: Программа записывает сумму в файл total.txt.
+        - id: t4
+          kind: io
+          edge: true
+          title: Файла нет
+          files:
+            prices.csv: null
+          expected: Нет файла prices.csv
+      criteria:
+        - Выводится сумма цен из prices.csv.
+        - Сумма записана в total.txt.
+        - Если файла нет, программа сообщает об этом, а не падает.
+      hints:
+        - Что должно случиться, если файла нет, — и как Python сообщает об этом?
+        - 'Пример: `csv.DictReader(file)` даёт строки-словари, `row["price"]` — цена текстом.'
+        - Открой файл в try, сложи int(row["price"]), в except FileNotFoundError выведи сообщение, иначе выведи итог и запиши его в total.txt.
+      solution:
+        code: |
+          import csv
+
+          try:
+              with open("prices.csv", encoding="utf-8") as file:
+                  total = sum(int(row["price"]) for row in csv.DictReader(file))
+          except FileNotFoundError:
+              print("Нет файла prices.csv")
+          else:
+              print("Итого:", total)
+              with open("total.txt", "w", encoding="utf-8") as file:
+                  file.write(str(total))
+        explanation: DictReader сам пропускает заголовок, а except FileNotFoundError ловит отсутствие файла.
+      altSolutions:
+        - code: |
+            import csv
+
+            try:
+                file = open("prices.csv", encoding="utf-8")
+            except FileNotFoundError:
+                print("Нет файла prices.csv")
+            else:
+                with file:
+                    reader = csv.reader(file)
+                    next(reader)
+                    total = 0
+                    for name, price in reader:
+                        total += int(price)
+                print(f"Итого: {total}")
+                with open("total.txt", "w", encoding="utf-8") as out:
+                    out.write(str(total))
+          note: csv.reader и next() вместо DictReader.
+      wrongSolutions:
+        - code: |
+            import csv
+
+            try:
+                with open("prices.csv", encoding="utf-8") as file:
+                    total = 0
+                    for name, price in csv.reader(file):
+                        total += int(price)
+            except FileNotFoundError:
+                print("Нет файла prices.csv")
+            else:
+                print("Итого:", total)
+                with open("total.txt", "w", encoding="utf-8") as file:
+                    file.write(str(total))
+          note: Заголовок читается как строка с ценой.
+          expectMistake: header-as-data
+        - code: |
+            import csv
+
+            try:
+                with open("prices.csv", encoding="utf-8") as file:
+                    total = sum(int(row["price"]) for row in csv.DictReader(file))
+            except FileNotFoundError:
+                print("Нет файла prices.csv")
+            else:
+                print("Итого:", total)
+          note: Сумма не записана в total.txt.
+          expectMistake: no-total-file
+        - code: |
+            import csv
+
+            with open("prices.csv", encoding="utf-8") as file:
+                total = sum(int(row["price"]) for row in csv.DictReader(file))
+            print("Итого:", total)
+            with open("total.txt", "w", encoding="utf-8") as file:
+                file.write(str(total))
+          note: Нет обработки отсутствующего файла.
+          expectMistake: no-file-check
+      mistakes:
+        - id: no-file-check
+          when:
+            errorType: FileNotFoundError
+          why: Когда файла нет, open() останавливает программу ошибкой.
+          try: Оберни чтение файла в try и поймай FileNotFoundError.
+        - id: header-as-data
+          when:
+            errorType: ValueError
+          why: Первая строка CSV — заголовок, и int("price") не получается.
+          try: Пропусти заголовок — next(reader) или csv.DictReader.
+        - id: no-total-file
+          when:
+            failedTest: t3
+          why: Итог выводится, но файл total.txt не создаётся.
+          try: Открой total.txt в режиме "w" и запиши туда str(total).
+      skills: [fe-files]
+
+  - id: practice-module
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: fe-module
+      kind: modify
+      title: Модуль со скидкой
+      statement: >-
+        Это модуль `prices.py`. Допиши функцию `with_discount(price, percent)` — она возвращает цену
+        со скидкой в процентах (целое число). Пример внизу должен печататься только при запуске
+        самого файла: при `import prices` модуль ничего не печатает. Функция `rub` — из готового модуля `money.py`.
+      filename: prices.py
+      files:
+        money.py: |
+          def rub(amount):
+              return f"{amount} ₽"
+      starterCode: |
+        from money import rub
+
+
+        def with_discount(price, percent):
+            return price
+
+
+        print(rub(with_discount(1000, 10)))
+      tests:
+        - id: t1
+          kind: io
+          example: true
+          title: Запуск файла
+          expected: 900 ₽
+        - id: a1
+          kind: assert
+          title: Функция из модуля
+          code: |
+            import prices
+
+            assert prices.with_discount(200, 50) == 100
+            assert prices.with_discount(990, 0) == 990
+          message: Функция with_discount из модуля prices возвращает цену со скидкой.
+        - id: a2
+          kind: assert
+          title: Импорт без вывода
+          code: |
+            import contextlib
+            import io
+
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                import prices
+            assert buffer.getvalue() == ""
+          message: При import prices модуль ничего не печатает — пример запускается только под if __name__ == "__main__".
+      criteria:
+        - with_discount возвращает цену со скидкой.
+        - При импорте модуль ничего не печатает.
+      hints:
+        - Что увидит программа, которая сделает import prices, — и нужно ли ей видеть пример?
+        - 'Пример из другого модуля — `if __name__ == "__main__": run_demo()`.'
+        - Верни price минус скидку (price * percent // 100), а print спрячь под if __name__ == "__main__".
+      solution:
+        code: |
+          from money import rub
+
+
+          def with_discount(price, percent):
+              return price - price * percent // 100
+
+
+          if __name__ == "__main__":
+              print(rub(with_discount(1000, 10)))
+        explanation: При import переменная __name__ равна имени модуля, поэтому пример не печатается.
+      altSolutions:
+        - code: |
+            import money
+
+
+            def with_discount(price, percent):
+                return round(price * (100 - percent) / 100)
+
+
+            def main():
+                print(money.rub(with_discount(1000, 10)))
+
+
+            if __name__ == "__main__":
+                main()
+          note: import money целиком, round и функция main.
+      wrongSolutions:
+        - code: |
+            from money import rub
+
+
+            def with_discount(price, percent):
+                return price - price * percent // 100
+
+
+            print(rub(with_discount(1000, 10)))
+          note: Пример печатается и при импорте.
+          expectMistake: prints-on-import
+        - code: |
+            from money import rub
+
+
+            def with_discount(price, percent):
+                return price * percent // 100
+
+
+            if __name__ == "__main__":
+                print(rub(with_discount(1000, 10)))
+          note: Возвращает размер скидки, а не цену.
+          expectMistake: discount-only
+      mistakes:
+        - id: prints-on-import
+          when:
+            failedTest: a2
+          why: Код на верхнем уровне модуля выполняется при каждом import.
+          try: Спрячь пример под if __name__ == "__main__".
+        - id: discount-only
+          when:
+            outputEquals: 100 ₽
+          why: Функция возвращает саму скидку, а нужна цена после скидки.
+          try: Вычти скидку из цены.
+      skills: [fe-modules]
+
+  - id: practice-weather
+    type: exercise
+    title: Практика 4
+    exercise:
+      id: fe-weather
+      kind: write
+      title: Температура с сервера
+      statement: >-
+        Напиши функцию `temperature(city)`: она запрашивает `https://api.example.com/weather`
+        с параметром `city` и таймаутом и возвращает температуру — поле `temp` ответа. Если запрос
+        не удался (нет соединения, сервер не ответил вовремя или ответил кодом 4xx/5xx) — функция возвращает `None`.
+      http:
+        - url: https://api.example.com/weather?city=Казань
+          json:
+            temp: 12
+            sky: ясно
+        - url: https://api.example.com/weather?city=Атлантида
+          status: 404
+          json:
+            error: город не найден
+        - url: https://api.example.com/weather?city=Медленск
+          error: timeout
+      starterCode: |
+        import requests
+
+
+        def temperature(city):
+            response = requests.get("https://api.example.com/weather", params={"city": city})
+            return response.json()["temp"]
+      tests:
+        - id: c1
+          kind: call
+          example: true
+          call: temperature("Казань")
+          expected: "12"
+        - id: c2
+          kind: call
+          example: true
+          title: Города нет — ответ 404
+          call: temperature("Атлантида")
+          expected: None
+        - id: c3
+          kind: call
+          edge: true
+          title: Сервер не отвечает вовремя
+          call: temperature("Медленск")
+          expected: None
+        - id: c4
+          kind: call
+          title: Другая погода
+          call: temperature("Казань")
+          expected: "-3"
+          http:
+            - url: https://api.example.com/weather?city=Казань
+              json:
+                temp: -3
+        - id: c5
+          kind: call
+          edge: true
+          title: Нет соединения
+          call: temperature("Казань")
+          expected: None
+          http:
+            - url: https://api.example.com/weather?city=Казань
+              error: connection
+        - id: a1
+          kind: assert
+          title: Запрос с timeout
+          code: |
+            import requests
+
+            temperature("Казань")
+            assert requests.calls[-1]["timeout"] is not None
+          message: Запрос задаёт timeout — без него программа может ждать ответа вечно.
+      criteria:
+        - Функция возвращает температуру из ответа сервера.
+        - При ошибке сети или ответе 4xx/5xx функция возвращает None.
+        - Запрос задаёт timeout.
+      hints:
+        - Что вернёт сервер для города, которого нет, — и что будет, если он не ответит совсем?
+        - Пример на другом адресе — `requests.get(url, timeout=3)` и `response.raise_for_status()` внутри try.
+        - Сделай запрос с params и timeout в try, вызови raise_for_status(), в except requests.RequestException верни None, иначе — response.json()["temp"].
+      solution:
+        code: |
+          import requests
+
+          URL = "https://api.example.com/weather"
+
+
+          def temperature(city):
+              try:
+                  response = requests.get(URL, params={"city": city}, timeout=5)
+                  response.raise_for_status()
+              except requests.RequestException:
+                  return None
+              return response.json()["temp"]
+        explanation: raise_for_status() превращает ответ 4xx/5xx в исключение, а RequestException ловит и его, и ошибки сети.
+      altSolutions:
+        - code: |
+            import requests
+
+
+            def temperature(city):
+                url = f"https://api.example.com/weather?city={city}"
+                try:
+                    response = requests.get(url, timeout=3)
+                except (requests.Timeout, requests.ConnectionError):
+                    return None
+                if not response.ok:
+                    return None
+                return response.json()["temp"]
+          note: Город прямо в адресе и проверка response.ok.
+      wrongSolutions:
+        - code: |
+            import requests
+
+
+            def temperature(city):
+                try:
+                    response = requests.get("https://api.example.com/weather", params={"city": city})
+                    response.raise_for_status()
+                except requests.RequestException:
+                    return None
+                return response.json()["temp"]
+          note: Нет timeout.
+          expectMistake: no-timeout
+        - code: |
+            import requests
+
+
+            def temperature(city):
+                try:
+                    response = requests.get("https://api.example.com/weather", params={"city": city}, timeout=5)
+                except requests.RequestException:
+                    return None
+                return response.json()["temp"]
+          note: Код ответа не проверяется.
+          expectMistake: no-status-check
+        - code: |
+            import requests
+
+
+            def temperature(city):
+                try:
+                    response = requests.get("https://api.example.com/weather", params={"city": city}, timeout=5)
+                    response.raise_for_status()
+                except requests.HTTPError:
+                    return None
+                return response.json()["temp"]
+          note: Ловит только HTTPError, а тайм-аут — нет.
+          expectMistake: timeout-not-caught
+      mistakes:
+        - id: no-status-check
+          when:
+            errorType: KeyError
+          why: При ответе 404 в JSON нет поля temp — сервер прислал описание ошибки.
+          try: Проверь код ответа — response.raise_for_status() или response.ok.
+        - id: timeout-not-caught
+          when:
+            errorType: Timeout
+          why: requests.Timeout — не HTTPError, и except requests.HTTPError его не ловит.
+          try: Лови requests.RequestException — общий предок всех ошибок запроса.
+        - id: no-timeout
+          when:
+            failedTest: a1
+          why: Без timeout программа может ждать ответа вечно.
+          try: Передай в requests.get аргумент timeout, например timeout=5.
+      skills: [fe-http]
+
+  - id: practice-orders
+    type: exercise
+    title: Практика 5
+    exercise:
+      id: fe-orders
+      kind: write
+      title: Самый дорогой заказ
+      statement: >-
+        В базе `shop.db` есть таблица `orders` с колонками `item` и `price`. Выведи самый дорогой заказ
+        в виде «пирог: 250». Если заказов нет — выведи «Заказов нет».
+      databases:
+        shop.db: |
+          CREATE TABLE orders (id INTEGER PRIMARY KEY, item TEXT NOT NULL, price INTEGER NOT NULL);
+          INSERT INTO orders (item, price) VALUES ('чай', 120), ('пирог', 250), ('сок', 90);
+      starterCode: |
+        import sqlite3
+
+        connection = sqlite3.connect("shop.db")
+        # найди самый дорогой заказ
+        connection.close()
+      tests:
+        - id: t1
+          kind: io
+          example: true
+          expected: "пирог: 250"
+        - id: t2
+          kind: io
+          title: Другие заказы
+          databases:
+            shop.db: |
+              CREATE TABLE orders (id INTEGER PRIMARY KEY, item TEXT NOT NULL, price INTEGER NOT NULL);
+              INSERT INTO orders (item, price) VALUES ('суп', 300), ('хлеб', 40);
+          expected: "суп: 300"
+        - id: t3
+          kind: io
+          edge: true
+          title: Заказов нет
+          databases:
+            shop.db: |
+              CREATE TABLE orders (id INTEGER PRIMARY KEY, item TEXT NOT NULL, price INTEGER NOT NULL);
+          expected: Заказов нет
+      criteria:
+        - Выводится самый дорогой заказ.
+        - Пустая таблица не ломает программу.
+      hints:
+        - Как попросить базу отсортировать заказы по цене — и что вернёт fetchone(), если заказов нет?
+        - Пример на другой таблице — `SELECT name FROM users ORDER BY age DESC LIMIT 1`.
+        - Выбери item и price с ORDER BY price DESC LIMIT 1; если fetchone() вернул None — выведи «Заказов нет».
+      solution:
+        code: |
+          import sqlite3
+
+          connection = sqlite3.connect("shop.db")
+          row = connection.execute("SELECT item, price FROM orders ORDER BY price DESC LIMIT 1").fetchone()
+          connection.close()
+          if row is None:
+              print("Заказов нет")
+          else:
+              print(f"{row[0]}: {row[1]}")
+        explanation: База сама сортирует заказы, а fetchone() возвращает None, когда строк нет.
+      altSolutions:
+        - code: |
+            import sqlite3
+
+            connection = sqlite3.connect("shop.db")
+            rows = connection.execute("SELECT item, price FROM orders").fetchall()
+            connection.close()
+            if rows:
+                item, price = max(rows, key=lambda row: row[1])
+                print(f"{item}: {price}")
+            else:
+                print("Заказов нет")
+          note: Все строки и max() в Python.
+      wrongSolutions:
+        - code: |
+            import sqlite3
+
+            connection = sqlite3.connect("shop.db")
+            row = connection.execute("SELECT item, price FROM orders ORDER BY price LIMIT 1").fetchone()
+            connection.close()
+            if row is None:
+                print("Заказов нет")
+            else:
+                print(f"{row[0]}: {row[1]}")
+          note: Сортировка по возрастанию — выводится самый дешёвый.
+          expectMistake: ascending
+        - code: |
+            import sqlite3
+
+            connection = sqlite3.connect("shop.db")
+            item, price = connection.execute("SELECT item, price FROM orders ORDER BY price DESC LIMIT 1").fetchone()
+            connection.close()
+            print(f"{item}: {price}")
+          note: Не проверяет, что заказы есть.
+          expectMistake: no-empty-check
+      mistakes:
+        - id: no-empty-check
+          when:
+            errorType: TypeError
+          why: Когда таблица пуста, fetchone() возвращает None, а его нельзя разложить на item и price.
+          try: Проверь результат fetchone() на None до того, как его использовать.
+        - id: ascending
+          when:
+            codeRegex: 'ORDER BY price(?!\s+DESC)'
+          why: ORDER BY без DESC сортирует по возрастанию — первым идёт самый дешёвый заказ.
+          try: Добавь DESC после ORDER BY price.
+      skills: [fe-sqlite]
+
+  - id: practice-dice
+    type: exercise
+    title: Практика 6
+    exercise:
+      id: fe-dice
+      kind: write
+      title: Два кубика
+      statement: >-
+        Брось два кубика — два вызова `random.randint(1, 6)` — и выведи сумму. Проверка задаёт seed,
+        поэтому «случайные» числа при каждом запуске одни и те же.
+      seed: 7
+      starterCode: |
+        import random
+
+        # брось два кубика и выведи сумму
+      tests:
+        - id: t1
+          kind: io
+          example: true
+          expected: "5"
+        - id: t2
+          kind: io
+          title: Другой seed
+          seed: 5
+          expected: "8"
+      criteria:
+        - Выводится сумма двух бросков randint(1, 6).
+      hints:
+        - Сколько кубиков бросают — и сколько раз нужно вызвать randint?
+        - Пример с монеткой — `side = random.choice(["орёл", "решка"])`.
+        - Вызови random.randint(1, 6) два раза и выведи сумму.
+      solution:
+        code: |
+          import random
+
+          first = random.randint(1, 6)
+          second = random.randint(1, 6)
+          print(first + second)
+        explanation: Каждый вызов randint — отдельный бросок.
+      altSolutions:
+        - code: |
+            import random
+
+            print(sum(random.randint(1, 6) for _ in range(2)))
+          note: Два броска в одной строке.
+      wrongSolutions:
+        - code: |
+            import random
+
+            print(random.randint(2, 12))
+          note: Один бросок от 2 до 12 — это не два кубика.
+          expectMistake: one-roll
+      mistakes:
+        - id: one-roll
+          when:
+            codeIncludes: randint(2, 12)
+          why: Сумма двух кубиков распределена иначе, чем одно число от 2 до 12, — 7 выпадает чаще, чем 2.
+          try: Брось каждый кубик отдельно — два вызова randint(1, 6).
+      skills: [fe-random]
+
+  - id: try-locally
+    type: checklist
+    title: То же на своём компьютере
+    body: Повтори чтение файла у себя — там файлы настоящие.
+    items:
+      - id: create-file
+        text: Создай рядом с программой файл `menu.txt` с двумя строками.
+      - id: run-program
+        text: Запусти программу из примера командой `python main.py`.
+        help: Если Python не находит файл, проверь, что терминал открыт в папке с программой.
+
+  - id: recap
+    type: recap
+    title: Итоги
+    points:
+      - Файлы урока лежат рядом с программой, каждый запуск получает их заново.
+      - Запросы в уроках — учебная симуляция, настоящих запросов нет.
+    question: Почему в запросе к серверу нужен timeout?
+    answer: Без timeout программа может ждать ответа вечно, если сервер завис.

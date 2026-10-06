@@ -1,0 +1,1809 @@
+id: m5-l3
+module: m5
+number: "5.3"
+title: "return: функция отдаёт результат"
+objective: >-
+  Возвращать результат функции через return и использовать его дальше — в переменной, вычислении
+  или условии, — отличая return от print.
+minutes: [25, 30]
+prerequisites: [m5-l2]
+skills: [functions]
+environment: python
+
+story:
+  title: Плейлист для пробежки
+  fictional: true
+  text: >-
+    Тимур готовится к забегу на 10 км и собирает плейлист: первые песни — на разминку, она длится
+    8 минут. Длительности песен в приложении записаны как «3:45», и Тимур написал функцию, которая
+    переводит такую запись в секунды и печатает результат, — на экране появлялись правильные числа.
+    Но сложить их программа не смогла: `print` показывает число человеку, а программе ничего не
+    отдаёт, и вместо суммы появилась ошибка про `None`. Когда Тимур заменил `print` на `return`,
+    функция стала отдавать секунды, и длительность плейлиста посчиталась одной строкой.
+
+why: >-
+  Результат функции обычно нужен дальше: сложить, сравнить, передать другой функции. `return`
+  отдаёт значение туда, где функцию вызвали: `total = to_seconds(3, 45) + to_seconds(4, 10)`.
+
+usedIn: >-
+  Цена со скидкой в интернет-магазине, проверка пароля («подходит или нет»), перевод градусов и
+  скорости ветра в приложении погоды — всё это функции, которые считают и возвращают результат.
+  Печатает результат обычно основная программа, а расчёт можно использовать где угодно.
+
+steps:
+  - id: return
+    type: theory
+    title: print показывает, return отдаёт
+    body: |-
+      Функция может распорядиться результатом двумя способами: **показать** его человеку или
+      **отдать** программе. Показать — это `print`: текст появляется на экране, и на этом всё.
+      Отдать — это `return`: результат возвращается туда, где функцию вызвали, и с ним можно
+      работать дальше.
+
+      ```python
+      def to_seconds(minutes, seconds):
+          return minutes * 60 + seconds
+
+      total = to_seconds(3, 45) + to_seconds(4, 10)
+      ```
+
+      Вызов функции с `return` сам становится значением. Python выполняет тело, доходит до
+      `return` и подставляет результат на место вызова — так же, как `len("кот")` превращается
+      в 3. Результат можно положить в переменную, сложить, передать в `print` или проверить в
+      условии: `if to_seconds(3, 45) > 200:`. Вернуть можно любое значение: число, строку, список
+      или результат сравнения — `return temp < 0` отдаёт `True` или `False`.
+
+      **`return` сразу завершает функцию**, даже если стоит внутри цикла. Строки после него не
+      выполняются. Поэтому в ветках `if` может стоять несколько `return`: сработает тот, до
+      которого дойдёт выполнение.
+
+      **`None`** ты уже встречал в уроке 4.4: так отвечает `get`, если ключа нет. Это особое
+      значение «ничего». Функция возвращает `None`, если выполнение дошло до конца её тела и не
+      встретило `return`. Даже `print` — такая функция: `x = print("Привет")` напечатает «Привет»,
+      а в `x` окажется `None`. Если `None` попадёт в вычисление, программа упадёт: `None + 1` даёт
+      `TypeError` со словом `NoneType`. Значит, какая-то функция ничего не вернула: печатает
+      результат вместо `return` или `return` есть не во всех ветках.
+
+      Частое заблуждение: «число видно на экране — значит, функция его вернула». Нет: то, что
+      напечатано, программа уже не получит.
+
+      Хорошее правило: **функция-расчёт возвращает результат, а печатает основная программа.**
+      Такую функцию легко проверить и использовать в других расчётах.
+
+      **`pass`** — заглушка «пока ничего не делать». Тело функции не может быть пустым, поэтому в
+      заготовках пишут `pass`. Такая функция возвращает `None`. Так устроены стартовые заготовки в
+      заданиях: `pass` нужно заменить своим кодом.
+    simpler: >-
+      `print` — сказать вслух, `return` — отдать в руки. Сказанное вслух в карман не положишь.
+      Если результат функции нужен дальше — сложить, сравнить, сохранить, — функция должна
+      отдать его через `return`. Если до `return` дело не дошло, функция отдаёт `None`, то есть
+      «ничего».
+    coach: >-
+      Видишь в ошибке `NoneType` — ищи функцию, которая ничего не вернула: например, печатает
+      вместо `return`.
+
+  - id: seconds
+    type: example
+    title: Секунды для плейлиста
+    body: >-
+      Функция из истории, только минуты и секунды приходят в неё отдельными числами. Нажми
+      «Запустить».
+    code: |-
+      def to_seconds(minutes, seconds):
+          return minutes * 60 + seconds
+
+      first = to_seconds(3, 45)
+      second = to_seconds(4, 10)
+      total = first + second
+      print(f"Два трека: {total} с")
+      print(f"Это больше 7 минут? {total > 7 * 60}")
+    notes:
+      - line: 2
+        text: >-
+          `return` отдаёт результат формулы туда, где функцию вызвали. Сама функция ничего не
+          печатает.
+      - line: 4
+        text: Вызов `to_seconds(3, 45)` превращается в число 225, и оно сохраняется в `first`.
+      - line: 6
+        text: Складываются уже готовые числа — значения, которые вернули два вызова.
+      - line: 8
+        text: "Результат можно не только печатать, но и сравнивать: `475 > 420` даёт `True`."
+    tryIt: >-
+      Замени во второй строке `return minutes * 60 + seconds` на
+      `print(minutes * 60 + seconds)` и запусти. Появятся 225 и 250, а потом ошибка `TypeError`
+      со словом `NoneType` — ровно как у Тимура. Верни `return` на место и допиши в конец
+      `print(to_seconds(2, 30) * 2)`: вызов можно сразу использовать в выражении.
+    coach: >-
+      Обрати внимание: печатают только две последние строки. Функция считает, основная программа
+      показывает.
+
+  - id: print-or-return
+    type: predict
+    title: print или return
+    prompt: >-
+      Две функции почти одинаковые: одна печатает удвоенное число, другая возвращает его. Как
+      думаешь, что выведет программа?
+    code: |-
+      def double_print(x):
+          print(x * 2)
+
+      def double_return(x):
+          return x * 2
+
+      a = double_print(5)
+      b = double_return(5)
+      print(a)
+      print(b)
+    options:
+      - |-
+        10
+        10
+      - |-
+        10
+        None
+        10
+      - |-
+        10
+        10
+        10
+    answer: |-
+      10
+      None
+      10
+    explanation: >-
+      Первая `10` — это `print` внутри `double_print`: он сработал прямо во время вызова. `return`
+      в этой функции нет, поэтому в `a` попал `None` — его и выводит `print(a)`. А `double_return`
+      ничего не печатает, но отдаёт 10: это число попало в `b` и появилось последним.
+    coach: >-
+      Смотри не только на то, что появилось на экране, но и на то, что лежит в переменной.
+
+  - id: after-return
+    type: predict
+    title: Что после return
+    prompt: >-
+      В функции два `return` и ещё одна строка после них. Как думаешь, что выведет программа?
+    code: |-
+      def frost_label(temp):
+          if temp < 0:
+              return "мороз"
+          return "без мороза"
+          print("проверено")
+
+      print(frost_label(-5))
+      print(frost_label(0))
+    options:
+      - |-
+        мороз
+        без мороза
+      - |-
+        мороз
+        проверено
+        без мороза
+        проверено
+      - |-
+        мороз
+        без мороза
+        проверено
+    answer: |-
+      мороз
+      без мороза
+    explanation: >-
+      `return` сразу завершает функцию. Для `-5` срабатывает первый `return`, и до остальных строк
+      дело не доходит. Для 0 условие `0 < 0` ложно — ноль ещё не мороз, — и срабатывает второй
+      `return`. Строка `print("проверено")` стоит после него и не выполнится никогда, ни при каком
+      значении.
+    coach: >-
+      Строки сразу после `return` в том же блоке не выполнятся никогда. Нашёл такие у себя —
+      значит, они стоят не на месте: перенеси их выше `return` или удали, если они не нужны.
+
+  - id: practice-wind
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m5-l3-e1
+      kind: repeat
+      title: Ветер в метрах в секунду
+      statement: |-
+        Приложение погоды показывает ветер в километрах в час, а в памятке к забегу Тимура порог
+        сильного ветра указан в метрах в секунду. Напиши функцию `kmh_to_ms(speed)`: она получает
+        скорость в км/ч и **возвращает** её в м/с, округлённую до одного знака после запятой.
+
+        1 м/с — это 3,6 км/ч (в коде дробную часть отделяют точкой: `3.6`). Например:
+
+        ```text
+        kmh_to_ms(36)   →  10.0
+        kmh_to_ms(100)  →  27.8
+        ```
+
+        В заготовке стоит заглушка `pass` — замени её своим кодом. Строка `print` внизу — для
+        тебя: нажми «Запустить» и посмотри, что возвращает функция. Проверка вызывает функцию сама
+        и сравнивает именно возвращённое значение.
+      input: Параметр `speed` — скорость в км/ч, число не меньше 0, возможно дробное.
+      output: >-
+        Функция возвращает число — скорость в м/с, округлённую до одного знака после запятой
+        (как делает `round(x, 1)`).
+      constraints:
+        - Функция возвращает результат через `return`, а не печатает его.
+        - Возвращай число — без единиц измерения.
+      starterCode: |
+        def kmh_to_ms(speed):
+            pass  # верни скорость в м/с
+
+        print(kmh_to_ms(36))  # ожидаю 10.0
+      tests:
+        - id: t1
+          kind: call
+          title: Пример 1
+          example: true
+          call: kmh_to_ms(36)
+          expected: "10.0"
+        - id: t2
+          kind: call
+          title: "Пример 2: нужно округление"
+          example: true
+          call: kmh_to_ms(100)
+          expected: "27.8"
+        - id: t3
+          kind: call
+          title: Ещё одна скорость
+          call: kmh_to_ms(18)
+          expected: "5.0"
+        - id: t4
+          kind: call
+          title: "Граничный случай: штиль"
+          edge: true
+          call: kmh_to_ms(0)
+          expected: "0.0"
+        - id: t5
+          kind: call
+          title: Округление вниз
+          call: kmh_to_ms(7)
+          expected: "1.9"
+        - id: t6
+          kind: call
+          title: Дробная скорость
+          call: kmh_to_ms(12.6)
+          expected: "3.5"
+      criteria:
+        - Функция отдаёт результат через `return`, а не печатает его.
+        - Возвращается число, а не строка с единицами.
+        - Результат округлён до одного знака после запятой; для 0 км/ч функция возвращает 0.0.
+        - Дробная скорость тоже переводится точно, например 12.6 км/ч → 3.5 м/с.
+      hints:
+        - >-
+          Функция получает скорость в км/ч. Что нужно сделать с этим числом, чтобы получить м/с, —
+          и как отдать результат наружу? Посмотри, какой строкой функция `to_seconds` из примера
+          отдаёт свой результат.
+        - |-
+          Похожая функция для другой задачи — переводит минуты в часы и оставляет два знака после
+          запятой:
+          ```python
+          def minutes_to_hours(m):
+              return round(m / 60, 2)
+
+          print(minutes_to_hours(90))   # 1.5
+          ```
+        - |-
+          Каркас тела функции — одна строка вместо `pass`:
+          ```text
+          return round(…, 1)
+          ```
+          Вместо многоточия — формула перевода из км/ч в м/с.
+      solution:
+        code: |
+          def kmh_to_ms(speed):
+              return round(speed / 3.6, 1)
+
+          print(kmh_to_ms(36))  # ожидаю 10.0
+        explanation: >-
+          Формула `speed / 3.6` переводит км/ч в м/с, `round(…, 1)` оставляет один знак после
+          запятой, а `return` отдаёт результат туда, где функцию вызвали. Поэтому
+          `print(kmh_to_ms(36))` внизу печатает 10.0, а проверка получает то же число. Можно
+          сначала сохранить результат в переменную и вернуть её — это то же самое.
+      altSolutions:
+        - code: |
+            def kmh_to_ms(speed):
+                ms = speed / 3.6
+                return round(ms, 1)
+
+            print(kmh_to_ms(36))
+          note: Результат сначала сохранён в переменную, потом возвращён.
+        - code: |
+            def kmh_to_ms(speed):
+                return round(speed * 1000 / 3600, 1)
+          note: Перевод через метры и секунды; проверочный print удалён.
+        - code: |
+            def kmh_to_ms(speed):
+                result = round(speed / 3.6, 1)
+                print(result)
+                return result
+
+            print(kmh_to_ms(36) > 8)
+          note: Отладочный print внутри функции не мешает, раз return есть.
+        - code: |
+            def kmh_to_ms(speed):
+                return round(speed * 5 / 18, 1)
+
+            print(f"36 км/ч = {kmh_to_ms(36)} м/с")
+          note: "Формула * 5 / 18 (рецензия checks); f-строка в проверочном print."
+        - code: |
+            def kmh_to_ms(speed):
+                speed = speed / 3.6
+                return round(speed, 1)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Параметр перезаписан внутри функции (рецензия learner).
+        - code: |
+            def kmh_to_ms(speed):
+                if speed == 0:
+                    return 0
+                return round(speed / 3.6, 1)
+
+            print(kmh_to_ms(0), kmh_to_ms(36))
+          note: Отдельная ветка для штиля возвращает int 0 — проверка числа терпима к int/float (рецензия checks).
+      wrongSolutions:
+        - code: |
+            def kmh_to_ms(speed):
+                print(round(speed / 3.6, 1))
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Функция печатает результат вместо return.
+          expectMistake: print-not-return
+        - code: |
+            def kmh_to_ms(speed):
+                ms = round(speed / 3.6, 1)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Результат посчитан в переменную, но не возвращён.
+          expectMistake: no-return
+        - code: |
+            def kmh_to_ms(speed):
+                return f"{round(speed / 3.6, 1)} м/с"
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Возвращается строка с единицами, а не число.
+          expectMistake: returns-text
+        - code: |
+            def kmh_to_ms(speed):
+                return round(speed * 3.6, 1)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Умножение вместо деления.
+          expectMistake: multiply
+        - code: |
+            def kmh_to_ms(speed):
+                return int(speed / 3.6)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: int() отбрасывает дробную часть.
+          expectMistake: int-cut
+        - code: |
+            def kmh_to_ms(speed):
+                return speed / 3.6
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Нет округления.
+          expectMistake: no-round
+        - code: |
+            def kmh_to_ms(speed):
+                ms = round(speed / 3.6, 1)
+                return
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Результат посчитан, а return пустой (рецензия checks, №10).
+          expectMistake: empty-return
+        - code: |
+            def kmh_to_ms(speed):
+                return round(speed / 3,6)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: "Десятичная запятая: скорость делится на 3, а 6 уходит в число знаков round (рецензия checks, №8)."
+          expectMistake: comma
+        - code: |
+            def kmh_to_ms(speed):
+                return speed / 3,6
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: "Запятая без round: функция возвращает кортеж (12.0, 6) (рецензия learner)."
+          expectMistake: comma
+        - code: |
+            def kmh_to_ms(speed):
+                return round(speed / 3,6, 1)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: "Совет «раздели на 3,6» понят буквально: у round три аргумента, TypeError (рецензия checks, №14)."
+          expectMistake: comma
+        - code: |
+            def kmh_to_ms(speed):
+                return round(3.6 / speed, 1)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Деление перевёрнуто (рецензия checks, №9).
+          expectMistake: reversed
+        - code: |
+            def kmh_to_ms(speed):
+                return round(int(speed) / 3.6, 1)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: Скорость обрезана int() — дробная скорость считается неверно (рецензия checks, №12).
+          expectMistake: int-cut
+        - code: |
+            def kmh_to_ms(speed):
+                return round(speed / 3.6)
+
+            print(kmh_to_ms(36))  # ожидаю 10.0
+          note: round без второго аргумента — общий разбор «вернул 28, ожидалось 27.8» точен.
+          expectMistake: null
+      mistakes:
+        - id: print-not-return
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*\breturn\b)[\s\S]*^[ \t]+print\('
+          where: Тело функции kmh_to_ms
+          why: >-
+            Функция печатает скорость, но ничего не возвращает, поэтому её вызов равен `None`.
+            Проверка получает именно возвращённое значение, то есть `None`. Если строка `print`
+            внизу на месте, она тоже выведет `None` — это и есть то, что вернула функция.
+          try: Замени `print(...)` в теле функции на `return` с тем же выражением.
+          verify: "Нажми «Запустить»: строка `print(kmh_to_ms(36))` должна вывести `10.0`, а не `None`."
+        - id: empty-return
+          when:
+            failedTest: t1
+            codeRegex: '^[ \t]+return[ \t]*(#.*)?$'
+          where: Тело функции kmh_to_ms
+          why: >-
+            `return` без значения завершает функцию и отдаёт `None`. Скорость посчитана, но после
+            `return` ничего не написано — наружу она не попала.
+          try: >-
+            Допиши после `return` то, что нужно отдать: формулу с `round(…, 1)` или переменную с
+            результатом.
+          verify: "Нажми «Запустить»: внизу должно появиться `10.0`, а не `None`."
+        - id: no-return
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*\breturn\b)'
+          where: Тело функции kmh_to_ms
+          why: >-
+            В функции нет `return`, поэтому её вызов равен `None` — если строка `print` внизу на
+            месте, она его и напечатает. Заглушка `pass` ничего не считает, а результат,
+            сохранённый в переменную внутри функции, сам наружу не попадает.
+          try: >-
+            Отдай результат через `return`: сразу с формулой или с переменной, в которую ты его
+            сохранил.
+          verify: "Нажми «Запустить»: внизу должно появиться `10.0`, а не `None`."
+        - id: comma
+          when:
+            codeRegex: '\b3\s*,\s*6\b'
+          why: >-
+            В Python дробную часть отделяют точкой, а не запятой. `3,6` — это два разных числа
+            через запятую: скорость делится на 3, а 6 становится отдельным значением — например,
+            вторым аргументом `round`.
+          try: Запиши делитель с точкой — `3.6`.
+          verify: "`kmh_to_ms(36)` должен вернуть 10.0."
+        - id: reversed
+          when:
+            codeRegex: '\b3\.6\s*/\s*[A-Za-z_(]'
+          why: >-
+            Деление перевёрнуто: `3.6 / speed` делит 3,6 на скорость. Для 36 км/ч получается 0.1
+            вместо 10, а для штиля (0 км/ч) — деление на ноль.
+          try: Скорость должна стоять первой, делитель — вторым, как в `speed / 3.6`.
+          verify: "`kmh_to_ms(36)` должен вернуть 10.0, а `kmh_to_ms(0)` — 0.0."
+        - id: returns-text
+          when:
+            codeRegex: 'return\s+(f?["'']|str\()'
+          why: >-
+            Функция возвращает строку с единицами, например `'10.0 м/с'`. Со строкой нельзя
+            считать: её не сравнишь с числом и не сложишь с другой скоростью. Единицы добавляют,
+            когда печатают.
+          try: >-
+            Верни только число. Если хочешь видеть единицы, допиши их в `print` внизу:
+            `print(kmh_to_ms(36), "м/с")`.
+          verify: "`kmh_to_ms(36)` должен вернуть число 10.0."
+        - id: multiply
+          when:
+            codeRegex: '\*\s*3\.6'
+          why: >-
+            1 м/с — это 3,6 км/ч, поэтому в м/с та же скорость записывается меньшим числом.
+            Умножение на 3,6 делает число больше: из 36 км/ч получается 129.6 вместо 10.
+          try: Раздели скорость на `3.6` — в Python дробную часть отделяют точкой.
+          verify: "`kmh_to_ms(36)` должен вернуть 10.0."
+        - id: int-cut
+          when:
+            codeRegex: '\bint\s*\(|//'
+          why: >-
+            `int()` отбрасывает всю дробную часть. У результата 27.77… превращается в 27, а нужно
+            27.8. У самой скорости 12.6 км/ч превращается в 12, и перевод выходит неточным. Так же
+            ведёт себя деление `//`.
+          try: >-
+            Убери `int()` и `//`: дели скорость как есть, а результат округли через `round(…, 1)`
+            — он оставляет один знак после запятой.
+          verify: "`kmh_to_ms(100)` должен вернуть 27.8, а `kmh_to_ms(12.6)` — 3.5."
+        - id: no-round
+          when:
+            failedTest: t2
+            codeRegex: '(?<![\s\S])(?![\s\S]*\bround\s*\()'
+          why: >-
+            Функция возвращает число без округления: для 100 км/ч это 27.77777777777778, а нужно
+            27.8. Для 36 км/ч ответ получается ровным, поэтому первый пример прошёл.
+          try: >-
+            Оберни формулу в `round(…, 1)`: второй аргумент говорит, сколько знаков оставить после
+            запятой.
+          verify: "`kmh_to_ms(100)` должен вернуть 27.8."
+      afterPass: >-
+        Функция отдаёт число, а значит, его можно использовать в расчётах: `kmh_to_ms(36) > 8`
+        даёт `True`, и программа может сама предупредить о сильном ветре. Если хочешь, напиши
+        обратную функцию `ms_to_kmh(speed)` и проверь, что `ms_to_kmh(kmh_to_ms(36))` возвращает
+        36.0.
+      skills: [functions, numbers-arithmetic]
+
+  - id: practice-playlist
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m5-l3-e2
+      kind: fix
+      title: Песни для разминки
+      statement: |-
+        Вот программа Тимура из истории. Функция `to_seconds` получает длительность песни строкой
+        вида `"3:45"` и должна отдавать её в секундах. Сейчас программа печатает `225` и `250`, а
+        потом падает:
+
+        ```text
+        TypeError: unsupported operand type(s) for +: 'NoneType' and 'NoneType'
+        ```
+
+        1. Исправь функцию так, чтобы она **возвращала** число секунд и ничего не печатала.
+        2. Эти две песни — на разминку, а она длится 8 минут. Допиши в конец программы проверку:
+           если песни вместе длятся не дольше 8 минут, выведи `Укладываемся в 8 минут`, иначе —
+           `Не укладываемся в 8 минут`.
+
+        Для этих двух песен программа должна вывести:
+
+        ```text
+        Всего: 475 с
+        Укладываемся в 8 минут
+        ```
+      input: Параметр `time_text` — строка «минуты:секунды», например `"3:45"` или `"10:00"`.
+      output: >-
+        Функция возвращает целое число секунд и ничего не печатает. Программа выводит две строки:
+        сумму секунд и ответ, укладываются ли песни в 8 минут. Ровно 8 минут — ещё укладываются.
+      constraints:
+        - "Секунды всегда записаны двумя цифрами: `\"4:05\"`, а не `\"4:5\"`."
+        - >-
+          Итог должен складываться из результатов двух вызовов `to_seconds`, как сейчас: проверка
+          подставит вместо `"4:10"` другие песни.
+      starterCode: |
+        def to_seconds(time_text):
+            parts = time_text.split(":")
+            print(int(parts[0]) * 60 + int(parts[1]))
+
+        total = to_seconds("3:45") + to_seconds("4:10")
+        print(f"Всего: {total} с")
+        # Допиши проверку: укладываются ли песни в 8 минут
+      tests:
+        - id: t1
+          kind: call
+          title: Пример 1
+          example: true
+          call: 'to_seconds("3:45")'
+          expected: "225"
+        - id: t2
+          kind: call
+          title: Пример 2
+          example: true
+          call: 'to_seconds("4:10")'
+          expected: "250"
+        - id: t3
+          kind: call
+          title: "Граничный случай: меньше минуты"
+          edge: true
+          call: 'to_seconds("0:59")'
+          expected: "59"
+        - id: t4
+          kind: call
+          title: "Граничный случай: ровно 10 минут"
+          edge: true
+          call: 'to_seconds("10:00")'
+          expected: "600"
+        - id: t5
+          kind: call
+          title: "Граничный случай: ноль впереди у секунд"
+          edge: true
+          call: 'to_seconds("4:05")'
+          expected: "245"
+        - id: t6
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: |-
+            Всего: 475 с
+            Укладываемся в 8 минут
+          compare:
+            ignoreSpaces: true
+        - id: t7
+          kind: assert
+          title: "Другая песня: длиннее разминки"
+          code: |-
+            import contextlib, io, re
+            source = open(__file__, encoding="utf-8").read()
+            pattern = r"""(["'])4:10\1"""
+            assert re.search(pattern, source)
+            changed = re.sub(pattern, '"4:50"', source)
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                exec(compile(changed, "main.py", "exec"), {"__name__": "__main__", "__builtins__": __builtins__})
+            out = buffer.getvalue()
+            lines = [line.strip() for line in out.splitlines() if line.strip()]
+            assert "515" in out and lines[-1] == "Не укладываемся в 8 минут"
+          message: >-
+            Проверка заменила песню "4:10" на "4:50": вместе 515 с, это больше 8 минут. Программа
+            должна вывести «Всего: 515 с» и «Не укладываемся в 8 минут».
+        - id: t8
+          kind: assert
+          title: "Граничный случай: ровно 8 минут"
+          edge: true
+          code: |-
+            import contextlib, io, re
+            source = open(__file__, encoding="utf-8").read()
+            pattern = r"""(["'])4:10\1"""
+            assert re.search(pattern, source)
+            changed = re.sub(pattern, '"4:15"', source)
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                exec(compile(changed, "main.py", "exec"), {"__name__": "__main__", "__builtins__": __builtins__})
+            out = buffer.getvalue()
+            lines = [line.strip() for line in out.splitlines() if line.strip()]
+            assert "480" in out and lines[-1] == "Укладываемся в 8 минут"
+          message: >-
+            Проверка заменила песню "4:10" на "4:15": вместе ровно 480 с, то есть 8 минут. Это ещё
+            укладывается — программа должна вывести «Всего: 480 с» и «Укладываемся в 8 минут».
+      rules:
+        - id: r-calls
+          use: [call:to_seconds]
+          message: >-
+            Итог должен складываться из того, что вернули вызовы to_seconds, а не считаться
+            заново или записываться готовым числом.
+      criteria:
+        - Функция возвращает число секунд через `return` и сама ничего не печатает.
+        - "Программа выводит `Всего: … с` — сумму результатов двух вызовов `to_seconds`."
+        - Проверка сравнивает секунды с секундами; ровно 8 минут — «Укладываемся».
+        - Работают длительности меньше минуты, с нулём секунд и с нулём впереди (`4:05`).
+      hints:
+        - >-
+          Задание из двух частей. Сначала функция: какая строка в ней только показывает число на
+          экране? Строка с `total` получает то, что функция **отдаёт**, — а что она отдаёт
+          сейчас? Потом проверка: подумай, в каких единицах записан `total`, а в каких —
+          длительность разминки.
+        - |-
+          На другом примере — цена покупки плюс пакет за 5 руб.:
+          ```python
+          def with_bag(price):
+              print(price + 5)
+          ```
+          Вызов `with_bag(100)` покажет 105, но `with_bag(100) * 2` упадёт с `NoneType`. С
+          `return price + 5` вызов станет числом 105, и его можно сравнить:
+          ```python
+          def with_bag(price):
+              return price + 5
+
+          cost = with_bag(100)
+          if cost <= 2 * 50:
+              print("Хватит двух монет по 50")
+          else:
+              print("Двух монет по 50 не хватит")
+          ```
+        - |-
+          Каркас программы:
+          ```text
+          def to_seconds(time_text):
+              parts = time_text.split(":")
+              return …   # то же выражение, что сейчас стоит в print
+
+          total = to_seconds("3:45") + to_seconds("4:10")
+          print(f"Всего: {total} с")
+          if total <= …:   # 8 минут — это сколько секунд?
+              print(…)
+          else:
+              print(…)
+          ```
+      solution:
+        code: |
+          def to_seconds(time_text):
+              parts = time_text.split(":")
+              return int(parts[0]) * 60 + int(parts[1])
+
+          total = to_seconds("3:45") + to_seconds("4:10")
+          print(f"Всего: {total} с")
+          if total <= 8 * 60:
+              print("Укладываемся в 8 минут")
+          else:
+              print("Не укладываемся в 8 минут")
+        explanation: >-
+          Главная правка — `print(...)` в функции заменён на `return` с тем же выражением. Теперь
+          вызов `to_seconds("3:45")` равен 225, и строка с `total` складывает два числа. Дальше
+          это число работает и в условии: `total` — секунды, поэтому разминку тоже переводим в
+          секунды, `8 * 60`. Знак `<=` включает ровно 8 минут. Функция ничего не печатает —
+          выводит основная программа.
+      altSolutions:
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                minutes = int(parts[0])
+                seconds = int(parts[1])
+                return minutes * 60 + seconds
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+            if total > 480:
+                print("Не укладываемся в 8 минут")
+            else:
+                print("Укладываемся в 8 минут")
+          note: Минуты и секунды разложены по переменным; условие «больше 480» и ветки наоборот.
+        - code: |
+            def to_seconds(time_text):
+                minutes, seconds = time_text.split(":")
+                return int(minutes) * 60 + int(seconds)
+
+            first = to_seconds("3:45")
+            second = to_seconds("4:10")
+            print("Всего:", first + second, "с")
+            if first + second <= 8 * 60:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: Распаковка результата split и print через запятые.
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = 0
+            for song in ["3:45", "4:10"]:
+                total += to_seconds(song)
+            print(f"Всего: {total} с")
+            if total / 60 <= 8:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: Цикл по песням (to_seconds в коде один раз); сравнение в минутах через / 60 (рецензия checks, A4).
+        - code: |
+            def to_seconds(time_text):
+                colon = time_text.index(":")
+                return int(time_text[:colon]) * 60 + int(time_text[colon + 1:])
+
+            total = to_seconds('3:45') + to_seconds('4:10')
+            print("Всего: " + str(total) + " с")
+            warmup = 8 * 60
+            if total <= warmup:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: Срезы по позиции двоеточия, строки в одинарных кавычках, склейка через str(), разминка в переменной (рецензия checks, A2/A5).
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                result = int(parts[0]) * 60 + int(parts[1])
+                return result
+                print(result)
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с ")
+            if not total > 8 * 60:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: Мёртвый print после return, пробел в конце вывода, условие через not (рецензия checks, A3).
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print("Всего: ", total, " с")
+            if total <= 8 * 60:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: "Пробелы внутри строк при print через запятые — «Всего:  475  с»; формат пробелов не часть условия (редактура модуля, ignoreSpaces)."
+      wrongSolutions:
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return print(int(parts[0]) * 60 + int(parts[1]))
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+          note: return возвращает результат print, то есть None.
+          expectMistake: return-print
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                print(int(parts[0]) * 60 + int(parts[1]))
+                return
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+          note: return без значения.
+          expectMistake: empty-return
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return
+                print(int(parts[0]) * 60 + int(parts[1]))
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+          note: Пустой return стоит перед print — функция возвращает None раньше расчёта (рецензия checks, №12).
+          expectMistake: empty-return
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                print(int(parts[0]) * 60 + int(parts[1]))
+
+            to_seconds("3:45")
+            to_seconds("4:10")
+            print("Всего: 475 с")
+            print("Укладываемся в 8 минут")
+          note: Итог записан числом, функция по-прежнему печатает.
+          expectMistake: hardcoded
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            print("Всего: 475 с")
+            print("Укладываемся в 8 минут")
+          note: Функция исправлена, но итог напечатан готовой строкой (рецензия checks, №7).
+          expectMistake: hardcoded
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                print(int(parts[0]) * 60 + int(parts[1]))
+
+            total = 0
+            total = total + to_seconds("3:45")
+            total = total + to_seconds("4:10")
+            print(f"Всего: {total} с")
+          note: Переписана строка сложения, а функция всё так же печатает.
+          expectMistake: still-print
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                print(int(parts[0]) * 60 + int(parts[1]))
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")  # ожидаю 475
+          note: Заготовка без правок, ожидание подписано в комментарии — разбор hardcoded не должен сработать (рецензия checks, №11).
+          expectMistake: still-print
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                seconds = int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+          note: Секунды сохранены в переменную, но не возвращены; print в функции нет (рецензия pedagogy, 2).
+          expectMistake: no-return
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                print(int(parts[0]) * 60 + int(parts[1]))
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+            if total <= 8 * 60:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: return добавлен, но print в функции остался.
+          expectMistake: both
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            print(to_seconds("3:45"))
+            print(to_seconds("4:10"))
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+            if total <= 8 * 60:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: Функция исправлена, в основной программе остались проверочные print (рецензии checks, №8, и learner, 6).
+          expectMistake: debug-print
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return str(int(parts[0]) * 60 + int(parts[1]))
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+          note: Возвращается строка, и + склеивает.
+          expectMistake: return-text
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+          note: Функция исправлена, но проверка разминки не дописана.
+          expectMistake: no-check
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+            if total <= 8:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: Секунды сравниваются с минутами.
+          expectMistake: minutes-vs-seconds
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+            if total < 8 * 60:
+                print("Укладываемся в 8 минут")
+            else:
+                print("Не укладываемся в 8 минут")
+          note: Строгое < — ровно 8 минут попадают в «Не укладываемся».
+          expectMistake: boundary-8
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+            print("Укладываемся в 8 минут")
+          note: Ответ про разминку записан готовой строкой, без if.
+          expectMistake: no-if
+        - code: |
+            def to_seconds(time_text):
+                parts = time_text.split(":")
+                return int(parts[0]) * 60 + int(parts[1])
+
+            total = to_seconds("3:45") + to_seconds("4:10")
+            print(f"Всего: {total} с")
+            if total <= 8 * 60:
+                print("Не укладываемся в 8 минут")
+            else:
+                print("Укладываемся в 8 минут")
+          note: Ответы перепутаны местами — общий разбор «ожидалось … получилось …» точен.
+          expectMistake: null
+      mistakes:
+        - id: return-print
+          when:
+            codeRegex: 'return[ \t]+print\s*\('
+          why: >-
+            `return print(...)` сначала печатает число, а потом возвращает то, что вернул сам
+            `print`. А `print` всегда возвращает `None` — поэтому сумма снова ломается.
+          try: "Убери `print` из этой строки: после `return` должно стоять само выражение с секундами."
+          verify: "`to_seconds(\"3:45\")` должен вернуть 225, а программа — вывести `Всего: 475 с`."
+        - id: empty-return
+          when:
+            codeRegex: '^[ \t]+return[ \t]*(#.*)?$'
+          why: >-
+            `return` без значения завершает функцию и возвращает `None`. Выражение с секундами так
+            и осталось в `print`, а наружу ничего не попало.
+          try: Перенеси выражение с секундами из `print` в `return`, а строку с `print` удали.
+          verify: "`to_seconds(\"3:45\")` должен вернуть 225, а программа — вывести `Всего: 475 с`."
+        - id: return-text
+          when:
+            failedTest: t1
+            codeRegex: 'return[ \t]+(str\(|f?["''])'
+          why: >-
+            Функция возвращает секунды строкой: `'225'`, а не число 225. Для строк `+` означает
+            склейку, поэтому вместо суммы выходит `225250`. А сравнить строку с числом в условии
+            Python вообще не может.
+          try: "Верни число — без `str()` и кавычек: `int(...)` уже даёт число."
+          verify: "`to_seconds(\"3:45\")` должен вернуть число 225."
+        - id: hardcoded
+          when:
+            codeRegex: 'print\(\s*f?["''][^"''\n{]*475'
+          why: >-
+            Итог записан в `print` готовым числом 475. Для этих двух песен он совпал, но Тимуру
+            нужна программа, которая считает сама — для любых песен. Проверка отдельно вызывает
+            `to_seconds` и подставляет другие песни.
+          try: >-
+            Верни строку `total = to_seconds("3:45") + to_seconds("4:10")` и выведи `total` в
+            f-строке. Если в функции ещё стоит `print`, замени его на `return`.
+          verify: "`to_seconds(\"3:45\")` должен вернуть 225, а программа — вывести `Всего: 475 с`."
+        - id: still-print
+          when:
+            errorIncludes: NoneType
+            codeRegex: '^def[ \t]+to_seconds\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+print\('
+          where: Тело функции to_seconds
+          why: >-
+            Функция печатает секунды, а не возвращает их. На экране появляются числа, но вызов
+            `to_seconds(...)` равен `None` — и в сумму попадает `None`. Отсюда `TypeError` со словом
+            `NoneType`.
+          try: Замени в функции `print(...)` на `return` с тем же выражением.
+          verify: "`to_seconds(\"3:45\")` должен вернуть 225, а программа — вывести `Всего: 475 с`."
+        - id: no-return
+          when:
+            errorIncludes: NoneType
+          where: Тело функции to_seconds
+          why: >-
+            В функции нет `return`, поэтому её вызов равен `None`, и в сумму попадает `None` —
+            отсюда `TypeError` со словом `NoneType`. Результат, сохранённый в переменную внутри
+            функции, сам наружу не попадает.
+          try: >-
+            Отдай результат через `return`: сразу с выражением или с переменной, в которую ты его
+            сохранил.
+          verify: "`to_seconds(\"3:45\")` должен вернуть 225, а программа — вывести `Всего: 475 с`."
+        - id: debug-print
+          when:
+            failedTest: t6
+            codeRegex: '^print\(\s*to_seconds\('
+          why: >-
+            Функция уже возвращает секунды, и сумма верная. Лишние строки 225 и 250 печатают
+            проверочные `print(to_seconds(...))` в основной программе, а проверка сравнивает весь
+            вывод программы.
+          try: Удали проверочные `print` перед «Проверить» — оставь только итог и ответ про разминку.
+          verify: "Программа должна вывести две строки: `Всего: 475 с` и `Укладываемся в 8 минут`."
+        - id: both
+          when:
+            failedTest: t6
+            codeRegex: '^def[ \t]+to_seconds\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+print\('
+            outputIncludes: "225"
+          where: Тело функции to_seconds
+          why: >-
+            Функция уже возвращает секунды — сумма посчитана верно. Но в ней остался `print`, и
+            перед итогом появляются лишние строки 225 и 250.
+          try: "Удали `print` из функции: печатает основная программа, а функция только считает."
+          verify: "Программа должна вывести две строки: `Всего: 475 с` и `Укладываемся в 8 минут`."
+        - id: minutes-vs-seconds
+          when:
+            failedTest: t6
+            codeRegex: '(?:\btotal|\))\s*[<>]=?\s*8\b(?!\s*\*)'
+          why: >-
+            `total` — это секунды (475), а 8 — минуты. Сравнение `475 <= 8` ложно, поэтому программа
+            решает, что песни не укладываются. Сравнивать можно только числа в одних единицах.
+          try: "Переведи разминку в секунды: 8 минут — это `8 * 60`."
+          verify: "Программа должна вывести `Всего: 475 с` и `Укладываемся в 8 минут`."
+        - id: boundary-8
+          when:
+            failedTest: t8
+            codeRegex: '<(?!=)\s*(?:480|8\s*\*\s*60|60\s*\*\s*8)\b|>=\s*(?:480|8\s*\*\s*60|60\s*\*\s*8)\b|\b(?:480|8\s*\*\s*60|60\s*\*\s*8)\s*(?:>(?!=)|<=)'
+          why: >-
+            Ровно 8 минут (480 с) по условию ещё укладываются, а программа отвечает «Не
+            укладываемся». Знак `<` не включает границу: `480 < 480` ложно. «Не дольше 8 минут» —
+            это `<=`.
+          try: >-
+            Проверь знак в условии: ровно 480 секунд должны попасть в «Укладываемся». Подойдёт
+            `total <= 8 * 60` или наоборот — «Не укладываемся» только при `total > 8 * 60`.
+          verify: >-
+            Замени в программе `"4:10"` на `"4:15"` и нажми «Запустить»: должно получиться
+            `Всего: 480 с` и `Укладываемся в 8 минут`.
+        - id: no-check
+          when:
+            outputEquals: "Всего: 475 с"
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]*if\b)'
+          why: >-
+            Функция уже возвращает секунды, и сумма верная — первая часть готова. Осталась вторая:
+            программа должна ещё сказать, укладываются ли песни в 8 минут.
+          try: >-
+            Допиши после строки с итогом `if` и `else`: сравни `total` с длительностью разминки и
+            выведи один из двух ответов.
+          verify: "Программа должна вывести две строки: `Всего: 475 с` и `Укладываемся в 8 минут`."
+        - id: no-if
+          when:
+            failedTest: t7
+            outputEquals: |-
+              Всего: 475 с
+              Укладываемся в 8 минут
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]*if\b)'
+          why: >-
+            Ответ про разминку записан готовой строкой, без проверки. Для этих песен он совпал, но
+            проверка подставила песню подлиннее, а программа ответила то же самое.
+          try: >-
+            Сравни `total` с длительностью разминки в `if`: в `if` выведи «Укладываемся в 8 минут»,
+            в `else` — «Не укладываемся в 8 минут».
+          verify: >-
+            Замени в программе `"4:10"` на `"4:50"` и нажми «Запустить»: должно появиться
+            `Не укладываемся в 8 минут`.
+      afterPass: >-
+        Теперь `to_seconds` отдаёт число, и с ним работает всё остальное: сумма, сравнение с
+        разминкой, накопитель в цикле. Так же можно посчитать весь плейлист —
+        `for song in songs: total += to_seconds(song)` — и проверить, укладывается ли он в 50
+        минут. Если хочешь, напиши обратную функцию: из 475 секунд — строка `7 мин 55 с`.
+      skills: [functions, string-methods, type-conversion, conditions]
+
+  - id: practice-tickets
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m5-l3-e3
+      kind: write
+      title: Билеты для семьи
+      statement: |-
+        Семья идёт в зоопарк: папе 38 лет, маме 36, детям 12 и 5. Цена билета зависит от возраста:
+
+        ```text
+        младше 7 лет                 — 0 (бесплатно)
+        от 7 до 17 лет включительно  — 200
+        18 лет и старше              — 400
+        ```
+
+        1. Напиши функцию `ticket_price(age)`, которая **возвращает** цену билета для одного
+           возраста — числом.
+        2. С её помощью посчитай, сколько стоят билеты для всей семьи из списка `family`, и выведи:
+
+        ```text
+        Итого: 1000
+        ```
+      input: >-
+        Параметр `age` — возраст, целое число от 0 и больше. Список `family` уже есть в стартовом
+        коде.
+      output: >-
+        Функция возвращает цену числом: 0, 200 или 400. Программа печатает одну строку
+        `Итого: <сумма>`.
+      constraints:
+        - "Цену возвращай числом, без «руб.»: её нужно складывать."
+        - >-
+          Итог посчитай по списку `family` с помощью `ticket_price`, а не записывай готовым
+          числом: проверка подставит в список другую семью.
+      starterCode: |
+        # Напиши функцию ticket_price(age): она возвращает цену билета для одного возраста
+
+
+        family = [38, 36, 12, 5]
+        # Посчитай стоимость билетов для всей семьи и выведи «Итого: …»
+      tests:
+        - id: t1
+          kind: call
+          title: Взрослый
+          example: true
+          call: ticket_price(40)
+          expected: "400"
+        - id: t2
+          kind: call
+          title: Школьник
+          example: true
+          call: ticket_price(12)
+          expected: "200"
+        - id: t3
+          kind: io
+          title: Вся семья
+          example: true
+          expected: "Итого: 1000"
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: call
+          title: "Граничный случай: 6 лет — ещё бесплатно"
+          edge: true
+          call: ticket_price(6)
+          expected: "0"
+        - id: t5
+          kind: call
+          title: "Граничный случай: 7 лет — уже 200"
+          edge: true
+          call: ticket_price(7)
+          expected: "200"
+        - id: t6
+          kind: call
+          title: "Граничный случай: 17 лет — ещё 200"
+          edge: true
+          call: ticket_price(17)
+          expected: "200"
+        - id: t7
+          kind: call
+          title: "Граничный случай: 18 лет — уже 400"
+          edge: true
+          call: ticket_price(18)
+          expected: "400"
+        - id: t8
+          kind: call
+          title: "Граничный случай: младенец"
+          edge: true
+          call: ticket_price(0)
+          expected: "0"
+        - id: t9
+          kind: assert
+          title: Другая семья
+          code: |-
+            import contextlib, io, re
+            source = open(__file__, encoding="utf-8").read()
+            pattern = r"family\s*=\s*\[[^\]]*\]"
+            assert re.search(pattern, source)
+            changed = re.sub(pattern, "family = [70, 40, 15, 10, 8]", source)
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                exec(compile(changed, "main.py", "exec"), {"__name__": "__main__", "__builtins__": __builtins__})
+            assert re.search(r"Итого:\s*1400\b", buffer.getvalue())
+          message: >-
+            Итог должен считаться по списку family: для семьи [70, 40, 15, 10, 8] программа должна
+            вывести «Итого: 1400».
+      rules:
+        - id: r-total
+          use: [call:ticket_price]
+          message: >-
+            Посчитай итог с помощью функции ticket_price: вызови её для каждого возраста из family.
+      criteria:
+        - "`ticket_price` возвращает цену числом для любого возраста; 7 и 18 лет попадают в свои группы по условию."
+        - Итог считается по списку `family` с помощью `ticket_price` — например, накопителем в цикле — и годится для семьи любого размера.
+        - "Программа печатает одну строку `Итого: <сумма>`."
+      hints:
+        - >-
+          Раздели задачу на две части. Сначала функция для одного человека: в ней три случая, и в
+          каждом свой `return`. Проверь её на границах — 6, 7, 17 и 18 лет. Потом — накопитель по
+          списку, как в модуле про циклы, только к сумме прибавляется то, что вернула функция.
+        - |-
+          Похожая задача — доставка посылок по весу:
+          ```python
+          def shipping(weight):
+              if weight < 1:
+                  return 100
+              if weight < 5:
+                  return 250
+              return 500
+
+          total = 0
+          for w in [0.5, 3, 12]:
+              total += shipping(w)
+          print(total)   # 850
+          ```
+        - |-
+          Каркас:
+          ```text
+          def ticket_price(age):
+              if age < …:
+                  return …
+              if age < …:
+                  return …
+              return …
+
+          family = [38, 36, 12, 5]
+          total = 0
+          for age in family:
+              total += …
+          print(f"Итого: {total}")
+          ```
+      solution:
+        code: |
+          def ticket_price(age):
+              if age < 7:
+                  return 0
+              if age < 18:
+                  return 200
+              return 400
+
+
+          family = [38, 36, 12, 5]
+          total = 0
+          for age in family:
+              total += ticket_price(age)
+          print(f"Итого: {total}")
+        explanation: >-
+          Проверки идут от младшего возраста к старшему: первой срабатывает `age < 7`, до
+          `age < 18` доходят только те, кому 7 и больше, а всем остальным достаётся последний
+          `return 400`. Каждая ветка заканчивается `return`, поэтому `else` не нужен. Итог считает
+          накопитель: к `total` прибавляется то, что функция вернула для каждого возраста из
+          `family`.
+      altSolutions:
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    price = 0
+                elif age <= 17:
+                    price = 200
+                else:
+                    price = 400
+                return price
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total = total + ticket_price(age)
+            print("Итого:", total)
+          note: Цена в переменной и один return в конце.
+        - code: |
+            def ticket_price(age):
+                if age >= 18:
+                    return 400
+                elif age >= 7:
+                    return 200
+                else:
+                    return 0
+
+            def family_total(ages):
+                total = 0
+                for age in ages:
+                    total += ticket_price(age)
+                return total
+
+            family = [38, 36, 12, 5]
+            print(f"Итого: {family_total(family)}")
+          note: Проверки от старшего к младшему и отдельная функция для суммы.
+        - code: |
+            def ticket_price(age):
+                if 7 <= age <= 17:
+                    return 200
+                if age >= 18:
+                    return 400
+                return 0
+
+            family = [38, 36, 12, 5]
+            prices = []
+            for age in family:
+                prices.append(ticket_price(age))
+            print("Итого:", sum(prices))
+          note: Двойное сравнение; цены собраны в список и сложены через sum.
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                elif age >= 7 and age <= 17:
+                    return 200
+                elif age >= 18:
+                    return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Буквальный перевод таблицы из условия — каждой группе своё условие через and (рецензии pedagogy, checks, learner).
+        - code: |
+            def ticket_price(age):
+                if age < 18:
+                    if age < 7:
+                        return 0
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Вложенные if — сначала «младше 18», внутри «младше 7» (рецензия checks, A1).
+        - code: |
+            def ticket_price(age):
+                if age <= 6:
+                    return 0
+                elif age <= 17:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            i = 0
+            while i < len(family):
+                total = total + ticket_price(family[i])
+                i += 1
+            print("Итого: " + str(total))
+          note: Границы через <=, while по индексам и склейка строки (рецензия checks, A2).
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print("Итого: ", total)
+          note: "Двойной пробел после двоеточия — «Итого:  1000»; формат пробелов не часть условия (редактура модуля, ignoreSpaces)."
+      wrongSolutions:
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            print("Итого: 1000")
+          note: Итог записан готовым числом.
+          expectMistake: hardcoded
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            total = ticket_price(38) + ticket_price(36) + ticket_price(12) + ticket_price(5)
+            print(f"Итого: {total}")
+          note: Список family удалён, возрасты подставлены в вызовы вручную (рецензии checks, №19, и learner, 2).
+          expectMistake: hardcoded
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = ticket_price(family[0]) + ticket_price(family[1]) + ticket_price(family[2]) + ticket_price(family[3])
+            print(f"Итого: {total}")
+          note: Сумма по четырём индексам вместо цикла (рецензии checks, №7, и learner, 2).
+          expectMistake: fixed-count
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for i in range(4):
+                total += ticket_price(family[i])
+            print(f"Итого: {total}")
+          note: Цикл for i in range(4) — число людей записано готовым (рецензия checks, №8).
+          expectMistake: fixed-count
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return "0"
+                if age < 18:
+                    return "200"
+                return "400"
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Цена возвращается строкой.
+          expectMistake: returns-text
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = ticket_price(family)
+            print(f"Итого: {total}")
+          note: В функцию передан весь список (рецензия checks, №12).
+          expectMistake: whole-list
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    price = 0
+                elif age < 18:
+                    price = 200
+                else:
+                    price = 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Цена посчитана, но не возвращена.
+          expectMistake: no-return
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+                print(f"Итого: {total}")
+          note: print итога внутри цикла (рецензии checks, №10, и learner, 5).
+          expectMistake: print-in-loop
+        - code: |
+            def ticket_price(age):
+                if age < 18:
+                    if age < 7:
+                        return 0
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+                print("Итого:", total)
+          note: Верная функция (вложенные if), print итога в цикле — раньше здесь ложно срабатывал order (рецензия checks, №11).
+          expectMistake: print-in-loop
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    price = 0
+                elif age < 18:
+                    price = 200
+                else:
+                    price = 400
+                print(price)
+                return price
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Отладочный print цены в функции, return на месте (рецензия learner, 5).
+          expectMistake: extra-print
+        - code: |
+            def ticket_price(age):
+                if age <= 7:
+                    return 0
+                if age < 18:
+                    return 200
+                return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Семилетний попал в бесплатные.
+          expectMistake: boundary-young
+        - code: |
+            def ticket_price(age):
+                if 7 < age < 17:
+                    return 200
+                elif age >= 18:
+                    return 400
+                else:
+                    return 0
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: "«Включительно» забыто с обеих сторон: 7 < age < 17 (рецензия learner, 4)."
+          expectMistake: boundary-young
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                elif age <= 18:
+                    return 200
+                else:
+                    return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Восемнадцатилетний попал в детский билет.
+          expectMistake: boundary-adult
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                elif age < 18:
+                    return 200
+                elif age > 18:
+                    return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: "age > 18 не включает границу: для 18 лет функция возвращает None (рецензия learner, 4)."
+          expectMistake: boundary-adult
+        - code: |
+            def ticket_price(age):
+                if age < 18:
+                    return 200
+                elif age < 7:
+                    return 0
+                else:
+                    return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: Общее условие стоит раньше частного и перехватывает маленьких детей.
+          expectMistake: order-young
+        - code: |
+            def ticket_price(age):
+                if age >= 7:
+                    return 200
+                elif age >= 18:
+                    return 400
+                else:
+                    return 0
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total}")
+          note: «От 7» проверяется раньше «от 18» — взрослые платят 200 (рецензия checks, №16).
+          expectMistake: order-adult
+        - code: |
+            def ticket_price(age):
+                if age < 7:
+                    return 0
+                elif age >= 7 and age <= 17:
+                    return 200
+                elif age >= 18:
+                    return 400
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Всего: {total}")
+          note: Верная функция по таблице, но подпись «Всего:» из прошлого задания — разбор order больше не срабатывает (рецензия checks, №20).
+          expectMistake: null
+        - code: |
+            def ticket_price(age):
+                if age >= 7 and age <= 17:
+                    return 200
+                elif age >= 18:
+                    return 400
+                else:
+                    return 0
+
+            family = [38, 36, 12, 5]
+            total = 0
+            for age in family:
+                total += ticket_price(age)
+            print(f"Итого: {total} руб.")
+          note: Верная функция с диапазоном «от 7 до 17» первым, лишнее «руб.» — общий разбор (рецензии checks, №17, и learner, 1).
+          expectMistake: null
+      mistakes:
+        - id: fixed-count
+          when:
+            failedTest: t9
+            codeRegex: 'family\s*\[\s*\d+\s*\]|range\(\s*\d+\s*\)|while\b[^\n]*<=?\s*\d+\s*:'
+          why: >-
+            Итог считается только для первых четырёх человек: число людей записано в коде готовым.
+            Для этой семьи ответ совпал, но проверка подставила семью из пяти, и пятый в сумму не
+            попал. А для семьи из трёх программа упадёт с `IndexError`.
+          try: >-
+            Пройди циклом по самому списку: `for age in family:` — цикл сделает столько шагов,
+            сколько людей в списке.
+          verify: "Добавь в список возраст 8 и нажми «Запустить»: итог должен стать 1200."
+        - id: hardcoded
+          when:
+            failedTest: t9
+            outputEquals: "Итого: 1000"
+          why: >-
+            Итог не зависит от списка `family`: проверка подставила в него другую семью, а итог не
+            изменился. Похоже, он записан готовым числом или возрасты перечислены вручную. Если
+            строки `family = [...]` в программе нет — верни её: итог считается по этому списку.
+          try: >-
+            Пройди циклом по `family` и прибавляй к накопителю то, что вернула `ticket_price` для
+            каждого возраста.
+          verify: "Добавь в список возраст 8 и нажми «Запустить»: итог должен стать 1200."
+        - id: returns-text
+          when:
+            errorIncludes: "'int' and 'str'"
+          why: >-
+            Функция возвращает цену строкой — например, `"400"`. Строку нельзя прибавить к числу в
+            накопителе, отсюда `TypeError`.
+          try: Возвращай число без кавычек. Слова и единицы добавляют, когда печатают итог.
+          verify: "`ticket_price(40)` должен вернуть число 400."
+        - id: whole-list
+          when:
+            errorIncludes: "'list' and 'int'"
+          why: >-
+            В `ticket_price` передан весь список `family`, а функция рассчитана на один возраст.
+            Список нельзя сравнить с числом, отсюда `TypeError`.
+          try: >-
+            Пройди циклом по `family` и вызывай `ticket_price(age)` для каждого возраста, прибавляя
+            результат к накопителю.
+          verify: "Программа должна вывести `Итого: 1000`."
+        - id: no-return
+          when:
+            errorIncludes: NoneType
+          why: >-
+            Для какого-то возраста функция возвращает `None`: в ней нет `return`, он есть не во
+            всех ветках или вместо него стоит `print`. Цикл пытается прибавить `None` к сумме,
+            отсюда `TypeError`.
+          try: >-
+            Проверь каждую ветку: в конце каждой должен сработать `return` с числом. Если цена
+            сохранена в переменную, верни её: `return price`.
+          verify: "`ticket_price(40)` должен вернуть 400, а программа — вывести `Итого: 1000`."
+        - id: print-in-loop
+          when:
+            failedTest: t3
+            codeRegex: '^[ \t]+print\(\s*f?["'']Итого'
+          why: >-
+            `print` с итогом стоит внутри цикла, поэтому печатает промежуточную сумму после каждого
+            человека. Сумма в конце верная, но строк получается четыре вместо одной.
+          try: Убери отступ у строки с `print`, чтобы она выполнилась один раз — после цикла.
+          verify: "Программа должна вывести одну строку `Итого: 1000`."
+        - id: extra-print
+          when:
+            failedTest: t3
+            codeRegex: '^[ \t]+print\((?![^\n]*Итого)'
+          why: >-
+            Кроме итога программа печатает что-то ещё: `print` стоит внутри функции или цикла и
+            выводит лишние строки. Проверка сравнивает весь вывод, а там должна быть одна строка.
+          try: >-
+            Убери лишний `print`. Функция только возвращает цену, а печатает основная программа —
+            один раз, после цикла.
+          verify: "Программа должна вывести одну строку `Итого: 1000`."
+        - id: boundary-young
+          when:
+            codeRegex: '(<=\s*7|>\s*7|<\s*6|>=\s*6)\b|\b7\s*<(?!=)|\b6\s*<='
+          why: >-
+            Граница детского билета сдвинута. По условию 6 лет — ещё бесплатно, а в 7 лет билет уже
+            стоит 200. Знак `<` не включает границу, а `<=` включает: `age < 7` верно для возрастов
+            0–6, а `age <= 7` — ещё и для 7. Так же `7 < age` не включает саму семёрку — нужно
+            `7 <= age`.
+          try: Проверь сравнение с 7, потом вызови `print(ticket_price(6), ticket_price(7))`.
+          verify: "Должно получиться `0 200`."
+        - id: boundary-adult
+          when:
+            codeRegex: '(<=\s*18|>\s*18|<\s*17|>=\s*17)\b|\b17\s*<=|\b18\s*<(?!=)'
+          why: >-
+            Граница взрослого билета сдвинута. По условию в 17 лет билет ещё стоит 200, а в 18 — уже
+            400. `age < 18` верно для 17 лет и младше, а `age <= 18` захватывает и 18. И наоборот:
+            `age > 18` не включает саму границу — нужно `age >= 18`.
+          try: Проверь сравнение с 18, потом вызови `print(ticket_price(17), ticket_price(18))`.
+          verify: "Должно получиться `200 400`."
+        - id: order-young
+          when:
+            failedTest: t8
+            codeRegex: '(<\s*18|<=\s*17)\b[\s\S]*(<\s*7|<=\s*6)\b'
+          why: >-
+            Проверки стоят не в том порядке. Условия проверяются сверху вниз, и срабатывает первая
+            подходящая ветка. Первой стоит «младше 18» — в неё попадают и маленькие дети, до
+            проверки «младше 7» дело не доходит.
+          try: >-
+            Иди по возрастам по порядку: сначала «младше 7», потом «младше 18», в конце — все
+            остальные.
+          verify: "`ticket_price(5)` должен вернуть 0, а `ticket_price(12)` — 200."
+        - id: order-adult
+          when:
+            failedTest: t1
+            codeRegex: '(>=\s*7|>\s*6)\b[\s\S]*(>=\s*18|>\s*17)\b'
+          why: >-
+            Проверки стоят не в том порядке. Условия проверяются сверху вниз, и срабатывает первая
+            подходящая ветка. Первой стоит «от 7» — в неё попадают и взрослые, до проверки «от 18»
+            дело не доходит.
+          try: "Иди от старших к младшим: сначала «от 18», потом «от 7», в конце — все остальные."
+          verify: "`ticket_price(40)` должен вернуть 400, а `ticket_price(12)` — 200."
+      afterPass: >-
+        Функция проверена на всех границах и работает внутри цикла: чтобы посчитать другую семью,
+        достаточно поменять список. Если хочешь, добавь льготу — например, с 65 лет билет за 200:
+        это ещё одна ветка с `return`, а цикл менять не придётся.
+      skills: [functions, conditions, boundary-checks, accumulators]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "`return` отдаёт значение туда, где функцию вызвали, а `print` только показывает его человеку."
+      - Вызов функции с `return` можно положить в переменную, сложить, сравнить или передать другой функции.
+      - "`return` сразу завершает функцию; если до `return` дело не дошло, функция возвращает `None`."
+      - Ошибка со словом `NoneType` — повод найти функцию, которая ничего не вернула, например печатает вместо `return`.
+    question: >-
+      Функция `discount(price)` печатает цену со скидкой. Почему `discount(1000) + 50` падает с
+      ошибкой, хотя на экране видно 900?
+    answer: >-
+      `print` только показывает 900 на экране, а сама функция ничего не возвращает — её вызов равен
+      `None`. Получается `None + 50`, отсюда `TypeError`. Если заменить `print` на `return`, вызов
+      станет числом 900, и сложение сработает.

@@ -1,0 +1,1996 @@
+id: m7-l3
+module: m7
+number: "7.3"
+title: "Исключения: try и except"
+objective: >-
+  Перехватывать конкретные исключения через try / except, чтобы программа объясняла проблему
+  понятными словами и продолжала работу, и не прятать при этом настоящие ошибки в коде.
+minutes: [25, 30]
+prerequisites: [m7-l2]
+skills: [exceptions]
+environment: python
+
+story:
+  title: Счёт после боулинга
+  fictional: true
+  text: >-
+    После боулинга друзья делят счёт маленькой программой Эмиля: вводят сумму и число человек, а
+    она печатает, сколько с каждого. Однажды кто-то набрал «пять» вместо 5, и программа ответила
+    длинным traceback на английском. В другой раз по ошибке ввели 0 человек, и
+    программа упала с ZeroDivisionError. Эмиль научил её отвечать по-человечески: «Сумму и число
+    людей введи цифрами» и «Людей должно быть больше нуля». При этом программа ловит только эти
+    две ошибки, а опечатки в коде самого Эмиля по-прежнему видны сразу.
+
+why: >-
+  Часть ошибок выполнения можно предвидеть: человек ввёл текст вместо числа, файла нет, делитель
+  равен нулю. Такую ошибку можно перехватить и ответить понятно, а не ронять программу. Например:
+  `except ValueError: print("Введи число цифрами")`.
+
+usedIn: >-
+  Формы и чат-боты, которые не падают от неверного ввода; программы, которые читают файлы и
+  получают данные из сети; серверы, которые записывают ошибку в журнал и продолжают обслуживать
+  остальных.
+
+steps:
+  - id: catch
+    type: theory
+    title: Исключение можно поймать
+    body: |-
+      Из модуля 6 ты знаешь: если во время выполнения что-то пошло не так, Python останавливает
+      программу и печатает traceback. Такая ошибка выполнения называется **исключением**
+      (exception). Говорят, что Python «выбрасывает» исключение; если его никто не поймал,
+      программа падает.
+      Последняя строка traceback называет тип исключения: `ValueError`, `ZeroDivisionError`…
+
+      Часть исключений — не ошибки в коде, а ожидаемые ситуации: человек набрал «пять» вместо 5,
+      ввёл 0 гостей, файла с таким именем нет. Для них есть конструкция **try / except**:
+
+      ```python
+      try:
+          people = int(text)
+          print("Гостей:", people)
+      except ValueError:
+          print("Введи число цифрами")
+      ```
+
+      `try` — «попробуй», `except ValueError` — «если не вышло из-за ValueError, сделай вот это».
+      Как это выполняется:
+
+      1. Python выполняет строки блока `try` по порядку.
+      2. Ошибки нет — блок `except` пропускается целиком.
+      3. Случилось исключение — **остальные строки `try` пропускаются**, и Python ищет `except`
+         с этим типом. Нашёл — выполняет его, а потом программа идёт дальше, после всего блока
+         `try / except`. Это называется **перехватить** исключение.
+      4. Подходящего `except` нет — программа падает с traceback, как будто `try` и не было.
+
+      У одного `try` может быть несколько `except` — для разных проблем разные сообщения. Python
+      проверяет их сверху вниз и выполняет первый подходящий.
+
+      Типы, которые встречаются чаще всего:
+
+      - `ValueError` — неподходящее значение, например `int("пять")`;
+      - `ZeroDivisionError` — деление на ноль (он был в уроке 6.1);
+      - `KeyError` — в словаре нет такого ключа;
+      - `FileNotFoundError` — нет файла, который открывают для чтения.
+
+      Откуда взять тип: запусти программу с плохими данными и прочитай последнюю строку traceback.
+      Слово до двоеточия и есть тип — его пишут после `except`. Тип пишут всегда: почему это так
+      важно, разберём через пару шагов.
+    simpler: >-
+      `try` — «попробуй», `except ValueError` — «если не получилось из-за неверного значения,
+      сделай вот что». Это как страховка у канатоходца: сорвался — страховка ловит, и
+      представление продолжается. Но страховку вешают под конкретный трюк, а не на всё подряд.
+    coach: Сначала посмотри, какая ошибка случается, — потом лови именно её.
+
+  - id: bill
+    type: example
+    title: Счёт на компанию
+    body: >-
+      Программа Эмиля из истории. Чтобы было удобно пробовать разные ответы, ввод здесь записан
+      прямо в коде строками — такими, какие вернул бы `input()`. Сейчас «введено» 0 человек.
+    code: |-
+      total_text = "3600"  # что ввели: сумма счёта
+      people_text = "0"    # что ввели: сколько человек
+      try:
+          total = int(total_text)
+          people = int(people_text)
+          share = total // people
+          print(f"С каждого: {share} руб.")
+      except ValueError:
+          print("Сумму и число людей введи цифрами")
+      except ZeroDivisionError:
+          print("Людей должно быть больше нуля")
+      print("Хорошего вечера!")
+    notes:
+      - line: 3
+        text: Начало блока `try`. Всё, что может сломаться от неверного ввода, — внутри него, с отступом.
+      - line: 6
+        text: >-
+          Здесь людей 0, и деление выбрасывает ZeroDivisionError. Строка 7 уже не выполнится:
+          остаток `try` пропускается.
+      - line: 8
+        text: >-
+          Этот `except` ждёт другую ошибку — ValueError, «не число». Для ZeroDivisionError он не
+          подходит, Python идёт дальше.
+      - line: 10
+        text: Подходящий `except` — выполняется его строка 11.
+      - line: 12
+        text: >-
+          Код после блока выполняется и когда ошибки не было, и когда её поймали. Программа не
+          упала.
+    tryIt: >-
+      Замени `"0"` на `"4"` и запусти — получится `С каждого: 900 руб.`, а оба `except`
+      пропустятся. Потом замени `"3600"` на `"много"`. А теперь нажми «Вернуть пример» и удали
+      строки 10 и 11: ZeroDivisionError больше никто не ловит, программа упадёт, и `Хорошего
+      вечера!` не появится.
+    coach: Каждый `except` ловит только свой тип. Чужую ошибку он пропускает дальше.
+
+  - id: skip-rest
+    type: predict
+    title: Что пропустится?
+    prompt: Как думаешь, что выведет программа?
+    code: |-
+      try:
+          print("Начало")
+          n = int("семь")
+          print("Число:", n)
+      except ValueError:
+          print("Это не число")
+      print("Конец")
+    options:
+      - |-
+        Это не число
+        Конец
+      - |-
+        Начало
+        Это не число
+      - |-
+        Начало
+        Это не число
+        Конец
+    answer: |-
+      Начало
+      Это не число
+      Конец
+    explanation: >-
+      Строки `try` выполняются по порядку, пока не случится исключение. `Начало` успевает
+      напечататься. В строке 3 `int("семь")` выбрасывает ValueError — строка 4 пропускается, `n` так
+      и не появляется. Выполняется подходящий `except`, а после него программа не останавливается, а
+      идёт дальше — к `print("Конец")`.
+    coach: >-
+      Перехват — не «откат»: то, что `try` успел сделать до ошибки, уже сделано.
+
+  - id: practice-seedlings
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m7-l3-e1
+      kind: repeat
+      title: Рассада по грядкам
+      statement: |-
+        На даче сажают рассаду помидоров. Программа читает две строки — сколько саженцев и
+        сколько грядок — и печатает, сколько саженцев достанется каждой грядке. Остаток не
+        считаем: нужно целочисленное деление `//`. Например, для 60 саженцев и 5 грядок:
+
+        ```text
+        На грядку: 12
+        ```
+
+        Ввод бывает неверным, и программа не должна падать:
+
+        - если хотя бы одна строка — не целое число, выведи `Нужны целые числа`;
+        - если грядок 0, выведи `Грядок должно быть больше нуля`.
+
+        Реши через `try` / `except` и после каждого `except` указывай конкретный тип исключения.
+      input: Две строки — число саженцев и число грядок.
+      output: >-
+        Одна строка: `На грядку: N`, или `Нужны целые числа`, или `Грядок должно быть больше
+        нуля`.
+      constraints:
+        - Текст подсказок в `input()` можно написать любой — он не проверяется.
+        - Отрицательных чисел в тестах нет.
+      starterCode: |
+        seedlings_text = input("Сколько саженцев? ")
+        beds_text = input("Сколько грядок? ")
+        # Преврати ответы в числа и выведи «На грядку: N».
+        # Не число — «Нужны целые числа», ноль грядок — «Грядок должно быть больше нуля».
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "60\n5\n"
+          expected: "На грядку: 12"
+        - id: t2
+          kind: io
+          title: Пример 2 — не число
+          example: true
+          stdin: "шестьдесят\n5\n"
+          expected: Нужны целые числа
+        - id: t3
+          kind: io
+          title: Пример 3 — ноль грядок
+          example: true
+          stdin: "60\n0\n"
+          expected: Грядок должно быть больше нуля
+        - id: t4
+          kind: io
+          title: "Граничный случай: остаток отбрасывается"
+          edge: true
+          stdin: "50\n3\n"
+          expected: "На грядку: 16"
+        - id: t5
+          kind: io
+          title: "Граничный случай: не число во второй строке"
+          edge: true
+          stdin: "60\nпять\n"
+          expected: Нужны целые числа
+        - id: t6
+          kind: io
+          title: "Граничный случай: дробное число"
+          edge: true
+          stdin: "12.5\n3\n"
+          expected: Нужны целые числа
+        - id: t7
+          kind: io
+          title: "Граничный случай: ноль саженцев — это не ошибка"
+          edge: true
+          stdin: "0\n4\n"
+          expected: "На грядку: 0"
+        - id: t-except
+          kind: assert
+          title: Ловятся конкретные исключения
+          stdin: "60\n5\n"
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    caught = [node.type]
+                    if isinstance(node.type, ast.Tuple):
+                        caught = node.type.elts
+                    for item in caught:
+                        assert not (isinstance(item, ast.Name) and item.id in ("Exception", "BaseException", "NameError"))
+          message: >-
+            Здесь ловится «всё подряд» (`except` без типа, `except Exception`) или ошибка в самом
+            коде (`except NameError`). Укажи конкретный тип, который ждёшь от неверного ввода, —
+            тот, что стоит в последней строке traceback.
+      rules:
+        - id: r-try
+          use: [Try]
+          message: >-
+            Обработай неверный ввод через `try` / `except` — это приём урока. Проверки через `if`
+            тоже бывают полезны, но здесь мы тренируем перехват исключений.
+      criteria:
+        - 'При верном вводе печатается `На грядку: N`, где N получено целочисленным делением.'
+        - Если хотя бы одна строка — не целое число, печатается `Нужны целые числа`, без traceback.
+        - Если грядок 0, печатается `Грядок должно быть больше нуля`, без traceback.
+        - Ноль саженцев — обычный случай, а не ошибка.
+        - Неверный ввод обработан через `try` / `except`, после каждого `except` указан конкретный тип исключения.
+      hints:
+        - >-
+          Какие две беды могут случиться — и в каких строках программы? У каждой свой тип
+          исключения и своё сообщение. Посмотри, как это устроено в примере «Счёт на компанию».
+        - |-
+          Тот же приём на словаре цен:
+          ```python
+          prices = {"чай": 120, "пирог": 250}
+          item = input("Что берёшь? ")
+          try:
+              print("Цена:", prices[item])
+          except KeyError:
+              print("Такого нет в меню")
+          ```
+          На «кофе» программа не падает, а отвечает «Такого нет в меню».
+        - |-
+          Каркас:
+          ```text
+          try:
+              превратить обе строки в int
+              посчитать саженцы // грядки
+              напечатать «На грядку: …»
+          except ValueError:
+              напечатать про целые числа
+          except ZeroDivisionError:
+              напечатать про грядки
+          ```
+      solution:
+        code: |
+          seedlings_text = input("Сколько саженцев? ")
+          beds_text = input("Сколько грядок? ")
+          try:
+              seedlings = int(seedlings_text)
+              beds = int(beds_text)
+              per_bed = seedlings // beds
+              print(f"На грядку: {per_bed}")
+          except ValueError:
+              print("Нужны целые числа")
+          except ZeroDivisionError:
+              print("Грядок должно быть больше нуля")
+        explanation: >-
+          Обе строки `int()` и деление стоят внутри `try`: ValueError может выбросить любое из
+          двух превращений, ZeroDivisionError — деление. `print` с результатом тоже внутри: если
+          случилась ошибка, результата нет и печатать нечего. Для двух проблем — два `except` с
+          разными сообщениями. Ноль грядок можно и проверить заранее, `if beds == 0`, — это тоже
+          верное решение.
+      altSolutions:
+        - code: |
+            try:
+                seedlings = int(input("Сколько саженцев? "))
+                beds = int(input("Сколько грядок? "))
+                print(f"На грядку: {seedlings // beds}")
+            except ValueError:
+                print("Нужны целые числа")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+          note: input() тоже внутри try, деление прямо в f-строке.
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                if beds == 0:
+                    print("Грядок должно быть больше нуля")
+                else:
+                    print(f"На грядку: {seedlings // beds}")
+            except ValueError:
+                print("Нужны целые числа")
+          note: Ноль грядок проверен через if заранее, ловится только ValueError.
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                print("На грядку:", seedlings // beds)
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+            except ValueError:
+                print("Нужны целые числа")
+          note: except в другом порядке и print через запятую — вывод тот же.
+        - code: |
+            ok = True
+            try:
+                a = int(input())
+                b = int(input())
+            except ValueError:
+                ok = False
+                print("Нужны целые числа")
+            if ok:
+                if b == 0:
+                    print("Грядок должно быть больше нуля")
+                else:
+                    print(f"На грядку: {a // b}")
+          note: Короткий try только вокруг int(), флаг ok, ноль проверен через if после блока (рецензия, проверки).
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            if beds_text == "0":
+                print("Грядок должно быть больше нуля")
+            else:
+                try:
+                    print(f"На грядку: {int(seedlings_text) // int(beds_text)}")
+                except ValueError:
+                    print("Нужны целые числа")
+          note: Ноль проверен сравнением строки до try, try ловит только ValueError (рецензия, ученик).
+        - code: |
+            s = input()
+            b = input()
+            try:
+                count = int(s) // int(b)
+                print(f"На грядку: {count}")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+            except ValueError as error:
+                print("Нужны целые числа")
+          note: int() прямо в выражении деления; as error, но человеку — своё сообщение.
+      wrongSolutions:
+        - code: |
+            seedlings = int(input("Сколько саженцев? "))
+            beds = int(input("Сколько грядок? "))
+            try:
+                print(f"На грядку: {seedlings // beds}")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+          note: int() стоит вне try — ValueError не пойман.
+          expectMistake: int-outside-try
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                print(f"На грядку: {seedlings // beds}")
+            except ValueError:
+                print("Нужны целые числа")
+          note: Нет except для деления на ноль.
+          expectMistake: zero-not-caught
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                per_bed = seedlings // beds
+            except ValueError:
+                print("Нужны целые числа")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+            print(f"На грядку: {per_bed}")
+          note: Результат печатается после блока — при ошибке переменной per_bed нет.
+          expectMistake: result-outside-try
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                print(f"На грядку: {seedlings // beds}")
+            except (ValueError, ZeroDivisionError):
+                print("Нужны целые числа")
+          note: Один except на обе ошибки — одно сообщение на разные проблемы.
+          expectMistake: same-message
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                print(f"На грядку: {seedlings // beds}")
+            except ValueError:
+                print("Грядок должно быть больше нуля")
+            except ZeroDivisionError:
+                print("Нужны целые числа")
+          note: Сообщения перепутаны.
+          expectMistake: swapped
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                print(f"На грядку: {seedlings / beds}")
+            except ValueError:
+                print("Нужны целые числа")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+          note: Обычное деление / вместо целочисленного.
+          expectMistake: wrong-division
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                print(f"На грядку: {seedlings // beds}")
+            except ValueError:
+                print("Нужны целые числа")
+            except:
+                print("Грядок должно быть больше нуля")
+          note: Второй except без типа — ловит всё, что не ValueError.
+          expectMistake: broad-except
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+            except ValueError:
+                print("Нужны целые числа")
+            if beds == 0:
+                print("Грядок должно быть больше нуля")
+            else:
+                print(f"На грядку: {seedlings // beds}")
+          note: В try только int(), проверка нуля и печать после блока — при неверном вводе NameError на beds.
+          expectMistake: result-outside-try
+        - code: |
+            seedlings_text = input()
+            beds_text = input()
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+            except ValueError:
+                print("Нужны целые числа")
+            try:
+                print(f"На грядку: {seedlings // beds}")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+          note: Два отдельных try — для int() и для деления; печать уже во втором try.
+          expectMistake: result-outside-try
+        - code: |
+            seedlings_text = input()
+            beds_text = input()
+            per_bed = 0
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                per_bed = seedlings // beds
+            except ValueError:
+                print("Нужны целые числа")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+            print(f"На грядку: {per_bed}")
+          note: Заготовка per_bed = 0 убирает NameError, но результат печатается и после сообщения об ошибке.
+          expectMistake: result-always-printed
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = float(seedlings_text)
+                beds = float(beds_text)
+                print(f"На грядку: {seedlings // beds}")
+            except ValueError:
+                print("Нужны целые числа")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+          note: float() вместо int(), деление // на месте — ответ 12.0.
+          expectMistake: float-used
+        - code: |
+            seedlings_text = input()
+            beds_text = input()
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                print(f"На грядку: {seedlings // beds}")
+            except ValueError or ZeroDivisionError:
+                print("Нужны целые числа")
+          note: except ValueError or ZeroDivisionError — на деле ловит только ValueError.
+          expectMistake: or-in-except
+        - code: |
+            seedlings_text = input("Сколько саженцев? ")
+            beds_text = input("Сколько грядок? ")
+            try:
+                seedlings = int(seedlings_text)
+                beds = int(beds_text)
+                per_bed = seedlings // beds
+            except ValueError:
+                print("Нужны целые числа")
+            except ZeroDivisionError:
+                print("Грядок должно быть больше нуля")
+            try:
+                print(f"На грядку: {per_bed}")
+            except NameError:
+                pass
+          note: NameError после блока «починен» вторым try с except NameError.
+          expectMistake: nameerror-caught
+        - code: |
+            seedlings_text = input()
+            beds_text = input()
+            if not (seedlings_text.isdigit() and beds_text.isdigit()):
+                print("Нужны целые числа")
+            elif int(beds_text) == 0:
+                print("Грядок должно быть больше нуля")
+            else:
+                print(f"На грядку: {int(seedlings_text) // int(beds_text)}")
+          note: Без try — isdigit() и if/elif; вывод верный, но правило r-try не выполнено (ученик видит его сообщение).
+          expectMistake: null
+      mistakes:
+        - id: int-outside-try
+          when:
+            errorType: ValueError
+          why: >-
+            `int()` не смог превратить текст в число, и эту ошибку никто не поймал. `try`
+            защищает только строки внутри своего блока: если `int()` стоит выше `try` или для
+            ValueError нет своего `except`, программа падает, как раньше.
+          try: Перенеси строки с `int()` внутрь `try` и добавь `except ValueError` со своим сообщением.
+          verify: В «Примере 2» вместо traceback должно появиться «Нужны целые числа».
+        - id: or-in-except
+          when:
+            codeRegex: 'except\s+\(?\s*\w+\s+or\s'
+          why: >-
+            Запись `except ValueError or ZeroDivisionError` Python не понимает как «одна из двух
+            ошибок». Из выражения `ValueError or ZeroDivisionError` получается просто первый тип —
+            ValueError. Поэтому такой `except` ловит только его, а деление на ноль проходит мимо.
+          try: >-
+            Двум ошибкам здесь нужны разные сообщения, поэтому напиши два `except` — отдельно для
+            ValueError и для ZeroDivisionError.
+          verify: В «Примере 3» должно появиться «Грядок должно быть больше нуля».
+        - id: zero-not-caught
+          when:
+            errorType: ZeroDivisionError
+          why: >-
+            Когда грядок 0, деление выбрасывает ZeroDivisionError. `except ValueError` его не
+            ловит: каждый `except` ждёт только свой тип.
+          try: >-
+            Добавь второй `except` — для ZeroDivisionError, со своим сообщением. Или проверь до
+            деления, что грядок не ноль.
+          verify: В «Примере 3» должно появиться «Грядок должно быть больше нуля».
+        - id: result-outside-try
+          when:
+            errorType: NameError
+            outputIncludes: Нужны целые числа
+          why: >-
+            Программа напечатала сообщение об ошибке, а потом упала: строка после блока берёт
+            переменную, которой нет. Когда в `try` случилось исключение, строки после ошибочной не
+            выполнились, и переменные, которые они создают, так и не появились.
+          try: >-
+            Всё, что использует числа из `int()`, — расчёт, проверку, печать результата — держи в
+            том же `try`, сразу после `int()`.
+          verify: В «Примере 2» должна остаться одна строка — «Нужны целые числа».
+        - id: result-always-printed
+          when:
+            outputIncludes: "целые числа\nНа грядку:"
+          why: >-
+            После сообщения об ошибке программа печатает ещё и «На грядку: …». Печать результата
+            стоит после блока `try / except` и выполняется всегда — даже когда посчитать не
+            удалось. Заготовка вроде `per_bed = 0` убирает падение, но не ошибку.
+          try: >-
+            Перенеси печать результата внутрь `try`, сразу после расчёта. Заготовка до `try` тогда
+            не нужна.
+          verify: В «Примере 2» должна остаться одна строка — «Нужны целые числа».
+        - id: float-used
+          when:
+            codeIncludes: float(
+            failedTest: t1
+          why: >-
+            `float()` превращает текст в дробное число, и даже `//` над дробными числами даёт
+            дробный ответ: `60.0 // 5.0` — это `12.0`. К тому же `float()` принимает «12.5», а по
+            условию нужны целые числа.
+          try: Преврати обе строки через `int()`.
+          verify: 'В «Примере 1» должно получиться «На грядку: 12».'
+        - id: same-message
+          when:
+            failedTest: t3
+            outputEquals: Нужны целые числа
+          why: >-
+            На ноль грядок программа отвечает «Нужны целые числа», хотя 0 — целое число. Так
+            бывает, когда один `except` ловит обе ошибки (например, `except` без типа) или когда под
+            двумя `except` стоит одинаковый текст. Проблемы разные — и человеку нужны разные
+            подсказки.
+          try: >-
+            У каждой проблемы — свой `except` со своим сообщением: ValueError — про целые числа,
+            ZeroDivisionError — про грядки.
+          verify: В «Примере 3» должно появиться «Грядок должно быть больше нуля».
+        - id: swapped
+          when:
+            outputEquals: Грядок должно быть больше нуля
+          why: >-
+            На слово «шестьдесят» программа отвечает про грядки. Значит, под `except ValueError`
+            стоит сообщение, которое предназначено для деления на ноль.
+          try: Проверь, какое сообщение стоит под каким `except`. ValueError — это «не число».
+          verify: В «Примере 2» должно появиться «Нужны целые числа».
+        - id: wrong-division
+          when:
+            outputIncludes: "На грядку: 12.0"
+            codeRegex: '[^/]/[^/]'
+          why: >-
+            Обычное деление `/` всегда даёт дробное число: `60 / 5` — это `12.0`. Саженцы
+            делятся целиком, остаток не нужен.
+          try: Замени `/` на целочисленное деление `//`.
+          verify: 'В «Примере 1» должно получиться «На грядку: 12».'
+        - id: nameerror-caught
+          when:
+            codeRegex: 'except[^:\n]*\bNameError\b'
+            failedTest: t-except
+          why: >-
+            NameError значит, что код берёт переменную, которой нет, — это ошибка в самой
+            программе, а не во вводе. Обычно так бывает, когда при неверном вводе расчёт в `try`
+            не выполнился, а печать стоит отдельно. `except NameError` прячет этот сбой, а не
+            исправляет его.
+          try: >-
+            Убери `except NameError`. Всё, что использует числа из `int()`, — расчёт и печать —
+            держи в первом `try`, сразу после `int()`.
+          verify: Проверка «Ловятся конкретные исключения» должна стать зелёной.
+        - id: broad-except
+          when:
+            codeRegex: 'except\s*:|except[^:\n]*\b(?:BaseException|Exception)\b'
+            failedTest: t-except
+          why: >-
+            `except` без типа (или `except Exception`) ловит любую ошибку — и опечатку в имени
+            переменной тоже. Тогда на верный ввод программа ответит одним из сообщений об ошибке,
+            и причину придётся искать вслепую.
+          try: >-
+            Напиши после каждого `except` конкретный тип: ValueError для «не числа»,
+            ZeroDivisionError для нуля грядок.
+          verify: Проверка «Ловятся конкретные исключения» должна стать зелёной.
+      afterPass: >-
+        Программа переживает оба вида неверного ввода и на каждый отвечает по-своему. Одно
+        улучшение на будущее: на отрицательное число грядок она выдаст странный ответ. В следующем
+        уроке научимся в таких случаях переспрашивать.
+      skills: [exceptions, type-conversion]
+
+  - id: not-everything
+    type: theory
+    title: Лови только то, что ждёшь
+    body: |-
+      Можно написать `except:` без типа или `except Exception:`. `Exception` — общее имя почти для
+      всех исключений, поэтому такой `except` ловит **почти всё подряд**: и неверный ввод, и
+      NameError из-за опечатки в имени, и TypeError из-за ошибки в формуле. Программа отвечает
+      «Введи число цифрами», хотя виноват код, — и ты ищешь проблему не там. Поэтому после
+      `except` всегда пиши конкретный тип.
+
+      Держи `try` коротким: внутри — строка, где ты ждёшь исключение, и то, что без неё не имеет
+      смысла. Чем больше строк в блоке, тем выше шанс, что тот же тип ошибки прилетит не оттуда,
+      откуда ты ждал.
+
+      Короткий `try` можно поставить и внутрь цикла. Тогда ошибка на одном шаге не обрывает
+      весь цикл: `except` срабатывает, и цикл идёт к следующему элементу.
+
+      ```python
+      answers = ["3", "x", "5"]
+      total = 0
+      for text in answers:
+          try:
+              total += int(text)
+          except ValueError:
+              print("Пропускаю", text)
+      print(total)
+      ```
+
+      Выведется `Пропускаю x` и `8`. А если поставить `try` вокруг всего цикла, первое же
+      исключение выбросит программу из цикла целиком — `5` уже не прибавится.
+
+      Если на две разные проблемы нужен один и тот же ответ, типы перечисляют в скобках:
+
+      ```python
+      except (ValueError, ZeroDivisionError):
+          print("Проверь, что ввёл")
+      ```
+
+      Само исключение можно положить в переменную — после типа пишут `as` и имя:
+
+      ```python
+      try:
+          people = int("пять")
+      except ValueError as error:
+          print(error)
+      ```
+
+      Выведется текст исключения: `invalid literal for int() with base 10: 'пять'`. Тебе при отладке
+      это полезно. А человеку показывай своё понятное сообщение: ему незачем знать, что такое
+      literal.
+    simpler: >-
+      `except:` без типа — как сеть, которая ловит и рыбу, и твой собственный сапог. Кажется, что
+      программа работает, а на самом деле она молча прячет ошибки в коде. Называй тип, который
+      ждёшь, и держи в `try` только рискованные строки.
+    coach: Если программа «вежливо» отвечает не то, первым делом проверь, что именно ловит её `except`.
+
+  - id: pick-type
+    type: quiz
+    title: Какой except нужен?
+    question: |-
+      Программа выдала traceback, последняя строка такая:
+
+      ```text
+      KeyError: 'груша'
+      ```
+
+      Как перехватить эту ошибку, не пряча другие?
+    options:
+      - "`except:`"
+      - "`except Exception:`"
+      - "`except KeyError:`"
+      - "`except ValueError:`"
+    correct: 2
+    explanation: >-
+      Тип — слово до двоеточия в последней строке traceback, здесь KeyError: в словаре нет ключа
+      «груша». `except:` и `except Exception:` тоже поймают его, но заодно спрячут опечатки и
+      ошибки в формулах. `except ValueError` его не поймает вовсе — тип другой.
+
+  - id: practice-steps
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m7-l3-e2
+      kind: fix
+      title: Вечное «Введите число»
+      statement: |-
+        Программа переводит шаги за день в километры: один шаг — примерно 0,7 м. Но что бы ни
+        ввели, даже 10000, она отвечает одно и то же:
+
+        ```text
+        Введите число шагов цифрами
+        ```
+
+        Найди, что прячет настоящую ошибку, и почини программу. На число она должна печатать
+        километры, например для 10000 шагов:
+
+        ```text
+        Пройдено примерно 7.0 км
+        ```
+
+        А на текст — по-прежнему просить ввести цифры. `except` должен ловить только ту ошибку,
+        которую мы ждём от неверного ввода, — чтобы ошибки в самом коде больше не прятались.
+      input: Одна строка — число шагов.
+      output: >-
+        `Пройдено примерно N км` (N округлено до одного знака) или `Введите число шагов цифрами`.
+      constraints:
+        - Числа в расчёте (`0.7` и `1000`), округление до одного знака и тексты сообщений не меняй.
+        - Проверка смотрит, что `except` ловит конкретный тип, а не всё подряд.
+      starterCode: |
+        steps_text = input("Шагов за день: ")
+        try:
+            steps = int(steps_text)
+            km = stpes * 0.7 / 1000
+            print(f"Пройдено примерно {round(km, 1)} км")
+        except:
+            print("Введите число шагов цифрами")
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "10000\n"
+          expected: Пройдено примерно 7.0 км
+        - id: t2
+          kind: io
+          title: Пример 2 — не число
+          example: true
+          stdin: "много\n"
+          expected: Введите число шагов цифрами
+        - id: t3
+          kind: io
+          title: "Граничный случай: ноль шагов"
+          edge: true
+          stdin: "0\n"
+          expected: Пройдено примерно 0.0 км
+        - id: t4
+          kind: io
+          title: Другое число — нужно округление
+          stdin: "12345\n"
+          expected: Пройдено примерно 8.6 км
+        - id: t5
+          kind: io
+          title: "Граничный случай: число с пробелом внутри"
+          edge: true
+          stdin: "10 000\n"
+          expected: Введите число шагов цифрами
+        - id: t-except
+          kind: assert
+          title: Ловится только ошибка ввода
+          stdin: "10000\n"
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    caught = [node.type]
+                    if isinstance(node.type, ast.Tuple):
+                        caught = node.type.elts
+                    for item in caught:
+                        assert not (isinstance(item, ast.Name) and item.id in ("Exception", "BaseException", "NameError"))
+          message: >-
+            Здесь ловится «всё подряд» или ошибка в самом коде: `except` без типа, `except Exception`
+            или `except NameError`. Укажи тот тип, который ждёшь от неверного ввода.
+      criteria:
+        - На число программа печатает километры, округлённые до одного знака.
+        - На текст программа печатает «Введите число шагов цифрами» и не падает.
+        - "`except` ловит конкретный тип ошибки неверного ввода, а опечатка в коде исправлена."
+      hints:
+        - >-
+          На 10000 программа отвечает «цифрами», значит, внутри `try` случилась какая-то другая
+          ошибка, а `except` без типа её спрятал. Как увидеть, что это за ошибка на самом деле?
+        - |-
+          Похожая ловушка:
+          ```python
+          prices = {"чай": 120}
+          try:
+              print(prises["чай"])
+          except:
+              print("Такого товара нет")
+          ```
+          Чай есть, а ответ «Такого товара нет». Если вместо `except:` написать `except KeyError:`,
+          запуск покажет настоящую причину: `NameError: name 'prises' is not defined. Did you
+          mean: 'prices'?`
+        - >-
+          Нужны две правки. Сначала в строке 6 укажи тип ошибки, которую выбрасывает `int()` на
+          тексте, и запусти с 10000: traceback покажет опечатку в строке 4. Потом исправь имя
+          переменной.
+      solution:
+        code: |
+          steps_text = input("Шагов за день: ")
+          try:
+              steps = int(steps_text)
+              km = steps * 0.7 / 1000
+              print(f"Пройдено примерно {round(km, 1)} км")
+          except ValueError:
+              print("Введите число шагов цифрами")
+        explanation: >-
+          В строке 4 была опечатка `stpes`. Она выбрасывала NameError, а `except:` без типа ловил
+          и её — поэтому на любой ввод программа просила цифры. Теперь `except ValueError` ловит
+          только то, что выбрасывает `int()` на тексте, а любая ошибка в коде сразу видна в
+          traceback.
+      altSolutions:
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                print(f"Пройдено примерно {round(steps * 0.7 / 1000, 1)} км")
+            except ValueError:
+                print("Введите число шагов цифрами")
+          note: Расчёт прямо в f-строке, без переменной km.
+        - code: |
+            try:
+                steps = int(input("Шагов за день: "))
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except ValueError:
+                print("Введите число шагов цифрами")
+          note: input() внутри try.
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                stpes = int(steps_text)
+                km = stpes * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except ValueError:
+                print("Введите число шагов цифрами")
+          note: Опечатку «исправили» наоборот — переменную назвали stpes и в строке 3. Имя неудачное, но программа верна.
+        - code: |
+            steps_text = input("Шагов за день: ")
+            ok = True
+            try:
+                steps = int(steps_text)
+            except ValueError:
+                ok = False
+                print("Введите число шагов цифрами")
+            if ok:
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+          note: Короткий try только вокруг int(), расчёт под if ok (рецензия, проверки).
+        - code: |
+            steps_text = input()
+            try:
+                steps = int(steps_text)
+                km = steps / 1000 * 0.7
+                print("Пройдено примерно", round(km, 1), "км")
+            except ValueError as error:
+                print("Введите число шагов цифрами")
+          note: Другой порядок действий в формуле, print через запятую, as error со своим сообщением.
+      wrongSolutions:
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = stpes * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except ValueError:
+                print("Введите число шагов цифрами")
+          note: Тип в except указан, а опечатку ещё не исправили — теперь она видна.
+          expectMistake: only-except-fixed
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = stpes * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except NameError:
+                print("Введите число шагов цифрами")
+          note: Пойман NameError — сама опечатка.
+          expectMistake: catch-nameerror
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except Exception:
+                print("Введите число шагов цифрами")
+          note: Опечатка исправлена, но except Exception ловит всё.
+          expectMistake: except-exception
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except:
+                print("Введите число шагов цифрами")
+          note: Опечатка исправлена, голый except остался.
+          expectMistake: bare-kept
+        - code: |
+            steps_text = input("Шагов за день: ")
+            steps = int(steps_text)
+            km = steps * 0.7 / 1000
+            print(f"Пройдено примерно {round(km, 1)} км")
+          note: try и except удалены совсем — на текст программа падает.
+          expectMistake: value-not-caught
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except TypeError:
+                print("Введите число шагов цифрами")
+          note: Выбран не тот тип — ValueError не пойман.
+          expectMistake: value-not-caught
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except ValueError as error:
+                print(error)
+          note: Человеку показан текст исключения вместо понятного сообщения.
+          expectMistake: printed-error
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = stpes * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except:
+                print("Введите число шагов цифрами")
+          note: Стартовый код без изменений — ошибка всё ещё спрятана.
+          expectMistake: still-hidden
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = stpes * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except Exception:
+                print("Введите число шагов цифрами")
+          note: Голый except заменён на except Exception, опечатка осталась — ошибка всё ещё спрятана.
+          expectMistake: still-hidden
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+            except ValueError:
+                print("Введите число шагов цифрами")
+            km = steps * 0.7 / 1000
+            print(f"Пройдено примерно {round(km, 1)} км")
+          note: «Держи try коротким» понято буквально — расчёт и печать после блока, на тексте NameError.
+          expectMistake: used-after-except
+        - code: |
+            steps_text = input("Шагов за день: ")
+            steps = int(steps_text)
+            try:
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except ValueError:
+                print("Введите число шагов цифрами")
+          note: int() стоит выше try — тип верный, но ValueError не пойман.
+          expectMistake: value-not-caught
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = steps * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except (ValueError, NameError):
+                print("Введите число шагов цифрами")
+          note: Опечатка исправлена, но «на всякий случай» ловится и NameError.
+          expectMistake: catch-nameerror
+        - code: |
+            steps_text = input("Шагов за день: ")
+            try:
+                steps = int(steps_text)
+                km = steps_text * 0.7 / 1000
+                print(f"Пройдено примерно {round(km, 1)} км")
+            except ValueError:
+                print("Введите число шагов цифрами")
+          note: Опечатку «исправили» на steps_text — TypeError; общий разбор точен.
+          expectMistake: null
+      mistakes:
+        - id: catch-nameerror
+          when:
+            codeRegex: 'except[^:\n]*\bNameError\b'
+          why: >-
+            NameError — это и есть опечатка в коде. Если его ловить, программа снова будет прятать
+            ошибку за вежливым ответом. Неверный ввод даёт совсем другой тип.
+          try: >-
+            Запусти программу со словом «много» без `try`, прочитай тип в последней строке
+            traceback и лови его. Опечатку исправь в самом коде.
+          verify: >-
+            Проверка «Ловится только ошибка ввода» должна стать зелёной, а «Пример 1» — дать
+            «Пройдено примерно 7.0 км».
+        - id: still-hidden
+          when:
+            codeRegex: 'except\s*:|except[^:\n]*\b(?:Base)?Exception\b'
+            failedTest: t1
+            outputEquals: Введите число шагов цифрами
+          why: >-
+            На 10000 программа всё ещё просит ввести цифры. Значит, внутри `try` случается
+            какая-то другая ошибка, а `except` без типа (или `except Exception`) выдаёт её за
+            неверный ввод — и ты не видишь, какая она.
+          try: >-
+            Укажи после `except` тип, который `int()` выбрасывает на тексте, и запусти с 10000:
+            traceback покажет настоящую ошибку и строку, где она случилась.
+          verify: В «Примере 1» должно получиться «Пройдено примерно 7.0 км».
+        - id: used-after-except
+          when:
+            errorType: NameError
+            outputIncludes: Введите число шагов цифрами
+          why: >-
+            Программа попросила ввести цифры, а потом упала. Когда `int()` не справился, строки
+            после него в `try` не выполнились, и переменная `steps` не появилась. Но код после
+            блока `try / except` выполняется всегда — и берёт число, которого нет. Имя написано
+            верно, дело в том, где стоят строки.
+          try: >-
+            Расчёт и печать имеют смысл, только если число получилось, — перенеси их внутрь
+            `try`, сразу после `int()`.
+          verify: В «Примере 2» должна остаться одна строка — «Введите число шагов цифрами».
+        - id: only-except-fixed
+          when:
+            errorType: NameError
+          why: >-
+            Теперь ошибка видна — этого мы и добивались: `except` больше её не прячет. Последняя
+            строка traceback говорит NameError, а подсказка `Did you mean` называет правильное имя.
+          try: Исправь имя переменной в строке, на которую указывает traceback.
+          verify: В «Примере 1» должно получиться «Пройдено примерно 7.0 км».
+        - id: except-exception
+          when:
+            codeRegex: 'except[^:\n]*\b(?:Base)?Exception\b'
+            failedTest: t-except
+          why: >-
+            `except Exception` ловит почти любое исключение — и неверный ввод, и опечатки в коде.
+            Следующая опечатка снова спрячется за «Введите число шагов цифрами».
+          try: Укажи тот тип, который `int()` выбрасывает на тексте.
+          verify: Проверка «Ловится только ошибка ввода» должна стать зелёной.
+        - id: bare-kept
+          when:
+            codeRegex: 'except\s*:'
+            failedTest: t-except
+          why: >-
+            `except:` без типа остался, а он ловит любую ошибку — и неверный ввод, и опечатку в
+            коде. Следующая ошибка в коде снова превратится в «Введите число шагов цифрами», и
+            искать её придётся вслепую.
+          try: Укажи после `except` тип ошибки, которую выбрасывает `int()` на тексте.
+          verify: Проверка «Ловится только ошибка ввода» должна стать зелёной.
+        - id: value-not-caught
+          when:
+            errorType: ValueError
+          why: >-
+            На слово «много» `int()` выбрасывает ValueError, и его никто не ловит: `try` нет,
+            `int()` стоит выше `try` или в `except` указан другой тип.
+          try: >-
+            Строка с `int()` должна стоять внутри `try`, а после `except` — ValueError: это тип
+            из последней строки traceback.
+          verify: В «Примере 2» должно появиться «Введите число шагов цифрами».
+        - id: printed-error
+          when:
+            outputIncludes: invalid literal
+          why: >-
+            Человек видит служебный текст исключения на английском. Тебе он полезен при отладке, а
+            пользователю нужна понятная просьба.
+          try: Под `except` печатай сообщение из условия, а не `error`.
+          verify: В «Примере 2» должно появиться «Введите число шагов цифрами».
+      afterPass: >-
+        Ты увидел, как `except` без типа выдаёт опечатку за неверный ввод. Теперь опечатка сразу
+        видна в traceback, а на неверный ввод программа по-прежнему отвечает понятно. Проверь
+        себя: верни `stpes` в строку 4 и запусти с 10000 — Python покажет строку и подскажет
+        правильное имя.
+      skills: [exceptions, debugging, traceback-reading]
+
+  - id: practice-rain
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m7-l3-e3
+      kind: write
+      title: Осадки из файла
+      statement: |-
+        Метеокружок из урока 3.3 теперь хранит осадки в файлах, по одному файлу на месяц. В каждой
+        строке — осадки за день в миллиметрах, целым числом. Но датчик иногда пишет вместо числа
+        «нет данных», а файла за какой-то месяц может и не быть.
+
+        Напиши программу, которая спрашивает имя файла и считает сумму осадков:
+
+        - если файла нет, выведи `Файл <имя> не найден` — и больше ничего;
+        - если строку нельзя превратить в целое число, выведи `Строка N пропущена: <текст строки>`
+          и считай дальше (N — номер строки в файле, с 1; текст — без пробелов и перевода строки
+          по краям);
+        - в конце выведи `Осадков за период: S мм`.
+
+        Например, в `may.txt` три строки: `5`, `нет данных`, `7`. Для него вывод такой:
+
+        ```text
+        Строка 2 пропущена: нет данных
+        Осадков за период: 12 мм
+        ```
+
+        Файлы месяцев — в блоке «Файлы задания». Лови конкретные исключения, а при открытии файла
+        укажи кодировку.
+      input: Одна строка — имя файла, например `april.txt`.
+      output: >-
+        Строки о пропущенных строках файла и итог `Осадков за период: S мм` — или одна строка
+        `Файл <имя> не найден`.
+      constraints:
+        - Пустых строк внутри файлов нет (но сам файл может быть пустым), числа не отрицательные.
+        - Файлы не меняй — только читай.
+      files:
+        april.txt: |
+          3
+          0
+          12
+        may.txt: |
+          5
+          нет данных
+          7
+        july.txt: ""
+        august.txt: |
+          x
+          —
+        september.txt: " 4 \n6\n"
+        october.txt: "4\n  нет данных  \n3"
+      starterCode: |
+        name = input("Имя файла: ")
+        # Открой файл, сложи осадки и выведи итог.
+        # Нет файла — «Файл … не найден», строка не число — «Строка N пропущена: …».
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1 — апрель
+          example: true
+          stdin: "april.txt\n"
+          expected: "Осадков за период: 15 мм"
+        - id: t2
+          kind: io
+          title: Пример 2 — строка «нет данных»
+          example: true
+          stdin: "may.txt\n"
+          expected: |-
+            Строка 2 пропущена: нет данных
+            Осадков за период: 12 мм
+        - id: t3
+          kind: io
+          title: Пример 3 — файла нет
+          example: true
+          stdin: "june.txt\n"
+          expected: Файл june.txt не найден
+        - id: t4
+          kind: io
+          title: "Граничный случай: пустой файл"
+          edge: true
+          stdin: "july.txt\n"
+          expected: "Осадков за период: 0 мм"
+        - id: t5
+          kind: io
+          title: "Граничный случай: ни одного числа"
+          edge: true
+          stdin: "august.txt\n"
+          expected: |-
+            Строка 1 пропущена: x
+            Строка 2 пропущена: —
+            Осадков за период: 0 мм
+        - id: t6
+          kind: io
+          title: "Граничный случай: пробелы вокруг числа"
+          edge: true
+          stdin: "september.txt\n"
+          expected: "Осадков за период: 10 мм"
+        - id: t7
+          kind: io
+          title: "Граничный случай: пробелы вокруг плохой строки, в конце нет перевода строки"
+          edge: true
+          stdin: "october.txt\n"
+          expected: |-
+            Строка 2 пропущена: нет данных
+            Осадков за период: 7 мм
+        - id: t-except
+          kind: assert
+          title: Ловятся конкретные исключения
+          stdin: "may.txt\n"
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    caught = [node.type]
+                    if isinstance(node.type, ast.Tuple):
+                        caught = node.type.elts
+                    for item in caught:
+                        assert not (isinstance(item, ast.Name) and item.id in ("Exception", "BaseException", "NameError"))
+          message: >-
+            Здесь ловится «всё подряд» (`except` без типа, `except Exception`) или ошибка в самом
+            коде (`except NameError`). Укажи конкретный тип, который ждёшь от данных.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          stdin: "april.txt\n"
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+
+            def has_encoding(call):
+                if any(k.arg == "encoding" for k in call.keywords):
+                    return True
+                name = getattr(call.func, "id", None) or call.func.attr
+                # Кодировка по позиции: open(file, mode, buffering, encoding),
+                # Path.open(mode, buffering, encoding), read_text(encoding), write_text(data, encoding).
+                position = {"open": 3 if isinstance(call.func, ast.Attribute) else 4, "read_text": 1, "write_text": 2}[name]
+                return len(call.args) >= position
+
+            assert all(has_encoding(c) for c in calls)
+          message: >-
+            В одном из `open()` (или `read_text`/`write_text`) не указана кодировка. Добавь
+            `encoding="utf-8"` — иначе на Windows со старым Python (до 3.15) русский текст
+            превратится в кракозябры.
+      criteria:
+        - Если файла нет, программа печатает одну строку `Файл <имя> не найден` и не падает.
+        - Каждая строка, которая не целое число, даёт сообщение с верным номером (с 1) и текстом строки.
+        - Плохая строка не обрывает подсчёт — следующие числа тоже складываются.
+        - 'В конце печатается сумма `Осадков за период: S мм`.'
+        - "`except` ловит конкретные типы, при открытии файла указана кодировка."
+      hints:
+        - >-
+          Здесь две разные беды: файла может не быть, а строка может оказаться не числом. Где
+          случается каждая — и что программа должна делать дальше: остановиться или считать
+          следующие строки?
+        - |-
+          Тот же приём, что в теории, — на плейлисте, где известна длительность не всех песен:
+          ```python
+          lengths = {"Утро": 4, "Дождь": 3}
+          playlist = ["Утро", "Ветер", "Дождь"]
+          minutes = 0
+          for song in playlist:
+              try:
+                  minutes += lengths[song]
+              except KeyError:
+                  print("Нет длительности:", song)
+          print("Всего минут:", minutes)
+          ```
+          Выведет `Нет длительности: Ветер` и `Всего минут: 7`. Беду одного элемента ловят внутри
+          цикла. А беду, после которой считать нечего, — например, нет файла, — ловят снаружи,
+          вокруг всего подсчёта.
+        - |-
+          Каркас из двух `try` — внешний для файла, внутренний для строки:
+          ```text
+          имя = input(...)
+          сумма = 0, номер строки = 0
+          try:
+              with open(имя, encoding="utf-8") as f:
+                  for line in f:
+                      номер += 1
+                      try:
+                          сумма += int(line)
+                      except ValueError:
+                          печать «Строка … пропущена: …»
+              печать итога
+          except FileNotFoundError:
+              печать «Файл … не найден»
+          ```
+      solution:
+        code: |
+          name = input("Имя файла: ")
+          total = 0
+          number = 0
+          try:
+              with open(name, encoding="utf-8") as f:
+                  for line in f:
+                      number += 1
+                      try:
+                          total += int(line)
+                      except ValueError:
+                          print(f"Строка {number} пропущена: {line.strip()}")
+              print(f"Осадков за период: {total} мм")
+          except FileNotFoundError:
+              print(f"Файл {name} не найден")
+        explanation: >-
+          Внешний `try` ловит FileNotFoundError: его может выбросить только `open()`. Итог
+          печатается внутри этого блока — если файла нет, считать нечего. Внутренний `try` стоит в
+          цикле и защищает одну строку: ValueError пропускает её, а цикл идёт к следующей. `int()`
+          сам не обращает внимания на пробелы и перевод строки по краям, поэтому ` 4 ` превращается
+          в 4. Номер строки считаем сами, до `try`, — так он верный и для хороших, и для плохих
+          строк.
+      altSolutions:
+        - code: |
+            from pathlib import Path
+
+            name = input("Имя файла: ")
+            path = Path(name)
+            if path.is_file():
+                total = 0
+                number = 0
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    number += 1
+                    try:
+                        total += int(line)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            else:
+                print(f"Файл {name} не найден")
+          note: Файл проверен заранее через is_file() из урока 7.2, исключение ловится только для строк.
+        - code: |
+            name = input("Имя файла: ")
+            found = True
+            try:
+                with open(name, encoding="utf-8") as f:
+                    lines = f.read().splitlines()
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+                found = False
+            if found:
+                total = 0
+                number = 1
+                for line in lines:
+                    try:
+                        total += int(line)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {line.strip()}")
+                    number += 1
+                print(f"Осадков за период: {total} мм")
+          note: Сначала строки читаются в список, флаг found отмечает, нашёлся ли файл; номер растёт в конце цикла.
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as f:
+                    total = 0
+                    number = 0
+                    for line in f:
+                        number += 1
+                        text = line.strip()
+                        if text.isdigit():
+                            total += int(text)
+                        else:
+                            print(f"Строка {number} пропущена: {text}")
+                    print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Строка проверяется через isdigit() из урока 4.3 — для неотрицательных целых это тоже работает.
+        - code: |
+            from pathlib import Path
+
+            name = input("Имя файла: ")
+            path = Path(name)
+            if not path.exists():
+                print(f"Файл {name} не найден")
+            else:
+                total = 0
+                lines = path.read_text("utf-8").splitlines()
+                for i in range(len(lines)):
+                    try:
+                        total += int(lines[i])
+                    except ValueError:
+                        print(f"Строка {i + 1} пропущена: {lines[i].strip()}")
+                print(f"Осадков за период: {total} мм")
+          note: Кодировка передана в read_text по позиции — это тоже верно (рецензия, проверки).
+        - code: |
+            from pathlib import Path
+
+            name = input("Имя файла: ")
+            if Path(name).is_file():
+                total = 0
+                number = 0
+                with Path(name).open(encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            else:
+                print(f"Файл {name} не найден")
+          note: is_file() и Path.open(encoding=...).
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as rain_file:
+                    amount = 0
+                    row = 1
+                    for raw in rain_file:
+                        clean = raw.strip()
+                        try:
+                            amount = amount + int(clean)
+                        except ValueError:
+                            print(f"Строка {row} пропущена: {clean}")
+                        row = row + 1
+                print(f"Осадков за период: {amount} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Номер с 1 и растёт в конце тела, strip() до int().
+      wrongSolutions:
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            with open(name, encoding="utf-8") as f:
+                for line in f:
+                    number += 1
+                    try:
+                        total += int(line)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {line.strip()}")
+            print(f"Осадков за период: {total} мм")
+          note: Отсутствующий файл не обработан.
+          expectMistake: no-file-check
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as f:
+                    lines = f.read().splitlines()
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+            total = 0
+            number = 0
+            for line in lines:
+                number += 1
+                try:
+                    total += int(line)
+                except ValueError:
+                    print(f"Строка {number} пропущена: {line.strip()}")
+            print(f"Осадков за период: {total} мм")
+          note: После except цикл всё равно берёт lines, которой нет.
+          expectMistake: lines-missing
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line.strip()}")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+            print(f"Осадков за период: {total} мм")
+          note: Итог печатается и тогда, когда файла нет.
+          expectMistake: total-after-missing
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        total += int(line)
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Плохие строки не обработаны — ValueError.
+          expectMistake: no-line-check
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    try:
+                        for line in f:
+                            number += 1
+                            total += int(line)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Один try вокруг всего цикла — после первой плохой строки подсчёт обрывается.
+          expectMistake: try-around-loop
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError as error:
+                print(error)
+          note: Вместо своего сообщения печатается текст исключения.
+          expectMistake: printed-error
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            number += 1
+                            print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Номер растёт только на плохих строках — это счётчик пропусков, а не номер строки.
+          expectMistake: numbering
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except:
+                            print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Для строк стоит except без типа.
+          expectMistake: broad-except
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name) as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Кодировка не указана.
+          expectMistake: no-encoding
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        total += int(line)
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+            except ValueError:
+                print(f"Строка {number} пропущена: {line.strip()}")
+          note: Как в практике 1 — один try и два except; первая плохая строка обрывает цикл, итога нет.
+          expectMistake: loop-stopped
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Строка печатается без strip() — лишний перевод строки.
+          expectMistake: no-strip
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as f:
+                    lines = f.read().split("\n")
+                total = 0
+                number = 0
+                for line in lines:
+                    number += 1
+                    try:
+                        total += int(line)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: split("\n") — пустой хвост после последнего перевода строки.
+          expectMistake: empty-tail
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as f:
+                    total = 0
+                    number = 0
+                    for line in f:
+                        number += 1
+                        if line.isdigit():
+                            total += int(line)
+                        else:
+                            print(f"Строка {number} пропущена: {line.strip()}")
+                    print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: isdigit() без strip() — «3\n» не считается числом.
+          expectMistake: isdigit-newline
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as f:
+                    words = f.read().split()
+                total = 0
+                number = 0
+                for word in words:
+                    number += 1
+                    try:
+                        total += int(word)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {word}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: split() без аргумента режет «нет данных» на два слова.
+          expectMistake: split-words
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as f:
+                    lines = f.read().splitlines()
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+            try:
+                total = 0
+                number = 0
+                for line in lines:
+                    number += 1
+                    try:
+                        total += int(line)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except NameError:
+                pass
+          note: NameError от отсутствующего lines «починен» через except NameError.
+          expectMistake: nameerror-caught
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line.replace(chr(10), '')}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Убран только перевод строки, пробелы по краям остаются — ловит граничный тест t7.
+          expectMistake: spaces-kept
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += int(line)
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line[:-1]}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Срез line[:-1] отрезает только последний символ — пробелы по краям остаются.
+          expectMistake: spaces-kept
+        - code: |
+            name = input("Имя файла: ")
+            total = 0
+            number = 0
+            try:
+                with open(name, encoding="utf-8") as f:
+                    for line in f:
+                        number += 1
+                        try:
+                            total += line
+                        except ValueError:
+                            print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+          note: Забыт int() — TypeError; кодировка указана, разбор no-encoding срабатывать не должен.
+          expectMistake: null
+        - code: |
+            name = input("Имя файла: ")
+            try:
+                with open(name, encoding="utf-8") as f:
+                    lines = f.read().splitlines()
+            except FileNotFoundError:
+                print(f"Файл {name} не найден")
+                found = False
+            if found:
+                total = 0
+                number = 0
+                for line in lines:
+                    number += 1
+                    try:
+                        total += int(line)
+                    except ValueError:
+                        print(f"Строка {number} пропущена: {line.strip()}")
+                print(f"Осадков за период: {total} мм")
+          note: Флаг без found = True до try — NameError на найденном файле; общий разбор с настоящей ошибкой.
+          expectMistake: null
+      mistakes:
+        - id: no-file-check
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            Файла с таким именем в рабочей папке нет, и `open()` остановил программу. Это
+            ожидаемая ситуация: человек мог ошибиться в имени или месяц ещё не записан. Файлы,
+            которые есть, видны в блоке «Файлы задания».
+          try: >-
+            Оберни открытие файла и подсчёт в `try` и поймай FileNotFoundError — или проверь
+            заранее через `Path(name).is_file()`.
+          verify: В «Примере 3» должно появиться «Файл june.txt не найден».
+        - id: lines-missing
+          when:
+            errorType: NameError
+            outputIncludes: не найден
+          why: >-
+            Сообщение про файл напечаталось, а потом программа упала. Когда файла нет, строки
+            внутри `try` не выполнились, и переменная, которую они должны были создать, так и не
+            появилась. А код после блока всё равно к ней обращается.
+          try: >-
+            Всё, что имеет смысл только для найденного файла, — цикл и итог — держи внутри `try`,
+            после `with`. Или заведи флаг, как в модуле 3: `found = True` до `try`, `found =
+            False` в `except`, а цикл и итог — под `if found:`.
+          verify: В «Примере 3» должна остаться одна строка — «Файл june.txt не найден».
+        - id: total-after-missing
+          when:
+            outputIncludes: "не найден\nОсадков"
+          why: >-
+            Файла нет, а программа всё равно печатает итог — 0 мм. Это вводит в заблуждение:
+            осадков могло быть сколько угодно, просто считать их не из чего. Итог стоит после всего
+            блока `try / except`, поэтому выполняется в любом случае.
+          try: Перенеси печать итога внутрь `try`, после блока `with`.
+          verify: В «Примере 3» должна остаться одна строка — «Файл june.txt не найден».
+        - id: no-line-check
+          when:
+            errorType: ValueError
+          why: >-
+            `int()` не смог превратить в число строку вроде «нет данных», и эту ошибку никто не
+            поймал. Защищены только строки внутри `try` с подходящим `except`.
+          try: Поставь `try` вокруг `int(line)` внутри цикла и поймай ValueError.
+          verify: 'В «Примере 2» должно появиться «Строка 2 пропущена: нет данных».'
+        - id: try-around-loop
+          when:
+            outputIncludes: "Осадков за период: 5 мм"
+          why: >-
+            После строки «нет данных» подсчёт оборвался: 7 мм из третьей строки не прибавились.
+            Так бывает, когда `try` стоит вокруг всего цикла: исключение выбрасывает программу из
+            цикла целиком, и после `except` она продолжает уже после цикла. Или когда в `except`
+            стоит `break`.
+          try: >-
+            Перенеси `try` внутрь цикла — вокруг одной строки с `int()`, а в `except` только
+            печатай сообщение: следующий шаг цикла начнётся сам.
+          verify: 'В «Примере 2» должно получиться «Осадков за период: 12 мм».'
+        - id: loop-stopped
+          when:
+            outputEquals: "Строка 2 пропущена: нет данных"
+          why: >-
+            После строки «нет данных» программа замолчала: 7 мм не прибавились, итога нет.
+            `except ValueError` стоит у внешнего `try`, вокруг всего цикла. Исключение выбросило
+            программу из цикла и из `try` целиком — оставшиеся строки файла и печать итога
+            пропустились.
+          try: >-
+            Поставь отдельный `try` с `except ValueError` внутрь цикла — вокруг `int(line)`, как в
+            теории «Лови только то, что ждёшь». Плохая строка пропустится, а цикл пойдёт к
+            следующей.
+          verify: >-
+            В «Примере 2» должно получиться две строки: «Строка 2 пропущена: нет данных» и
+            «Осадков за период: 12 мм».
+        - id: printed-error
+          when:
+            outputIncludes: Errno
+          why: >-
+            Человек видит служебный текст исключения на английском. К тому же номер `Errno`
+            зависит от системы: в тренажёре один, на Windows другой.
+          try: Под `except` печатай своё сообщение из условия — `Файл <имя> не найден`.
+          verify: В «Примере 3» должно появиться «Файл june.txt не найден».
+        - id: numbering
+          when:
+            outputIncludes: "Строка 1 пропущена: нет данных"
+          why: >-
+            «Нет данных» стоит во второй строке файла, а программа называет её первой. Номер
+            должен расти на каждой строке файла — и на хорошей, и на плохой, — причём до того, как
+            его напечатают.
+          try: Увеличивай номер в начале тела цикла, до `try`, начиная с 0.
+          verify: 'В «Примере 2» должно появиться «Строка 2 пропущена: нет данных».'
+        - id: no-strip
+          when:
+            outputIncludes: "пропущена: нет данных\n\n"
+          why: >-
+            После сообщения о строке появилась пустая строка. В `line` остался перевод строки из
+            файла, и `print` добавил к нему свой.
+          try: Печатай `line.strip()`, как в уроке 7.1.
+          verify: В «Примере 2» пустой строки между сообщением и итогом быть не должно.
+        - id: spaces-kept
+          when:
+            outputIncludes: "пропущена:  "
+          why: >-
+            Вокруг «нет данных» в файле стоят пробелы, и они попали в сообщение. По условию текст
+            строки печатается без пробелов и перевода строки по краям.
+          try: Печатай `line.strip()` — он убирает с краёв и пробелы, и перевод строки.
+          verify: >-
+            В граничном случае с `october.txt` должно получиться «Строка 2 пропущена: нет данных» —
+            с одним пробелом после двоеточия.
+        - id: empty-tail
+          when:
+            outputIncludes: "пропущена:\n"
+          why: >-
+            Программа нашла в файле пустую строку, которой там нет. Так бывает с `split("\n")`:
+            файл кончается переводом строки, и после него `split` даёт ещё один пустой кусок, а
+            `int("")` его не принимает.
+          try: Читай строки через `for line in f` или `splitlines()` — пустого хвоста они не дают.
+          verify: 'В «Примере 1» должна остаться одна строка — «Осадков за период: 15 мм».'
+        - id: isdigit-newline
+          when:
+            codeIncludes: isdigit
+            outputIncludes: "Строка 1 пропущена: 3"
+          why: >-
+            Число 3 попало в пропущенные. Строка из файла приходит вместе с переводом строки, а он
+            не цифра, поэтому `"3\n".isdigit()` даёт False.
+          try: >-
+            Сначала убери края — `text = line.strip()`, — а потом проверяй `text.isdigit()`. Или
+            спроси сам `int()` внутри `try`: пробелы и перевод строки по краям он не замечает.
+          verify: 'В «Примере 1» должно получиться «Осадков за период: 15 мм».'
+        - id: split-words
+          when:
+            outputIncludes: "пропущена: нет\n"
+          why: >-
+            «Нет данных» разрезалось на два куска. `split()` без аргумента делит текст по любым
+            пробелам, а не по строкам файла, поэтому и номера строк съехали.
+          try: Читай файл построчно — `for line in f` или `f.read().splitlines()`.
+          verify: 'В «Примере 2» должно появиться «Строка 2 пропущена: нет данных».'
+        - id: nameerror-caught
+          when:
+            codeRegex: 'except[^:\n]*\bNameError\b'
+            failedTest: t-except
+          why: >-
+            NameError значит, что код берёт переменную, которой нет, — это ошибка в самой
+            программе, а не в данных. Обычно так бывает, когда файла нет: строки в `try` не
+            выполнились, а цикл стоит отдельно. `except NameError` прячет этот сбой, а не
+            исправляет его.
+          try: >-
+            Убери `except NameError`. Цикл и итог держи внутри `try`, после `with`: если файла
+            нет, они просто не выполнятся.
+          verify: Проверка «Ловятся конкретные исключения» должна стать зелёной.
+        - id: broad-except
+          when:
+            codeRegex: 'except\s*:|except[^:\n]*\b(?:BaseException|Exception)\b'
+            failedTest: t-except
+          why: >-
+            `except` без типа или `except Exception` поймает и ошибку в самом коде — например,
+            опечатку в имени переменной — и выдаст её за «пропущенную строку».
+          try: Для строк лови ValueError, для файла — FileNotFoundError.
+          verify: Проверка «Ловятся конкретные исключения» должна стать зелёной.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            codeRegex: '(?:open|read_text|write_text)\((?![^)]*encoding)'
+          why: >-
+            В тренажёре кодировка по умолчанию подходит, но на Windows без `encoding` Python
+            3.14 и раньше прочитает файл в другой кодировке — и «нет данных» превратится в кракозябры или в
+            UnicodeDecodeError.
+          try: >-
+            Добавь в `open()` (или `read_text()`) аргумент `encoding="utf-8"`, как в уроках 7.1
+            и 7.2.
+          verify: Проверка «Кодировка указана» должна стать зелёной.
+      afterPass: >-
+        Программа переживает и отсутствующий файл, и испорченные строки, а одна плохая строка не
+        обрывает подсчёт. Улучшение: в конце печатай ещё и число пропущенных строк — сразу видно,
+        насколько можно доверять итогу.
+      skills: [exceptions, files-paths, loop-control]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "`try` / `except Тип` превращает ожидаемую ошибку в понятное сообщение, и программа идёт дальше."
+      - После исключения остаток `try` пропускается; выполняется первый подходящий `except`, затем код после блока.
+      - Тип берут из последней строки traceback; для разных проблем — разные `except`.
+      - >-
+        `except:` без типа и `except Exception` прячут ошибки в самом коде. `try` держим коротким;
+        внутри цикла он пропускает один плохой элемент, и цикл идёт дальше.
+    question: Почему `except:` без типа опасен даже тогда, когда программа «работает»?
+    answer: >-
+      Он ловит не только неверный ввод, но и ошибки в самом коде — NameError из-за опечатки,
+      TypeError в формуле — и выдаёт их за неверный ввод. Программа отвечает не то, а причину не
+      видно: traceback не появляется. Поэтому после `except` пишут конкретный тип, который ждут.

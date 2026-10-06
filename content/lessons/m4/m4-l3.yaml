@@ -1,0 +1,1551 @@
+id: m4-l3
+module: m4
+number: "4.3"
+title: "Методы строк: от текста к списку и обратно"
+objective: >-
+  Чистить и преобразовывать текст методами строк, разбивать строку на список через split и
+  собирать обратно через join, помня, что метод возвращает новую строку.
+minutes: [25, 30]
+prerequisites: [m4-l2]
+skills: [string-methods, lists]
+environment: python
+
+story:
+  title: Список из чата
+  fictional: true
+  text: >-
+    В семейном чате у Игоря каждый дописывает покупки как умеет: «Молоко, хлеб», «  СЫР,яблоки »,
+    а иногда и две запятые подряд. Перед походом в магазин Игорь вручную переписывал всё в
+    аккуратную колонку: пропускал пустые пункты и приводил слова к одному виду. Небольшая
+    программа делает то же за секунду: режет строку по запятым, чистит каждый кусок и собирает
+    ровный список. Сегодня ты научишься так же превращать текст в список и обратно.
+
+why: >-
+  Текст от людей почти всегда «грязный»: лишние пробелы, разный регистр, всё в одной строке через
+  запятую. Методы строк приводят его в порядок: из `"  Молоко, хлеб ,СЫР "` получается список
+  `['молоко', 'хлеб', 'сыр']`.
+
+usedIn: >-
+  Обработка форм на сайтах: адрес почты приводят к маленьким буквам и обрезают пробелы по краям.
+  Разбор строк таблиц и журналов, поиск по тексту, адреса страниц в блогах, чат-боты, которые
+  разбирают команды из сообщения.
+
+steps:
+  - id: idea
+    type: theory
+    title: "Методы: действия, которые умеет строка"
+    body: |-
+      Методы ты уже встречал в уроке 4.2: `times.append(95)` и `times.remove(104)` — это методы
+      списка. **Метод** — действие, которое умеет само значение. Его вызывают через точку: значение
+      или переменная, точка, имя метода и скобки — `name.lower()`. У строк свои методы, вот главные:
+
+      ```text
+      # убрать пробелы по краям
+      "  чай ".strip()            →  "чай"
+      # все буквы маленькие / большие
+      "Чай".lower()               →  "чай"
+      "чай".upper()               →  "ЧАЙ"
+      # заменить везде, где встречается
+      "ёж".replace("ё", "е")      →  "еж"
+      # разрезать по пробелам / по разделителю
+      "чай  с мятой".split()      →  ['чай', 'с', 'мятой']
+      "чай,сок".split(",")        →  ['чай', 'сок']
+      # склеить список через разделитель
+      ", ".join(["чай", "сок"])   →  "чай, сок"
+      # в строке одни цифры?
+      "42".isdigit()              →  True
+      ```
+
+      **Главное: метод строки не меняет строку.** Строку изменить нельзя — ты видел это в уроке 4.1.
+      Поэтому `strip`, `lower`, `upper` и `replace` возвращают **новую строку**, а старая остаётся
+      прежней. Если вызвать `name.strip()` отдельной командой, новая строка пропадёт. Чтобы её
+      сохранить, присвой результат: `name = name.strip()`. Методы можно вызывать цепочкой: в
+      `name.strip().lower()` сначала работает `strip()`, а `lower()` получает его результат.
+
+      **У методов списка наоборот.** Список можно менять, поэтому `append` и `remove` меняют сам
+      список и ничего не возвращают. Их пишут без присваивания: `items.append(x)`, а не
+      `items = items.append(x)`. И вспомни урок 4.2: после `remove` все элементы правее удалённого
+      сдвигаются на одно место влево. А `for` идёт по списку по номерам мест: 0, 1, 2… Это
+      пригодится во второй практике.
+
+      **split и join — мост между текстом и списком.** `split()` с пустыми скобками режет по
+      любым пробелам и пустых кусков не оставляет. `split(" ")` режет по каждому пробелу, поэтому
+      два пробела подряд дают пустую строку: `"a  b".split(" ")` → `['a', '', 'b']`. Так же
+      `split(",")` оставляет пустой кусок между двумя запятыми подряд. `join` вызывают у
+      разделителя, а список передают в скобках. Склеивает он только строки: числа сначала
+      превращают через `str()`.
+
+      `lower()` выручает при сравнении: «Томат» и «томат» из урока 4.2 — разные строки, а
+      `"Томат".lower() == "томат"` даёт `True`. `isdigit()` пригодится для проверки ввода: для
+      `"-5"` и `"4 2"` он даёт `False` — минус и пробел не цифры. А `in` работает и со строками:
+      ищет кусок текста, `"лес" in "лесник"` → `True`.
+    simpler: >-
+      Метод — кнопка на значении. Нажал `strip()` — получил **новую**, почищенную строку, а старая
+      осталась как была. Чтобы новую не потерять, положи её в переменную: `name = name.strip()`.
+      А список `append` меняет сам, поэтому там пишут просто `items.append(x)`. `split` режет
+      строку на список, `join` склеивает список обратно в строку.
+    coach: >-
+      Если после метода строки ничего не поменялось, первым делом проверь, сохранил ли ты результат.
+
+  - id: shopping-line
+    type: example
+    title: Строка из чата — ровный список
+    body: >-
+      Сообщение из семейного чата: покупки через запятую, лишние пробелы, разный регистр. Программа
+      режет строку, чистит каждый кусок и собирает результат обратно. Нажми «Запустить».
+    code: |-
+      line = "  Молоко, хлеб ,СЫР "
+      parts = line.split(",")
+      print(parts)
+      items = []
+      for part in parts:
+          items.append(part.strip().lower())
+      print(items)
+      print(" / ".join(items))
+    notes:
+      - line: 2
+        text: >-
+          `split(",")` режет строку только там, где стоит запятая. Пробелы остались внутри кусков —
+          их видно в первой строке вывода.
+      - line: 3
+        text: Так выглядит список на экране — в квадратных скобках, каждая строка в кавычках.
+      - line: 6
+        text: >-
+          Два метода подряд: `strip()` убирает пробелы по краям, `lower()` делает буквы маленькими.
+          Готовая строка сразу уходит в `append`, поэтому не теряется. Сам `append` пишется без
+          присваивания: он меняет список `items`.
+      - line: 8
+        text: "`join` склеивает список обратно в одну строку, между пунктами ставит « / »."
+    tryIt: >-
+      Поменяй разделитель в `join` на `", "` и запусти снова. Потом поставь в строке две запятые
+      подряд — `"  Молоко,, хлеб ,СЫР "` — и посмотри, что появится в списке: это пригодится во
+      второй практике. И допиши отдельной строкой `print("42".isdigit(), "4 2".isdigit())`.
+    coach: >-
+      Обрати внимание: `line` после всех методов осталась прежней. `split` отдал новый список,
+      `strip` и `lower` — новые строки, и мы их сохранили — в `parts` и в `items`.
+
+  - id: method-predict
+    type: predict
+    title: Что сохранилось?
+    prompt: >-
+      Как думаешь, что выведет программа? Квадратные скобки в выводе нужны, чтобы были видны
+      пробелы по краям.
+    code: |-
+      city = "  Казань  "
+      city = city.strip()
+      city.upper()
+      print("[" + city + "]")
+    options:
+      - "[КАЗАНЬ]"
+      - "[Казань]"
+      - "[  Казань  ]"
+      - "[  КАЗАНЬ  ]"
+    answer: "[Казань]"
+    explanation: >-
+      `strip()` вернул новую строку без пробелов, и её присвоили обратно в `city` — пробелы ушли.
+      `upper()` тоже вернул новую строку, `"КАЗАНЬ"`, но её никуда не сохранили, и она пропала.
+      Поэтому буквы остались прежними. Чтобы получить `[КАЗАНЬ]`, нужно
+      `city = city.upper()` — или сразу `city = city.strip().upper()`.
+    coach: >-
+      Это самая частая ошибка с методами строк. Программа не падает — просто ничего не меняется.
+
+  - id: practice-expenses
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m4-l3-e1
+      kind: repeat
+      title: Траты за неделю
+      statement: |-
+        Игорь записывает траты семьи за неделю в одну строку через пробел. Иногда между числами
+        случайно попадает несколько пробелов, а по краям строки — лишние пробелы. Напиши
+        программу, которая складывает все траты и выводит итог:
+
+        ```text
+        Всего: 950
+        ```
+
+        Для ввода `120 450 80 300` сумма равна 950.
+      input: Одна строка — траты целыми числами через пробел (пробелов может быть несколько).
+      output: "Одна строка: `Всего: <сумма>`."
+      constraints:
+        - Во вводе хотя бы одна трата, все траты — целые неотрицательные числа.
+        - Число трат заранее неизвестно.
+      starterCode: |
+        line = input()
+        # Разрежь строку на отдельные траты и сложи их
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "120 450 80 300\n"
+          compare:
+            ignoreSpaces: true
+          expected: "Всего: 950"
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "1500 250\n"
+          compare:
+            ignoreSpaces: true
+          expected: "Всего: 1750"
+        - id: t3
+          kind: io
+          title: "Граничный случай: одна трата"
+          edge: true
+          stdin: "700\n"
+          compare:
+            ignoreSpaces: true
+          expected: "Всего: 700"
+        - id: t4
+          kind: io
+          title: "Граничный случай: лишние пробелы"
+          edge: true
+          stdin: "  100   200  50 \n"
+          compare:
+            ignoreSpaces: true
+          expected: "Всего: 350"
+      criteria:
+        - Строка разрезается на отдельные числа, и каждое превращается из текста в число.
+        - "Выводится одна строка `Всего: <сумма>` после того, как сложены все траты."
+        - Лишние пробелы между числами и по краям не ломают программу.
+      hints:
+        - >-
+          Сначала строку нужно разрезать на кусочки, как строку покупок в примере. Но кусочки —
+          всё ещё текст: `'120'`, а не 120. Что нужно сделать с каждым кусочком, прежде чем
+          складывать? И какой способ резать не боится лишних пробелов?
+        - >-
+          На другом примере: `"3 4".split()` даёт список `['3', '4']`, а `int("3") + int("4")`
+          даёт 7. Накопитель из модуля про циклы работает и с таким списком.
+        - |-
+          Каркас:
+          ```text
+          total = 0
+          for part in line.split():
+              total = …
+          print(f"Всего: {…}")
+          ```
+      solution:
+        code: |
+          line = input()
+          total = 0
+          for part in line.split():
+              total = total + int(part)
+          print(f"Всего: {total}")
+        explanation: >-
+          `split()` с пустыми скобками режет строку по любым пробелам и выбрасывает пустые куски,
+          поэтому лишние пробелы не мешают. Каждый кусок — строка вроде `'120'`, и `int(part)`
+          превращает её в число. Накопитель `total` складывает все числа, а `print` стоит после
+          цикла — итог выводится один раз. Можно собрать числа в список и сложить через `sum`.
+      altSolutions:
+        - code: |
+            line = input()
+            numbers = []
+            for part in line.split():
+                numbers.append(int(part))
+            print(f"Всего: {sum(numbers)}")
+          note: Список чисел и sum.
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split(" "):
+                if part != "":
+                    total += int(part)
+            print("Всего:", total)
+          note: split(" ") с пропуском пустых кусков.
+        - code: |
+            parts = input().split()
+            total = 0
+            i = 0
+            while i < len(parts):
+                total = total + int(parts[i])
+                i = i + 1
+            print("Всего: " + str(total))
+          note: while по индексам списка.
+        - code: |
+            total = 0
+            for chunk in input().split(" "):
+                if chunk.isdigit():
+                    total = total + int(chunk)
+            print("Всего:", total)
+          note: split(" ") и отбор кусков через isdigit() из теории.
+        - code: |
+            spent = 0
+            for word in input().strip().split():
+                spent += int(word)
+            text = "Всего: " + str(spent)
+            print(text)
+          note: strip перед split, +=, строка ответа собрана заранее.
+        - code: |
+            line = input() + " "
+            total = 0
+            number = ""
+            for ch in line:
+                if ch == " ":
+                    if number != "":
+                        total = total + int(number)
+                        number = ""
+                else:
+                    number = number + ch
+            print(f"Всего: {total}")
+          note: Разбор по символам без split — число собирается из цифр.
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split():
+                total = total + int(part)
+            print("Всего: ", total)
+          note: Пробел в строке и запятая в print — два пробела подряд; формат пробелов не важен (ignoreSpaces).
+      wrongSolutions:
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split(" "):
+                total = total + int(part)
+            print(f"Всего: {total}")
+          note: split(" ") оставляет пустые куски при двойных пробелах.
+          expectMistake: split-space
+        - code: |
+            line = input()
+            total = 0
+            for part in line.strip().split(" "):
+                total = total + int(part)
+            print(f"Всего: {total}")
+          note: strip по краям есть, но split(" ") всё равно оставляет пустые куски внутри.
+          expectMistake: split-space
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split():
+                total = total + part
+            print(f"Всего: {total}")
+          note: Кусок не превращён в число.
+          expectMistake: forgot-int
+        - code: |
+            line = input()
+            print(f"Всего: {sum(line.split())}")
+          note: sum по кускам-строкам без int.
+          expectMistake: forgot-int
+        - code: |
+            line = input()
+            print(f"Всего: {sum(int(line.split()))}")
+          note: int() от всего списка кусков.
+          expectMistake: int-of-list
+        - code: |
+            parts = input().split()
+            total = int(parts)
+            print(f"Всего: {total}")
+          note: int() от списка без цикла.
+          expectMistake: int-of-list
+        - code: |
+            line = input()
+            numbers = []
+            for part in line.split():
+                numbers = numbers.append(int(part))
+            print(f"Всего: {sum(numbers)}")
+          note: Результат append присвоен — в numbers оказывается None.
+          expectMistake: list-method-assigned
+        - code: |
+            line = input()
+            total = 0
+            for part in line:
+                total = total + int(part)
+            print(f"Всего: {total}")
+          note: Цикл по символам строки, а не по кускам между пробелами.
+          expectMistake: chars-loop
+        - code: |
+            line = input()
+            total = 0
+            for ch in line:
+                if ch != " ":
+                    total = total + int(ch)
+            print(f"Всего: {total}")
+          note: Цикл по символам, пробелы отсеяны — складываются цифры.
+          expectMistake: digits-summed
+        - code: |
+            line = input()
+            total = int(line)
+            print(f"Всего: {total}")
+          note: int() от всей строки целиком.
+          expectMistake: whole-line
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split(","):
+                total = total + int(part)
+            print(f"Всего: {total}")
+          note: split(",") по привычке из примера — кусок один, вся строка.
+          expectMistake: whole-line
+        - code: |
+            line = input()
+            for part in line.split():
+                total = 0
+                total = total + int(part)
+            print(f"Всего: {total}")
+          note: Накопитель обнуляется на каждом шаге.
+          expectMistake: reset-in-loop
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split():
+                total = int(part)
+            print(f"Всего: {total}")
+          note: Присваивание вместо прибавления, total = 0 стоит верно — выше цикла.
+          expectMistake: replaced-not-added
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split():
+                total =+ int(part)
+            print(f"Всего: {total}")
+          note: Опечатка =+ вместо += (это total = +int(part)).
+          expectMistake: replaced-not-added
+        - code: |
+            line = input()
+            total = ""
+            for part in line.split():
+                total = total + part
+            print(f"Всего: {total}")
+          note: Накопитель-строка — куски склеиваются.
+          expectMistake: glued-strings
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split():
+                total = total + int(part)
+                print(f"Всего: {total}")
+          note: print внутри цикла.
+          expectMistake: print-in-loop
+        - code: |
+            line = input()
+            total = 0
+            for part in line.split():
+                total = total + int(part)
+            print("Всего: " + total)
+          note: Склейка строки с числом — общий разбор TypeError точен.
+          expectMistake: null
+        - code: |
+            parts = input().split()
+            total = 0
+            for i in range(len(parts) - 1):
+                total = total + int(parts[i])
+            print(f"Всего: {total}")
+          note: range(len(parts) - 1) — последняя трата не сложена; общий разбор «другое число».
+          expectMistake: null
+      mistakes:
+        - id: list-method-assigned
+          when:
+            errorIncludes: NoneType
+          why: >-
+            У методов списка всё наоборот: `append` меняет сам список и ничего не возвращает.
+            После `numbers = numbers.append(...)` в переменной лежит `None` — «ничего», и списка в
+            ней больше нет.
+          try: 'Вызывай `append` отдельной командой, без присваивания: `numbers.append(int(part))`.'
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: int-of-list
+          when:
+            errorIncludes: "not 'list'"
+          why: >-
+            `int()` превращает в число одну строку, а получил целый список кусков из `split()`.
+          try: Пройди по списку циклом и превращай в число каждый кусок отдельно — `int(part)`.
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: split-space
+          when:
+            errorIncludes: "base 10: ''"
+          why: >-
+            `int('')` — попытка превратить в число пустую строку. Она появилась из `split(" ")`:
+            он режет по каждому пробелу, и между двумя пробелами подряд остаётся пустой кусок.
+          try: >-
+            Вызови `split()` с пустыми скобками — он режет по любому числу пробелов и пустых кусков
+            не оставляет.
+          verify: "Тест «Граничный случай: лишние пробелы» должен дать `Всего: 350`."
+        - id: chars-loop
+          when:
+            errorIncludes: "base 10: ' '"
+          why: >-
+            Цикл `for` по строке перебирает её символы по одному: `'1'`, `'2'`, `'0'`, пробел…
+            Пробел в число не превращается. А складывать нужно не цифры, а числа между пробелами.
+          try: >-
+            Сначала разрежь строку через `split()` и перебирай в цикле уже получившийся список
+            кусков.
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: whole-line
+          when:
+            errorType: ValueError
+          why: >-
+            В `int()` попала строка, в которой несколько чисел через пробел. `int()` умеет
+            превращать только одно число, поэтому строку сначала нужно разрезать на куски.
+          try: >-
+            Разрежь строку через `split()` с пустыми скобками — по пробелам — и превращай в число
+            каждый кусок отдельно.
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: forgot-int
+          when:
+            errorIncludes: unsupported operand
+          why: >-
+            Куски после `split()` — строки: `'120'`, а не 120. Сложить число со строкой Python не
+            может, отсюда `TypeError`. С `sum()` то же самое: он тоже прибавляет куски к нулю по
+            одному.
+          try: Преврати каждый кусок в число через `int()`, прежде чем прибавлять его к сумме.
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: reset-in-loop
+          when:
+            outputEquals: "Всего: 300"
+            codeRegex: '^[ \t]+\w+\s*=\s*0[ \t]*$'
+          why: >-
+            В итоге только последняя трата: `total = 0` стоит внутри цикла, и на каждом шаге сумма
+            начинается заново.
+          try: Перенеси `total = 0` выше цикла — сумма должна начинаться с нуля один раз.
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: replaced-not-added
+          when:
+            outputEquals: "Всего: 300"
+          why: >-
+            В итоге только последняя трата: на каждом шаге в `total` кладётся текущее число, а
+            накопленное пропадает. Так выходит с `total = int(part)` и с опечаткой `total =+ …`
+            вместо `+=`.
+          try: 'Прибавляй к накопленному: `total = total + int(part)` или `total += int(part)`.'
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: digits-summed
+          when:
+            outputEquals: "Всего: 23"
+          why: >-
+            Сложились цифры, а не числа: `for` по строке перебирает символы, и из `120` получается
+            1 + 2 + 0. Пробелы ты пропустил, но числа при этом распались на цифры.
+          try: >-
+            Сначала разрежь строку через `split()` и перебирай в цикле уже получившийся список
+            кусков.
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: glued-strings
+          when:
+            outputEquals: "Всего: 12045080300"
+          why: >-
+            Куски склеились, а не сложились: `total` — строка, а `+` между строками их склеивает.
+          try: Начни с `total = 0` и прибавляй `int(part)` — тогда `+` будет складывать числа.
+          verify: "В «Примере 1» должно получиться `Всего: 950`."
+        - id: print-in-loop
+          when:
+            outputIncludes: "Всего: 120\n"
+          why: >-
+            Итог печатается на каждом шаге цикла: `print` стоит внутри `for`, поэтому видны все
+            промежуточные суммы.
+          try: Убери отступ у `print`, чтобы он выполнился один раз — после цикла.
+          verify: "В «Примере 1» должна остаться одна строка `Всего: 950`."
+      afterPass: >-
+        Числа в одной строке через пробел — частый формат ввода, этот приём пригодится ещё не раз.
+        Если захочешь, собери числа в список и выведи ещё и самую большую трату через `max`.
+      skills: [string-methods, lists, accumulators, type-conversion]
+
+  - id: practice-empty
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m4-l3-e2
+      kind: fix
+      title: Пустые пункты в списке
+      statement: |-
+        Игорь написал программу: она получает покупки из чата одной строкой через запятую и должна
+        выбрасывать пустые пункты. Пустые пункты получаются, когда запятые стоят подряд, в начале
+        или в конце строки: `"молоко,,хлеб".split(",")` даёт `['молоко', '', 'хлеб']`.
+
+        На вводе `молоко,,хлеб` программа работает верно. А на `молоко,,,хлеб,сыр` выводит
+        `молоко, , хлеб, сыр` — один пустой пункт остался. Найди причину и исправь программу.
+
+        Пункты выводятся через запятую с пробелом, в том же порядке, что во вводе:
+
+        ```text
+        молоко, хлеб, сыр
+        ```
+
+        Если пунктов не осталось совсем, программа выводит `Список пуст`.
+      input: >-
+        Одна строка — покупки через запятую, без пробелов. Запятые могут идти подряд, стоять в
+        начале и в конце строки.
+      output: >-
+        Непустые пункты через `, ` или `Список пуст`. Повторы остаются: убираются только пустые
+        пункты.
+      constraints:
+        - Пробелов вокруг запятых во вводе нет.
+        - Порядок покупок — как во вводе.
+      starterCode: |
+        parts = input().split(",")
+        for part in parts:
+            if part == "":
+                parts.remove(part)
+        if len(parts) == 0:
+            print("Список пуст")
+        else:
+            print(", ".join(parts))
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "молоко,,хлеб\n"
+          expected: молоко, хлеб
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "молоко,,,хлеб,сыр\n"
+          expected: молоко, хлеб, сыр
+        - id: t3
+          kind: io
+          title: "Граничный случай: один пункт"
+          edge: true
+          stdin: "хлеб\n"
+          expected: хлеб
+        - id: t4
+          kind: io
+          title: "Граничный случай: одни запятые"
+          edge: true
+          stdin: ",,,\n"
+          expected: Список пуст
+        - id: t5
+          kind: io
+          title: "Граничный случай: много пустых подряд и запятая в конце"
+          edge: true
+          stdin: "яйца,,,,соль,\n"
+          expected: яйца, соль
+        - id: t6
+          kind: io
+          title: "Граничный случай: пустая строка"
+          edge: true
+          stdin: "\n"
+          expected: Список пуст
+        - id: t7
+          kind: io
+          title: "Граничный случай: запятая в начале и повтор"
+          edge: true
+          stdin: ",хлеб,,сыр,хлеб\n"
+          expected: хлеб, сыр, хлеб
+        - id: t8
+          kind: io
+          title: "Граничный случай: длинная цепочка запятых"
+          edge: true
+          stdin: "хлеб,,,,,,,,,соль\n"
+          expected: хлеб, соль
+      criteria:
+        - Пустые пункты убираются при любом их числе подряд, в начале и в конце строки.
+        - Непустые пункты выводятся в порядке ввода через запятую с пробелом, повторы остаются.
+        - Если пунктов нет, выводится `Список пуст`.
+        - Во время перебора `for` из того же списка ничего не удаляется.
+      hints:
+        - >-
+          Пройди цикл по шагам на вводе из «Примера 2». Выпиши список `parts` и подпиши номера мест
+          под элементами. Что стоит на каждом месте до `remove` и после? На какой номер цикл
+          переходит дальше?
+        - |-
+          Похожая задача: из списка чисел оставить только положительные. Их не удаляют на ходу, а
+          собирают заново:
+          ```python
+          good = []
+          for x in numbers:
+              if x > 0:
+                  good.append(x)
+          ```
+        - |-
+          Каркас:
+          ```text
+          items = []
+          для каждого part из parts:
+              если part не пустая строка — добавить её в items
+          если в items ничего нет — вывести «Список пуст»
+          иначе — вывести items через ", "
+          ```
+      solution:
+        code: |
+          parts = input().split(",")
+          items = []
+          for part in parts:
+              if part != "":
+                  items.append(part)
+          if len(items) == 0:
+              print("Список пуст")
+          else:
+              print(", ".join(items))
+        explanation: >-
+          Цикл `for` шагает по номерам мест: 0, 1, 2… Когда `remove` убирает пустую строку, всё,
+          что правее, сдвигается на одно место влево, и цикл перескакивает через элемент, вставший
+          на место удалённого. Если это тоже пустая строка, она остаётся в списке. Новый список
+          `items` решает проблему: по `parts` цикл только читает, а в `items` попадают только
+          непустые пункты. Проверять на пустоту нужно тоже новый список.
+      altSolutions:
+        - code: |
+            parts = input().split(",")
+            while "" in parts:
+                parts.remove("")
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Удалять, пока пустые строки есть, — без перебора этого же списка.
+        - code: |
+            parts = input().split(",")
+            for part in parts.copy():
+                if part == "":
+                    parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Перебор копии, удаление из оригинала.
+        - code: |
+            parts = input().split(",")
+            for part in parts[:]:
+                if part == "":
+                    parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Перебор копии-среза parts[:], удаление из оригинала.
+        - code: |
+            items = []
+            for part in input().split(","):
+                if part == "":
+                    continue
+                items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: continue для пустых пунктов.
+        - code: |
+            parts = input().split(",")
+            i = 0
+            while i < len(parts):
+                if parts[i] == "":
+                    parts.remove(parts[i])
+                else:
+                    i = i + 1
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: while по номерам — после удаления номер не растёт.
+        - code: |
+            result = ""
+            for item in input().split(","):
+                if item != "":
+                    if result != "":
+                        result = result + ", "
+                    result = result + item
+            if result == "":
+                print("Список пуст")
+            else:
+                print(result)
+          note: Результат собирается строкой без join.
+        - code: |
+            line = input()
+            while ",," in line:
+                line = line.replace(",,", ",")
+            items = []
+            for part in line.split(","):
+                if len(part) > 0:
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: Запятые сжаты через while и replace, края отсеивает новый список.
+        - code: |
+            items = []
+            for part in input().split(","):
+                if part:
+                    items.append(part)
+            if not items:
+                print("Список пуст")
+            else:
+                print(*items, sep=", ")
+          note: Проверка истинностью и print с sep — в курсе так не пишем, но решение верное.
+      wrongSolutions:
+        - code: |
+            parts = input().split(",")
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Стартовый код без изменений.
+          expectMistake: skipped-empty
+        - code: |
+            parts = input().split(",")
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Тот же цикл дважды — падает на «одни запятые».
+          expectMistake: skipped-empty
+        - code: |
+            parts = input().split(",")
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Тот же цикл трижды — падает только на длинной цепочке запятых.
+          expectMistake: skipped-empty
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+                else:
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: remove и append в одном цикле — теряется непустой пункт.
+          expectMistake: skipped-empty
+        - code: |
+            parts = input().split(",")
+            i = 0
+            while i < len(parts):
+                if parts[i] == "":
+                    parts.remove(parts[i])
+                i = i + 1
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: while по номерам, номер растёт и после удаления.
+          expectMistake: skipped-empty
+        - code: |
+            parts = input().split(",")
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts).replace(", , ", ", "))
+          note: Заплатка replace на выводе, цикл с remove остался.
+          expectMistake: skipped-empty
+        - code: |
+            parts = input().split(",")
+            for i in range(len(parts)):
+                if parts[i] == "":
+                    parts.remove(parts[i])
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Перебор номеров range(len(parts)) с удалением — IndexError.
+          expectMistake: index-shrink
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "":
+                    items = items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: Результат append присвоен — в items оказывается None.
+          expectMistake: list-method-assigned
+        - code: |
+            parts = input().split(",")
+            for part in parts:
+                if part == "":
+                    parts = parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Результат remove присвоен — в parts оказывается None.
+          expectMistake: list-method-assigned
+        - code: |
+            parts = input().split(",")
+            if "" in parts:
+                parts.remove("")
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Одно удаление без цикла убирает только одну пустую строку.
+          expectMistake: remove-once
+        - code: |
+            parts = input().replace(",,", ",").split(",")
+            for part in parts:
+                if part == "":
+                    parts.remove(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Заплатка replace вместо исправления цикла.
+          expectMistake: patched-input
+        - code: |
+            line = input()
+            while ",," in line:
+                line = line.replace(",,", ",")
+            parts = line.split(",")
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Запятые сжаты полностью, но запятая на краю строки даёт пустой кусок.
+          expectMistake: edge-commas
+        - code: |
+            line = input()
+            while ",," in line:
+                line = line.replace(",,", ",")
+            if line[-1:] == ",":
+                line = line[:-1]
+            if line == "":
+                print("Список пуст")
+            else:
+                print(", ".join(line.split(",")))
+          note: Запятые сжаты, срезана запятая в конце — запятая в начале осталась.
+          expectMistake: edge-commas
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "":
+                    items.append(part)
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: Новый список есть, но на пустоту проверяется старый.
+          expectMistake: old-list-check
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part == "":
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: В новый список попадают как раз пустые пункты.
+          expectMistake: kept-empty
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "":
+                    items.append(part)
+            print(", ".join(items))
+          note: Нет ветки «Список пуст».
+          expectMistake: no-empty-branch
+        - code: |
+            parts = input().replace(",", " ").split()
+            print(", ".join(parts))
+          note: Запятые заменены пробелами, но ветки «Список пуст» нет.
+          expectMistake: no-empty-branch
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "":
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(parts))
+          note: Отбор верный, но в join передан старый список.
+          expectMistake: join-old-list
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "":
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(",".join(items))
+          note: Разделитель в join без пробела.
+          expectMistake: join-no-space
+        - code: |
+            parts = input().split(",")
+            while "" in parts:
+                parts.remove("")
+            if len(parts) == 0:
+                print("Список пуст")
+            else:
+                print(",".join(parts))
+          note: Верное удаление через while, но разделитель без пробела — разбор про цикл с remove не должен сработать.
+          expectMistake: join-no-space
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "":
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(items)
+          note: Печатается список, а не строка.
+          expectMistake: printed-list
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != " ":
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: В условии пробел вместо пустой строки — пустые пункты проходят проверку.
+          expectMistake: empty-left
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "":
+                    items.append(part)
+            if items == "":
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: Список сравнивается с пустой строкой — общий разбор «print внутри условия, которое не срабатывает» точен.
+          expectMistake: null
+        - code: |
+            parts = input().split(",")
+            items = []
+            for part in parts:
+                if part != "" and part not in items:
+                    items.append(part)
+            if len(items) == 0:
+                print("Список пуст")
+            else:
+                print(", ".join(items))
+          note: Заодно выбрасывает повторы — падает на «запятая в начале и повтор».
+          expectMistake: null
+      mistakes:
+        - id: list-method-assigned
+          when:
+            errorIncludes: NoneType
+          why: >-
+            У методов списка всё наоборот: `append` и `remove` меняют сам список и ничего не
+            возвращают. После `items = items.append(...)` или `parts = parts.remove(...)` в
+            переменной лежит `None` — «ничего», и списка в ней больше нет.
+          try: >-
+            Вызывай метод списка отдельной командой, без присваивания: `items.append(part)`, а не
+            `items = items.append(part)`.
+          verify: "В «Примере 1» должно получиться `молоко, хлеб`."
+        - id: index-shrink
+          when:
+            errorIncludes: list index out of range
+            codeRegex: 'range\(\s*len\(\s*parts\s*\)'
+          why: >-
+            `range(len(parts))` посчитан один раз, до удалений. После `remove` список стал короче,
+            и цикл дошёл до номера, которого в нём уже нет.
+          try: >-
+            Не удаляй из `parts` внутри цикла — ни по значению, ни по номеру. Собери непустые пункты
+            в новый список.
+          verify: "В «Примере 1» должно получиться `молоко, хлеб`."
+        - id: patched-input
+          when:
+            codeRegex: '^(?<!\bwhile\b[\s\S]*)[^\n]*replace\(\s*["''],,'
+          why: >-
+            Замена двух запятых на одну лечит признак, а не причину: из `",,,"` получается `",,"`, и
+            пустые пункты снова появляются. Причина — в том, как убираются пустые куски: `remove`
+            внутри `for` по тому же списку пропускает элементы.
+          try: >-
+            Убери `replace` и не удаляй ничего из `parts` внутри `for`: собери непустые пункты в
+            новый список.
+          verify: "Тест «Граничный случай: одни запятые» должен дать `Список пуст`."
+        - id: edge-commas
+          when:
+            codeRegex: 'replace\(\s*["''],,'
+          why: >-
+            Замена `,,` на `,` убирает пустые пункты только между покупками. Запятая в начале или в
+            конце строки всё равно даёт пустой кусок: `",хлеб".split(",")` — это `['', 'хлеб']`,
+            а `",".split(",")` — `['', '']`.
+          try: >-
+            Не чини строку, а отбирай пункты: собери в новый список только непустые, а `replace`
+            убери.
+          verify: "Все граничные случаи должны пройти, в том числе «запятая в начале и повтор»."
+        - id: remove-once
+          when:
+            outputIncludes: ", , "
+            codeRegex: '(?<![\s\S])(?![\s\S]*\b(?:for|while)\b)'
+          why: >-
+            `remove("")` убирает только первую пустую строку. Когда запятых подряд три, пустых
+            кусков два, и второй остаётся.
+          try: >-
+            Нужно убрать все пустые строки: пройди циклом по `parts` и собери непустые пункты в
+            новый список.
+          verify: "В «Примере 2» должно получиться `молоко, хлеб, сыр`."
+        - id: skipped-empty
+          when:
+            codeRegex: '\b(?:for\s+\w+\s+in\s+(?:parts|range\(\s*len\(\s*parts\s*\)\s*\))|while\s+\w+\s*<\s*len\(\s*parts\s*\))\s*:[\s\S]*\bparts\.remove\('
+          why: >-
+            Цикл шагает по номерам мест. После `remove` элементы правее сдвигаются влево, и тот,
+            что встал на место удалённого, цикл пропускает: это место он уже прошёл. Если два
+            пустых куска стоят рядом (три запятые подряд или две в начале строки), второй остаётся
+            в списке. А если в том же цикле собирать покупки в новый список, пропущенная покупка
+            в него не попадёт.
+          try: >-
+            Не удаляй из `parts` на ходу. Заведи новый пустой список и добавляй в него только
+            непустые пункты.
+          verify: Все тесты должны пройти, в том числе «одни запятые» и «длинная цепочка запятых».
+        - id: old-list-check
+          when:
+            failedTest: t4
+            outputEquals: ""
+            codeRegex: 'len\(\s*parts\s*\)'
+            codeIncludes: .append(
+          why: >-
+            Новый список собран верно, но на пустоту проверяется старый: в `parts` остались пустые
+            строки, поэтому его длина не ноль, и вместо `Список пуст` печатается пустая строка.
+          try: Проверяй длину нового списка — того, в который собраны непустые пункты.
+          verify: "Тест «Граничный случай: одни запятые» должен дать `Список пуст`."
+        - id: kept-empty
+          when:
+            failedTest: t1
+            outputEquals: ""
+            codeIncludes: '== ""'
+          why: >-
+            Программа печатает пустую строку: в новый список попали как раз пустые пункты. Условие
+            `== ""` осталось от старого кода, где оно выбирало, что удалить.
+          try: Добавляй пункт в новый список, только если он **не** пустой — `!= ""`.
+          verify: "В «Примере 1» должно получиться `молоко, хлеб`."
+        - id: no-empty-branch
+          when:
+            outputEquals: ""
+            codeRegex: '^(?<!Список пуст[\s\S]*)(?![\s\S]*Список пуст)[ \t]*print\([^\n]*join'
+          why: >-
+            Когда непустых пунктов нет, программа печатает пустую строку: `join` пустого списка
+            даёт `""`. Отдельной ветки для этого случая в программе нет.
+          try: >-
+            Перед выводом проверь длину списка с пунктами: если она 0 — выведи `Список пуст`,
+            иначе — пункты через `join`.
+          verify: "Тест «Граничный случай: одни запятые» должен дать `Список пуст`."
+        - id: join-old-list
+          when:
+            outputIncludes: ", , "
+            codeRegex: 'join\(\s*parts\s*\)'
+            codeIncludes: .append(
+          why: >-
+            Непустые пункты отобраны верно, но на экран уходит старый список: в `join` передан
+            `parts`, а в нём пустые строки остались.
+          try: Передай в `join` новый список — тот, в который собраны непустые пункты.
+          verify: "В «Примере 1» должно получиться `молоко, хлеб`."
+        - id: join-no-space
+          when:
+            outputEquals: молоко,хлеб
+          why: >-
+            Пункты склеены через запятую без пробела: разделитель в `join` — это строка перед
+            точкой, и в ней не хватает пробела.
+          try: 'Сделай разделитель из двух символов — запятой и пробела: `", ".join(...)`.'
+          verify: "В «Примере 1» должно получиться `молоко, хлеб`."
+        - id: printed-list
+          when:
+            outputIncludes: "['"
+          why: >-
+            На экран попал сам список — в квадратных скобках и с кавычками. А нужна одна строка из
+            пунктов.
+          try: 'Склей список в строку через `", ".join(...)` и выведи её.'
+          verify: "В «Примере 1» должно получиться `молоко, хлеб`."
+        - id: empty-left
+          when:
+            outputIncludes: ", , "
+          why: >-
+            В выводе остался пустой пункт: между двумя запятыми ничего нет. Значит, пустая строка
+            прошла проверку и попала в результат.
+          try: >-
+            Проверь условие отбора. Пустая строка — это `""`: две кавычки подряд, без пробела
+            между ними. В результат должны попадать только пункты, которые не равны `""`.
+          verify: "В «Примере 1» должно получиться `молоко, хлеб`."
+      afterPass: >-
+        Ошибка пряталась: пока пустые куски стояли поодиночке, всё работало, и на первом примере
+        её не видно. Поэтому в проверках нужны граничные случаи вроде «много пустых подряд». Если
+        захочешь, добавь `strip()` для каждого пункта — тогда программа справится и с пробелами
+        вокруг запятых.
+      skills: [lists, string-methods]
+
+  - id: practice-slug
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m4-l3-e3
+      kind: write
+      title: Адрес статьи
+      statement: |-
+        В блоге адрес каждой статьи строится из её заголовка. Правила такие:
+
+        - все буквы маленькие;
+        - буква «ё» заменяется на «е» — и маленькая, и заглавная;
+        - слова соединяются дефисом `-`;
+        - лишние пробелы по краям и между словами не учитываются.
+
+        Например, заголовок `Ещё один поход` превращается в адрес:
+
+        ```text
+        еще-один-поход
+        ```
+
+        Напиши программу, которая получает заголовок и выводит адрес.
+      input: Одна строка — заголовок из русских слов через пробелы (пробелов может быть несколько).
+      output: Одна строка — адрес статьи.
+      constraints:
+        - В заголовке хотя бы одно слово.
+        - Знаков препинания в заголовке нет — только буквы и пробелы.
+      starterCode: |
+        title = input()
+        # Преврати заголовок в адрес и выведи его
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "Как я пробежал марафон\n"
+          expected: как-я-пробежал-марафон
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "  Ещё   один поход \n"
+          expected: еще-один-поход
+        - id: t3
+          kind: io
+          title: "Граничный случай: заглавная Ё"
+          edge: true
+          stdin: "Ёжик в тумане\n"
+          expected: ежик-в-тумане
+        - id: t4
+          kind: io
+          title: "Граничный случай: одно слово"
+          edge: true
+          stdin: "Привет\n"
+          expected: привет
+        - id: t5
+          kind: io
+          title: "Граничный случай: всё заглавными"
+          edge: true
+          stdin: "ЁЛКИ ЗЕЛЁНЫЕ\n"
+          expected: елки-зеленые
+      criteria:
+        - Все буквы в адресе маленькие, «ё» и «Ё» заменены на «е».
+        - Слова соединены одним дефисом, без дефисов по краям.
+        - Лишние пробелы в заголовке не дают лишних дефисов.
+      hints:
+        - >-
+          Разбей работу на четыре действия: регистр, замена буквы, слова, склейка. Подумай, в каком
+          порядке их делать, — особенно чтобы не пропустить заглавную «Ё».
+        - >-
+          На другом примере: `"  Утро  доброе ".split()` даёт `['Утро', 'доброе']`, а
+          `"_".join(["утро", "доброе"])` — строку `утро_доброе`.
+        - |-
+          Каркас:
+          ```text
+          title = input()
+          title = title.lower()
+          title = title.replace(…, …)
+          words = …split()
+          print("-".join(…))
+          ```
+      solution:
+        code: |
+          title = input()
+          title = title.lower().replace("ё", "е")
+          words = title.split()
+          print("-".join(words))
+        explanation: >-
+          Порядок важен: сначала `lower()` превращает заглавную «Ё» в маленькую, и тогда один
+          `replace("ё", "е")` меняет все буквы «ё» сразу. Результат каждого метода сохраняется в
+          `title`. `split()` с пустыми скобками разрезает заголовок на слова и не оставляет пустых
+          кусков от лишних пробелов, а `"-".join(words)` склеивает слова через дефис.
+      altSolutions:
+        - code: |
+            title = input()
+            title = title.replace("Ё", "Е").replace("ё", "е").lower()
+            print("-".join(title.split()))
+          note: Обе буквы заменены до lower.
+        - code: |
+            words = input().split()
+            result = []
+            for word in words:
+                result.append(word.lower().replace("ё", "е"))
+            print("-".join(result))
+          note: Каждое слово чистится отдельно в цикле.
+        - code: |
+            words = input().lower().replace("ё", "е").split()
+            slug = words[0]
+            for word in words[1:]:
+                slug = slug + "-" + word
+            print(slug)
+          note: Склейка накопителем без join.
+        - code: |
+            print("-".join(input().lower().replace("ё", "е").split()))
+          note: Всё одной строкой.
+        - code: |
+            title = input()
+            print("-".join(title.split()).lower().replace("ё", "е"))
+          note: Сначала склейка, потом регистр и замена.
+        - code: |
+            name = input().upper().replace("Ё", "Е").lower()
+            parts = name.split()
+            print(f"{'-'.join(parts)}")
+          note: upper → замена заглавной Ё → lower, join внутри f-строки.
+        - code: |
+            slug = input().strip().lower().replace("ё", "е").replace(" ", "-")
+            while "--" in slug:
+                slug = slug.replace("--", "-")
+            print(slug)
+          note: Пробелы → дефисы, двойные дефисы сжимаются в while.
+        - code: |
+            title = input()
+            title.strip()
+            title = title.lower().replace("ё", "е")
+            print("-".join(title.split()))
+          note: Лишний безвредный title.strip() без присваивания — split() и так отбросит пробелы.
+      wrongSolutions:
+        - code: |
+            title = input()
+            title.lower()
+            title = title.replace("ё", "е")
+            words = title.split()
+            print("-".join(words))
+          note: Результат lower() не сохранён.
+          expectMistake: not-saved
+        - code: |
+            title = input()
+
+            title.lower()
+            title = title.replace("ё", "е")
+            print("-".join(title.split()))
+          note: Как предыдущее, но перед строкой с lower() пустая строка (проверка подсветки).
+          expectMistake: not-saved
+        - code: |
+            title = input()
+            title = title.lower()
+            title.replace("ё", "е")
+            print("-".join(title.split()))
+          note: Не сохранён результат replace (а lower сохранён).
+          expectMistake: not-saved
+        - code: |
+            title = input()
+            title = title.lower().replace("ё", "е")
+            title.split()
+            print("-".join(title))
+          note: Результат split() не сохранён.
+          expectMistake: not-saved
+        - code: |
+            title = input()
+            title = title.lower
+            words = title.split()
+            print("-".join(words))
+          note: lower без скобок.
+          expectMistake: no-parens
+        - code: |
+            title = input()
+            title = title.lower().replace("ё", "e")
+            print("-".join(title.split()))
+          note: В replace латинская e вместо русской е.
+          expectMistake: latin-e
+        - code: |
+            words = input().split()
+            result = []
+            for word in words:
+                result = result.append(word.lower().replace("ё", "е"))
+            print("-".join(result))
+          note: Результат append присвоен — в result оказывается None.
+          expectMistake: list-method-assigned
+        - code: |
+            title = input()
+            words = title.split()
+            for word in words:
+                word = word.lower().replace("ё", "е")
+            print("-".join(words))
+          note: Меняется переменная цикла, а список words остаётся прежним.
+          expectMistake: loop-var
+        - code: |
+            title = input()
+            title = title.replace("ё", "е").lower()
+            words = title.split()
+            print("-".join(words))
+          note: Замена до lower — заглавная Ё остаётся буквой ё.
+          expectMistake: yo-order
+        - code: |
+            title = input()
+            title = title.lower()
+            words = title.split()
+            print("-".join(words))
+          note: Буква ё не заменена.
+          expectMistake: no-yo
+        - code: |
+            title = input().replace("Ё", "Е").lower()
+            print("-".join(title.split()))
+          note: Заменена только заглавная Ё.
+          expectMistake: no-yo
+        - code: |
+            title = input()
+            title = title.strip().lower().replace("ё", "е")
+            print(title.replace(" ", "-"))
+          note: Пробелы заменены на дефисы один к одному.
+          expectMistake: double-dash
+        - code: |
+            title = input().strip().lower().replace("ё", "е")
+            print("-".join(title.split(" ")))
+          note: strip + split(" ") — лишние пробелы между словами дают дефисы подряд.
+          expectMistake: double-dash
+        - code: |
+            title = input()
+            title = title.lower().replace("ё", "е")
+            print("-".join(title))
+          note: join по строке склеивает буквы, а не слова.
+          expectMistake: join-string
+        - code: |
+            title = input()
+            title = title.lower().replace("ё", "е")
+            words = title.split()
+            print(" ".join(words))
+          note: Слова склеены пробелом.
+          expectMistake: space-join
+        - code: |
+            title = input()
+            title.strip()
+            title = title.lower().replace("ё", "е")
+            print(" ".join(title.split()))
+          note: Лишний безвредный title.strip() и склейка пробелом — разбор про пробел, а не про strip.
+          expectMistake: space-join
+        - code: |
+            words = input().lower().replace("ё", "е").split()
+            slug = ""
+            for word in words:
+                slug = slug + word + "-"
+            print(slug)
+          note: Накопитель дописывает дефис после каждого слова — лишний в конце; общий разбор.
+          expectMistake: null
+        - code: |
+            title = input()
+            title = title.replace("ё", "е").replace("Ё", "Е")
+            print("-".join(title.split()))
+          note: Забыт lower — общий разбор «отличие только в регистре» точен.
+          expectMistake: null
+      mistakes:
+        - id: latin-e
+          when:
+            codeRegex: 'replace\(\s*["''][ёЁ]["'']\s*,\s*["''][eE]["'']'
+          why: >-
+            В `replace` вторая буква — латинская `e`. На экране она выглядит как русская «е», но
+            это другая буква, поэтому адрес не совпадает с ожидаемым, хотя кажется таким же.
+          try: Сотри эту букву и набери её заново в русской раскладке.
+          verify: "В «Примере 2» должно получиться `еще-один-поход`."
+        - id: list-method-assigned
+          when:
+            errorIncludes: NoneType
+          why: >-
+            У методов списка всё наоборот: `append` меняет сам список и ничего не возвращает.
+            После `result = result.append(...)` в переменной лежит `None` — «ничего», и списка в
+            ней больше нет.
+          try: 'Вызывай `append` отдельной командой, без присваивания: `result.append(...)`.'
+          verify: "В «Примере 1» должно получиться `как-я-пробежал-марафон`."
+        - id: no-parens
+          when:
+            errorIncludes: builtin_function_or_method
+          why: >-
+            После имени метода нет скобок. `title.lower` — это сам метод, а не его результат:
+            метод срабатывает, только когда его вызывают со скобками.
+          try: 'Допиши скобки: `title = title.lower()`.'
+          verify: "В «Примере 1» должно получиться `как-я-пробежал-марафон`."
+        - id: not-saved
+          when:
+            codeRegex: '^[ \t]*[A-Za-z_]\w*(?=[^\n]*\.(?:lower|replace|split)\()(?:\.(?:lower|upper|strip|replace|split)\([^)]*\))+[ \t]*$'
+          where: Строка, где метод вызван, но результат никуда не присвоен
+          why: >-
+            Метод вернул новое значение, но его не сохранили, и оно пропало. Строки не меняются,
+            поэтому `title` остался прежним.
+          try: >-
+            Присвой результат в той же строке: `title = title.lower()`,
+            `title = title.replace("ё", "е")`, `words = title.split()`.
+          verify: "Все примеры должны пройти: в «Примере 2» — `еще-один-поход`."
+        - id: loop-var
+          when:
+            outputEquals: Как-я-пробежал-марафон
+            codeRegex: '^[ \t]*for\s+(\w+)\s+in\b[\s\S]*^[ \t]+\1\s*=\s*\1\.'
+          why: >-
+            `word = word.lower()` меняет только переменную цикла. В списке `words` остались
+            прежние строки, и `join` склеил их.
+          try: >-
+            Собери почищенные слова в новый список через `append` — или почисти весь заголовок
+            до `split()`.
+          verify: "В «Примере 1» должно получиться `как-я-пробежал-марафон`."
+        - id: yo-order
+          when:
+            outputIncludes: ёжик
+          why: >-
+            Заглавная «Ё» не заменилась. `replace("ё", "е")` сработал раньше `lower()` и искал
+            только маленькую «ё». Заглавная превратилась в маленькую уже после замены.
+          try: Поменяй порядок — сначала `lower()`, потом `replace`. Или замени обе буквы, «Ё» и «ё».
+          verify: "Тест «Граничный случай: заглавная Ё» должен дать `ежик-в-тумане`."
+        - id: no-yo
+          when:
+            outputIncludes: ё
+          why: В адресе осталась буква «ё», а по правилам её заменяют на «е».
+          try: Добавь `replace("ё", "е")` после `lower()` и сохрани результат.
+          verify: "В «Примере 2» должно получиться `еще-один-поход`."
+        - id: double-dash
+          when:
+            outputIncludes: "--"
+          why: >-
+            В адресе дефисы идут подряд: каждый пробел превратился в дефис, в том числе лишние.
+            Так бывает с `replace(" ", "-")` и с `split(" ")`.
+          try: >-
+            Разрежь заголовок на слова через `split()` с пустыми скобками — он не боится лишних
+            пробелов — и склей слова через `"-".join(...)`.
+          verify: "В «Примере 2» должно получиться `еще-один-поход`."
+        - id: join-string
+          when:
+            outputIncludes: "- -"
+          why: >-
+            `join` получил не список слов, а целую строку — и склеил её по буквам: между каждыми
+            двумя символами встал дефис.
+          try: Сначала разрежь заголовок на слова через `split()`, а в `join` передай этот список.
+          verify: "В «Примере 1» должно получиться `как-я-пробежал-марафон`."
+        - id: space-join
+          when:
+            outputEquals: как я пробежал марафон
+          why: Слова разделены пробелом, а в адресе между ними нужен дефис.
+          try: 'Склей слова через `"-".join(...)`: разделитель — строка, у которой вызывают join.'
+          verify: "В «Примере 1» должно получиться `как-я-пробежал-марафон`."
+      afterPass: >-
+        Заголовок любой длины превращается в аккуратный адрес. Следующим шагом можно убрать из
+        заголовка знаки `!` и `?` — тем же `replace`, заменив их на пустую строку.
+      skills: [string-methods, lists]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Методы строк не меняют строку: `strip`, `lower`, `upper` и `replace` возвращают **новую** строку, а `split` — список. Чтобы результат не пропал, присвой его: `s = s.strip()`."
+      - "Методы списка `append` и `remove` меняют сам список и ничего не возвращают — их пишут без присваивания: `items.append(x)`."
+      - "`split()` превращает строку в список, `\"-\".join(список)` — список в строку. `split()` с пустыми скобками не боится лишних пробелов, а `split(\" \")` и `split(\",\")` оставляют пустые куски."
+      - Из списка, по которому идёт цикл, не удаляют — собирают новый список.
+    question: Почему пишут `city = city.strip()`, но просто `items.append(x)`, без `items =`?
+    answer: >-
+      Строку изменить нельзя, поэтому `strip()` возвращает новую строку, и её нужно сохранить,
+      иначе она пропадёт. А список меняется на месте: `append` добавляет элемент в сам список и
+      ничего не возвращает. После `items = items.append(x)` в `items` оказалось бы `None` —
+      «ничего», и список бы потерялся.

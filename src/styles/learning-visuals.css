@@ -1,182 +1,644 @@
-/* Illustrated chapters and optional learning models. Uses the existing theme tokens. */
-.stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.stepper:has(li:nth-child(9)) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.stepper:has(li:nth-child(11)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-.story-figure { margin: -5px -5px 0; min-width: 0; }
-.story-image-button { position: relative; display: block; width: 100%; padding: 0; overflow: hidden; border: 1px solid var(--quiet-line); border-radius: 12px; background: var(--surface-2); cursor: zoom-in; }
-.story-image-button img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
-.image-expand { position: absolute; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 6px; padding: 7px 10px; color: #fff; background: #202127e8; border: 1px solid #ffffff30; border-radius: 8px; font-size: 11px; }
-.image-expand svg { width: 13px; height: 13px; }
-.story-figure figcaption { display: flex; align-items: baseline; gap: 7px; margin: 10px 4px 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
-.scene-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex: none; }
-.illustration-dialog { width: min(1100px, 94vw); max-height: 92dvh; padding: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); overflow: auto; box-shadow: 0 20px 80px #0006; }
-.illustration-dialog::backdrop { background: #090c13cf; backdrop-filter: blur(5px); }
-.illustration-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 12px 18px; font-size: 14px; }
-.illustration-dialog img { display: block; width: 100%; height: auto; }
+/* Владелец: lesson-steps; иллюстрации историй и наглядные модели «Попробуй» в уроке (спецификация редизайна, 4.5).
+   Только токены. Исключение — «бумажный» чек: свои цвета бумаги в обеих темах, контраст текста ≥ 10:1.
+   Надписей поверх картинок нет; интерфейс ≥ 13 px, код ≥ 14 px; межстрочный многострочного текста ≥ 1.5. */
 
-/* Task brief: each heading is attached to its content, without a distant label column. */
-.exercise-card { gap: 21px; }
-.exercise-card > .step-title { margin-top: -6px; }
-.exercise-card > .prose { line-height: 1.8; }
-.task-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(225px, 100%), 1fr)); gap: 12px; }
-.task-fact { padding: 17px 18px; background: var(--surface-2); border: 1px solid var(--quiet-line); border-radius: 12px; min-width: 0; }
-.task-fact-result { background: color-mix(in srgb, var(--accent-soft) 50%, var(--surface)); border-color: var(--accent-soft-border); }
-.task-fact-heading { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.task-fact-heading > svg { width: 17px; height: 17px; color: var(--accent-text); flex: none; stroke-width: 1.8; }
-.task-fact-heading h3 { margin: 0; font-size: 13px; letter-spacing: -.015em; font-weight: 600; }
-.task-fact-heading > span { margin-left: auto; font: 11px var(--font-code); color: var(--muted); }
-.task-fact p { margin: 11px 0 0; font-size: 13px; line-height: 1.75; }
-.task-requirements { padding: 17px 18px 12px; border: 1px solid var(--quiet-line); border-radius: 12px; background: var(--surface-2); }
-.task-requirements ul { list-style: none; padding: 0; margin: 10px 0 0; }
-.task-requirements li + li { border-top: 1px solid var(--quiet-line); }
-.task-requirements label { display: flex; align-items: flex-start; gap: 11px; cursor: pointer; padding: 9px 0; min-height: 40px; }
-.task-requirements label > span { font-size: 13px; line-height: 1.75; }
-.task-requirements input { width: 17px; height: 17px; flex: none; margin: 3px 0 0; accent-color: var(--accent); cursor: pointer; }
-.task-requirements label[data-checked='true'] > span { color: var(--muted); }
-.task-note { display: flex; align-items: flex-start; gap: 6px; margin: 9px 0 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
-.task-note svg { width: 13px; height: 13px; flex: none; margin-top: 2px; }
-.example-deck { border: 1px solid var(--quiet-line); background: var(--surface-2); border-radius: 12px; overflow: hidden; }
-.example-deck-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--quiet-line); }
-.example-deck-head .btn { padding: 6px 9px; font-size: 11px; }
-.example-deck-head .btn[aria-pressed='true'] { color: var(--accent-text); background: var(--accent-soft); }
-.example-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
-.example-tabs button { border: 1px solid var(--border); background: transparent; border-radius: 7px; color: var(--muted); padding: 7px 11px; font-size: 11px; min-height: 34px; }
-.example-tabs button[aria-selected='true'] { color: var(--accent-text); border-color: var(--accent-soft-border); background: var(--accent-soft); }
-.example-flow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 16px; }
-.example-flow[data-has-input='true'] { grid-template-columns: minmax(0, 1fr) 17px minmax(0, 1fr); align-items: stretch; }
-.example-cell { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.example-cell .label { font-size: 10px; color: var(--muted); }
-.example-output .label { color: var(--accent-text); }
-.example-cell .io-block { padding: 12px 14px; min-height: 48px; line-height: 1.65; background: var(--surface); border-radius: 9px; flex: 1; }
-.example-output .io-block { border-color: var(--accent-soft-border); }
-.example-arrow { width: 17px; height: 17px; align-self: center; color: var(--muted); margin-top: 20px; }
-.example-deck > .task-note { border-top: 1px solid var(--quiet-line); margin: 0; padding: 10px 16px; }
-.exercise-card > .disclosure { margin-top: -2px; background: transparent; border-color: var(--quiet-line); }
-.exercise-card > .disclosure summary { font-size: 12px; padding-block: 12px; }
-
-/* Context stays visible even when the optional order model is collapsed. */
-.order-explorer { border: 1px solid var(--accent-soft-border); border-radius: 12px; overflow: hidden; background: var(--surface-2); }
-.order-explorer > summary { list-style: none; display: flex; align-items: center; gap: 17px; cursor: pointer; }
-.order-explorer > summary::-webkit-details-marker { display: none; }
-.order-explorer > summary img { width: 124px; height: 80px; object-fit: cover; flex: none; }
-.order-explorer > summary > span { display: flex; flex-direction: column; gap: 5px; padding-block: 12px; }
-.order-explorer > summary strong { font-size: 13px; font-weight: 600; }
-.order-explorer > summary small { font-size: 11px; color: var(--muted); line-height: 1.6; }
-.order-explorer > summary > svg { width: 17px; height: 17px; flex: none; margin: 0 16px 0 auto; color: var(--accent-text); transition: transform 150ms ease; }
-.order-explorer[open] > summary > svg { transform: rotate(180deg); }
-.order-explorer[open] > summary { border-bottom: 1px solid var(--quiet-line); }
-.order-explorer .lesson-playground { border: 0; border-radius: 0; background: transparent; }
-
-/* Optional, local-only interactive visual models. */
-.lesson-playground { min-width: 0; padding: 19px; border: 1px solid var(--accent-soft-border); border-radius: 12px; background: color-mix(in srgb, var(--accent-soft) 22%, var(--surface-2)); display: flex; flex-direction: column; gap: 17px; }
-.playground-heading { display: flex; align-items: flex-start; gap: 10px; }
-.playground-heading > svg { width: 19px; height: 19px; color: var(--accent-text); margin-top: 2px; flex: none; }
-.playground-heading .label { color: var(--accent-text); font-size: 9px; letter-spacing: .06em; }
-.playground-heading h3 { margin: 5px 0 0; font-size: 14px; line-height: 1.5; font-weight: 600; }
-.playground-note { margin-left: auto; color: var(--muted); font-size: 10px; white-space: nowrap; padding-top: 2px; }
-.playground-intro { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
-.playground-foot { padding-top: 12px; border-top: 1px solid var(--quiet-line); font-size: 11px; line-height: 1.7; color: var(--muted); margin: 0; }
-.playground-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.demo-flow { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; }
-.demo-code { list-style: none; margin: 0; padding: 8px 0; background: var(--surface); border: 1px solid var(--quiet-line); border-radius: 10px; overflow: auto; }
-.demo-code li { display: flex; align-items: center; gap: 9px; padding: 9px 10px; min-width: max-content; font-size: 11px; }
-.demo-code li > span { color: var(--muted); font: 10px var(--font-code); }
-.demo-code li code { background: transparent; padding: 0; font-size: inherit; }
-.demo-code li[data-active='true'] { background: var(--accent-soft); }
-.demo-code li > svg { width: 13px; height: 13px; color: var(--accent-text); }
-.demo-display { min-width: 0; border: 1px solid var(--border); border-radius: 10px; padding: 15px; background: var(--surface); }
-.demo-display .label { font-size: 9px; }
-.demo-display pre { font: 12px/1.8 var(--font-code); white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; max-height: 115px; overflow-y: auto; }
-.demo-display > code { font-size: 12px; }
-.demo-display > p { margin-top: 12px; line-height: 1.6; }
-.demo-slider { display: flex; flex-direction: column; gap: 12px; font-size: 12px; }
-.demo-slider > span:first-child { display: flex; justify-content: space-between; align-items: baseline; }
-.demo-slider strong { color: var(--accent-text); font-size: 19px; font-variant-numeric: tabular-nums; }
-.demo-slider input { display: block; width: 100%; min-width: 0; margin: 0; accent-color: var(--accent); height: 22px; cursor: pointer; }
-.demo-range-ends { display: flex; justify-content: space-between; color: var(--muted); font: 10px var(--font-code); margin-top: -8px; }
-.pastry-boxes { display: flex; flex-wrap: wrap; gap: 12px; padding-bottom: 18px; }
-.pastry-box { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 112px; padding: 10px; border: 1px dashed var(--border-strong); border-radius: 8px; background: var(--surface); }
-.pastry-box[data-full='true'] { border-style: solid; border-color: #b79568; background: color-mix(in srgb, #bf9865 9%, var(--surface)); }
-.pastry { height: 12px; border: 1px dashed var(--border-strong); border-radius: 8px; }
-.pastry[data-filled='true'] { background: #865839; border: 2px solid #cfa76b; box-shadow: inset 0 2px #ba8751; }
-.pastry-box-label { position: absolute; left: 0; right: 0; bottom: -20px; font-size: 9px; text-align: center; color: var(--muted); }
-.demo-equations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.demo-equations > span { display: flex; flex-direction: column; gap: 9px; font-size: 11px; color: var(--muted); padding: 13px; border: 1px solid var(--quiet-line); border-radius: 10px; background: var(--surface); }
-.demo-equations code { color: var(--text); font-size: 12px; background: transparent; padding: 0; overflow-wrap: anywhere; }
-.demo-equations b { color: var(--accent-text); }
-.demo-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, .5fr); gap: 12px; }
-.demo-fields:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
-.demo-fields.receipt-fields { grid-template-columns: minmax(0, 1.2fr) minmax(0, .7fr) minmax(0, .7fr); }
-.demo-fields .field { font-size: 12px; }
-.demo-fields .input, .demo-fields .select { width: 100%; min-width: 0; }
-.message-preview { display: flex; align-items: center; gap: 16px; padding: 19px; border: 1px solid var(--accent-soft-border); background: var(--surface); border-radius: 12px 12px 12px 2px; }
-.message-preview > svg { width: 30px; height: 30px; color: var(--accent-text); flex: none; }
-.message-preview .label { font-size: 9px; }
-.message-preview p { margin: 7px 0 0; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
-.demo-choice { display: flex; gap: 8px; flex-wrap: wrap; }
-.demo-choice .btn { white-space: normal; }
-.demo-choice .btn[aria-pressed='true'] { color: var(--accent-text); background: var(--accent-soft); border-color: var(--accent-soft-border); }
-.order-scene { width: 100%; height: auto; border-radius: 10px; }
-.order-model { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(180px, 1fr); gap: 20px; align-items: start; }
-.order-items { display: flex; flex-direction: column; gap: 12px; }
-.receipt-product { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 8px; border: 1px solid var(--quiet-line); border-radius: 10px; background: var(--surface); font-size: 11px; line-height: 1.5; }
-.receipt-product > svg { width: 18px; height: 18px; color: var(--accent-text); flex: none; }
-.order-counter { margin-left: auto; display: flex; align-items: center; gap: 6px; padding: 3px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
-.order-counter button { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 5px; color: var(--text); background: transparent; }
-.order-counter button:hover:not(:disabled) { background: var(--accent-soft); }
-.order-counter button:disabled { opacity: .35; cursor: default; }
-.order-counter svg { width: 14px; height: 14px; }
-.order-counter output { min-width: 16px; text-align: center; font: 13px var(--font-code); }
-.order-receipt { display: flex; flex-direction: column; gap: 14px; padding: 20px 17px; color: #413d35; background: #f8f3e8; border: 1px solid #d6cbbb; border-bottom: 3px dashed #c9bda7; border-radius: 6px 6px 2px 2px; font: 11px/1.6 var(--font-code); }
-.receipt-caption { text-transform: uppercase; font-size: 10px; text-align: center; letter-spacing: .1em; border-bottom: 1px dashed #c9bda7; padding-bottom: 12px; }
-.order-receipt > div, .order-receipt > strong { display: flex; justify-content: space-between; gap: 8px; }
-.order-receipt > strong { border-top: 1px dashed #c9bda7; padding-top: 12px; font-size: 14px; }
-.labs-catalog { min-width: 0; }
-.lab-search-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.lab-search-wrap > span { white-space: nowrap; font-size: 11px; }
-.lab-search { display: flex; align-items: center; gap: 10px; padding: 0 13px; min-height: 44px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; min-width: 0; flex: 1; }
-.lab-search:focus-within { border-color: var(--accent); }
-.lab-search > svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
-.lab-search input { padding: 10px 0; width: 100%; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 12px; }
-.lab-search-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; font-size: 13px; }
-
-@media (min-width: 900px) and (max-width: 1100px) {
-  .demo-flow, .order-model { grid-template-columns: minmax(0, 1fr); }
+/* ------------------------------------------------------------ иллюстрация истории */
+.story-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+  margin: 0;
 }
+
+.story-image {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-raised);
+  cursor: zoom-in;
+}
+
+.story-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.story-figure-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.illustration-dialog {
+  width: min(1100px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--bg-panel);
+  color: var(--text);
+}
+
+.illustration-dialog::backdrop {
+  background: var(--scrim);
+}
+
+.illustration-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 48px;
+  padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--gutter);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Кнопка закрытия не сжимается длинным названием: цель касания 44 × 44. */
+.illustration-dialog-head > .btn {
+  flex: none;
+  margin-left: auto;
+}
+
+/* Телефон: значок «сцену можно двигать вбок» рядом с названием. */
+.illustration-dialog-pan {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.illustration-dialog-title {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-16) / var(--lh-16) var(--font-sans);
+}
+
+.illustration-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.illustration-dialog-head {
+  flex: none;
+}
+
+.illustration-dialog-body {
+  min-height: 0;
+  overflow: auto;
+}
+
+.illustration-dialog-body:focus-visible {
+  outline-offset: -2px;
+}
+
+.illustration-dialog img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Телефон: диалог на весь экран, картинка во всю высоту — крупнее, чем на странице; сцену двигают вбок. */
 @media (max-width: 599px) {
-  .story-figure { margin: -3px -3px 0; }
-  .image-expand { font-size: 10px; padding: 6px 8px; right: 8px; bottom: 8px; }
-  .story-figure figcaption { font-size: 10px; }
-  .exercise-card { gap: 18px; }
-  .task-fact, .task-requirements { padding: 15px; }
-  .task-requirements label { min-height: 44px; }
-  .example-deck-head { padding: 8px 12px; }
-  .example-tabs { padding: 10px 12px 0; }
-  .example-tabs button { min-height: 44px; }
-  .example-flow { padding: 13px; }
-  .example-flow[data-has-input='true'] { grid-template-columns: minmax(0, 1fr); }
-  .example-arrow { transform: rotate(90deg); margin: 0; justify-self: center; }
-  .example-cell .io-block { padding: 11px; }
-  .order-explorer > summary { gap: 12px; flex-wrap: wrap; padding-bottom: 12px; }
-  .order-explorer > summary img { width: 100%; height: auto; aspect-ratio: 16/8; object-position: center 42%; }
-  .order-explorer > summary > span { padding: 0 0 0 14px; flex: 1; }
-  .order-explorer > summary > svg { margin-right: 12px; }
-  .lesson-playground { padding: 15px; gap: 16px; }
-  .playground-heading { flex-wrap: wrap; }
-  .playground-heading > div { flex: 1; }
-  .playground-note { margin-left: 29px; }
-  .demo-flow, .demo-equations, .order-model, .demo-fields, .demo-fields.receipt-fields { grid-template-columns: minmax(0, 1fr); }
-  .pastry-box { width: 99px; padding: 9px; gap: 5px; }
-  .pastry-boxes { gap: 29px 12px; }
-  .order-counter button { width: 44px; height: 44px; }
-  .receipt-product { gap: 8px; }
-  .message-preview { padding: 15px; }
-  .illustration-dialog-head { padding: 9px 12px; font-size: 12px; }
+  .illustration-dialog {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .illustration-dialog-body {
+    flex: 1;
+  }
+
+  .illustration-dialog-body img {
+    width: auto;
+    max-width: none;
+    height: 100%;
+  }
 }
-@media (max-width: 379px) {
-  .receipt-product { grid-template-columns: 18px minmax(0, 1fr); }
-  .order-counter { grid-column: 1 / -1; margin-left: 0; justify-content: space-between; }
+
+/* ------------------------------------------------------------ «Попробуй»: блок-«файл» */
+.lesson-playground {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+  container: playground / inline-size;
 }
-@media (prefers-reduced-motion: reduce) {
-  .order-explorer > summary > svg { transition: none; }
+
+.playground-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-3);
+  min-height: 40px;
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-2) var(--r-2) 0 0;
+  background: var(--bg-panel);
+}
+
+.playground-head > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--accent-text);
+}
+
+.playground-title {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.playground-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+
+/* Учебная строка под моделью (что считают // и %, исходный заказ) — содержание, не подпись. */
+.playground-foot {
+  margin: 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.playground-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+/* Код в подписи кнопки и сегмента («пропущенную i», «input()») — моноширинным, как весь код. */
+.lesson-playground .segmented code {
+  font-family: var(--font-code);
+  font-size: var(--fs-14);
+}
+
+.lesson-playground .btn .inline-code {
+  padding: 0 var(--sp-1);
+}
+
+.playground-count {
+  margin-left: auto;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.playground-count .n {
+  color: var(--text);
+}
+
+/* Код слева, табло справа. */
+.demo-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: stretch;
+}
+
+/* Табло, чек, результат: подложка терминала, подпись сверху, содержимое ниже через 8. */
+.demo-display {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-sunken);
+}
+
+.demo-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font: 600 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.demo-label svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.demo-label[data-tone='err'] {
+  color: var(--err);
+}
+
+.demo-label[data-tone='ok'] {
+  color: var(--ok);
+}
+
+/* Строка кода и её итог: итог — под линией, отдельно от кода. */
+.demo-expr + .demo-result-label {
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}
+
+.demo-screen {
+  margin: 0;
+  color: var(--text);
+  font: 400 var(--code-size) / 1.6 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Табло модели «Код → табло» сразу высотой со весь её вывод: по нажатиям не растёт, кнопка под ним не уезжает. */
+.demo-flow .demo-screen,
+.demo-flow .demo-empty {
+  min-height: calc(var(--lines, 3) * var(--code-size) * 1.6);
+}
+
+.demo-screen[data-tone='err'] {
+  color: var(--err);
+}
+
+.demo-screen[data-tone='ok'] {
+  color: var(--ok);
+}
+
+.demo-empty,
+.demo-note {
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.demo-expr {
+  color: var(--text);
+  font: 400 var(--code-size) / 1.6 var(--font-code);
+  overflow-wrap: anywhere;
+}
+
+/* Ползунок: подпись и значение в одну строку, концы шкалы — под ним. */
+.demo-slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.demo-slider-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.demo-value {
+  color: var(--accent-text);
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+/* Шкала: концы — по бокам дорожки, на её линии (через 8), а не отдельной строкой под ней. */
+.demo-range {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.demo-slider input {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--accent-edge);
+  cursor: pointer;
+}
+
+.demo-range-end {
+  flex: none;
+  color: var(--text-2);
+  font-size: var(--fs-13);
+  line-height: var(--lh-13);
+}
+
+/* Коробки с эклерами: подпись под коробкой через 8, ряды коробок — через 16. */
+.pastry-boxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-3);
+}
+
+.pastry-box-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.pastry-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 104px;
+  padding: var(--sp-2);
+  /* Пустые места и коробка «Остаток» — пунктир цветом рамки поля (≥ 3:1 к фону): видны в обеих темах. */
+  border: 1px dashed var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-panel);
+}
+
+.pastry-box[data-full='true'] {
+  border-style: solid;
+  border-color: var(--accent-edge);
+  background: var(--accent-soft);
+}
+
+.pastry {
+  height: 14px;
+  border: 1px dashed var(--line-control);
+  border-radius: 7px;
+}
+
+.pastry[data-filled='true'] {
+  border: 1px solid var(--accent-edge);
+  background: var(--accent);
+}
+
+.pastry-box-label {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* Выражение и что оно значит: код сверху, слова — под ним через 8. */
+.demo-equations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.demo-eq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-sunken);
+}
+
+.demo-eq-code {
+  color: var(--text);
+  font: 400 var(--code-size) / 1.6 var(--font-code);
+  overflow-wrap: anywhere;
+}
+
+.demo-eq-code b {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.demo-eq-text {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Поля ввода модели. */
+.demo-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.5fr);
+  gap: var(--sp-3);
+}
+
+.demo-fields:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.demo-fields.receipt-fields {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.7fr) minmax(0, 0.7fr);
+}
+
+.demo-fields .input,
+.demo-fields .select {
+  min-width: 0;
+}
+
+.message-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-edge);
+  border-radius: var(--r-1) var(--r-2) var(--r-2) var(--r-1);
+  background: var(--bg-sunken);
+}
+
+.message-preview > svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  color: var(--accent-text);
+}
+
+.message-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.message-text {
+  margin: 0;
+  color: var(--text);
+  font: 400 var(--fs-16) / var(--lh-16) var(--font-sans);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------ заказ в кофейне: количества и «бумажный» чек */
+.order-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+}
+
+.order-model {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(200px, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.order-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+
+.receipt-product {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--bg-panel);
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.receipt-product > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-text);
+}
+
+.receipt-product-name {
+  min-width: 0;
+}
+
+.order-counter {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+}
+
+.order-counter button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+.order-counter button:hover:not(:disabled) {
+  background: var(--bg-raised);
+}
+
+.order-counter button:disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.order-counter button:focus-visible {
+  outline-offset: -2px;
+}
+
+.order-counter svg {
+  width: 16px;
+  height: 16px;
+}
+
+.order-counter output {
+  min-width: 20px;
+  color: var(--text);
+  font-size: var(--fs-14);
+  line-height: var(--lh-14);
+  text-align: center;
+}
+
+.order-receipt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid #d6cbbb;
+  border-bottom: 3px dashed #b3a58c;
+  border-radius: var(--r-1) var(--r-1) 0 0;
+  background: #f8f3e8;
+  color: #2f2a23;
+  font: 400 var(--fs-14) / 1.6 var(--font-code);
+}
+
+.receipt-caption {
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px dashed #b3a58c;
+  font: 600 var(--fs-13) / var(--lh-13) var(--font-sans);
+  text-align: center;
+}
+
+.order-receipt > div,
+.order-receipt > strong {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.order-receipt > strong {
+  padding-top: var(--sp-3);
+  border-top: 1px dashed #b3a58c;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------ узкий блок: всё в одну колонку */
+@container playground (max-width: 559px) {
+  .playground-body {
+    padding: var(--sp-3);
+  }
+
+  .demo-flow,
+  .demo-equations,
+  .order-model,
+  .demo-fields,
+  .demo-fields.receipt-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pastry-box {
+    width: 96px;
+  }
+}
+
+@container playground (max-width: 339px) {
+  .receipt-product {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .order-counter {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+}
+
+/* Касание: кнопки количества и ползунок — не меньше 44 px. */
+@media (pointer: coarse), (max-width: 899px) {
+  .order-counter button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .demo-slider input {
+    height: 44px;
+  }
+
+  .illustration-dialog-head {
+    padding-left: var(--sp-4);
+  }
 }

@@ -1,0 +1,2764 @@
+id: m7-l6
+module: m7
+number: "7.6"
+title: "JSON: сохраняем структуры данных"
+objective: >-
+  Сохранять словари и списки в JSON-файл и загружать их обратно — в том числе безопасно, с
+  запасным значением, если файла нет или он повреждён.
+minutes: [25, 30]
+prerequisites: [m7-l5]
+skills: [files-json, exceptions]
+environment: python
+
+story:
+  title: Сохранение для квеста
+  fictional: true
+  text: >-
+    Кирилл — тот самый, что написал «Угадай число», — теперь делает текстовый квест. Друзья
+    жаловались: закрыл игру — и всё сначала, рюкзак из пяти предметов приходится собирать заново.
+    Сначала Кирилл сохранял прогресс в обычный текстовый файл, строчку на уровень и строчку на
+    каждый предмет, но при загрузке запутался, где что. Потом он узнал про JSON: одна команда
+    сохраняет весь словарь с именем игрока, уровнем и списком вещей, другая загружает его обратно
+    в том же виде. А когда младшая сестра Ася «подправила» уровень в файле сохранения и случайно стёрла
+    скобку, игра не упала, а сказала, что сохранение повреждено, и начала новую.
+
+why: >-
+  В JSON можно хранить не только таблицы, но и вложенные данные: словари со списками внутри,
+  числа, строки, True и False. Например, настройки программы, сохранение игры или список задач,
+  у которых есть подзадачи.
+
+usedIn: >-
+  Файлы настроек (например, редактор VS Code хранит настройки в JSON), сохранения игр, обмен
+  данными между программами и с серверами — к серверам и API вернёмся в модуле 11.
+
+steps:
+  - id: json-idea
+    type: theory
+    title: "JSON: словари и списки в файле"
+    body: |-
+      В уроке 7.1 ты записывал в файл строки, в уроке 7.5 — таблицу. А как сохранить словарь, внутри
+      которого лежит список? Например, сохранение игры: имя игрока, уровень и рюкзак с вещами.
+      Можно придумать свой формат — строчка на уровень, строчка на предмет, — но потом придётся
+      самому разбирать его обратно. Для этого есть готовый формат.
+
+      **JSON** — текстовый формат для данных. Он выглядит почти как словари и списки Python:
+
+      ```json
+      {
+        "игрок": "Кира",
+        "уровень": 3,
+        "инвентарь": ["фонарик", "ключ"],
+        "звук": true,
+        "питомец": null
+      }
+      ```
+
+      `{}` — **объект**, в Python он станет словарём. `[]` — **массив**, он станет списком. Отличия
+      от Python: строки пишутся только в двойных кавычках, ключи объекта — всегда строки, а вместо
+      `True`, `False` и `None` пишут `true`, `false` и `null`. Кортежей в JSON нет: кортеж
+      запишется как массив и вернётся списком.
+
+      Разбирать такой текст вручную не нужно: модуль `json` из стандартной библиотеки переводит
+      данные в JSON и обратно.
+
+      ```python
+      import json
+
+      with open("save.json", "w", encoding="utf-8") as f:
+          json.dump(save, f, ensure_ascii=False, indent=2)
+
+      with open("save.json", encoding="utf-8") as f:
+          save = json.load(f)
+      ```
+
+      - `json.dump(данные, файл)` записывает данные в открытый файл. Порядок важен: сначала *что*,
+        потом *куда*.
+      - `ensure_ascii=False` — русские буквы как есть. Без него «Кира» превратится в
+        `\u041a\u0438\u0440\u0430`: Python это прочитает, а человек — нет.
+      - `indent=2` — каждый элемент с новой строки и с отступом в два пробела. Без него всё
+        вытянется в одну длинную строку.
+      - `json.load(файл)` читает JSON из открытого файла и возвращает то, что в нём лежит, —
+        обычно словарь или список.
+
+      У этих функций есть пара с буквой **s** на конце (от *string* — строка): `json.dumps(данные)`
+      возвращает JSON-строку, а `json.loads(строка)` превращает такую строку обратно в данные. Они
+      пригодятся, когда JSON приходит не из файла, — например, с сервера в модуле 11.
+    simpler: >-
+      JSON — способ записать словарь или список в файл так, чтобы потом прочитать его обратно
+      таким же. `json.dump(данные, f)` кладёт данные в файл, `json.load(f)` достаёт их. Добавляй
+      `ensure_ascii=False, indent=2`, чтобы файл мог прочитать и человек.
+    coach: >-
+      Запомни порядок в `json.dump`: сначала данные, потом файл. Это самая частая путаница.
+
+  - id: save-game
+    type: example
+    title: Сохранение квеста
+    body: >-
+      Упрощённое сохранение из истории: программа записывает словарь в файл и сразу читает его
+      обратно. После запуска загляни в «Файлы после запуска» — там появится `save.json`.
+    code: |-
+      import json
+
+      save = {"игрок": "Кира", "уровень": 3, "инвентарь": ["фонарик", "ключ"]}
+      with open("save.json", "w", encoding="utf-8") as f:
+          json.dump(save, f, ensure_ascii=False, indent=2)
+
+      with open("save.json", encoding="utf-8") as f:
+          loaded = json.load(f)
+      print(loaded["игрок"], "— уровень", loaded["уровень"])
+      print("В рюкзаке:", ", ".join(loaded["инвентарь"]))
+    notes:
+      - line: 1
+        text: Модуль `json` входит в стандартную библиотеку, устанавливать его не нужно.
+      - line: 3
+        text: Обычный словарь Python, внутри — строка, число и список.
+      - line: 4
+        text: >-
+          Файл открывается на запись, как в уроке 7.1: режим `"w"` и кодировка. Старое содержимое
+          файла стирается — сохранение пишется целиком заново.
+      - line: 5
+        text: >-
+          `json.dump` превращает словарь в JSON-текст и записывает его в файл `f`. Сначала данные,
+          потом файл.
+      - line: 8
+        text: >-
+          `json.load` читает весь файл и возвращает словарь — с тем же числом и тем же списком
+          внутри.
+      - line: 9
+        text: >-
+          `loaded` — обычный словарь: значения достаются по ключу, `loaded["уровень"]` — число 3,
+          а не строка «3».
+    tryIt: >-
+      Убери `ensure_ascii=False` и запусти: программа напечатает то же самое, а в «Файлах после
+      запуска» вместо «Кира» появится `\u041a\u0438\u0440\u0430`. Потом верни его и убери
+      `indent=2` — файл вытянется в одну строку.
+    coach: >-
+      Сравни файл `save.json` со словарём в коде: почти одно и то же, только в JSON-тексте.
+
+  - id: keys-become-strings
+    type: predict
+    title: Что вернулось?
+    prompt: >-
+      Кирилл хранит рекорды по уровням: ключ — номер уровня, значение — очки. Он переводит словарь
+      в JSON-строку и обратно. Как думаешь, что выведет программа?
+    code: |-
+      import json
+
+      records = {1: 120, 2: 95}
+      text = json.dumps(records)
+      back = json.loads(text)
+      print(text)
+      print(back == records)
+    options:
+      - |-
+        {1: 120, 2: 95}
+        True
+      - |-
+        {"1": 120, "2": 95}
+        True
+      - |-
+        {"1": 120, "2": 95}
+        False
+    answer: |-
+      {"1": 120, "2": 95}
+      False
+    explanation: >-
+      В JSON ключи объекта — всегда строки, поэтому `json.dumps` записал `"1"` и `"2"`.
+      `json.loads` честно вернул словарь со строковыми ключами `{"1": 120, "2": 95}`. Для Python
+      `1` и `"1"` — разные ключи, поэтому словари не равны. Значит, после загрузки `back[1]` даст
+      KeyError, а сработает `back["1"]`. Если ключи нужны числами, превращай их сам: `int(key)`.
+    coach: >-
+      JSON хранит данные почти без потерь. «Почти» — это ключи-числа и кортежи. А множество JSON
+      не сохранит вовсе — об этом дальше.
+
+  - id: practice-metronome
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m7-l6-e1
+      kind: repeat
+      title: Настройки метронома
+      statement: |-
+        Метроном для занятий музыкой хранит настройки в словаре: темп (ударов в минуту), размер,
+        звук щелчка и список упражнений. Словарь уже есть в стартовом коде.
+
+        Напиши программу, которая:
+
+        1. читает новый темп — целое число — и записывает его в словарь;
+        2. сохраняет словарь в файл `settings.json` так, чтобы его мог прочитать человек: русские
+           буквы как есть и с отступами;
+        3. загружает настройки обратно **из файла** и печатает по загруженным данным строку:
+
+        ```text
+        Темп: 100, упражнений: 2
+        ```
+
+        Если `settings.json` уже лежит в папке со старыми настройками, после запуска в нём должны
+        оказаться новые.
+      input: Одна строка — новый темп, целое число.
+      output: "Одна строка: `Темп: <темп>, упражнений: <сколько упражнений в списке>`."
+      constraints:
+        - Словарь `settings` в стартовом коде не меняй — меняется только темп.
+        - Печатай то, что загрузилось из файла, а не исходный словарь.
+        - Файлы открывай с кодировкой — `encoding="utf-8"` в каждом `open()`.
+      starterCode: |
+        import json
+
+        settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+        # 1. Прочитай новый темп (целое число) и запиши его в settings
+        # 2. Сохрани settings в settings.json: русские буквы как есть, с отступами
+        # 3. Загрузи настройки из settings.json и выведи «Темп: …, упражнений: …»
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "100\n"
+          expected: "Темп: 100, упражнений: 2"
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "60\n"
+          expected: "Темп: 60, упражнений: 2"
+        - id: t3
+          kind: io
+          title: "Граничный случай: пробелы вокруг числа"
+          edge: true
+          stdin: " 120 \n"
+          expected: "Темп: 120, упражнений: 2"
+        - id: t9
+          kind: io
+          title: "Граничный случай: файл настроек уже есть"
+          edge: true
+          stdin: "100\n"
+          files:
+            settings.json: |
+              {
+                "темп": 90,
+                "размер": "3/4",
+                "звук": "дерево",
+                "упражнения": ["гаммы", "арпеджио"]
+              }
+          expected: "Темп: 100, упражнений: 2"
+        - id: t4
+          kind: assert
+          title: Файл настроек
+          example: true
+          stdin: "100\n"
+          code: |-
+            import json
+            import os
+
+            assert os.path.exists("settings.json")
+            text = open("settings.json", encoding="utf-8").read()
+            try:
+                data = json.loads(text)
+            except ValueError:
+                data = None
+            assert data == {"темп": 100, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+          message: >-
+            После ввода 100 в settings.json лежат все настройки из словаря, а темп в них — новый.
+        - id: t5
+          kind: assert
+          title: Темп — целое число
+          stdin: "100\n"
+          code: |-
+            import json
+            import os
+
+            assert os.path.exists("settings.json")
+            text = open("settings.json", encoding="utf-8").read()
+            try:
+                data = json.loads(text)
+            except ValueError:
+                data = None
+            assert isinstance(data, dict) and type(data.get("темп")) is int
+          message: >-
+            В settings.json темп записан целым числом, а не строкой: в JSON-файле это `100` без
+            кавычек.
+        - id: t6
+          kind: assert
+          title: Русские буквы как есть
+          stdin: "100\n"
+          code: |-
+            import os
+
+            assert os.path.exists("settings.json")
+            text = open("settings.json", encoding="utf-8").read()
+            assert "арпеджио" in text
+          message: >-
+            В файле settings.json русские слова читаются как есть — например, «арпеджио», а не
+            коды вида \u0430\u0440….
+        - id: t7
+          kind: assert
+          title: Файл с отступами
+          stdin: "100\n"
+          code: |-
+            import os
+
+            assert os.path.exists("settings.json")
+            text = open("settings.json", encoding="utf-8").read()
+            assert len(text.strip().splitlines()) > 1
+          message: >-
+            Настройки в файле разложены по строкам с отступами, а не вытянуты в одну строку.
+            Отступы включает параметр indent у json.dump.
+        - id: t8
+          kind: assert
+          title: Печатаются данные из файла
+          stdin: "100\n"
+          code: |-
+            import contextlib
+            import io
+            import json
+
+            # Программа запускается ещё раз, а json.load и json.loads возвращают другие настройки.
+            # Если строка печатается по загруженным данным, на экране окажутся именно они.
+            source = open(__file__, encoding="utf-8").read()
+            fake = {"темп": 77, "размер": "3/4", "звук": "дерево", "упражнения": ["a", "b", "c", "d", "e"]}
+            real_load, real_loads = json.load, json.loads
+            base = __builtins__ if isinstance(__builtins__, dict) else vars(__builtins__)
+            patched = dict(base)
+            patched["input"] = lambda prompt="": "100"
+            out = io.StringIO()
+            json.load = lambda *args, **kwargs: dict(fake)
+            json.loads = lambda *args, **kwargs: dict(fake)
+            try:
+                with contextlib.redirect_stdout(out):
+                    exec(compile(source, __file__, "exec"), {"__name__": "__main__", "__file__": __file__, "__builtins__": patched})
+            except (Exception, SystemExit):
+                pass
+            finally:
+                json.load, json.loads = real_load, real_loads
+            assert "Темп: 77, упражнений: 5" in " ".join(out.getvalue().split())
+          message: >-
+            Строка «Темп: …, упражнений: …» печатается по данным, которые программа загрузила из
+            settings.json (json.load), а не по исходному словарю settings.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          stdin: "100\n"
+          code: |-
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [
+                node for node in ast.walk(ast.parse(source))
+                if isinstance(node, ast.Call)
+                and (getattr(node.func, "id", None) in names or getattr(node.func, "attr", None) in names)
+            ]
+            assert all(any(k.arg == "encoding" for k in call.keywords) for call in calls)
+          message: >-
+            В одном из open() (или read_text/write_text) не указана кодировка. Добавь
+            encoding="utf-8" — иначе на Windows со старым Python (до 3.15) русский текст
+            превратится в кракозябры.
+      criteria:
+        - Новый темп читается из ввода, превращается в целое число и записывается в словарь.
+        - "Словарь сохраняется в `settings.json` через `json.dump` с `ensure_ascii=False` и отступами."
+        - "Строка «Темп: …, упражнений: …» печатается по данным, загруженным из файла."
+        - "Во всех `open()` указана кодировка `utf-8`."
+      hints:
+        - >-
+          Задача из трёх частей, как в примере «Сохранение квеста»: изменить словарь, записать его в
+          файл и прочитать обратно. Какие две функции модуля json записывают и читают — и что нужно
+          передать каждой из них?
+        - |-
+          Тот же приём на корзине покупок:
+          ```python
+          cart = {"хлеб": 1, "яблоки": 6}
+          cart["хлеб"] = 2
+          with open("cart.json", "w", encoding="utf-8") as f:
+              json.dump(cart, f, ensure_ascii=False, indent=2)
+          with open("cart.json", encoding="utf-8") as f:
+              saved = json.load(f)
+          print(len(saved))
+          ```
+        - |-
+          Каркас:
+          ```text
+          settings["темп"] = int(input(...))
+          with open("settings.json", "w", encoding="utf-8") as f:
+              json.dump(…, f, ensure_ascii=False, indent=2)
+          with open("settings.json", encoding="utf-8") as f:
+              loaded = json.load(f)
+          print(f"Темп: {…}, упражнений: {len(…)}")
+          ```
+      solution:
+        code: |
+          import json
+
+          settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+          settings["темп"] = int(input("Новый темп: "))
+
+          with open("settings.json", "w", encoding="utf-8") as f:
+              json.dump(settings, f, ensure_ascii=False, indent=2)
+
+          with open("settings.json", encoding="utf-8") as f:
+              loaded = json.load(f)
+
+          print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+        explanation: >-
+          `int(input())` превращает ввод в число (и сам убирает пробелы по краям), и оно заменяет
+          старый темп в словаре. `json.dump` записывает весь словарь: число останется числом, список —
+          списком, а `ensure_ascii=False` и `indent=2` делают файл читаемым. `json.load` возвращает
+          новый словарь из файла, и строка печатается уже по нему. Подойдёт и пара `json.dumps` +
+          `f.write`, `json.loads` + `f.read()`.
+      altSolutions:
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            text = json.dumps(settings, ensure_ascii=False, indent=2)
+            with open("settings.json", "w", encoding="utf-8") as f:
+                f.write(text)
+
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.loads(f.read())
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: JSON-строка через dumps и loads, запись и чтение обычными write и read.
+        - code: |
+            import json
+            from pathlib import Path
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input("Темп: "))
+            path = Path("settings.json")
+            path.write_text(json.dumps(settings, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: pathlib из урока 7.2 — write_text и read_text с кодировкой.
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            tempo = int(input("Новый темп: "))
+            settings["темп"] = tempo
+
+            with open("settings.json", mode="w", encoding="utf-8") as file:
+                json.dump(settings, file, ensure_ascii=False, indent=4)
+
+            with open("settings.json", "r", encoding="utf-8") as file:
+                data = json.load(file)
+
+            count = len(data["упражнения"])
+            print("Темп:", str(data["темп"]) + ",", "упражнений:", count)
+          note: Отдельные переменные, indent=4, режим «r» явно, print через запятые.
+        - code: |
+            from json import dump, load
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            new_tempo = input("Темп: ")
+            settings["темп"] = int(new_tempo.strip())
+
+            with open("settings.json", "w", encoding="utf-8") as out:
+                dump(obj=settings, fp=out, indent=2, ensure_ascii=False)
+
+            with open("settings.json", encoding="utf-8") as src:
+                restored = load(src)
+
+            print(f"Темп: {restored["темп"]}, упражнений: {len(restored["упражнения"])}")
+          note: "from json import, именованные аргументы dump, f-строка с двойными кавычками внутри."
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+
+            f = open("settings.json", "w", encoding="utf-8")
+            json.dump(settings, f, ensure_ascii=False, indent="\t", sort_keys=True)
+            f.close()
+
+            f = open("settings.json", "r", encoding="utf-8")
+            settings = json.load(f)
+            f.close()
+
+            print("Темп: " + str(settings["темп"]) + ", упражнений: " + str(len(settings["упражнения"])))
+          note: "open/close без with, отступ табуляцией, sort_keys, загрузка в ту же переменную, склейка строк."
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            def save_settings(data):
+                with open("settings.json", "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+            def load_settings():
+                with open("settings.json", encoding="utf-8") as f:
+                    return json.load(f)
+
+
+            settings["темп"] = int(input())
+            save_settings(settings)
+            loaded = load_settings()
+            print("Темп: ", loaded["темп"], ", упражнений: ", len(loaded["упражнения"]), sep="")
+          note: "Функции save_settings и load_settings из afterPass, print с sep=\"\"."
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input().strip())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            loaded = json.load(open("settings.json", encoding="utf-8"))
+            print("Темп: " + str(loaded["темп"]) + ", упражнений: " + str(len(loaded["упражнения"])))
+          note: "json.load(open(…)) без with, склейка строк (вариант ученика-рецензента)."
+      wrongSolutions:
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: Нет ensure_ascii=False — в файле коды \u вместо букв.
+          expectMistake: ascii-escapes
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(f, settings, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: В json.dump перепутаны местами данные и файл.
+          expectMistake: dump-args-swapped
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            loaded = json.load("settings.json")
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: В json.load передано имя файла, а не открытый файл.
+          expectMistake: load-by-name
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = input().strip()
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: Темп сохранён строкой — нет int().
+          expectMistake: tempo-str
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            text = json.dumps(settings, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: json.dumps сделал строку, но в файл её никто не записал.
+          expectMistake: dumps-not-written
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            with open("setting.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: Опечатка в имени файла при чтении.
+          expectMistake: file-name
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            with open("settings.json") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: При чтении не указана кодировка.
+          expectMistake: no-encoding
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            print(f"Темп: {settings['темп']}, упражнений: {len(settings['упражнения'])}")
+          note: Файл записан, но обратно не загружается — печатается исходный словарь.
+          expectMistake: print-original
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            json.dump(settings, "settings.json", ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: "В json.dump передано имя файла, а не открытый файл."
+          expectMistake: dump-by-name
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: "При записи забыт режим w — файла ещё нет, open падает."
+          expectMistake: file-name
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: "Чтение в том же with, открытом на запись (not readable)."
+          expectMistake: wrong-mode
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "a", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: "Сохранение режимом a — при существующем файле в нём два словаря подряд."
+          expectMistake: append-mode
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {settings['темп']}, упражнений: {len(settings['упражнения'])}")
+          note: "Файл загружен, но печатается исходный словарь."
+          expectMistake: print-original
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            text = json.dumps(settings, ensure_ascii=False, indent=2)
+            with open("settings.json", "w", encoding="utf-8") as f:
+                f.write(text)
+            with open("setting.json", encoding="utf-8") as f:
+                loaded = json.loads(f.read())
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: "dumps и write, опечатка в имени файла при чтении."
+          expectMistake: file-name
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.loads(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: "В json.loads передан открытый файл вместо строки."
+          expectMistake: loads-file
+        - code: |
+            import json
+
+            settings = {"темп": 90, "размер": "3/4", "звук": "дерево", "упражнения": ["гаммы", "арпеджио"]}
+
+            settings["темп"] = int(input())
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dumps(settings, f, ensure_ascii=False, indent=2)
+            with open("settings.json", encoding="utf-8") as f:
+                loaded = json.load(f)
+            print(f"Темп: {loaded['темп']}, упражнений: {len(loaded['упражнения'])}")
+          note: "json.dumps вместо json.dump, с файлом вторым аргументом."
+          expectMistake: dumps-with-file
+      mistakes:
+        - id: dump-args-swapped
+          when:
+            errorIncludes: TextIOWrapper is not JSON serializable
+          where: Строка с json.dump
+          why: >-
+            `json.dump` пытается превратить в JSON свой первый аргумент — а там оказался открытый
+            файл. Файл не словарь и не список, записать его в JSON нельзя.
+          try: 'Поменяй аргументы местами: сначала данные, потом файл — `json.dump(settings, f, …)`.'
+          verify: Ошибка TypeError должна исчезнуть, а «Пример 1» — стать зелёным.
+        - id: loads-file
+          when:
+            errorIncludes: not TextIOWrapper
+          where: Строка с json.loads
+          why: >-
+            `json.loads` (с буквой s) разбирает строку с JSON-текстом, а ему передан открытый файл.
+          try: >-
+            Для открытого файла нужен `json.load(f)` — без s. Если хочешь именно `loads`, сначала
+            прочитай текст: `json.loads(f.read())`.
+          verify: Ошибка TypeError должна исчезнуть, а «Пример 1» — стать зелёным.
+        - id: dump-by-name
+          when:
+            errorIncludes: has no attribute 'write'
+          where: Строка с json.dump
+          why: >-
+            `json.dump` пишет в открытый файл: он вызывает у него `.write()`. А у строки с именем
+            файла такого метода нет.
+          try: >-
+            Открой файл на запись — `with open("settings.json", "w", encoding="utf-8") as f:` — и
+            передай в `json.dump` вторым аргументом `f`.
+          verify: Ошибка AttributeError должна исчезнуть, а в «Файлах после запуска» появится settings.json.
+        - id: load-by-name
+          when:
+            errorIncludes: has no attribute 'read'
+          where: Строка с json.load
+          why: >-
+            `json.load` ждёт открытый файл: он вызывает у него `.read()`. А у строки с именем
+            файла такого метода нет.
+          try: >-
+            Открой файл через `with open("settings.json", encoding="utf-8") as f:` и передай в
+            `json.load` сам `f`.
+          verify: Ошибка AttributeError должна исчезнуть.
+        - id: dumps-with-file
+          when:
+            errorIncludes: dumps() takes 1 positional argument
+          where: Строка с json.dumps
+          why: >-
+            `json.dumps` (с буквой s) только возвращает JSON-строку и файл вторым аргументом не
+            принимает. Об этом и говорит ошибка: «takes 1 positional argument» — «принимает один
+            аргумент».
+          try: Для записи в открытый файл нужен `json.dump(settings, f, …)` — без s.
+          verify: Ошибка TypeError должна исчезнуть, а в «Файлах после запуска» появится settings.json.
+        - id: wrong-mode
+          when:
+            errorType: UnsupportedOperation
+          where: Режим в open() и то, что дальше делают с файлом
+          why: >-
+            Файл открыт в одном режиме, а с ним делают другое. Из файла, открытого с `"w"`, читать
+            нельзя (`not readable`), а в файл, открытый без `"w"`, нельзя писать (`not writable`).
+            Это ошибка в коде, а не ограничение тренажёра: на компьютере будет то же самое.
+          try: >-
+            Запиши настройки в одном блоке `with open(…, "w", …)`, а прочитай в другом — без `"w"`,
+            как в примере «Сохранение квеста».
+          verify: Ошибка UnsupportedOperation должна исчезнуть, а «Пример 1» — стать зелёным.
+        - id: append-mode
+          when:
+            errorType: JSONDecodeError
+            codeRegex: 'open\([^)]*["'']a["'']'
+          where: open(…, "a", …) при сохранении
+          why: >-
+            Режим `"a"` дописал новый словарь в конец старого файла, и в settings.json оказались два
+            словаря подряд. Это уже не JSON, поэтому `json.load` выбрасывает JSONDecodeError
+            («Extra data» — лишние данные).
+          try: >-
+            Сохраняй настройки целиком в режиме `"w"`: он стирает старое содержимое и записывает
+            словарь заново.
+          verify: 'Граничный случай «файл настроек уже есть» должен напечатать «Темп: 100, упражнений: 2».'
+        - id: dumps-not-written
+          when:
+            errorType: FileNotFoundError
+            codeRegex: '(?<![\s\S])(?![\s\S]*\.write(?:_text)?\()[\s\S]*\.dumps\('
+          where: Строка с json.dumps
+          why: >-
+            `json.dumps` только возвращает JSON-строку — в файл он ничего не пишет. Поэтому
+            `settings.json` так и не появился, и открыть его на чтение нельзя.
+          try: >-
+            Либо запиши строку в файл сам: `f.write(text)` внутри `with open(…, "w", …)`, либо
+            сразу используй `json.dump(settings, f, …)` — без буквы s.
+          verify: В «Файлах после запуска» должен появиться settings.json.
+        - id: file-name
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            Когда программа открывает settings.json, файла с таким именем в рабочей папке нет.
+            Скорее всего, имя при чтении отличается от имени при записи (опечатка, другая буква),
+            чтение стоит раньше записи или при записи забыт режим `"w"` — без него `open`
+            открывает файл на чтение, а файла ещё нет.
+          try: >-
+            Проверь, что у записи есть режим `"w"`, и сравни имена в обоих `open()` посимвольно —
+            лучше скопируй одно в другое. Запись должна идти раньше чтения.
+          verify: Нажми «Запустить» — в «Файлах после запуска» появится settings.json, а ошибка исчезнет.
+        - id: tempo-str
+          when:
+            failedTest: t5
+            outputIncludes: "Темп:"
+          why: >-
+            Темп попал в файл не целым числом. Если ввод не превращён, в settings.json он записан
+            строкой в кавычках, `"100"`: `input()` всегда возвращает текст. Если превращён через
+            `float()`, в файле окажется `100.0`. А темп по условию — целое число ударов в минуту.
+          try: Преврати ввод в целое число до записи в словарь — `int(input())`.
+          verify: 'Проверка «Темп — целое число» должна стать зелёной: в файле будет `"темп": 100` без кавычек.'
+        - id: print-original
+          when:
+            failedTest: t8
+            outputIncludes: "Темп:"
+          why: >-
+            Строка печатается по словарю `settings` из кода, а не по тому, что загрузилось из
+            settings.json. Тогда печать ничего не говорит о файле: даже если он записан с ошибкой,
+            на экране всё будет верно.
+          try: >-
+            Загрузи файл в новую переменную — `loaded = json.load(f)` — и печатай по ней:
+            `loaded["темп"]` и `len(loaded["упражнения"])`.
+          verify: 'Проверка «Печатаются данные из файла» должна стать зелёной.'
+        - id: ascii-escapes
+          when:
+            failedTest: t6
+            outputIncludes: "Темп:"
+          why: >-
+            По умолчанию `json.dump` заменяет каждую русскую букву кодом вида `\u0430`. Python такой
+            файл прочитает, а человек — нет.
+          try: Добавь в `json.dump` параметр `ensure_ascii=False`.
+          verify: Открой settings.json в «Файлах после запуска» — слова «гаммы» и «арпеджио» должны читаться.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Темп:"
+          why: >-
+            В одном из `open()` (или `read_text()`/`write_text()`) нет `encoding`. В тренажёре всё
+            работает, но на русской Windows Python 3.14 и раньше без подсказки читает и пишет файлы в другой
+            кодировке, и русские буквы превратятся в кракозябры или в ошибку UnicodeDecodeError.
+          try: >-
+            Добавь `encoding="utf-8"` в каждый `open()` (и в `read_text()`/`write_text()`, если они
+            есть) — и при записи, и при чтении.
+          verify: 'Проверка «Кодировка указана» должна стать зелёной.'
+      afterPass: >-
+        Настройки пережили «выключение»: программа записала словарь и прочитала его обратно в том
+        же виде — с числом, строками и списком. Улучшение на будущее: вынеси запись и чтение в
+        функции `save_settings(settings)` и `load_settings()`, чтобы вызывать их из разных мест
+        программы.
+      skills: [files-json, dicts]
+
+  - id: safe-load
+    type: theory
+    title: Если файла нет или он повреждён
+    body: |-
+      Программа, которая помнит данные, при каждом запуске сначала загружает файл. Тут возможны
+      две беды:
+
+      - **Файла нет.** Например, игру запустили впервые. `open` выбросит `FileNotFoundError`.
+        Ничего страшного: начинаем с пустых данных, молча.
+      - **Файл повреждён.** Кто-то стёр скобку, или файл оказался пустым. `json.load` выбросит
+        `json.JSONDecodeError` — ошибку разбора JSON. Для пустого файла последняя строка
+        traceback такая: `json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)`.
+        Для стёртой скобки текст после двоеточия другой, а тип тот же. Данные потеряны, и об этом
+        нужно сказать человеку.
+
+      Поэтому загрузку прячут в функцию с двумя `except`:
+
+      ```python
+      def load_save(path):
+          try:
+              with open(path, encoding="utf-8") as f:
+                  return json.load(f)
+          except FileNotFoundError:
+              return {}
+          except json.JSONDecodeError:
+              print("Сохранение повреждено, игра начнётся заново")
+              return {}
+      ```
+
+      В traceback видно полное имя `json.decoder.JSONDecodeError`: `decoder` — часть модуля
+      `json`, которая разбирает текст. В `except` хватает короткого `json.JSONDecodeError` — через
+      точку, как `json.load`. Это разновидность `ValueError`, поэтому `except ValueError` его тоже
+      поймает. А голый `except:` здесь не нужен: как в уроке 7.3, он спрячет и опечатку в коде.
+      `return` внутри `with` не мешает закрыть файл — `with` закроет его сам.
+
+      **При сохранении тоже есть две ловушки.**
+
+      - **Множество.** В JSON нет множеств, и `json.dump` с множеством падает:
+        `TypeError: Object of type set is not JSON serializable`. Хуже того, режим `"w"` уже
+        очистил файл: старые данные пропали, а следующий запуск получит JSONDecodeError. Поэтому
+        множество превращают в список — `list(…)` или `sorted(…)` — до того, как открыть файл. Но
+        у множества нет порядка, и `list()` выдаст элементы в непредсказуемом порядке. Если
+        порядок важен, храни данные списком с самого начала.
+      - **Режим `"a"`.** JSON-файл нельзя дописывать: второй массив в конце делает файл
+        повреждённым. Загрузи данные, измени их и запиши целиком в режиме `"w"`.
+    simpler: >-
+      Перед загрузкой спроси себя: «А если файла нет? А если он испорчен?». Нет файла — это первый
+      запуск, начинаем с пустого. Испорчен — говорим человеку и тоже начинаем с пустого. Каждую
+      беду ловит свой `except`.
+    coach: >-
+      Шаблон «загрузить или начать заново» пригодится в самостоятельной работе и в проекте «Список
+      задач с сохранением в JSON».
+
+  - id: practice-books
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m7-l6-e2
+      kind: modify
+      title: Список книг, который не падает
+      statement: |-
+        Программа показывает список книг «Прочитать летом» из файла `books.json`. Сейчас она падает
+        в двух случаях: когда файла ещё нет и когда он повреждён (например, стёрлась скобка) или
+        пустой. Измени функцию `load_books(path)`:
+
+        - файла нет — вернуть пустой список `[]` и ничего не печатать: это первый запуск, а не
+          поломка;
+        - файл повреждён или пустой — напечатать `Файл повреждён, начинаю с пустого списка` и
+          вернуть `[]`.
+
+        Когда файл в порядке, всё работает как раньше. Код после функции не меняй.
+
+        Файла нет:
+
+        ```text
+        Книг в списке: 0
+        ```
+
+        Файл повреждён:
+
+        ```text
+        Файл повреждён, начинаю с пустого списка
+        Книг в списке: 0
+        ```
+      input: Ввода нет. Данные — в файле `books.json` (его может не быть).
+      output: "Список книг или сообщение о повреждённом файле и «Книг в списке: 0»."
+      constraints:
+        - Лови конкретные исключения, без голого `except:` и без `except Exception`.
+        - Всё меняется внутри функции `load_books`, код после неё остаётся прежним.
+        - Файл открывай с кодировкой — `encoding="utf-8"`.
+      files:
+        books.json: |
+          [
+            "Маленький принц",
+            "Хоббит",
+            "Денискины рассказы"
+          ]
+      starterCode: |
+        import json
+
+
+        def load_books(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+
+
+        books = load_books("books.json")
+        print(f"Книг в списке: {len(books)}")
+        for title in books:
+            print("-", title)
+      tests:
+        - id: t1
+          kind: io
+          title: Файл в порядке
+          example: true
+          expected: |-
+            Книг в списке: 3
+            - Маленький принц
+            - Хоббит
+            - Денискины рассказы
+        - id: t2
+          kind: io
+          title: Файла нет
+          example: true
+          files:
+            books.json: null
+          expected: "Книг в списке: 0"
+        - id: t3
+          kind: io
+          title: Файл повреждён
+          example: true
+          files:
+            books.json: '["Хоббит", "Маленький принц"'
+          expected: |-
+            Файл повреждён, начинаю с пустого списка
+            Книг в списке: 0
+        - id: t4
+          kind: io
+          title: "Граничный случай: пустой файл"
+          edge: true
+          files:
+            books.json: ""
+          expected: |-
+            Файл повреждён, начинаю с пустого списка
+            Книг в списке: 0
+        - id: t5
+          kind: io
+          title: "Граничный случай: в файле пустой список"
+          edge: true
+          files:
+            books.json: "[]\n"
+          expected: "Книг в списке: 0"
+        - id: t6
+          kind: call
+          title: Функция сама справляется с отсутствующим файлом
+          edge: true
+          call: load_books("нет_такого.json")
+          expected: "[]"
+        - id: t-except
+          kind: assert
+          title: Ловятся конкретные исключения
+          code: |-
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    assert not (isinstance(node.type, ast.Name) and node.type.id in ("Exception", "BaseException"))
+          message: >-
+            Здесь ловится «всё подряд»: except без типа или except Exception. Укажи конкретный
+            тип — например, FileNotFoundError или json.JSONDecodeError.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |-
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [
+                node for node in ast.walk(ast.parse(source))
+                if isinstance(node, ast.Call)
+                and (getattr(node.func, "id", None) in names or getattr(node.func, "attr", None) in names)
+            ]
+            assert all(any(k.arg == "encoding" for k in call.keywords) for call in calls)
+          message: >-
+            В одном из open() (или read_text/write_text) не указана кодировка. Добавь
+            encoding="utf-8" — иначе на Windows со старым Python (до 3.15) русский текст
+            превратится в кракозябры.
+      criteria:
+        - "Если файла нет, функция молча возвращает `[]`."
+        - "Если файл повреждён или пустой, функция печатает сообщение из условия и возвращает `[]`."
+        - Ловятся конкретные исключения, каждое в своём `except`.
+        - Когда файл в порядке, список книг печатается как раньше.
+      hints:
+        - >-
+          Нажми «Проверить» со стартовым кодом и открой тесты «Файла нет» и «Файл повреждён»:
+          посмотри на последнюю строку traceback в каждом. Какие это два типа ошибок и в какой
+          строке функции они возникают?
+        - |-
+          Тот же приём на другой функции: ошибка ловится, и функция возвращает запасное значение.
+          ```python
+          def parse_age(text):
+              try:
+                  return int(text)
+              except ValueError:
+                  print("Возраст нужен цифрами")
+                  return 0
+          ```
+        - |-
+          Каркас:
+          ```text
+          def load_books(path):
+              try:
+                  with open(...) as f:
+                      return json.load(f)
+              except FileNotFoundError:
+                  …  # вернуть пустой список молча
+              except json.JSONDecodeError:
+                  …  # напечатать сообщение и вернуть пустой список
+          ```
+      solution:
+        code: |
+          import json
+
+
+          def load_books(path):
+              try:
+                  with open(path, encoding="utf-8") as f:
+                      return json.load(f)
+              except FileNotFoundError:
+                  return []
+              except json.JSONDecodeError:
+                  print("Файл повреждён, начинаю с пустого списка")
+                  return []
+
+
+          books = load_books("books.json")
+          print(f"Книг в списке: {len(books)}")
+          for title in books:
+              print("-", title)
+        explanation: >-
+          `try` охватывает и открытие файла, и разбор JSON. Нет файла — `open` выбрасывает
+          `FileNotFoundError`, и первый `except` молча возвращает пустой список. Файл повреждён или
+          пуст — `json.load` выбрасывает `json.JSONDecodeError`, второй `except` сообщает об этом и
+          тоже возвращает `[]`. Код после функции ничего не знает о бедах с файлом — он всегда
+          получает список. Вместо `json.JSONDecodeError` подойдёт и `ValueError`.
+      altSolutions:
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except ValueError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: except ValueError — JSONDecodeError его разновидность.
+        - code: |
+            import json
+            from pathlib import Path
+
+
+            def load_books(path):
+                if not Path(path).exists():
+                    return []
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Отсутствующий файл проверяется через Path.exists() из урока 7.2.
+        - code: |
+            import json
+
+
+            def load_books(path):
+                books = []
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        books = json.load(f)
+                except FileNotFoundError:
+                    pass
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                return books
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Запасное значение заранее, один return в конце.
+        - code: |
+            import json
+            from json import JSONDecodeError
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        data = json.load(f)
+                except JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+                except FileNotFoundError:
+                    return []
+                return data
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: JSONDecodeError импортирован через from … import, except в другом порядке.
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.decoder.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "Полное имя типа из traceback — json.decoder.JSONDecodeError, общий return [] в конце."
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except ValueError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+                except OSError:
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "except ValueError первым, except OSError для отсутствующего файла."
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    f = open(path, encoding="utf-8")
+                except FileNotFoundError:
+                    return []
+                with f:
+                    try:
+                        data = json.load(f)
+                    except json.JSONDecodeError:
+                        print("Файл повреждён, начинаю с пустого списка")
+                        data = []
+                return data
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "Открытие и разбор в разных try."
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError) as error:
+                    if isinstance(error, json.JSONDecodeError):
+                        print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "Один except с кортежем и проверкой типа через isinstance."
+      wrongSolutions:
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Ловится только отсутствующий файл.
+          expectMistake: only-missing
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Ловится только повреждённый файл.
+          expectMistake: only-damaged
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: JSONDecodeError без json. — Python не знает такого имени.
+          expectMistake: json-prefix
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    pass
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: В except нет return [] — функция возвращает None.
+          expectMistake: no-return
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Обе беды в одном except — сообщение и при первом запуске.
+          expectMistake: message-on-missing
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Голый except вместо JSONDecodeError.
+          expectMistake: bare-except
+        - code: |
+            import json
+
+
+            def load_books(path):
+                with open(path, encoding="utf-8") as f:
+                    return json.load(f)
+
+
+            try:
+                books = load_books("books.json")
+            except FileNotFoundError:
+                books = []
+            except json.JSONDecodeError:
+                print("Файл повреждён, начинаю с пустого списка")
+                books = []
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Ошибки ловятся снаружи функции, сама функция по-прежнему падает.
+          expectMistake: outside-function
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path) as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: Нет encoding в open.
+          expectMistake: no-encoding
+        - code: |
+            import json
+
+
+            def load_books(path):
+                with open(path, encoding="utf-8") as f:
+                    return json.load(f)
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "Стартовый код без изменений — подсказка 1 предлагает нажать с ним «Проверить»."
+          expectMistake: no-try
+        - code: |
+            import json
+
+
+            def load_books(path):
+                with open(path, encoding="utf-8") as f:
+                    try:
+                        return json.load(f)
+                    except FileNotFoundError:
+                        return []
+                    except json.JSONDecodeError:
+                        print("Файл повреждён, начинаю с пустого списка")
+                        return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "try только вокруг json.load внутри with — FileNotFoundError из open не ловится."
+          expectMistake: open-outside-try
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        books = json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "Забыт return books после try — когда файл в порядке, функция возвращает None."
+          expectMistake: no-return-ok
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл поврежден, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "«поврежден» через е вместо ё."
+          expectMistake: yo-letter
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except Exception:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "except Exception вместо конкретного типа."
+          expectMistake: bare-except
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError or json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "except A or B — ловится только первый тип."
+          expectMistake: only-missing
+        - code: |
+            import json
+
+
+            def load_books(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return {}
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return {}
+
+
+            books = load_books("books.json")
+            print(f"Книг в списке: {len(books)}")
+            for title in books:
+                print("-", title)
+          note: "Запасное значение {} из теории вместо [] — общий разбор «значение другого типа»."
+          expectMistake: null
+      mistakes:
+        - id: outside-function
+          when:
+            codeRegex: '^try:[ \t]*\n[ \t]+\w+\s*=\s*load_books\('
+            failedTest: t6
+          where: Блок try вокруг вызова load_books
+          why: >-
+            Ошибки ловятся снаружи, а сама функция по-прежнему падает, если файла нет. Там, где
+            `load_books` вызовут ещё раз, придётся снова писать тот же try. Задача функции «загрузить
+            или начать заново» — спрятать беды с файлом внутри себя.
+          try: >-
+            Перенеси `try` и оба `except` внутрь `load_books` — вокруг `with open(…)` — и возвращай
+            `[]` из `except`. Вызов в основной части программы останется простым.
+          verify: 'Проверка «Функция сама справляется с отсутствующим файлом» должна стать зелёной.'
+        - id: json-prefix
+          when:
+            errorIncludes: "'JSONDecodeError' is not defined"
+          where: Строка с except JSONDecodeError
+          why: >-
+            `JSONDecodeError` живёт в модуле `json`, а `import json` даёт доступ к нему только
+            через точку — так же, как к `json.load`. Python дошёл до этого `except`, когда файл
+            оказался повреждён, и не узнал имя.
+          try: Напиши `except json.JSONDecodeError:`.
+          verify: В тесте «Файл повреждён» должно появиться сообщение, а не NameError.
+        - id: only-missing
+          when:
+            errorType: JSONDecodeError
+          why: >-
+            Отсутствующий файл ты уже ловишь, а повреждённый — ещё нет. Когда в файле стёрта
+            скобка или он пустой, `json.load` выбрасывает `json.JSONDecodeError`, а не
+            FileNotFoundError, и программа падает.
+          try: >-
+            Добавь второй `except json.JSONDecodeError:` — с сообщением из условия и
+            `return []`.
+          verify: Тесты «Файл повреждён» и «пустой файл» должны стать зелёными.
+        - id: no-try
+          when:
+            errorType: FileNotFoundError
+            codeRegex: '(?<![\s\S])(?![\s\S]*\btry\s*:)'
+          where: Функция load_books
+          why: >-
+            Функция пока не ловит ни одной беды. Файла нет — `open` выбрасывает FileNotFoundError,
+            файл повреждён — `json.load` выбрасывает json.JSONDecodeError, и программа падает.
+          try: >-
+            Оберни `with open(…)` вместе с `json.load` в `try` и добавь по `except` на каждую беду —
+            как в теории «Если файла нет или он повреждён».
+          verify: 'Тест «Файла нет» должен напечатать «Книг в списке: 0», а «Файл повреждён» — сообщение и «Книг в списке: 0».'
+        - id: open-outside-try
+          when:
+            errorType: FileNotFoundError
+            codeRegex: 'except\s+\(?[\w.,\s]*FileNotFoundError'
+          where: Строка с with open(…)
+          why: >-
+            `except FileNotFoundError` у тебя есть, но `open` стоит вне `try`. `try` защищает только
+            строки внутри своего блока (урок 7.3), а FileNotFoundError выбрасывает именно `open` —
+            ещё до `json.load`.
+          try: Перенеси строку `with open(…)` внутрь `try`, чтобы блок охватывал и открытие, и разбор.
+          verify: 'Тест «Файла нет» должен напечатать только «Книг в списке: 0».'
+        - id: only-damaged
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            Когда файла `books.json` в рабочей папке нет, `open` выбрасывает FileNotFoundError ещё
+            до `json.load`. Твой `except` ловит только повреждённый файл, поэтому первый запуск
+            без файла роняет программу.
+          try: Добавь `except FileNotFoundError:` с `return []` — без сообщения.
+          verify: 'Тест «Файла нет» должен напечатать только «Книг в списке: 0».'
+        - id: no-return-ok
+          when:
+            errorIncludes: NoneType
+            failedTest: t1
+          where: Конец блока try в load_books
+          why: >-
+            Когда файл в порядке, функция загружает список, но не возвращает его: до `return` дело
+            не доходит, и функция возвращает None. Дальше `len(None)` ломает программу.
+          try: >-
+            Верни загруженный список — `return json.load(f)` внутри `with` или `return books` после
+            блока `try`.
+          verify: 'Тест «Файл в порядке» должен напечатать «Книг в списке: 3» и три книги.'
+        - id: no-return
+          when:
+            errorIncludes: NoneType
+          where: Блоки except в load_books
+          why: >-
+            Ошибка поймана, но функция ничего не вернула — а функция без `return` возвращает None.
+            Дальше `len(None)` ломает программу уже в другом месте.
+          try: В конце каждого `except` верни пустой список — `return []`.
+          verify: 'В тестах «Файла нет» и «Файл повреждён» должно появиться «Книг в списке: 0».'
+        - id: message-on-missing
+          when:
+            failedTest: t2
+            outputIncludes: повреждён
+          why: >-
+            Когда файла нет, программа пишет, что он повреждён. Но это первый запуск: файл ещё не
+            успели создать, пугать человека незачем. Для двух разных бед нужны два разных
+            `except`.
+          try: >-
+            Раздели обработку: `except FileNotFoundError:` — просто `return []`,
+            `except json.JSONDecodeError:` — сообщение и `return []`.
+          verify: 'Тест «Файла нет» должен напечатать только «Книг в списке: 0».'
+        - id: yo-letter
+          when:
+            failedTest: t3
+            outputIncludes: "поврежден,"
+          where: Сообщение о повреждённом файле
+          why: >-
+            В сообщении из условия буква ё: «повреждён». Вывод сравнивается посимвольно, и «е»
+            вместо «ё» — уже другая строка.
+          try: Скопируй строку «Файл повреждён, начинаю с пустого списка» из условия в свой `print`.
+          verify: 'Тест «Файл повреждён» должен стать зелёным.'
+        - id: bare-except
+          when:
+            failedTest: t-except
+            outputIncludes: "Книг в списке"
+          why: >-
+            `except:` без типа (или `except Exception`) ловит всё подряд — и опечатку в коде
+            тоже. Если ошибёшься в имени переменной, программа молча скажет «файл повреждён», и
+            настоящую причину будет не найти.
+          try: Назови тип явно — `except json.JSONDecodeError:`.
+          verify: 'Проверка «Ловятся конкретные исключения» должна стать зелёной, а тест «Файл повреждён» — остаться зелёным.'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Книг в списке"
+          why: >-
+            В `open()` (или в `read_text()`) нет `encoding`. В тренажёре всё работает, но на русской
+            Windows Python 3.14 и раньше без подсказки читает файлы в другой кодировке, и названия книг
+            превратятся в кракозябры или в ошибку UnicodeDecodeError.
+          try: Добавь `encoding="utf-8"` в `open()` (или в `read_text()`).
+          verify: 'Проверка «Кодировка указана» должна стать зелёной.'
+      afterPass: >-
+        Функция переживает и первый запуск, и испорченный файл, а сообщение появляется только
+        тогда, когда что-то действительно сломалось. Улучшение: перед тем как начинать с пустого
+        списка, можно сохранить копию повреждённого файла — например, в `books_broken.json`, чтобы
+        потом восстановить книги вручную.
+      skills: [files-json, exceptions, functions]
+
+  - id: csv-or-json
+    type: quiz
+    title: CSV или JSON?
+    question: >-
+      Нужно хранить покупателей магазина: имя, телефон и у каждого — список его заказов. Какой
+      формат удобнее?
+    options:
+      - CSV — это же таблица покупателей
+      - JSON — у каждого покупателя внутри есть список заказов
+      - Всё равно — оба формата хранят что угодно
+    correct: 1
+    explanation: >-
+      Имя и телефон легли бы в столбцы таблицы, а вот список заказов в одну ячейку строки не
+      помещается: пришлось бы склеивать заказы в строку и потом разбирать её вручную. В JSON у
+      покупателя просто есть ключ `"заказы"` со списком. CSV хорош для одинаковых плоских записей,
+      которые хочется открыть в Excel, JSON — для вложенных данных.
+
+  - id: practice-cities
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m7-l6-e3
+      kind: write
+      title: Посещённые города
+      statement: |-
+        Программа ведёт список городов, где ты побывал. Список лежит в файле `visited.json` —
+        это JSON-массив названий. Файла может ещё не быть: тогда список пустой.
+
+        Программа читает название города (пробелы по краям убери) и:
+
+        - если город уже есть в списке — печатает `Уже был здесь`;
+        - если нет — добавляет его **в конец** списка, сохраняет весь список в `visited.json`
+          (русские буквы как есть) и печатает `Новый город!`.
+
+        В конце в обоих случаях печатает `Городов: N` — сколько городов в списке теперь.
+
+        Например, в файле `["Казань", "Суздаль"]`, ввод `Псков`:
+
+        ```text
+        Новый город!
+        Городов: 3
+        ```
+      input: Одна строка — название города.
+      output: "`Уже был здесь` или `Новый город!`, затем `Городов: N`."
+      constraints:
+        - Если файла нет, программа не падает, а начинает с пустого списка.
+        - Порядок городов в файле сохраняется, новый город — последним.
+        - Лови конкретное исключение, без голого `except:` и без `except Exception`.
+        - Файлы открывай с кодировкой — `encoding="utf-8"` в каждом `open()`.
+      files:
+        visited.json: |
+          [
+            "Казань",
+            "Суздаль"
+          ]
+      starterCode: |
+        import json
+
+        # 1. Загрузи список из visited.json (файла может не быть)
+        # 2. Прочитай город и проверь, есть ли он в списке
+        # 3. Новый город — добавь в конец и сохрани весь список
+        # 4. Выведи «Городов: N»
+      tests:
+        - id: t1
+          kind: io
+          title: Новый город
+          example: true
+          stdin: "Псков\n"
+          expected: |-
+            Новый город!
+            Городов: 3
+        - id: t2
+          kind: io
+          title: Город уже в списке
+          example: true
+          stdin: "Казань\n"
+          expected: |-
+            Уже был здесь
+            Городов: 2
+        - id: t3
+          kind: io
+          title: Файла ещё нет
+          example: true
+          files:
+            visited.json: null
+          stdin: "Тверь\n"
+          expected: |-
+            Новый город!
+            Городов: 1
+        - id: t4
+          kind: io
+          title: "Граничный случай: пробелы вокруг названия"
+          edge: true
+          stdin: "  Суздаль \n"
+          expected: |-
+            Уже был здесь
+            Городов: 2
+        - id: t5
+          kind: io
+          title: "Граничный случай: в файле пустой список"
+          edge: true
+          files:
+            visited.json: "[]\n"
+          stdin: "Вологда\n"
+          expected: |-
+            Новый город!
+            Городов: 1
+        - id: t6
+          kind: assert
+          title: Файл после добавления
+          example: true
+          stdin: "Псков\n"
+          code: |-
+            import json
+            import os
+
+            assert os.path.exists("visited.json")
+            text = open("visited.json", encoding="utf-8").read()
+            try:
+                data = json.loads(text)
+            except ValueError:
+                data = None
+            assert data == ["Казань", "Суздаль", "Псков"]
+          message: >-
+            После ввода «Псков» в visited.json лежит весь список: сначала старые города, последним —
+            новый.
+        - id: t9
+          kind: assert
+          title: Порядок городов сохраняется
+          stdin: "Псков\n"
+          files:
+            visited.json: '["Казань", "Суздаль", "Вологда", "Тверь", "Ярославль"]'
+          code: |-
+            import json
+            import os
+
+            assert os.path.exists("visited.json")
+            text = open("visited.json", encoding="utf-8").read()
+            try:
+                data = json.loads(text)
+            except ValueError:
+                data = None
+            assert data == ["Казань", "Суздаль", "Вологда", "Тверь", "Ярославль", "Псков"]
+          message: >-
+            Когда в файле пять городов, после ввода «Псков» они остаются в visited.json в прежнем
+            порядке, а «Псков» встаёт шестым, последним.
+        - id: t7
+          kind: assert
+          title: Русские буквы как есть
+          stdin: "Псков\n"
+          code: |-
+            import os
+
+            assert os.path.exists("visited.json")
+            text = open("visited.json", encoding="utf-8").read()
+            assert "Псков" in text
+          message: >-
+            В visited.json названия городов читаются как есть — «Псков», а не коды вида
+            \u041f\u0441….
+        - id: t8
+          kind: assert
+          title: "Граничный случай: файл создаётся"
+          edge: true
+          files:
+            visited.json: null
+          stdin: "Тверь\n"
+          code: |-
+            import json
+            import os
+
+            assert os.path.exists("visited.json")
+            text = open("visited.json", encoding="utf-8").read()
+            try:
+                data = json.loads(text)
+            except ValueError:
+                data = None
+            assert data == ["Тверь"]
+          message: >-
+            Если файла не было, программа создаёт visited.json со списком из одного нового города.
+        - id: t-except
+          kind: assert
+          title: Ловятся конкретные исключения
+          stdin: "Псков\n"
+          code: |-
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    assert not (isinstance(node.type, ast.Name) and node.type.id in ("Exception", "BaseException"))
+          message: >-
+            Здесь ловится «всё подряд»: except без типа или except Exception. Укажи конкретный
+            тип — например, FileNotFoundError.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          stdin: "Псков\n"
+          code: |-
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [
+                node for node in ast.walk(ast.parse(source))
+                if isinstance(node, ast.Call)
+                and (getattr(node.func, "id", None) in names or getattr(node.func, "attr", None) in names)
+            ]
+            assert all(any(k.arg == "encoding" for k in call.keywords) for call in calls)
+          message: >-
+            В одном из open() (или read_text/write_text) не указана кодировка. Добавь
+            encoding="utf-8" — иначе на Windows со старым Python (до 3.15) русский текст
+            превратится в кракозябры.
+      criteria:
+        - Если файла нет, программа начинает с пустого списка и не падает.
+        - Название города очищается от пробелов по краям.
+        - Город, который уже есть, не добавляется второй раз.
+        - "Новый город добавляется в конец, и весь список сохраняется в `visited.json` с `ensure_ascii=False`."
+        - "В конце печатается `Городов: N` с числом городов в списке."
+      hints:
+        - >-
+          Разложи программу на три части: загрузить список (помни, что файла может не быть),
+          решить, новый ли город, и если новый — сохранить. Какой шаблон из теории «Если файла нет
+          или он повреждён» подходит для первой части?
+        - |-
+          Проверка «уже есть или новое» на списке покупок:
+          ```python
+          items = ["хлеб", "молоко"]
+          item = " сыр ".strip()
+          if item in items:
+              print("Уже в списке")
+          else:
+              items.append(item)
+              print("Добавлено")
+          ```
+          Сохранить после этого нужно весь список `items`, а не только новый элемент.
+        - |-
+          Каркас:
+          ```text
+          try:
+              открыть visited.json на чтение и cities = json.load(f)
+          except FileNotFoundError:
+              cities = []
+          city = input(...).strip()
+          если city in cities → «Уже был здесь»
+          иначе → cities.append(city), открыть файл в режиме "w",
+                  json.dump(cities, f, ensure_ascii=False, indent=2), «Новый город!»
+          print(f"Городов: {…}")
+          ```
+      solution:
+        code: |
+          import json
+
+          try:
+              with open("visited.json", encoding="utf-8") as f:
+                  cities = json.load(f)
+          except FileNotFoundError:
+              cities = []
+
+          city = input("Город: ").strip()
+          if city in cities:
+              print("Уже был здесь")
+          else:
+              cities.append(city)
+              with open("visited.json", "w", encoding="utf-8") as f:
+                  json.dump(cities, f, ensure_ascii=False, indent=2)
+              print("Новый город!")
+          print(f"Городов: {len(cities)}")
+        explanation: >-
+          Сначала программа загружает список или, если файла нет, начинает с пустого — это шаблон
+          «загрузить или начать заново». Проверка `in` решает, новый ли город. Новый добавляется в
+          конец через `append`, и весь список записывается заново в режиме `"w"`: JSON-файл нельзя
+          дописать, его пишут целиком. Если город уже есть, файл можно не трогать.
+      altSolutions:
+        - code: |
+            import json
+
+
+            def load_cities(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+                except json.JSONDecodeError:
+                    print("Файл повреждён, начинаю с пустого списка")
+                    return []
+
+
+            def save_cities(path, cities):
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+
+
+            cities = load_cities("visited.json")
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                save_cities("visited.json", cities)
+                print("Новый город!")
+            print("Городов:", len(cities))
+          note: Загрузка и сохранение в функциях, заодно ловится повреждённый файл.
+        - code: |
+            import json
+            from pathlib import Path
+
+            path = Path("visited.json")
+            if path.exists():
+                cities = json.loads(path.read_text(encoding="utf-8"))
+            else:
+                cities = []
+
+            city = input().strip()
+            if city not in cities:
+                cities.append(city)
+                path.write_text(json.dumps(cities, ensure_ascii=False, indent=2), encoding="utf-8")
+                print("Новый город!")
+            else:
+                print("Уже был здесь")
+            print(f"Городов: {len(cities)}")
+          note: pathlib, exists() вместо try, not in.
+        - code: |
+            import json
+
+            city = input("Город: ").strip()
+            cities = []
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                pass
+
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: Ввод раньше загрузки, без indent, запасное значение заранее.
+        - code: |
+            import json
+            import os
+
+            FILE = "visited.json"
+            if os.path.exists(FILE):
+                with open(FILE, encoding="utf-8") as f:
+                    cities = json.load(f)
+            else:
+                cities = []
+
+            name = input("Где ты был? ").strip()
+            if name in cities:
+                print("Уже был здесь")
+            else:
+                cities += [name]
+                with open(FILE, "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=4)
+                print("Новый город!")
+            print("Городов: " + str(len(cities)))
+          note: "os.path.exists, +=, склейка строк, имя файла в переменной."
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as file:
+                    visited = json.load(file)
+            except (FileNotFoundError, json.JSONDecodeError):
+                visited = []
+
+            city = input().strip()
+            known = set(visited)
+            if city not in known:
+                visited.append(city)
+                print("Новый город!")
+            else:
+                print("Уже был здесь")
+
+            with open("visited.json", "w", encoding="utf-8") as file:
+                json.dump(visited, file, ensure_ascii=False, indent=2)
+
+            print(f"Городов: {len(visited)}")
+          note: "Сохранение в обоих случаях, множество только для проверки, except с кортежем."
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", "r", encoding="utf-8") as f:
+                    text = f.read()
+                cities = json.loads(text)
+            except OSError:
+                cities = []
+
+            city = input()
+            city = city.strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities = cities + [city]
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    f.write(json.dumps(cities, ensure_ascii=False))
+                print("Новый город!")
+            print("Городов:", len(cities))
+          note: "read и loads, except OSError, write(dumps) без отступов."
+        - code: |
+            import json
+
+            PATH = "visited.json"
+
+
+            def load(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        return json.load(f)
+                except FileNotFoundError:
+                    return []
+
+
+            def save(path, data):
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+            def main():
+                cities = load(PATH)
+                city = input().strip()
+                if city not in cities:
+                    cities.insert(len(cities), city)
+                    save(PATH, cities)
+                    message = "Новый город!"
+                else:
+                    message = "Уже был здесь"
+                print(message)
+                print(f"Городов: {len(cities)}")
+
+
+            main()
+          note: "Всё в функциях, main(), insert в конец списка."
+      wrongSolutions:
+        - code: |
+            import json
+
+            with open("visited.json", encoding="utf-8") as f:
+                cities = json.load(f)
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: Нет обработки отсутствующего файла.
+          expectMistake: no-missing-file
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = set(json.load(f))
+            except FileNotFoundError:
+                cities = set()
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.add(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: Множество записывается в JSON.
+          expectMistake: set-in-json
+        - code: |
+            import json
+
+            with open("visited.json", "w", encoding="utf-8") as f:
+                pass
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: Файл открыт в режиме w до загрузки — содержимое стёрто.
+          expectMistake: wiped-before-load
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                print("Новый город!")
+            cities.append(city)
+            with open("visited.json", "w", encoding="utf-8") as f:
+                json.dump(cities, f, ensure_ascii=False, indent=2)
+            print(f"Городов: {len(cities)}")
+          note: Город добавляется всегда, даже если уже есть.
+          expectMistake: duplicate
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: Пробелы по краям не убраны.
+          expectMistake: no-strip
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "a", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: JSON дописывается режимом a — в файле два массива подряд.
+          expectMistake: append-mode
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump([city], f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: В файл записан только новый город.
+          expectMistake: file-content
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: Нет ensure_ascii=False.
+          expectMistake: ascii-escapes
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: При записи не указана кодировка.
+          expectMistake: no-encoding
+        - code: |
+            import json
+
+            with open("visited.json", encoding="utf-8") as f:
+                try:
+                    cities = json.load(f)
+                except FileNotFoundError:
+                    cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "try внутри with — FileNotFoundError из open не ловится."
+          expectMistake: open-outside-try
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "При сохранении забыт режим w (not writable)."
+          expectMistake: wrong-mode
+        - code: |
+            import json
+
+            try:
+                cities = json.loads("visited.json")
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "В json.loads передано имя файла."
+          expectMistake: loads-by-name
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = set(json.load(f))
+            except FileNotFoundError:
+                cities = set()
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.add(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(sorted(cities), f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "Множество и sorted() при сохранении — города по алфавиту."
+          expectMistake: order
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = set(json.load(f))
+            except FileNotFoundError:
+                cities = set()
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.add(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(list(cities), f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "Множество и list() при сохранении — порядок зависит от хеша строк."
+          expectMistake: order
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip().lower()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "lower() у ввода — «казань» не находится."
+          expectMistake: case
+        - code: |
+            import json
+            from pathlib import Path
+
+            path = Path("visited.json")
+            if path.exists():
+                cities = json.loads(path.read_text(encoding="utf-8"))
+            else:
+                cities = []
+
+            city = input().strip()
+            if city not in cities:
+                cities.append(city)
+                path.write_text(json.dumps(cities, ensure_ascii=False, indent=2))
+                print("Новый город!")
+            else:
+                print("Уже был здесь")
+            print(f"Городов: {len(cities)}")
+          note: "write_text без encoding."
+          expectMistake: no-encoding
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except Exception:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "except Exception вместо конкретного типа."
+          expectMistake: bare-except
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    text = f.read()
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "f.read(), потом json.load(f) — файл уже прочитан до конца."
+          expectMistake: read-then-load
+        - code: |
+            import json
+
+            try:
+                with open("visited.json", encoding="utf-8") as f:
+                    cities = json.load(f)
+            except FileNotFoundError:
+                cities = []
+
+            city = input().strip()
+            if city in cities:
+                print("Уже был здесь")
+            else:
+                cities = cities.append(city)
+                with open("visited.json", "w", encoding="utf-8") as f:
+                    json.dump(cities, f, ensure_ascii=False, indent=2)
+                print("Новый город!")
+            print(f"Городов: {len(cities)}")
+          note: "cities = cities.append(city) — в cities оказывается None."
+          expectMistake: append-returns-none
+      mistakes:
+        - id: wrong-mode
+          when:
+            errorType: UnsupportedOperation
+          where: Режим в open() и то, что дальше делают с файлом
+          why: >-
+            Файл открыт в одном режиме, а с ним делают другое. Без режима `open` открывает файл на
+            чтение, и писать в него нельзя (`not writable`), а из файла, открытого с `"w"`, нельзя
+            читать (`not readable`). Это ошибка в коде, а не ограничение тренажёра: на компьютере
+            будет то же самое.
+          try: >-
+            Загружай список через `open` без режима, а сохраняй через
+            `open("visited.json", "w", encoding="utf-8")` — это два разных блока `with`.
+          verify: 'Тест «Новый город» должен напечатать «Новый город!» и «Городов: 3».'
+        - id: set-in-json
+          when:
+            errorIncludes: not JSON serializable
+          where: Строка с json.dump
+          why: >-
+            В JSON нет множеств, поэтому `json.dump` падает с TypeError. К этому моменту режим
+            `"w"` уже очистил файл — на компьютере весь список городов пропал бы. К тому же у
+            множества нет порядка, а новый город должен встать последним.
+          try: >-
+            Храни города в списке, как они пришли из файла: проверка `city in cities` работает и
+            для списка, а добавляет в конец `append`.
+          verify: Тест «Новый город» должен напечатать «Новый город!» без TypeError.
+        - id: append-returns-none
+          when:
+            errorIncludes: NoneType
+            codeRegex: '=\s*\w+\.append\('
+          where: Строка с append
+          why: >-
+            `append` меняет список на месте и возвращает None. Запись `cities = cities.append(city)`
+            кладёт в `cities` None: в файл попадает `null`, а `len(None)` ломает программу.
+          try: Пиши просто `cities.append(city)` — без `cities =`.
+          verify: 'Тест «Новый город» должен напечатать «Новый город!» и «Городов: 3».'
+        - id: open-outside-try
+          when:
+            errorType: FileNotFoundError
+            codeRegex: 'except\s+\(?[\w.,\s]*FileNotFoundError'
+          where: Строка с with open(…) на чтение
+          why: >-
+            `except FileNotFoundError` у тебя есть, но `open` стоит вне `try`. `try` защищает только
+            строки внутри своего блока (урок 7.3), а FileNotFoundError выбрасывает именно `open`.
+          try: Перенеси строку `with open("visited.json", …)` внутрь `try`.
+          verify: 'Тест «Файла ещё нет» должен напечатать «Новый город!» и «Городов: 1».'
+        - id: no-missing-file
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            Когда файла `visited.json` в рабочей папке ещё нет, `open` на чтение выбрасывает
+            FileNotFoundError. Для этой программы это нормальный первый запуск: список просто
+            пустой.
+          try: >-
+            Оберни загрузку в `try` и добавь `except FileNotFoundError:` со значением
+            `cities = []`.
+          verify: 'Тест «Файла ещё нет» должен напечатать «Новый город!» и «Городов: 1».'
+        - id: wiped-before-load
+          when:
+            errorType: JSONDecodeError
+            codeRegex: 'open\([^)]*["'']w["''][^)]*\)[\s\S]*json\.load\('
+          why: >-
+            Во всех тестах `visited.json` либо в порядке, либо его нет — а программа всё равно
+            нашла его пустым. Так бывает, если файл открыт в режиме `"w"` раньше, чем прочитан:
+            `"w"` стирает содержимое в момент открытия (урок 7.1). На компьютере так пропал бы весь
+            список городов.
+          try: >-
+            Сначала загрузи список (чтение, без режима `"w"`), потом добавь город, и только потом
+            открой файл на запись — один раз, в ветке нового города.
+          verify: 'Тест «Город уже в списке» должен напечатать «Уже был здесь» и «Городов: 2».'
+        - id: loads-by-name
+          when:
+            errorType: JSONDecodeError
+            codeRegex: 'json\.loads\(\s*["'']'
+          where: Строка с json.loads
+          why: >-
+            `json.loads` (с буквой s) разбирает сам JSON-текст, а получил имя файла. Строка
+            «visited.json» — не JSON, отсюда JSONDecodeError, хотя с файлом всё в порядке.
+          try: >-
+            Открой файл и передай его в `json.load(f)` — без s, внутри `try`, как в шаблоне
+            «загрузить или начать заново».
+          verify: 'Тест «Город уже в списке» должен напечатать «Уже был здесь» и «Городов: 2».'
+        - id: read-then-load
+          when:
+            errorType: JSONDecodeError
+            codeRegex: '\.read\(\)[\s\S]*json\.load\('
+          where: Строки с f.read() и json.load(f)
+          why: >-
+            `f.read()` уже прочитал файл до конца, и `json.load(f)` достаётся пустота — как будто
+            файл пустой. Отсюда JSONDecodeError, хотя с файлом всё в порядке.
+          try: 'Оставь что-то одно: `json.load(f)` или `json.loads(f.read())`.'
+          verify: 'Тест «Город уже в списке» должен напечатать «Уже был здесь» и «Городов: 2».'
+        - id: case
+          when:
+            failedTest: t2
+            outputIncludes: "Городов:"
+            codeRegex: '\.(?:lower|upper|casefold)\('
+          where: Строка с input()
+          why: >-
+            Ты меняешь регистр введённого названия, а в файле «Казань» записана с заглавной буквы.
+            «казань» и «Казань» — разные строки, поэтому проверка `in` не находит город.
+          try: Сравнивай название так, как его ввели, — только убери пробелы по краям через `strip()`.
+          verify: 'Тест «Город уже в списке» должен напечатать «Уже был здесь» и «Городов: 2».'
+        - id: duplicate
+          when:
+            failedTest: t2
+            outputEquals: "Уже был здесь\nГородов: 3"
+          why: >-
+            «Казань» уже есть в списке, но программа всё равно добавила её — городов стало 3
+            вместо 2. Добавление и сохранение выполняются при любом ответе.
+          try: >-
+            Перенеси `append` и сохранение внутрь ветки `else` — они нужны только для нового
+            города.
+          verify: 'Тест «Город уже в списке» должен напечатать «Уже был здесь» и «Городов: 2».'
+        - id: no-strip
+          when:
+            failedTest: t4
+            outputIncludes: "Новый город!"
+            codeRegex: '(?<![\s\S])(?![\s\S]*\.strip\()'
+          why: >-
+            Во вводе «  Суздаль » пробелы по краям. Строка с пробелами не равна «Суздаль», поэтому
+            проверка `in` её не находит, и город добавляется второй раз.
+          try: Убери пробелы сразу после ввода — `input().strip()`.
+          verify: 'Граничный случай с пробелами должен напечатать «Уже был здесь».'
+        - id: append-mode
+          when:
+            failedTest: t6
+            outputIncludes: "Городов:"
+            codeRegex: 'open\([^)]*["'']a["'']'
+          where: open(…, "a", …) при сохранении
+          why: >-
+            Режим `"a"` дописывает новый массив в конец файла, и в нём оказываются два массива
+            подряд: `[…][…]`. Это уже не JSON — при следующей загрузке будет JSONDecodeError.
+            JSON-файл — одна структура, её нельзя дописать по кусочку.
+          try: >-
+            Сохраняй весь список заново в режиме `"w"`: загрузил → добавил в список → записал
+            целиком.
+          verify: Открой visited.json в «Файлах после запуска» — там должен быть один список из трёх городов.
+        - id: order
+          when:
+            failedTest: t9
+            outputIncludes: "Городов:"
+            codeRegex: 'sorted\(|\.sort\(|\.insert\(\s*0|\bset\('
+          where: Список, который сохраняется в visited.json
+          why: >-
+            Все города в файле на месте, но порядок другой. У множества нет порядка, а `sorted()` и
+            `sort()` расставляют города по алфавиту. По условию старые города остаются как были,
+            новый — последним.
+          try: >-
+            Храни города в списке — так, как они пришли из файла, — и добавляй новый через
+            `append`. Проверка `city in cities` работает и для списка.
+          verify: 'Проверка «Порядок городов сохраняется» должна стать зелёной.'
+        - id: file-content
+          when:
+            failedTest: t6
+            outputIncludes: "Городов:"
+          why: >-
+            На экране всё верно, но в `visited.json` после запуска не тот список: не все города, не в
+            том порядке или файл не сохранён вовсе. При следующем запуске старые города пропадут
+            или новый не появится.
+          try: >-
+            Нужен весь список `cities` после `append`, в том же порядке, что пришёл из файла.
+            Передай его в `json.dump` и проверь, что сохранение стоит в ветке нового города.
+          verify: 'В «Файлах после запуска» visited.json должен содержать «Казань», «Суздаль» и «Псков».'
+        - id: ascii-escapes
+          when:
+            failedTest: t7
+            outputIncludes: "Городов:"
+          why: >-
+            По умолчанию `json.dump` заменяет каждую русскую букву кодом вида `\u041f`. Программа
+            такой файл прочитает, а человек — нет.
+          try: Добавь в `json.dump` параметр `ensure_ascii=False`.
+          verify: В «Файлах после запуска» названия городов должны читаться.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Городов:"
+          why: >-
+            В одном из `open()` (или `read_text()`/`write_text()`) нет `encoding`. В тренажёре всё
+            работает, но на русской Windows Python 3.14 и раньше без подсказки пишет и читает файлы в другой
+            кодировке, и названия городов превратятся в кракозябры или в ошибку UnicodeDecodeError.
+          try: >-
+            Добавь `encoding="utf-8"` в каждый `open()` (и в `read_text()`/`write_text()`, если они
+            есть) — и при чтении, и при записи.
+          verify: 'Проверка «Кодировка указана» должна стать зелёной.'
+        - id: bare-except
+          when:
+            failedTest: t-except
+            outputIncludes: "Городов:"
+          why: >-
+            `except:` без типа (или `except Exception`) ловит всё подряд — и опечатку в коде тоже.
+            Ошибёшься в имени функции — программа молча начнёт с пустого списка и перезапишет
+            файл, а настоящую причину будет не найти.
+          try: Назови тип явно — `except FileNotFoundError:`.
+          verify: 'Проверка «Ловятся конкретные исключения» должна стать зелёной.'
+      afterPass: >-
+        Программа собрала весь урок: загружает список или начинает с пустого, меняет его и сохраняет
+        целиком. Улучшение: сравнивай города без учёта регистра, чтобы «казань» и «Казань» считались
+        одним городом.
+      skills: [files-json, exceptions, lists]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "В JSON можно сохранить словари, списки, строки, числа, True/False и None (в файле — `true/false/null`). `json.dump(данные, f, ensure_ascii=False, indent=2)` записывает, `json.load(f)` читает."
+      - "Ключи объекта в JSON — всегда строки: `{1: 120}` вернётся как `{\"1\": 120}`. Кортеж вернётся списком, а множество не запишется вовсе — превращай его в список до открытия файла. У множества нет порядка: если порядок важен, храни данные списком."
+      - "Загрузка «или начать заново»: `except FileNotFoundError` — первый запуск, молча берём пустые данные; `except json.JSONDecodeError` — файл повреждён или пуст, сообщаем человеку."
+      - "JSON-файл не дописывают: загрузи, измени и запиши целиком в режиме `\"w\"`. Для одинаковых строк-записей удобнее CSV, для вложенных данных — JSON."
+    question: >-
+      Чем для программы отличаются «файла нет» и «файл повреждён» и почему их ловят разными
+      except?
+    answer: >-
+      Файла нет — это обычный первый запуск: данных ещё не было, можно молча начать с пустого
+      списка. Файл повреждён — данные были, но испорчены или потеряны, и человеку нужно об этом
+      сказать, чтобы он мог разобраться. Разные беды — разные ответы, поэтому и `except` разные:
+      `FileNotFoundError` и `json.JSONDecodeError`. Общий `except` на всё подряд спрятал бы и
+      ошибки в самом коде.

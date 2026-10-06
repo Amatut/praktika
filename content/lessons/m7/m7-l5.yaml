@@ -1,0 +1,2572 @@
+id: m7-l5
+module: m7
+number: "7.5"
+title: "CSV: таблица в текстовом файле"
+objective: >-
+  Читать CSV-файл модулем csv, превращать нужные значения в числа, пропускать битые строки и
+  записывать результат в новый CSV-файл.
+minutes: [25, 30]
+prerequisites: [m7-l4]
+skills: [files-json, exceptions]
+environment: python
+
+story:
+  title: Пряжа, которую пора дозаказать
+  fictional: true
+  text: >-
+    Алёна продаёт пряжу через маленький интернет-магазин и ведёт остатки в таблице. Каждый
+    понедельник она просматривала сотни строк глазами, чтобы понять, какие мотки пора
+    дозаказать, и однажды пропустила ходовой цвет — покупатели ждали две недели. Теперь она
+    сохраняет таблицу в CSV, а программа за секунду печатает список к дозаказу и записывает его
+    отдельным файлом для поставщика. Когда в таблицу случайно попала строка с прочерком вместо
+    количества, программа не упала, а подсказала, какую строку проверить.
+
+why: >-
+  CSV — самый простой способ передать таблицу между программами: его открывают Excel и Google
+  Таблицы, в него выгружают данные многие банки и интернет-магазины, и его читает Python.
+  Например, список заказов из интернет-магазина обычно можно скачать в CSV и обработать
+  программой, а не глазами.
+
+usedIn: >-
+  Выгрузки из банков, магазинов и учётных программ, отчёты для бухгалтерии и поставщиков,
+  анализ данных, обмен таблицами между программами, которые ничего не знают друг о друге.
+
+steps:
+  - id: csv-read
+    type: theory
+    title: CSV и модуль csv
+    body: |-
+      Таблицу из Excel или Google Таблиц можно сохранить как **CSV** (от английского
+      comma-separated values — «значения через запятую»). Это обычный текстовый файл: одна
+      строка файла — одна строка таблицы, ячейки разделены запятой. Первая строка обычно —
+      **заголовки**, названия столбцов:
+
+      ```text
+      товар,цвет,остаток,минимум
+      Мериносовая пряжа,синий,3,5
+      "Спицы, 4 мм",—,1,2
+      ```
+
+      Если внутри значения есть запятая, значение берут в **кавычки**: `"Спицы, 4 мм"` — одна
+      ячейка, а не две. Поэтому `line.split(",")` для CSV не годится: он режет по каждой запятой
+      и на кавычки не смотрит. Разбирать CSV умеет модуль **csv** из стандартной библиотеки:
+
+      ```python
+      import csv
+
+      with open("stock.csv", encoding="utf-8", newline="") as f:
+          for row in csv.DictReader(f):
+              print(row["товар"], row["остаток"])
+      ```
+
+      - `newline=""` — открыть файл, не трогая концы строк: с ними разбирается сам csv. Так
+        советует документация модуля, поэтому для CSV пиши его всегда.
+      - `csv.DictReader(f)` забирает первую строку под заголовки, а каждую следующую отдаёт
+        **словарём**: ключи — заголовки, значения — ячейки этой строки. `row["остаток"]` —
+        остаток в текущей строке.
+      - **Все значения — строки.** В `row["остаток"]` лежит `"3"`, а не 3. Чтобы сравнивать и
+        считать, превращай сам: `int(row["остаток"])`.
+      - Русский Excel часто разделяет столбцы **точкой с запятой**: запятая у него занята
+        дробными числами (2,5). Тогда разделитель нужно назвать:
+        `csv.DictReader(f, delimiter=";")`.
+
+      Есть и `csv.reader(f)`: он отдаёт каждую строку списком, например
+      `["Хлопок", "белый", "0", "4"]`, — и строку заголовков тоже, как обычные данные. К
+      столбцам по названию удобнее обращаться через DictReader.
+
+      Частое заблуждение: «в файле написано 3 — значит, это число». В текстовом файле всё —
+      текст, числом значение становится только после `int()`.
+    simpler: >-
+      CSV — таблица, записанная обычным текстом: строка файла — строка таблицы, между ячейками
+      запятые (или точки с запятой). Модуль csv режет строки на ячейки правильно, даже если в
+      ячейке есть запятая в кавычках. DictReader отдаёт каждую строку словарём «название
+      столбца → значение», и все значения в нём — строки.
+    coach: >-
+      Прежде чем писать код, открой файл и посмотри на первые строки: какой разделитель и как
+      называются столбцы.
+
+  - id: reorder
+    type: example
+    title: Что дозаказать
+    body: >-
+      Программа из истории. Таблица остатков лежит в файле `stock.csv` — открой блок «Файлы
+      задания» и посмотри на неё. Программа печатает товары, которых осталось меньше минимума.
+    code: |-
+      import csv
+
+      with open("stock.csv", encoding="utf-8", newline="") as f:
+          for row in csv.DictReader(f):
+              left = int(row["остаток"])
+              minimum = int(row["минимум"])
+              if left < minimum:
+                  print(f"Дозаказать: {row['товар']} ({row['цвет']}), осталось {left}")
+    files:
+      stock.csv: |
+        товар,цвет,остаток,минимум
+        Мериносовая пряжа,синий,3,5
+        Мериносовая пряжа,красный,12,5
+        Хлопок,белый,0,4
+        "Спицы, 4 мм",—,1,2
+    notes:
+      - line: 1
+        text: Модуль csv входит в стандартную библиотеку — ставить ничего не нужно.
+      - line: 3
+        text: >-
+          Кодировка — как в уроке 7.1, а `newline=""` отдаёт концы строк на разбор модулю csv.
+      - line: 4
+        text: >-
+          DictReader забрал первую строку под заголовки. На каждом шаге цикла `row` — словарь
+          одной строки таблицы, начиная со второй строки файла.
+      - line: 5
+        text: >-
+          `row["остаток"]` — строка `"3"`, поэтому `int()`. Без него сравнение `<` со строками
+          дало бы неверный ответ или ошибку.
+      - line: 8
+        text: >-
+          Внутри f-строки в двойных кавычках ключ словаря пишем в одинарных: `row['товар']`.
+          Значение «Спицы, 4 мм» пришло целиком — csv понял кавычки.
+    tryIt: >-
+      Добавь первой строкой в цикл `print(row)` и запусти. Увидишь словари, где все значения в
+      кавычках, — даже остаток и минимум: это строки. Потом убери `print(row)`.
+    coach: Сначала превратить в число, потом сравнивать или считать — этот порядок встретится в каждом задании урока.
+
+  - id: why-not-split
+    type: predict
+    title: Одна строка, два способа
+    prompt: |-
+      В файле `runners.csv` одна строка — участница забега и её время в минутах:
+
+      ```text
+      "Иванова, Анна",42
+      ```
+
+      Программа разбирает эту строку сначала через `split`, потом модулем csv. Как думаешь,
+      что она выведет?
+    code: |-
+      import csv
+
+      with open("runners.csv", encoding="utf-8", newline="") as f:
+          text = f.read().strip()
+      print(len(text.split(",")))
+
+      with open("runners.csv", encoding="utf-8", newline="") as f:
+          for row in csv.reader(f):
+              print(len(row))
+              print(row[1] * 2)
+    files:
+      runners.csv: |
+        "Иванова, Анна",42
+    options:
+      - |-
+        2
+        2
+        84
+      - |-
+        3
+        2
+        84
+      - |-
+        3
+        2
+        4242
+      - |-
+        3
+        3
+        4242
+    answer: |-
+      3
+      2
+      4242
+    explanation: >-
+      `split(",")` режет по каждой запятой и о кавычках не знает: получается три куска —
+      `'"Иванова'`, `' Анна"'` и `'42'`, с кавычками, прилипшими к кускам. `csv.reader` видит,
+      что запятая стоит внутри кавычек, и отдаёт две ячейки: `'Иванова, Анна'` и `'42'`. В
+      таблице два столбца — прав csv. А `row[1]` — это строка `'42'`, а не число: `* 2`
+      повторяет её дважды, как `"-" * 10` из урока 1.3, и получается `4242`. Чтобы вышло 84,
+      нужно сначала `int(row[1])`.
+    coach: >-
+      На своих данных split может «работать» неделями, пока в таблицу не попадёт первая запятая
+      внутри значения. Модуль csv к этому готов с самого начала.
+
+  - id: practice-frost
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m7-l5-e1
+      kind: repeat
+      title: Морозные дни
+      statement: |-
+        Школа заливает каток во дворе, когда морозы держатся несколько дней. Завхоз ведёт дневник
+        погоды в Excel и сохраняет его в `weather.csv`. Файл сохранён из русского Excel: столбцы
+        разделены **точкой с запятой**, первая строка — заголовки `дата;погода;температура`.
+        Температура — целое число, иногда со знаком: `-7`, `+3`.
+
+        Выведи дни с морозом (температура ниже нуля) в порядке файла, по одному в строке, в виде
+        `дата: температура`, а в конце — `Морозных дней: N`. Ноль — ещё не мороз.
+
+        Для файла из блока «Файлы задания» вывод такой:
+
+        ```text
+        02.12: -3
+        04.12: -7
+        Морозных дней: 2
+        ```
+
+        Читай таблицу модулем csv: в столбце «погода» бывают значения в кавычках с точкой с
+        запятой внутри.
+      input: Файл `weather.csv` (с клавиатуры ничего не вводится).
+      output: "Строки `<дата>: <температура>` для морозных дней и последняя строка `Морозных дней: N`."
+      constraints:
+        - Таблицу читай модулем csv.
+        - "Файл открывай с `encoding=\"utf-8\"`."
+        - Ноль градусов — не мороз.
+      files:
+        weather.csv: |
+          дата;погода;температура
+          01.12;пасмурно;2
+          02.12;снег;-3
+          03.12;"ветер; гололёд";0
+          04.12;ясно;-7
+      starterCode: |
+        import csv
+
+        # Прочитай weather.csv, выведи морозные дни и их количество
+      tests:
+        - id: t1
+          kind: io
+          title: Начало декабря
+          example: true
+          expected: |-
+            02.12: -3
+            04.12: -7
+            Морозных дней: 2
+        - id: t2
+          kind: io
+          title: Январь
+          example: true
+          files:
+            weather.csv: |
+              дата;погода;температура
+              10.01;метель;-12
+              11.01;"снег; ветер";-1
+              12.01;оттепель;1
+          expected: |-
+            10.01: -12
+            11.01: -1
+            Морозных дней: 2
+        - id: t3
+          kind: io
+          title: "Граничный случай: мороза нет, есть ровно ноль"
+          edge: true
+          files:
+            weather.csv: |
+              дата;погода;температура
+              05.04;дождь;6
+              06.04;солнце;11
+              07.04;"туман; морось";0
+          expected: "Морозных дней: 0"
+        - id: t4
+          kind: io
+          title: "Граничный случай: в файле только заголовки"
+          edge: true
+          files:
+            weather.csv: |
+              дата;погода;температура
+          expected: "Морозных дней: 0"
+        - id: t5
+          kind: io
+          title: "Граничный случай: тёплый день записан с плюсом"
+          edge: true
+          files:
+            weather.csv: |
+              дата;погода;температура
+              08.12;ясно;+3
+              09.12;снег;-2
+          expected: |-
+            09.12: -2
+            Морозных дней: 1
+        - id: t-csv
+          kind: assert
+          title: Таблица читается модулем csv
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            used = set()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "csv":
+                    used.add(node.attr)
+                if isinstance(node, ast.ImportFrom) and node.module == "csv":
+                    for alias in node.names:
+                        used.add(alias.name)
+            assert "DictReader" in used or "reader" in used
+          message: >-
+            Таблица разбирается без модуля csv. Читай её через `csv.DictReader` (или `csv.reader`) —
+            ручная разбивка строк ломается на значениях в кавычках.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            В одном из `open()` не указана кодировка. Добавь `encoding="utf-8"` — иначе на Windows
+            со старым Python (до 3.15) русский текст превратится в кракозябры.
+      criteria:
+        - Таблица читается модулем csv с разделителем `;`, значения в кавычках не ломают разбор.
+        - Температура превращается в число (и `-7`, и `+3`); в вывод попадают только дни ниже нуля, ноль — нет.
+        - 'Строки выводятся в формате `дата: температура` в порядке файла, в конце — число морозных дней.'
+        - 'Файл без морозных дней и файл из одних заголовков дают `Морозных дней: 0`.'
+      hints:
+        - >-
+          Открой блок «Файлы задания» и посмотри на первую строку `weather.csv`: чем разделены
+          столбцы? В примере про пряжу разделителем была запятая — её csv ждёт, если ничего не
+          сказать. И вспомни, в каком виде csv отдаёт числа из таблицы.
+        - |-
+          Тот же приём на другом файле — оценки класса, разделитель `;`:
+
+          ```python
+          import csv
+
+          with open("marks.csv", encoding="utf-8", newline="") as f:
+              for row in csv.DictReader(f, delimiter=";"):
+                  mark = int(row["оценка"])
+                  if mark == 5:
+                      print(row["ученик"])
+          ```
+        - |-
+          Каркас:
+
+          ```text
+          счётчик = 0
+          with open("weather.csv", encoding=..., newline="") as f:
+              for row in csv.DictReader(f, delimiter=";"):
+                  температура = int(row[...])
+                  если температура ниже нуля:
+                      напечатать дату и температуру
+                      счётчик += 1
+          напечатать «Морозных дней: …»
+          ```
+      solution:
+        code: |
+          import csv
+
+          count = 0
+          with open("weather.csv", encoding="utf-8", newline="") as f:
+              for row in csv.DictReader(f, delimiter=";"):
+                  temperature = int(row["температура"])
+                  if temperature < 0:
+                      print(f"{row['дата']}: {temperature}")
+                      count += 1
+          print(f"Морозных дней: {count}")
+        explanation: >-
+          `delimiter=";"` говорит csv, чем разделены столбцы, — и значение `"ветер; гололёд"`
+          в кавычках остаётся одной ячейкой. Температура приходит строкой, `int()` делает из неё
+          число, и только тогда её можно сравнить с нулём. Условие `< 0` строгое, поэтому ноль в
+          вывод не попадает. Счётчик растёт только внутри `if` и печатается после цикла — один
+          раз.
+      altSolutions:
+        - code: |
+            import csv
+
+            count = 0
+            first = True
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.reader(f, delimiter=";"):
+                    if first:
+                        first = False
+                        continue
+                    if int(row[2]) < 0:
+                        print(row[0] + ":", row[2])
+                        count = count + 1
+            print("Морозных дней:", count)
+          note: csv.reader и флаг, чтобы пропустить строку заголовков; печать через запятые в print.
+        - code: |
+            import csv
+
+            frost = []
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f, delimiter=";")
+                for row in reader:
+                    if int(row["температура"]) < 0:
+                        frost.append(row["дата"] + ": " + row["температура"])
+            for line in frost:
+                print(line)
+            print(f"Морозных дней: {len(frost)}")
+          note: Сначала собрать строки в список, потом напечатать; количество — len(). Температура печатается как в файле.
+        - code: |
+            import csv
+
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                rows = list(csv.DictReader(f, delimiter=';'))
+
+            frost = 0
+            for row in rows:
+                if int(row["температура"]) < 0:
+                    print(f"{row["дата"]}: {row["температура"]}")
+                    frost += 1
+            print(f"Морозных дней: {frost}")
+          note: Все строки сначала читаются в список внутри with; в f-строке те же двойные кавычки (так можно с Python 3.12).
+        - code: |
+            from csv import DictReader
+
+            SEPARATOR = ";"
+            frosty = 0
+            with open("weather.csv", encoding="utf-8") as file:
+                for day in DictReader(file, delimiter=SEPARATOR):
+                    degrees = int(day["температура"])
+                    if 0 > degrees:
+                        print(f"{day['дата']}: {degrees}")
+                        frosty += 1
+            print("Морозных дней:", frosty)
+          note: from csv import DictReader, разделитель в переменной, файл без newline="" (в условии не требуется), сравнение 0 > degrees.
+      wrongSolutions:
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Разделитель не назван — csv ищет запятые, и вся строка заголовков стала одним ключом.
+          expectMistake: no-delimiter
+        - code: |
+            import csv
+
+            count = 0
+            first = True
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.reader(f):
+                    if first:
+                        first = False
+                        continue
+                    temperature = int(row[2])
+                    if temperature < 0:
+                        print(f"{row[0]}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: csv.reader без delimiter — каждая строка стала одной ячейкой, row[2] нет (IndexError).
+          expectMistake: no-delimiter
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    temperature = int(row["Температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Ключ написан с заглавной буквы — такого заголовка в файле нет.
+          expectMistake: wrong-key
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.reader(f, delimiter=";"):
+                    temperature = int(row[2])
+                    if temperature < 0:
+                        print(f"{row[0]}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: csv.reader отдал и строку заголовков — int("температура").
+          expectMistake: header-as-data
+        - code: |
+            import csv
+
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f, delimiter=";")
+
+            count = 0
+            for row in reader:
+                temperature = int(row["температура"])
+                if temperature < 0:
+                    print(f"{row['дата']}: {temperature}")
+                    count += 1
+            print(f"Морозных дней: {count}")
+          note: Цикл по reader стоит после with — файл уже закрыт.
+          expectMistake: closed-file
+        - code: |
+            count = 0
+            with open("weather.csv", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split(";")
+                    if parts[0] == "дата":
+                        continue
+                    temperature = int(parts[2])
+                    if temperature < 0:
+                        print(f"{parts[0]}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Ручной split(";") разрезал значение в кавычках.
+          expectMistake: manual-split
+        - code: |
+            count = 0
+            with open("weather.csv", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split(";")
+                    if parts[0] == "дата":
+                        continue
+                    temperature = int(parts[-1])
+                    if temperature < 0:
+                        print(f"{parts[0]}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Ручной split с последним куском — на этих данных вывод верный, но таблица разобрана без csv.
+          expectMistake: manual-parse
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    if row["температура"] < 0:
+                        print(f"{row['дата']}: {row['температура']}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Строка сравнивается с числом.
+          expectMistake: str-compare
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    temperature = int(row["температура"])
+                    if temperature <= 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Граница — ноль посчитан морозом.
+          expectMistake: zero-is-frost
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.txt", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Не то расширение в имени файла.
+          expectMistake: file-name
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Кодировка не указана.
+          expectMistake: no-encoding
+        - code: |
+            import csv
+
+            SEP = ";"
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=SEP):
+                    temperature = int(row["температура"])
+                    if temperature <= 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Разделитель назван через переменную (это верно), а ошибка — в границе; разбор про разделитель срабатывать не должен.
+          expectMistake: zero-is-frost
+        - code: |
+            from csv import DictReader
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in DictReader(f):
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: from csv import DictReader без delimiter — KeyError; нужен разбор про разделитель, а не про опечатку в ключе.
+          expectMistake: no-delimiter
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, ";"):
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Разделитель передан позицией — для DictReader это fieldnames, а не delimiter.
+          expectMistake: no-delimiter
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=","):
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Разделитель назван, но не тот — запятая.
+          expectMistake: no-delimiter
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="", delimiter=";") as f:
+                for row in csv.DictReader(f):
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: delimiter передан в open(), а не в DictReader — TypeError.
+          expectMistake: delimiter-in-open
+        - code: |
+            import csv
+
+            count = 0
+            first = True
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    if first:
+                        first = False
+                        continue
+                    temperature = int(row["температура"])
+                    if temperature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: DictReader и ещё ручной пропуск «строки заголовков» — теряется первая строка данных.
+          expectMistake: skipped-first-row
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    if row["температура"] < "0":
+                        print(f"{row['дата']}: {row['температура']}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: TypeError «починен» кавычками — температура сравнивается как строка; «+3» < «0».
+          expectMistake: str-compare-text
+        - code: |
+            import csv
+
+            count = 0
+            with open("weather.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    temperature = int(row["температура"])
+                    if temprature < 0:
+                        print(f"{row['дата']}: {temperature}")
+                        count += 1
+            print(f"Морозных дней: {count}")
+          note: Опечатка в имени переменной — NameError; ни один разбор урока не должен сработать, ученик увидит общий разбор ошибки.
+          expectMistake: null
+      mistakes:
+        - id: file-name
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            Python не нашёл файл с именем из `open()`. Файл задания лежит в рабочей папке рядом с
+            программой, но имя должно совпасть буква в букву: опечатка, другое расширение
+            (`.txt` вместо `.csv`) или заглавная буква — и это уже другой файл.
+          try: Скопируй имя `weather.csv` из условия или из блока «Файлы задания» в `open()`.
+          verify: Ошибка FileNotFoundError исчезнет, и программа дойдёт до вывода.
+        - id: closed-file
+          when:
+            errorIncludes: closed file
+          why: >-
+            Цикл читает таблицу уже после блока `with`, а там файл закрыт. `csv.DictReader` не
+            читает файл заранее: он берёт строки из открытого файла по одной, прямо во время
+            цикла.
+          try: Перенеси цикл `for row in ...` внутрь блока `with` — сдвинь его вправо на один отступ.
+          verify: Ошибка «I/O operation on closed file» исчезнет.
+        - id: delimiter-in-open
+          when:
+            errorType: TypeError
+            errorIncludes: delimiter
+          why: >-
+            `delimiter` — параметр `csv.DictReader` и `csv.reader`, а не `open()`. `open()` только
+            открывает файл, а на столбцы строки режет csv — ему и нужно сказать, чем они
+            разделены.
+          try: 'Убери `delimiter=";"` из `open()` и передай его в `csv.DictReader(f, delimiter=";")`.'
+          verify: Ошибка TypeError исчезнет, и в выводе появятся морозные дни.
+        - id: no-delimiter
+          when:
+            codeRegex: '(?<![\s\S])(?=[\s\S]*\b(DictReader|reader)\s*\()(?![\s\S]*delimiter\s*=\s*(["''];["'']|[A-Za-z_]))'
+          where: Строка, где создаётся DictReader или reader
+          why: >-
+            csv не знает, что столбцы разделены `;`: разделитель нужно передать словом
+            `delimiter=";"`, иначе csv делит строки по запятым, а в этом файле их нет. Каждая
+            строка целиком стала одной ячейкой: у DictReader вся первая строка
+            `дата;погода;температура` превратилась в один заголовок, и ключа `температура` нет
+            (KeyError), а у reader в строке нет третьего элемента (IndexError).
+          try: 'Назови разделитель: `csv.DictReader(f, delimiter=";")`.'
+          verify: 'Добавь в цикл `print(row)` — в строке должно стать три значения: дата, погода, температура.'
+        - id: wrong-key
+          when:
+            errorType: KeyError
+          why: >-
+            В словаре строки нет такого ключа. Ключи DictReader — это заголовки из первой строки
+            файла, буква в букву: `дата`, `погода`, `температура`, все с маленькой буквы.
+          try: >-
+            Скопируй название столбца из файла. Если сомневаешься, напечатай `row` в цикле и
+            посмотри, какие ключи там на самом деле.
+          verify: Ошибка KeyError исчезнет, и в выводе появятся морозные дни.
+        - id: header-as-data
+          when:
+            errorType: ValueError
+            errorIncludes: "'температура'"
+          why: >-
+            `int()` получил слово «температура» — это заголовок из первой строки файла.
+            `csv.reader` и ручная разбивка отдают первую строку наравне с данными, и превратить
+            её в число нельзя.
+          try: >-
+            Используй `csv.DictReader(f, delimiter=";")`: он сам забирает первую строку под
+            названия столбцов, и в цикл приходят только данные.
+          verify: Ошибка про «температура» исчезнет — в цикл придут только строки с днями.
+        - id: manual-split
+          when:
+            errorIncludes: гололёд
+          why: >-
+            В строке `03.12;"ветер; гололёд";0` точка с запятой стоит внутри кавычек. `split(";")`
+            об этом не знает и режет значение пополам — на месте температуры оказывается
+            кусок ` гололёд"`, и `int()` не может его превратить.
+          try: 'Прочитай файл модулем csv: `csv.DictReader(f, delimiter=";")` понимает кавычки.'
+          verify: 'Добавь в цикл `print(row)` — у строки 03.12 погода должна прийти целиком: `ветер; гололёд`.'
+        - id: str-compare
+          when:
+            errorIncludes: "not supported between instances of 'str'"
+          why: >-
+            Значения из CSV — строки. `"-3" < 0` сравнивает текст с числом, и Python не знает,
+            как это сделать.
+          try: 'Сначала превращай температуру в число: `int(row["температура"])`, потом сравнивай.'
+          verify: Ошибка TypeError исчезнет, и в выводе появятся морозные дни.
+        - id: manual-parse
+          when:
+            failedTest: t-csv
+            codeRegex: '(?<![\s\S])(?![\s\S]*csv\.(DictReader|reader)\b)'
+          where: Чтение таблицы
+          why: >-
+            Вывод верный, но таблица разобрана вручную, без модуля csv. На этих данных повезло:
+            температура стоит последней. Стоит столбцу со значением в кавычках оказаться в конце —
+            и такой разбор разрежет его пополам.
+          try: 'Читай таблицу через `csv.DictReader(f, delimiter=";")` — ради этого и нужен модуль csv.'
+          verify: Вывод останется тем же, а проверка «Таблица читается модулем csv» станет зелёной.
+        - id: skipped-first-row
+          when:
+            failedTest: t2
+            outputEquals: |-
+              11.01: -1
+              Морозных дней: 1
+          where: Пропуск первой строки в цикле
+          why: >-
+            В «Январе» пропал первый день — 10.01 с −12. DictReader сам забирает первую строку
+            файла под заголовки, в цикл приходят только данные. Если пропустить ещё одну строку,
+            выпадет первая строка данных. В «Начале декабря» это незаметно: там первый день
+            тёплый.
+          try: Убери пропуск первой строки — с DictReader он не нужен.
+          verify: 'В примере «Январь» должна появиться строка «10.01: -12».'
+        - id: zero-is-frost
+          when:
+            failedTest: t1
+            outputIncludes: "03.12: 0"
+          why: >-
+            В вывод попал день с нулём градусов. По условию мороз — температура **ниже** нуля, а
+            ноль — граница, которая морозом не считается.
+          try: Проверь знак сравнения — нужно строгое `< 0`, а не `<= 0`.
+          verify: 'В примере «Начало декабря» строки «03.12: 0» быть не должно.'
+        - id: str-compare-text
+          when:
+            failedTest: t5
+            codeRegex: '<\s*["'']-?0["'']|["'']-?0["'']\s*>'
+          why: >-
+            Температура сравнивается с `"0"` как строка. Строки сравниваются по символам, а не по
+            величине: `"-3" < "0"` случайно даёт `True`, но и `"+3" < "0"` тоже `True` — знак `+`
+            в таблице символов стоит раньше цифр. Поэтому тёплый день 08.12 попал в морозные.
+          try: 'Сравнивай числа: `int(row["температура"]) < 0`.'
+          verify: 'В граничном случае «тёплый день записан с плюсом» строки «08.12: +3» быть не должно.'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            codeRegex: 'open\((?![^)]*encoding)'
+          why: >-
+            Файл открыт без `encoding`. В тренажёре это незаметно: здесь по умолчанию UTF-8. А на
+            русской Windows Python 3.14 и раньше без подсказки читает файлы в другой кодировке — русские
+            заголовки превратятся в кракозябры или программа упадёт с UnicodeDecodeError.
+          try: 'Добавь `encoding="utf-8"` в `open()`.'
+          verify: Проверка «Кодировка указана» станет зелёной.
+      afterPass: >-
+        Разделитель назван, температура превращена в число, и значение с `;` в кавычках не сломало
+        разбор. На компьютере пригодится: сохраняй таблицу из Excel как «CSV UTF-8». Обычный «CSV»
+        русский Excel пишет в кодировке cp1251, и `encoding="utf-8"` его не прочитает
+        (UnicodeDecodeError). У «CSV UTF-8» своя особенность: в начале файла лежит невидимая
+        метка, и первый заголовок прочитается как `'\ufeffдата'` —
+        `row["дата"]` упадёт с KeyError. Помогает `encoding="utf-8-sig"` при чтении.
+      skills: [files-json, conditions, accumulators]
+
+  - id: practice-gift
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m7-l5-e2
+      kind: modify
+      title: Сбор на подарок
+      statement: |-
+        Класс собирает деньги на подарок учительнице. Казначей отмечает взносы в таблице и
+        скачивает её как `gift.csv` со столбцами `имя,сумма`. Некоторые вместо суммы пишут
+        «позже» или «нет», кто-то оставляет ячейку пустой — и программа казначея падает на первой
+        же такой строке.
+
+        Измени программу: если в строке сумма — не целое число (слово, пустая ячейка или дробь
+        вроде `250.5`), выведи `Проверить: <имя>` и
+        переходи к следующей строке. В конце выведи `Собрано: S` — сумму всех нормальных
+        взносов. Плохую строку обработай через try / except с конкретным типом ошибки.
+
+        Для файла из блока «Файлы задания» вывод такой:
+
+        ```text
+        Проверить: Борис
+        Собрано: 1200
+        ```
+      input: Файл `gift.csv` (с клавиатуры ничего не вводится).
+      output: "Строки `Проверить: <имя>` для строк без целого числа — в порядке файла, затем `Собрано: S`."
+      constraints:
+        - Плохую строку обрабатывай через try / except ValueError, без голого except.
+        - Пробелы вокруг числа не делают строку плохой — ` 400 ` это 400.
+      files:
+        gift.csv: |
+          имя,сумма
+          Аня,500
+          Борис,позже
+          Вика,700
+      starterCode: |
+        import csv
+
+        total = 0
+        with open("gift.csv", encoding="utf-8", newline="") as f:
+            for row in csv.DictReader(f):
+                total += int(row["сумма"])
+        print(f"Собрано: {total}")
+      tests:
+        - id: t1
+          kind: io
+          title: Один «позже»
+          example: true
+          expected: |-
+            Проверить: Борис
+            Собрано: 1200
+        - id: t2
+          kind: io
+          title: Пустая ячейка и «нет»
+          example: true
+          files:
+            gift.csv: "имя,сумма\nГоша,300\nДаша,\nЕгор,1000\nЖеня,нет\n"
+          expected: |-
+            Проверить: Даша
+            Проверить: Женя
+            Собрано: 1300
+        - id: t3
+          kind: io
+          title: "Граничный случай: все сдали"
+          edge: true
+          files:
+            gift.csv: "имя,сумма\nЗоя,250\nИгорь,500\n"
+          expected: "Собрано: 750"
+        - id: t4
+          kind: io
+          title: "Граничный случай: никто не сдал"
+          edge: true
+          files:
+            gift.csv: "имя,сумма\nКира,позже\nЛёва,\n"
+          expected: |-
+            Проверить: Кира
+            Проверить: Лёва
+            Собрано: 0
+        - id: t5
+          kind: io
+          title: "Граничный случай: пробелы вокруг суммы"
+          edge: true
+          files:
+            gift.csv: "имя,сумма\nМила, 400 \nНиколай,100\n"
+          expected: "Собрано: 500"
+        - id: t6
+          kind: io
+          title: "Граничный случай: дробная сумма"
+          edge: true
+          files:
+            gift.csv: |
+              имя,сумма
+              Оля,250.5
+              Павел,300
+          expected: |-
+            Проверить: Оля
+            Собрано: 300
+        - id: t-except
+          kind: assert
+          title: Ловится конкретная ошибка
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.ExceptHandler):
+                    assert node.type is not None
+                    assert not (isinstance(node.type, ast.Name) and node.type.id in ("Exception", "BaseException"))
+          message: >-
+            Здесь ловится «всё подряд»: `except` без типа или `except Exception`. Укажи конкретный
+            тип — `ValueError`.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            В одном из `open()` не указана кодировка. Добавь `encoding="utf-8"` — иначе на Windows
+            со старым Python (до 3.15) русский текст превратится в кракозябры.
+      rules:
+        - id: r-try
+          use: [Try]
+          message: >-
+            Обработай строку без числа через try / except ValueError: так программа переживёт любой
+            текст вместо суммы, а не только заранее известный.
+      criteria:
+        - 'Строка, где сумма не целое число, не останавливает программу — выводится `Проверить: <имя>`.'
+        - Такая строка не меняет сумму, остальные строки учитываются все.
+        - Ловится конкретная ошибка — ValueError, а не всё подряд.
+        - 'В конце выводится `Собрано: S`, даже если нормальных взносов нет.'
+      hints:
+        - >-
+          Нажми «Запустить» и прочитай последнюю строку ошибки: какой у неё тип и на каком
+          значении программа упала? Что должно происходить с такой строкой вместо падения — и что
+          со всеми следующими?
+        - |-
+          Тот же приём на списке строк: плохое значение пропускается, цикл идёт дальше.
+
+          ```python
+          for text in ["3", "три", "5"]:
+              try:
+                  number = int(text)
+              except ValueError:
+                  print("Не число:", text)
+                  continue
+              print(number * 2)
+          ```
+
+          Выведет `6`, `Не число: три`, `10`.
+        - |-
+          Каркас тела цикла:
+
+          ```text
+          try:
+              сумма = int(row["сумма"])
+          except ValueError:
+              напечатать «Проверить: …» с именем из row
+              continue
+          total += сумма
+          ```
+      solution:
+        code: |
+          import csv
+
+          total = 0
+          with open("gift.csv", encoding="utf-8", newline="") as f:
+              for row in csv.DictReader(f):
+                  try:
+                      amount = int(row["сумма"])
+                  except ValueError:
+                      print(f"Проверить: {row['имя']}")
+                      continue
+                  total += amount
+          print(f"Собрано: {total}")
+        explanation: >-
+          `try` стоит **внутри** цикла и охраняет одно рискованное действие — `int()`. Если в
+          ячейке «позже», дробь или пусто, `int()` выбрасывает ValueError: выполняется `except`, печатается
+          имя, а `continue` переходит к следующей строке, минуя прибавление. Так одна плохая
+          строка не обрывает подсчёт. Можно обойтись и без `continue`, если прибавлять прямо
+          внутри `try`: `total += int(row["сумма"])` — при ошибке прибавление не случится.
+      altSolutions:
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += int(row["сумма"])
+                    except ValueError:
+                        print("Проверить:", row["имя"])
+            print("Собрано:", total)
+          note: Прибавление внутри try — continue не нужен.
+        - code: |
+            import csv
+
+            total = 0
+            to_check = []
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        amount = int(row["сумма"])
+                        total = total + amount
+                    except ValueError as error:
+                        to_check.append(row["имя"])
+            for name in to_check:
+                print(f"Проверить: {name}")
+            print(f"Собрано: {total}")
+          note: Имена для проверки собираются в список и печатаются после чтения файла.
+        - code: |
+            import csv
+
+
+            def parse_amount(text):
+                try:
+                    return int(text)
+                except ValueError:
+                    return None
+
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    amount = parse_amount(row["сумма"])
+                    if amount is None:
+                        print(f"Проверить: {row['имя']}")
+                    else:
+                        total += amount
+            print(f"Собрано: {total}")
+          note: Превращение с try вынесено в функцию, которая возвращает None для плохой строки.
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        amount = int(row["сумма"])
+                    except ValueError:
+                        print("Проверить: " + row["имя"])
+                        amount = 0
+                    total = total + amount
+            print("Собрано: " + str(total))
+          note: Вместо continue в except взнос считается нулём; склейка строк в print.
+      wrongSolutions:
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        amount = int(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+                    total += amount
+            print(f"Собрано: {total}")
+          note: Нет continue — к сумме снова прибавилась сумма прошлой строки.
+          expectMistake: no-continue
+        - code: |
+            import csv
+
+            total = 0
+            try:
+                with open("gift.csv", encoding="utf-8", newline="") as f:
+                    for row in csv.DictReader(f):
+                        total += int(row["сумма"])
+            except ValueError:
+                print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: Один try вокруг всего цикла — подсчёт обрывается на первой плохой строке.
+          expectMistake: try-around-loop
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += int(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+                        break
+            print(f"Собрано: {total}")
+          note: break вместо continue — цикл останавливается на первой плохой строке.
+          expectMistake: break-instead
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        int(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+                    total += int(row["сумма"])
+            print(f"Собрано: {total}")
+          note: Проверка в try есть, но сумма превращается ещё раз вне try — и падает.
+          expectMistake: crash
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += int(row["сумма"])
+                    except TypeError:
+                        print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: Ловится не тот тип ошибки — ValueError пролетает мимо.
+          expectMistake: crash
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += int(row["сумма"])
+                    except ValueError:
+                        continue
+            print(f"Собрано: {total}")
+          note: Плохая строка пропущена молча.
+          expectMistake: silent-skip
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += int(row["сумма"])
+                    except:
+                        print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: Голый except — ловит всё подряд.
+          expectMistake: bare-except
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    text = row["сумма"].strip()
+                    if text.isdigit():
+                        total += int(text)
+                    else:
+                        print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: Проверка isdigit() вместо try / except.
+          expectMistake: isdigit
+        - code: |
+            import csv
+
+            total = 0
+            with open("gifts.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += int(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: Опечатка в имени файла.
+          expectMistake: file-name
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.reader(f):
+                    try:
+                        total += int(row[1])
+                    except ValueError:
+                        print(f"Проверить: {row[0]}")
+            print(f"Собрано: {total}")
+          note: csv.reader отдал и строку заголовков — она попала в «Проверить».
+          expectMistake: header-row
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += int(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: Кодировка не указана.
+          expectMistake: no-encoding
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+
+            for row in reader:
+                try:
+                    total += int(row["сумма"])
+                except ValueError:
+                    print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: Цикл по reader стоит после with — файл уже закрыт (тоже ValueError, но не про сумму).
+          expectMistake: closed-file
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += float(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {int(total)}")
+          note: float() принимает дробь — 250.5 прошла как нормальный взнос; int() только у итога.
+          expectMistake: float-amount
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        total += float(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+            print(f"Собрано: {total}")
+          note: "float() вместо int() — итог дробный, «Собрано: 1200.0»."
+          expectMistake: float-amount
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    amount = row["сумма"].strip()
+                    if amount == "позже" or amount == "нет" or amount == "":
+                        print(f"Проверить: {row['имя']}")
+                    else:
+                        total += int(amount)
+            print(f"Собрано: {total}")
+          note: Перебор известных плохих слов через if, без try — падает на дроби 250.5.
+          expectMistake: crash
+        - code: |
+            import csv
+
+            total = 0
+            with open("gift.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    try:
+                        amount = int(row["сумма"])
+                    except ValueError:
+                        print(f"Проверить: {row['имя']}")
+                        continue
+                    totl += amount
+            print(f"Собрано: {total}")
+          note: Опечатка в имени переменной — NameError; ни один разбор урока не должен сработать.
+          expectMistake: null
+      mistakes:
+        - id: file-name
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            Python не нашёл файл с именем из `open()`. Файл задания лежит в рабочей папке рядом с
+            программой, но имя должно совпасть буква в букву — лишняя буква или другое расширение,
+            и это уже другой файл.
+          try: Верни в `open()` имя `gift.csv` — как в условии и в блоке «Файлы задания».
+          verify: Ошибка FileNotFoundError исчезнет, и программа дойдёт до вывода.
+        - id: header-row
+          when:
+            outputIncludes: "Проверить: имя"
+          why: >-
+            Первым в списке «Проверить» оказалось слово «имя» — это строка заголовков.
+            `csv.reader` отдаёт её как обычную строку данных, `int("сумма")` не получается, и
+            программа приняла заголовок за неоплаченный взнос.
+          try: >-
+            Верни `csv.DictReader`, как в исходной программе: он сам забирает первую строку под
+            названия столбцов.
+          verify: 'Строки «Проверить: имя» в выводе больше не будет.'
+        - id: isdigit
+          when:
+            failedRule: r-try
+            codeIncludes: isdigit
+          why: >-
+            `isdigit()` проверяет, что все символы — цифры. На этих данных он справился, но это
+            проверка «на глаз»: `-100` (кому-то вернули деньги) или ` 400` без `strip()` он
+            отвергнет, хотя `int()` их примет. Надёжнее спросить сам `int()`, получилось ли, — как
+            в уроке 7.4.
+          try: >-
+            Преврати сумму через `int()` внутри `try`, а строку без числа обработай в
+            `except ValueError`.
+          verify: Вывод останется тем же, а требование про try / except станет выполненным.
+        - id: bare-except
+          when:
+            failedTest: t-except
+            codeRegex: 'except\s*:|except\s+(Exception|BaseException)\b'
+          why: >-
+            Голый `except` ловит любую ошибку — и неверную сумму, и опечатку в самом коде,
+            например в названии столбца. Тогда программа молча напишет «Проверить» у всех подряд,
+            и настоящую ошибку не найти.
+          try: 'Напиши `except ValueError:` — это ошибка `int()` на тексте вместо числа.'
+          verify: Вывод останется тем же, а проверка «Ловится конкретная ошибка» станет зелёной.
+        - id: closed-file
+          when:
+            errorIncludes: closed file
+          why: >-
+            Цикл читает таблицу уже после блока `with`, а там файл закрыт. `csv.DictReader` не
+            читает файл заранее: он берёт строки из открытого файла по одной, прямо во время
+            цикла. Эта ValueError — не про сумму: её бросает чтение файла, а не `int()`.
+          try: Перенеси цикл `for row in ...` внутрь блока `with` — сдвинь его вправо на один отступ.
+          verify: Ошибка «I/O operation on closed file» исчезнет.
+        - id: crash
+          when:
+            errorType: ValueError
+          why: >-
+            Программа падает на строке, где вместо целого числа что-то другое: `int("позже")` или
+            `int("250.5")` выбрасывает ValueError, а её никто не ловит. Либо `try` нет, либо в
+            `except` указан другой тип, либо `int()` вызывается ещё раз — уже вне `try`.
+          try: >-
+            Оберни превращение `int(row["сумма"])` в `try`, а в `except ValueError:` напечатай
+            `Проверить: …` с именем из этой строки.
+          verify: 'Ошибка исчезнет, и каждая строка без целого числа даст «Проверить: …».'
+        - id: float-amount
+          when:
+            failedTest: t6
+            codeIncludes: float(
+          why: >-
+            `float()` принимает и дробь: `250.5` прошла как нормальный взнос. А по условию сумма —
+            целое число, и такую строку нужно вывести в «Проверить». `int("250.5")` выбросит
+            ValueError — и строка сама уйдёт в `except`.
+          try: Превращай сумму через `int()`, а не `float()`.
+          verify: 'В граничном случае «дробная сумма» появится «Проверить: Оля».'
+        - id: break-instead
+          when:
+            failedTest: t1
+            outputIncludes: "Собрано: 500"
+            codeIncludes: break
+          why: >-
+            `break` останавливает цикл целиком. На строке «Борис» программа напечатала сообщение и
+            вышла из цикла — Вика со своими 700 так и не была прочитана.
+          try: >-
+            Замени `break` на `continue`: он пропускает только текущую строку, и цикл идёт
+            дальше.
+          verify: 'В примере «Один „позже“» должно стать «Собрано: 1200».'
+        - id: try-around-loop
+          when:
+            failedTest: t1
+            outputIncludes: "Собрано: 500"
+          why: >-
+            Один `try` охраняет весь цикл. На строке «Борис» случилась ошибка — выполнение
+            выпрыгнуло из цикла сразу в `except`, и Вика со своими 700 так и не была прочитана.
+          try: >-
+            Перенеси `try` внутрь цикла, вокруг одной строки с `int()`: тогда ошибка пропустит
+            только плохую строку, а цикл пойдёт дальше.
+          verify: 'В примере «Один „позже“» должно стать «Собрано: 1200».'
+        - id: no-continue
+          when:
+            outputIncludes: "Собрано: 1700"
+          why: >-
+            Сообщение напечаталось, но программа пошла дальше и выполнила прибавление. В
+            переменной `amount` осталась сумма прошлой строки — 500 Ани, и она прибавилась второй
+            раз.
+          try: >-
+            После сообщения в `except` поставь `continue` — «к следующей строке». Или прибавляй
+            прямо внутри `try`: при ошибке прибавление не случится.
+          verify: 'В примере «Один „позже“» должно стать «Собрано: 1200».'
+        - id: silent-skip
+          when:
+            outputEquals: "Собрано: 1200"
+          why: >-
+            Сумма верная, но строка «Борис» пропущена молча. Казначею нужно знать, кому
+            напомнить, — ради этого и печатается `Проверить: <имя>`.
+          try: 'В `except` перед `continue` напечатай `Проверить:` и имя из `row["имя"]`.'
+          verify: 'В примере «Один „позже“» перед итогом появится «Проверить: Борис».'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            codeRegex: 'open\((?![^)]*encoding)'
+          why: >-
+            Файл открыт без `encoding`. В тренажёре это незаметно: здесь по умолчанию UTF-8. А на
+            русской Windows Python 3.14 и раньше без подсказки читает файлы в другой кодировке — русские
+            заголовки превратятся в кракозябры, и `row["сумма"]` не найдётся.
+          try: 'Верни `encoding="utf-8"` в `open()`.'
+          verify: Проверка «Кодировка указана» станет зелёной.
+      afterPass: >-
+        Одно «позже» больше не ломает подсчёт, а казначей видит, кому напомнить. Улучшение:
+        посчитай пропущенные строки и выведи в конце ещё и `Проверить строк: N`.
+      skills: [files-json, exceptions, loop-control]
+
+  - id: csv-write
+    type: theory
+    title: Записываем CSV
+    body: |-
+      Записывать таблицу тоже удобнее модулем csv:
+
+      ```python
+      import csv
+
+      with open("order.csv", "w", encoding="utf-8", newline="") as f:
+          writer = csv.writer(f)
+          writer.writerow(["товар", "цвет", "заказать"])
+          writer.writerow(["Спицы, 4 мм", "—", 3])
+      ```
+
+      `csv.writer(f)` — «писатель» в открытый файл. `writerow(список)` записывает одну строку
+      таблицы: ставит запятые между значениями, сам берёт в кавычки значение с запятой и
+      превращает числа в текст. Обрати внимание: `writerow` принимает **один** список, а не
+      несколько значений через запятую. В файле получится:
+
+      ```text
+      товар,цвет,заказать
+      "Спицы, 4 мм",—,3
+      ```
+
+      Порядок обычный: сначала строка заголовков, потом строки данных. Строк много — вызывай
+      `writerow` для каждой, например в цикле: `for line in rows:` и внутри
+      `writer.writerow(line)`, где каждая `line` — список значений одной строки.
+
+      `newline=""` при записи обязателен. csv сам ставит в конце каждой строки таблицы свой
+      перевод строки, а на Windows Python без `newline=""` добавит ещё один — и в Excel между
+      записями появятся пустые строки. В тренажёре этого не видно, поэтому проверка смотрит на
+      код.
+
+      И правило из уроков 7.1 и 7.2: результат пишем **в отдельный файл**, исходную таблицу не
+      трогаем. Режим `"w"` стирает файл в момент открытия — одна ошибка в имени, и таблица
+      остатков пропала.
+    simpler: >-
+      Чтобы записать таблицу, открой файл для результата на запись с `encoding="utf-8"` и `newline=""`,
+      создай `writer = csv.writer(f)` и вызывай `writer.writerow([...])` для каждой строки —
+      сначала для заголовков. Запятые и кавычки csv расставит сам.
+    coach: Читаем из одного файла, пишем в другой — тогда ошибка в программе не испортит данные.
+
+  - id: practice-order
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m7-l5-e3
+      kind: write
+      title: Заказ для поставщика
+      statement: |-
+        Алёне нужен файл для поставщика. Прочитай склад `stock.csv` (столбцы
+        `товар,цвет,остаток,минимум`, числа целые) и запиши файл `order.csv` со столбцами
+        `товар,цвет,заказать`. В заказ попадают только строки, где остаток **меньше** минимума,
+        в порядке склада; заказать нужно `минимум * 2 - остаток` штук. В конце выведи
+        `В заказе позиций: N`.
+
+        В папке уже лежит `order.csv` с заказом прошлой недели: новый заказ должен его
+        **заменить**, а не дописаться в конец. Файл `stock.csv` не меняй.
+
+        Для склада из блока «Файлы задания» `order.csv` должен получиться таким:
+
+        ```text
+        товар,цвет,заказать
+        Мериносовая пряжа,синий,7
+        Хлопок,белый,8
+        "Спицы, 4 мм",—,3
+        ```
+
+        А вывод программы — `В заказе позиций: 3`. Что программа записала, видно в блоке «Файлы
+        после запуска».
+      input: Файл `stock.csv`.
+      output: "Файл `order.csv` (вместо прошлого заказа) и строка `В заказе позиций: N`."
+      constraints:
+        - Записывай через csv.writer, первой строкой — заголовки.
+        - "Файл для записи открывай с `encoding=\"utf-8\"` и `newline=\"\"`."
+        - "`stock.csv` не меняй — результат только в `order.csv`."
+      files:
+        stock.csv: |
+          товар,цвет,остаток,минимум
+          Мериносовая пряжа,синий,3,5
+          Мериносовая пряжа,красный,12,5
+          Хлопок,белый,0,4
+          "Спицы, 4 мм",—,1,2
+        order.csv: |
+          товар,цвет,заказать
+          Мохер,розовый,4
+      starterCode: |
+        import csv
+
+        # Прочитай stock.csv, запиши order.csv и выведи число позиций в заказе
+      tests:
+        - id: t1
+          kind: io
+          title: Склад Алёны
+          example: true
+          expected: "В заказе позиций: 3"
+        - id: t2
+          kind: assert
+          title: Файл заказа для склада Алёны
+          example: true
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("order.csv")
+            with open("order.csv", encoding="utf-8", newline="") as check_file:
+                rows = list(csv.reader(check_file))
+            assert rows == [
+                ["товар", "цвет", "заказать"],
+                ["Мериносовая пряжа", "синий", "7"],
+                ["Хлопок", "белый", "8"],
+                ["Спицы, 4 мм", "—", "3"],
+            ]
+          message: >-
+            order.csv не совпал с образцом из условия. Сравни его в «Файлах после запуска»: одна
+            строка заголовков, потом три товара в порядке склада, в каждой строке три ячейки,
+            числа 7, 8 и 3, а строки «Мохер» с прошлой недели быть не должно.
+        - id: t3
+          kind: io
+          title: Другой склад
+          example: true
+          files:
+            stock.csv: |
+              товар,цвет,остаток,минимум
+              Альпака,серый,2,6
+              Мохер,розовый,1,3
+              Крючок 3 мм,—,5,2
+          expected: "В заказе позиций: 2"
+        - id: t4
+          kind: io
+          title: "Граничный случай: всё в наличии, остаток равен минимуму"
+          edge: true
+          files:
+            stock.csv: |
+              товар,цвет,остаток,минимум
+              Хлопок,белый,4,4
+              Альпака,серый,9,3
+          expected: "В заказе позиций: 0"
+        - id: t5
+          kind: assert
+          title: "Граничный случай: пустой заказ — только заголовки"
+          edge: true
+          files:
+            stock.csv: |
+              товар,цвет,остаток,минимум
+              Хлопок,белый,4,4
+              Альпака,серый,9,3
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("order.csv")
+            with open("order.csv", encoding="utf-8", newline="") as check_file:
+                rows = list(csv.reader(check_file))
+            assert rows == [["товар", "цвет", "заказать"]]
+          message: >-
+            Когда заказывать нечего, в order.csv остаётся одна строка заголовков — заказ прошлой
+            недели тоже заменяется.
+        - id: t-amount
+          kind: assert
+          title: Сколько заказать
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("order.csv")
+            with open("order.csv", encoding="utf-8", newline="") as check_file:
+                rows = [row for row in csv.reader(check_file) if row[:2] != ["товар", "цвет"]]
+            goods = [row[:2] for row in rows]
+            if goods == [["Мериносовая пряжа", "синий"], ["Хлопок", "белый"], ["Спицы, 4 мм", "—"]]:
+                assert [row[2] if len(row) > 2 else None for row in rows] == ["7", "8", "3"]
+          message: Товары в заказе те, а числа «заказать» — нет. Считай `минимум * 2 - остаток`.
+        - id: t-exists
+          kind: assert
+          title: Файл order.csv создан
+          files:
+            order.csv: null
+          code: |
+            import os
+
+            assert os.path.exists("order.csv")
+          message: Программа создаёт в рабочей папке файл с именем ровно `order.csv`.
+        - id: t-header
+          kind: assert
+          title: Первая строка — заголовки
+          files:
+            order.csv: null
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("order.csv")
+            with open("order.csv", encoding="utf-8", newline="") as check_file:
+                rows = list(csv.reader(check_file))
+            assert len(rows) > 0 and rows[0] == ["товар", "цвет", "заказать"]
+          message: Первая строка order.csv — заголовки `товар,цвет,заказать`.
+        - id: t-comma
+          kind: assert
+          title: Значение с запятой — в одной ячейке
+          files:
+            order.csv: null
+          code: |
+            import csv
+            import os
+
+            assert os.path.exists("order.csv")
+            with open("order.csv", encoding="utf-8", newline="") as check_file:
+                rows = list(csv.reader(check_file))
+            for row in rows:
+                assert len(row) == 3
+          message: >-
+            В каждой строке order.csv ровно три ячейки — даже у товара с запятой в названии
+            («Спицы, 4 мм»).
+        - id: t-src
+          kind: assert
+          title: stock.csv не изменился
+          code: |
+            import os
+
+            assert os.path.exists("stock.csv")
+            with open("stock.csv", encoding="utf-8", newline="") as check_file:
+                text = check_file.read()
+            assert text == (
+                "товар,цвет,остаток,минимум\n"
+                "Мериносовая пряжа,синий,3,5\n"
+                "Мериносовая пряжа,красный,12,5\n"
+                "Хлопок,белый,0,4\n"
+                '"Спицы, 4 мм",—,1,2\n'
+            )
+          message: Исходная таблица stock.csv остаётся такой, какой была, — заказ пишется в новый файл.
+        - id: t-newline
+          kind: assert
+          title: Файл для записи открыт с newline=""
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "open":
+                    mode = "r"
+                    if len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
+                        mode = node.args[1].value
+                    for k in node.keywords:
+                        if k.arg == "mode" and isinstance(k.value, ast.Constant):
+                            mode = k.value.value
+                    if "w" in mode or "a" in mode:
+                        assert any(k.arg == "newline" for k in node.keywords)
+          message: >-
+            Файл, в который пишет csv, открыт без `newline=""`. На Windows между строками таблицы
+            появятся пустые строки.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            В одном из `open()` не указана кодировка. Добавь `encoding="utf-8"` — иначе на Windows
+            со старым Python (до 3.15) русский текст превратится в кракозябры.
+      criteria:
+        - Склад читается модулем csv, остаток и минимум превращаются в числа.
+        - В заказ попадают только строки с остатком строго меньше минимума, в порядке склада.
+        - "`заказать` считается как `минимум * 2 - остаток`."
+        - order.csv записан через csv, первая строка — заголовки, значение с запятой остаётся одной ячейкой.
+        - Файл для записи открыт с `encoding="utf-8"` и `newline=""`, stock.csv не изменился.
+        - 'Программа выводит `В заказе позиций: N`, в том числе `0`, когда заказывать нечего.'
+      hints:
+        - >-
+          Раздели работу на части: прочитать склад и отобрать строки для заказа; записать их в
+          `order.csv`; вывести количество. Что нужно знать о строке склада, чтобы решить, попадёт
+          ли она в заказ, — и в каком виде эти значения приходят из csv? И какой режим `open`
+          уберёт заказ прошлой недели?
+        - |-
+          Запись на другом примере — таблица очков команды:
+
+          ```python
+          import csv
+
+          players = [["Иванов, мл.", 12], ["Петров", 7]]
+          with open("team.csv", "w", encoding="utf-8", newline="") as f:
+              writer = csv.writer(f)
+              writer.writerow(["игрок", "очки"])
+              for player in players:
+                  writer.writerow(player)
+          ```
+
+          В файле будет `игрок,очки`, `"Иванов, мл.",12` и `Петров,7`.
+        - |-
+          Каркас:
+
+          ```text
+          order = []
+          with open("stock.csv", encoding=..., newline="") as f:
+              for row in csv.DictReader(f):
+                  остаток = int(...)
+                  минимум = int(...)
+                  если остаток < минимум:
+                      order.append([товар, цвет, минимум * 2 - остаток])
+
+          with open("order.csv", "w", encoding=..., newline="") as f:
+              writer = csv.writer(f)
+              writer.writerow([...заголовки...])
+              для каждой строки в order: writer.writerow(строка)
+
+          напечатать «В заказе позиций: …» — это длина order
+          ```
+      solution:
+        code: |
+          import csv
+
+          order = []
+          with open("stock.csv", encoding="utf-8", newline="") as f:
+              for row in csv.DictReader(f):
+                  left = int(row["остаток"])
+                  minimum = int(row["минимум"])
+                  if left < minimum:
+                      order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+          with open("order.csv", "w", encoding="utf-8", newline="") as f:
+              writer = csv.writer(f)
+              writer.writerow(["товар", "цвет", "заказать"])
+              for line in order:
+                  writer.writerow(line)
+
+          print(f"В заказе позиций: {len(order)}")
+        explanation: >-
+          Программа работает в два шага. Сначала читает склад и складывает в список `order`
+          готовые строки заказа — каждая тоже список из трёх значений. Потом один раз открывает
+          `order.csv` в режиме `"w"` — прошлый заказ стирается — и пишет заголовки и все строки
+          через `writerow`. csv сам ставит запятые, берёт «Спицы, 4 мм» в кавычки и превращает
+          числа в текст. Количество позиций — длина списка. `stock.csv` открывается только на
+          чтение, поэтому остаётся целым.
+      altSolutions:
+        - code: |
+            import csv
+
+            count = 0
+            with open("order.csv", "w", encoding="utf-8", newline="") as out:
+                writer = csv.writer(out)
+                writer.writerow(["товар", "цвет", "заказать"])
+                with open("stock.csv", encoding="utf-8", newline="") as f:
+                    for row in csv.DictReader(f):
+                        left = int(row["остаток"])
+                        minimum = int(row["минимум"])
+                        if left < minimum:
+                            writer.writerow([row["товар"], row["цвет"], minimum * 2 - left])
+                            count += 1
+            print("В заказе позиций:", count)
+          note: Файл заказа открыт сразу, строки пишутся прямо при чтении склада, количество — счётчиком.
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    if int(row["остаток"]) < int(row["минимум"]):
+                        amount = int(row["минимум"]) * 2 - int(row["остаток"])
+                        order.append({"товар": row["товар"], "цвет": row["цвет"], "заказать": str(amount)})
+
+            with open("order.csv", mode="w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["товар", "цвет", "заказать"])
+                writer.writeheader()
+                for item in order:
+                    writer.writerow(item)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: DictWriter — строки словарями, заголовки через writeheader(); режим через mode=.
+        - code: |
+            import csv
+
+            rows = [["товар", "цвет", "заказать"]]
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.reader(f):
+                    if row[0] == "товар":
+                        continue
+                    left = int(row[2])
+                    minimum = int(row[3])
+                    if left < minimum:
+                        rows.append([row[0], row[1], str(minimum * 2 - left)])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                csv.writer(f).writerows(rows)
+
+            print("В заказе позиций:", len(rows) - 1)
+          note: csv.reader по номерам столбцов, заголовки сразу в списке, запись одним writerows.
+        - code: |
+            import csv
+
+            with open('stock.csv', encoding='utf-8', newline='') as f:
+                table = list(csv.reader(f))
+
+            result = []
+            for name, color, left, minimum in table[1:]:
+                left = int(left)
+                minimum = int(minimum)
+                if minimum > left:
+                    result.append((name, color, 2 * minimum - left))
+
+            with open('order.csv', 'w', encoding='utf-8', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(('товар', 'цвет', 'заказать'))
+                for line in result:
+                    writer.writerow(line)
+
+            print('В заказе позиций: ' + str(len(result)))
+          note: Распаковка четырёх столбцов в for, заголовок отрезан срезом, кортежи вместо списков, формула 2 * minimum - left, одинарные кавычки.
+      wrongSolutions:
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("stock.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Заказ записан поверх склада.
+          expectMistake: overwrote-source
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("orders.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Файл заказа назван иначе.
+          expectMistake: wrong-name
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append(f"{row['товар']},{row['цвет']},{minimum * 2 - left}")
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                f.write("товар,цвет,заказать\n")
+                for line in order:
+                    f.write(line + "\n")
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Строки склеены вручную через запятую — «Спицы, 4 мм» разъехались на две ячейки.
+          expectMistake: manual-join
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Нет строки заголовков.
+          expectMistake: no-header
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow("товар,цвет,заказать")
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Заголовки переданы в writerow одной строкой — csv разложил её по буквам.
+          expectMistake: writerow-string
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    if row["остаток"] < row["минимум"]:
+                        order.append([row["товар"], row["цвет"], row["минимум"] * 2 - row["остаток"]])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Значения не превращены в числа.
+          expectMistake: no-int
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow("товар", "цвет", "заказать")
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: В writerow переданы три значения вместо одного списка.
+          expectMistake: writerow-list
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left <= minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Граница — остаток, равный минимуму, тоже попал в заказ.
+          expectMistake: boundary
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Файл для записи открыт без newline="".
+          expectMistake: no-newline-arg
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Склад открыт без кодировки.
+          expectMistake: no-encoding
+        - code: |
+            import csv
+
+            order = []
+            with open("stok.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Опечатка в имени файла склада.
+          expectMistake: file-name
+        - code: |
+            import csv
+
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+
+            order = []
+            for row in reader:
+                left = int(row["остаток"])
+                minimum = int(row["минимум"])
+                if left < minimum:
+                    order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Цикл по reader стоит после with — файл склада уже закрыт.
+          expectMistake: closed-file
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "a", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Режим "a" дописал новый заказ к прошлому вместо замены.
+          expectMistake: append-mode
+        - code: |
+            import csv
+
+            count = 0
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        with open("order.csv", "w", encoding="utf-8", newline="") as out:
+                            writer = csv.writer(out)
+                            writer.writerow(["товар", "цвет", "заказать"])
+                            writer.writerow([row["товар"], row["цвет"], minimum * 2 - left])
+                        count += 1
+
+            print(f"В заказе позиций: {count}")
+          note: order.csv открывается в режиме "w" внутри цикла — остаётся только последняя позиция.
+          expectMistake: reopen-in-loop
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            for line in order:
+                with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["товар", "цвет", "заказать"])
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Режим "w" внутри цикла записи (после сбора списка, отступ 4) — тоже остаётся одна позиция.
+          expectMistake: reopen-in-loop
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Строка open скопирована с чтения склада, режим "w" забыт — not writable.
+          expectMistake: read-mode
+        - code: |
+            import csv
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as out:
+                writer = csv.writer(out)
+                writer.writerow(["товар", "цвет", "заказать"])
+                with open("stock.csv", encoding="utf-8", newline="") as f:
+                    for row in csv.DictReader(f):
+                        left = int(row["остаток"])
+                        minimum = int(row["минимум"])
+                        if left <= minimum:
+                            writer.writerow([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", encoding="utf-8", newline="") as f:
+                count = len(list(csv.reader(f))) - 1
+            print(f"В заказе позиций: {count}")
+          note: Число позиций считается чтением готового order.csv (это можно), а ошибка — в границе; разбор про забытый режим "w" срабатывать не должен.
+          expectMistake: boundary
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                writer.writerow(order)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Весь список заказа передан в один writerow — позиции легли в ячейки одной строки.
+          expectMistake: writerow-all
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerows(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: writerows(line) вместо writerow(line) — csv.Error «iterable expected».
+          expectMistake: not-iterable
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split(",")
+                    if parts[0] == "товар":
+                        continue
+                    left = int(parts[2])
+                    minimum = int(parts[3])
+                    if left < minimum:
+                        order.append([parts[0], parts[1], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Склад разобран вручную split(",") — «Спицы, 4 мм» ломают строку.
+          expectMistake: manual-split
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар,цвет,заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Заголовки одной строкой внутри списка — одна ячейка вместо трёх.
+          expectMistake: header-one-cell
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], (minimum - left) * 2])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Неверная формула (минимум - остаток) * 2 — товары те, числа другие.
+          expectMistake: formula
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimum * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                for line in order:
+                    writer.writerow(["товар", "цвет", "заказать"])
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Строка заголовков пишется в цикле перед каждой позицией — общий разбор t2 с образцом файла; разборы про заголовки и формулу срабатывать не должны.
+          expectMistake: null
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append(f"{row['товар']},{row['цвет']},{minimum * 2 - left}")
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow([line])
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Строка заказа склеена f-строкой и передана списком из одного элемента — вся позиция в одной ячейке; общий разбор t2.
+          expectMistake: null
+        - code: |
+            import csv
+
+            order = []
+            with open("stock.csv", encoding="utf-8", newline="") as f:
+                for row in csv.DictReader(f):
+                    left = int(row["остаток"])
+                    minimum = int(row["минимум"])
+                    if left < minimum:
+                        order.append([row["товар"], row["цвет"], minimun * 2 - left])
+
+            with open("order.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["товар", "цвет", "заказать"])
+                for line in order:
+                    writer.writerow(line)
+
+            print(f"В заказе позиций: {len(order)}")
+          note: Опечатка в имени переменной до записи файла — NameError; проверки файла падают вслед за программой, но разборы про файл срабатывать не должны.
+          expectMistake: null
+      mistakes:
+        - id: file-name
+          when:
+            errorType: FileNotFoundError
+          why: >-
+            Python не нашёл файл склада с именем из `open()`. Файл задания лежит в рабочей папке
+            рядом с программой, но имя должно совпасть буква в букву — лишняя или пропущенная
+            буква, и это уже другой файл.
+          try: Скопируй имя `stock.csv` из условия или из блока «Файлы задания».
+          verify: Ошибка FileNotFoundError исчезнет, и программа дойдёт до записи заказа.
+        - id: read-mode
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*open\(\s*["'']order\.csv["''][^)]*(["''][wa]["'']|mode\s*=))(?=[\s\S]*open\(\s*["'']order\.csv["''])'
+          where: Строка, где открывается order.csv
+          why: >-
+            `order.csv` открыт без режима `"w"` — значит, для чтения, и писать в него нельзя
+            (not writable). Это не ограничение тренажёра: на компьютере будет та же ошибка.
+          try: 'Добавь режим вторым аргументом: `open("order.csv", "w", encoding="utf-8", newline="")`.'
+          verify: Ошибка «not writable» исчезнет, а в «Файлах после запуска» появится новый order.csv.
+        - id: writerow-list
+          when:
+            errorIncludes: takes exactly one argument
+          why: >-
+            `writerow` записывает одну строку таблицы и принимает **один** аргумент — список её
+            значений. Три значения через запятую он принять не может.
+          try: 'Собери значения в список: `writer.writerow(["товар", "цвет", "заказать"])` — с квадратными скобками.'
+          verify: Ошибка «takes exactly one argument» исчезнет.
+        - id: not-iterable
+          when:
+            errorIncludes: iterable expected
+          why: >-
+            csv ждёт список значений, а получил число. Так бывает, если вызвать `writerows(line)`
+            для одной строки: `writerows` ждёт список **строк** и принимает каждое значение за
+            отдельную строку. Или если передать в `writerow` число без квадратных скобок.
+          try: Одну строку таблицы пиши через `writer.writerow(line)`, где `line` — список из трёх значений.
+          verify: Ошибка «iterable expected» исчезнет, а в order.csv будет по строке на товар.
+        - id: closed-file
+          when:
+            errorIncludes: closed file
+          why: >-
+            Цикл читает склад уже после блока `with`, а там файл закрыт. `csv.DictReader` не
+            читает файл заранее: он берёт строки из открытого файла по одной, прямо во время
+            цикла.
+          try: >-
+            Перенеси цикл `for row in ...` внутрь блока `with` — сдвинь его вправо на один
+            отступ. Строки заказа можно собрать в список и записать уже после.
+          verify: Ошибка «I/O operation on closed file» исчезнет.
+        - id: manual-split
+          when:
+            errorType: ValueError
+            codeRegex: 'split\(\s*["''],["'']\s*\)'
+          where: Строка, где склад режется через split
+          why: >-
+            Склад разобран вручную через `split(",")`. В строке `"Спицы, 4 мм",—,1,2` запятая
+            стоит внутри кавычек, `split` режет и по ней — на месте остатка оказывается прочерк
+            `—`, и `int()` не может его превратить.
+          try: 'Читай склад модулем csv: `csv.DictReader(f)` понимает кавычки.'
+          verify: Ошибка ValueError исчезнет, а «Спицы, 4 мм» придут одной ячейкой.
+        - id: no-int
+          when:
+            errorType: TypeError
+            errorIncludes: "'str'"
+          why: >-
+            Значения из CSV — строки. Со строками `"5" * 2` даёт `"55"`, а вычитать строки Python
+            не умеет — отсюда TypeError. Сравнение строк тоже обманчиво: `"12" < "5"` даёт
+            `True`, потому что строки сравниваются посимвольно, а `"1"` идёт раньше `"5"`.
+          try: 'Превращай остаток и минимум в числа сразу после чтения: `int(row["остаток"])`.'
+          verify: Ошибка TypeError исчезнет, и программа дойдёт до записи заказа.
+        - id: overwrote-source
+          when:
+            failedTest: t-src
+            codeRegex: 'open\(\s*["'']stock\.csv["'']\s*,\s*(mode\s*=\s*)?["''][wa]'
+          why: >-
+            Программа записала заказ в `stock.csv` — поверх склада. Режим `"w"` стёр таблицу
+            остатков в момент открытия: на компьютере она пропала бы насовсем, и в корзину такой
+            файл не попадает.
+          try: >-
+            Открывай на запись `order.csv`, а `stock.csv` — только на чтение, как в уроке 7.2:
+            исходная таблица остаётся целой, результат — в отдельном файле.
+          verify: В «Файлах после запуска» изменённым должен оказаться только order.csv.
+        - id: wrong-name
+          when:
+            failedTest: t-exists
+            codeRegex: '(?<![\s\S])(?![\s\S]*["'']order\.csv["''])'
+          where: Строка, где order.csv открывается на запись
+          why: >-
+            Файла `order.csv` после запуска нет. Скорее всего, заказ записан под другим именем —
+            посмотри в «Файлах после запуска», какой файл создала программа. Поставщик ждёт именно
+            `order.csv`.
+          try: Назови файл для записи ровно `order.csv` — латиницей, с маленькой буквы.
+          verify: Проверка «Файл order.csv создан» станет зелёной.
+        - id: manual-join
+          when:
+            failedTest: t-comma
+            codeRegex: '(?<![\s\S])(?![\s\S]*writerow)'
+          where: Запись строк заказа
+          why: >-
+            Строки склеены вручную через запятую. Для «Спицы, 4 мм» это ломает таблицу: запятая
+            внутри названия выглядит как граница ячейки, и строка разъезжается на четыре ячейки
+            вместо трёх.
+          try: >-
+            Пиши через `csv.writer(f)` и `writer.writerow([товар, цвет, заказать])` — csv сам
+            возьмёт значение с запятой в кавычки.
+          verify: 'Строка спиц в order.csv должна стать такой: `"Спицы, 4 мм",—,3`.'
+        - id: header-one-cell
+          when:
+            failedTest: t-header
+            codeRegex: 'writerow\(\s*\[\s*f?["''][^"''\n\]]*,[^"''\n\]]*["'']\s*\]\s*\)'
+          why: >-
+            Заголовки переданы в `writerow` одной строкой внутри списка: `["товар,цвет,заказать"]`
+            — это список из **одного** значения. csv записал его в одну ячейку и, увидев внутри
+            запятые, взял в кавычки: `"товар,цвет,заказать"`.
+          try: 'Сделай каждый заголовок отдельным элементом списка: `writer.writerow(["товар", "цвет", "заказать"])`.'
+          verify: Первая строка order.csv станет `товар,цвет,заказать` — без кавычек.
+        - id: writerow-string
+          when:
+            failedTest: t-header
+            codeRegex: 'writerow\(\s*f?["'']'
+          why: >-
+            В `writerow` передана строка, а не список. Строку csv считает набором символов и
+            кладёт каждую букву в отдельную ячейку: `т,о,в,а,р,…`.
+          try: 'Передай список значений: `writer.writerow(["товар", "цвет", "заказать"])`.'
+          verify: Первая строка order.csv станет `товар,цвет,заказать`.
+        - id: no-header
+          when:
+            failedTest: t-header
+            codeRegex: '(?<![\s\S])(?![\s\S]*заказать)'
+          where: Начало записи order.csv, до цикла
+          why: >-
+            В первой строке `order.csv` нет заголовков. Без них поставщик не поймёт, что значат
+            столбцы, а DictReader у него заберёт под заголовки первую строку заказа.
+          try: 'До цикла записи добавь `writer.writerow(["товар", "цвет", "заказать"])`.'
+          verify: Первая строка order.csv станет `товар,цвет,заказать`.
+        - id: append-mode
+          when:
+            failedTest: t2
+            codeRegex: 'open\(\s*["'']order\.csv["'']\s*,\s*(mode\s*=\s*)?["'']a'
+          why: >-
+            `order.csv` открыт в режиме `"a"`, и новый заказ дописался в конец прошлого: в файле
+            осталась и строка «Мохер» с прошлой недели, и вторая строка заголовков. Поставщик
+            привезёт лишнее.
+          try: >-
+            Открой `order.csv` в режиме `"w"`: он стирает старое содержимое при открытии — здесь
+            это ровно то, что нужно.
+          verify: В «Файлах после запуска» в order.csv должно остаться четыре строки — заголовки и три товара.
+        - id: reopen-in-loop
+          when:
+            failedTest: t2
+            codeRegex: '^([ \t]*)for\b[^\n]*\n(?:(?:\1[ \t]+[^\n]*|[ \t]*)\n)*?\1[ \t]+with open\(\s*["'']order\.csv["'']\s*,\s*(mode\s*=\s*)?["'']w'
+          where: Строка, где order.csv открывается на запись
+          why: >-
+            `order.csv` открывается в режиме `"w"` внутри цикла — заново на каждом его шаге.
+            Режим `"w"` стирает файл при каждом открытии, поэтому в заказе остаётся только
+            последняя позиция.
+          try: >-
+            Открой `order.csv` один раз, вне цикла: до чтения склада или после него, когда строки
+            заказа уже собраны в список. Цикл по строкам — внутри этого `with`.
+          verify: В «Файлах после запуска» в order.csv должно быть три строки товаров, а не одна.
+        - id: writerow-all
+          when:
+            failedTest: t2
+            codeRegex: '(\w+)\.append\([\s\S]*\.writerow\(\s*\1\s*\)'
+          where: Вызов writerow, которому передан весь список заказа
+          why: >-
+            `writerow` записывает одну строку таблицы. Весь список заказа стал одной строкой, и
+            каждая позиция легла в ячейку целиком, вместе с квадратными скобками.
+          try: 'Пиши позиции по одной: `for line in order:` и внутри `writer.writerow(line)`.'
+          verify: В «Файлах после запуска» в order.csv должно быть четыре строки — заголовки и три товара.
+        - id: formula
+          when:
+            failedTest: t-amount
+            outputIncludes: "В заказе позиций: 3"
+          why: >-
+            Товары в заказе верные, а число «заказать» другое. По условию это
+            `минимум * 2 - остаток`: для синей мериносовой пряжи 5 * 2 - 3 = 7, для хлопка
+            4 * 2 - 0 = 8, для спиц 2 * 2 - 1 = 3.
+          try: Сверь формулу с условием и посчитай первую строку склада на бумаге.
+          verify: В order.csv числа «заказать» станут 7, 8 и 3.
+        - id: boundary
+          when:
+            failedTest: t4
+            outputIncludes: "В заказе позиций: 1"
+          why: >-
+            В заказ попал товар, у которого остаток равен минимуму. По условию заказываем только
+            то, чего **меньше** минимума: 4 мотка при минимуме 4 — ещё норма.
+          try: Проверь знак сравнения — нужно строгое `<`, как в примере «Что дозаказать».
+          verify: 'В граничном случае «всё в наличии» должно стать «В заказе позиций: 0».'
+        - id: no-newline-arg
+          when:
+            failedTest: t-newline
+            codeRegex: 'open\((?=[^)]*["''][wa]["''])(?![^)]*newline)'
+          why: >-
+            Файл для записи открыт без `newline=""`. В тренажёре таблица выглядит верно, но на
+            Windows csv и Python вместе поставят двойной перевод строки — и в Excel между
+            записями появятся пустые строки.
+          try: 'Добавь `newline=""` в `open("order.csv", "w", ...)`.'
+          verify: Проверка «Файл для записи открыт с newline=""» станет зелёной.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            codeRegex: 'open\((?![^)]*encoding)'
+          why: >-
+            Файл открыт без `encoding`. В тренажёре это незаметно: здесь по умолчанию UTF-8. А на
+            русской Windows Python 3.14 и раньше без подсказки использует другую кодировку — русские заголовки
+            превратятся в кракозябры или программа упадёт с UnicodeDecodeError.
+          try: 'Добавь `encoding="utf-8"` в каждый `open()` — и при чтении, и при записи.'
+          verify: Проверка «Кодировка указана» станет зелёной.
+      afterPass: >-
+        Заказ — отдельный файл, склад цел, а «Спицы, 4 мм» csv сам взял в кавычки. Улучшение — как
+        в истории Алёны: если в остатке прочерк, не падай, а выведи `Проверить: <товар>` и
+        переходи к следующей строке, как в задании «Сбор на подарок». На компьютере учти:
+        русский Excel по двойному щелчку ждёт разделитель `;` и метку UTF-8 в начале файла.
+        Файл через запятую он покажет одним столбцом, а без метки — с кракозябрами. Если
+        поставщик откроет заказ в Excel, пиши `csv.writer(f, delimiter=";")` и открывай файл с
+        `encoding="utf-8-sig"`.
+      skills: [files-json, files-paths, conditions]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "CSV — таблица в текстовом файле: строка файла — строка таблицы, первая строка — заголовки, ячейки разделены запятой или `;`."
+      - "`csv.DictReader(f)` (для файла с `;` — `delimiter=\";\"`) отдаёт строки словарями по заголовкам и понимает кавычки; все значения — строки, числа превращаем сами через `int()`."
+      - "Битую строку пропускаем: `try` вокруг `int()` внутри цикла, в `except ValueError` — сообщение и `continue`."
+      - "Записываем через `csv.writer` и `writerow([...])` в отдельный файл — `open(..., \"w\", encoding=\"utf-8\", newline=\"\")`; исходную таблицу не трогаем."
+    question: >-
+      Программа читает выгрузку из русского Excel через `csv.DictReader(f)` и падает с KeyError
+      на `row["сумма"]`, хотя столбец «сумма» в файле точно есть. Почему так и как исправить?
+    answer: >-
+      Русский Excel разделяет столбцы точкой с запятой, а csv без подсказки ищет запятые. Он не
+      нашёл ни одной, и вся первая строка, например `имя;сумма`, стала одним заголовком —
+      ключа `сумма` в словаре нет. Исправление — назвать разделитель:
+      `csv.DictReader(f, delimiter=";")`. Проверить легко: `print(row)` в цикле покажет, какие
+      ключи на самом деле получились.

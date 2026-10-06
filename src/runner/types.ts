@@ -34,6 +34,42 @@ export interface OutputDiff {
   actualNumber?: string;
 }
 
+/** Ответ учебной симуляции сети (поле http в материалах, см. src/content/schema.ts). */
+export interface HttpMock {
+  url: string;
+  method?: 'GET' | 'POST';
+  status?: number;
+  json?: unknown;
+  text?: string;
+  headers?: Record<string, string>;
+  error?: 'timeout' | 'connection';
+}
+
+/**
+ * Окружение запуска: каждый запуск идёт в новой пустой рабочей папке, куда записываются учебные
+ * файлы и базы SQLite, а код ученика сохраняется под именем filename (по умолчанию main.py).
+ */
+export interface RunEnvironment {
+  filename?: string;
+  files?: Record<string, string>;
+  databases?: Record<string, string>;
+  seed?: number;
+  http?: HttpMock[];
+}
+
+/** Файл рабочей папки, который программа создала или изменила («Файлы после запуска»). */
+export interface RunFile {
+  /** Путь относительно рабочей папки, через «/». */
+  path: string;
+  status: 'created' | 'modified';
+  /** Размер в байтах. */
+  size: number;
+  /** Начало текста (до 4000 символов); null — двоичный файл (например, база SQLite). */
+  text: string | null;
+  /** Текст показан не целиком. */
+  truncated: boolean;
+}
+
 export interface ExecutionOutcome {
   error: PyError | null;
   /** Вывод превысил лимит — программа остановлена. */
@@ -43,6 +79,8 @@ export interface ExecutionOutcome {
   transcript: TranscriptPart[];
   stdout: string;
   truncated: boolean;
+  /** Созданные и изменённые программой файлы (не больше 20). */
+  files: RunFile[];
 }
 
 export interface RunResult extends Partial<ExecutionOutcome> {
@@ -68,6 +106,8 @@ export interface TestResult {
   truncated: boolean;
   exitCode: number | string | null;
   durationMs: number;
+  /** Созданные и изменённые программой файлы; у прерванного теста их нет. */
+  files?: RunFile[];
   /** Заполняется на стороне интерфейса: тест не завершился вовремя или был остановлен. */
   interrupted?: 'timeout' | 'stopped' | 'skipped';
 }
@@ -84,7 +124,11 @@ export interface CheckResult {
   tests: TestResult[];
 }
 
-export interface CheckPayload {
+/**
+ * Проверка: код, тесты, правила и окружение задания. У тестов могут быть свои files, databases,
+ * seed и http — harness.py дополняет ими окружение задания.
+ */
+export interface CheckPayload extends RunEnvironment {
   code: string;
   tests: unknown[];
   rules: unknown[];
@@ -103,5 +147,5 @@ export type WorkerMessage =
 
 /** Сообщения от интерфейса к worker. */
 export type WorkerRequest =
-  | { type: 'run'; id: number; code: string; stdin: string; limit: number }
+  | { type: 'run'; id: number; code: string; stdin: string; limit: number; environment?: RunEnvironment }
   | { type: 'check'; id: number; payload: string };

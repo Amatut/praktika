@@ -1,0 +1,2152 @@
+id: m7-l1
+module: m7
+number: "7.1"
+title: "Файлы: открыть, прочитать, записать"
+objective: >-
+  Читать текстовый файл целиком и построчно и записывать или дописывать строки через
+  `with open(…, encoding="utf-8")`, осознанно выбирая режим `r`, `w` или `a`.
+minutes: [25, 30]
+prerequisites: [m6-l6]
+skills: [files-paths]
+environment: python
+
+story:
+  title: Дневник пробежек, который стирал сам себя
+  fictional: true
+  text: >-
+    Стас готовится к первому забегу на 10 км. Сначала он записывал пробежки в заметки на
+    телефоне, но заметки перемешались, и посчитать, сколько он пробежал за месяц, так и не вышло.
+    Сестра Лада написала ему маленькую программу, которая спрашивает дистанцию, дописывает строку
+    в файл `runs.txt` и сразу считает сумму. Первая версия каждый вечер стирала всё, что было
+    записано раньше, — файл открывался не в том режиме. После исправления одной буквы записи
+    копятся уже третий месяц.
+
+why: >-
+  Всё, что лежит в переменных, пропадает, когда программа заканчивает работу. Файл хранит данные
+  между запусками: например, дневник пробежек, который каждый вечер пополняется одной строкой.
+
+usedIn: >-
+  Журналы работы программ (логи), заметки и дневники, файлы настроек, выгрузки из учётных
+  программ — программа, которая «помнит», что было вчера, чаще всего хранит это в файлах.
+
+steps:
+  - id: files-read
+    type: theory
+    title: Файл, open и with
+    body: |-
+      Пока программа работает, данные живут в переменных. Программа закончилась — переменных
+      больше нет. **Файл** лежит на диске и остаётся после программы: завтра его можно прочитать
+      снова.
+
+      **Текстовый файл** — это строки текста. В конце каждой строки стоит невидимый символ
+      **перевода строки**. В Python он записывается как `\n` — это один символ, хоть и пишется
+      двумя знаками.
+
+      Чтобы прочитать файл, его открывают:
+
+      ```python
+      with open("runs.txt", encoding="utf-8") as f:
+          text = f.read()
+      print(text)
+      ```
+
+      - `open("runs.txt", …)` открывает файл по имени. Python ищет его в папке, из которой
+        запущена программа. О папках и путях — в следующем уроке.
+      - `f` — **файловый объект**, то есть «открытый файл». Через него читают и пишут. Имя можно
+        выбрать любое: `f`, `file`, `diary`.
+      - `with … as f:` — блок, внутри которого файл открыт. Когда блок кончается, Python сам
+        закрывает файл, даже если внутри случилась ошибка. Без `with` файл пришлось бы закрывать
+        вручную, а это легко забыть.
+
+      Прочитать файл можно двумя способами:
+
+      - `f.read()` — весь текст одним значением-строкой, со всеми `\n` внутри;
+      - `for line in f:` — по одной строке за шаг цикла. **Каждая строка приходит вместе с `\n`
+        на конце** (у последней строки файла его может и не быть), поэтому обычно пишут
+        `line.strip()`.
+
+      **Кодировка** — таблица, по которой буквы превращаются в байты (числа, которыми текст
+      хранится на диске). Сейчас почти везде используют UTF-8. Но Python 3.14 и более ранние
+      версии на русской Windows без подсказки читают и пишут файлы в другой кодировке, cp1251, и
+      вместо «Привет» получается «РџСЂРёРІРµС‚» или ошибка UnicodeDecodeError. С Python 3.15 по
+      умолчанию UTF-8 и на Windows, но программу могут запустить и на старом Python. Поэтому в
+      каждом `open` пиши `encoding="utf-8"`.
+
+      **Как это устроено в тренажёре.** Файлы задания уже лежат рядом с программой, их видно в
+      блоке «Файлы задания». Каждый запуск начинается заново: в папке только файлы задания. Что
+      программа создала или изменила, видно после запуска в блоке «Файлы после запуска», но к
+      следующему запуску всё вернётся как было. На компьютере записанное остаётся на диске.
+    simpler: >-
+      Файл — тетрадь на полке. `open` — взять тетрадь, `with` — «когда закончишь, положи на
+      место». Строки из тетради приходят вместе со знаком «новая строка» `\n`, его убирает
+      `strip()`. А `encoding="utf-8"` говорит, каким алфавитом тетрадь написана, чтобы буквы не
+      перепутались.
+    coach: >-
+      Запомни связку целиком: `with open(имя, encoding="utf-8") as f:` — так мы открываем файлы во
+      всём модуле.
+
+  - id: runs-total
+    type: example
+    title: Сколько я пробежал
+    body: >-
+      Часть программы Лады, которая считает итог: она читает дневник `runs.txt` (его видно в
+      блоке «Файлы задания») и считает пробежки и километры. Нажми «Запустить».
+    code: |-
+      total = 0
+      count = 0
+      with open("runs.txt", encoding="utf-8") as f:
+          for line in f:
+              count += 1
+              total += float(line)
+      print(f"Пробежек: {count}, всего км: {total}")
+    files:
+      runs.txt: |
+        5
+        3.5
+        7
+    notes:
+      - line: 3
+        text: >-
+          Открываем файл для чтения, с кодировкой. Внутри блока `with` файл открыт, после блока
+          Python закроет его сам.
+      - line: 4
+        text: >-
+          Цикл по файлу: за каждый шаг в `line` попадает одна строка — `"5\n"`, потом `"3.5\n"`,
+          потом `"7\n"`.
+      - line: 6
+        text: >-
+          `float()` сам отбрасывает `\n` и пробелы по краям, поэтому `float("3.5\n")` даёт 3.5.
+      - line: 7
+        text: >-
+          Эта строка уже вне `with`: файл закрыт, но переменные `count` и `total` остались и
+          хранят результат.
+    tryIt: >-
+      Добавь в цикл `print(line)` и запусти: между числами появятся пустые строки. Это `\n` из
+      файла плюс перевод строки, который добавляет сам `print`. Потом замени на
+      `print(line.strip())` — пустые строки пропадут. А чтобы прочитать файл целиком, замени весь
+      цикл (строки 4–6) одной строкой `print(f.read())` с тем же отступом: числа выведутся
+      сразу все, а в итоге будет 0 пробежек — цикла, который считал, больше нет.
+    coach: >-
+      Файл закрывается сам, как только кончается блок `with`. Поэтому всё, что нужно из файла,
+      достань внутри блока.
+
+  - id: mojibake
+    type: quiz
+    title: Что за «РџСЂРёРІРµС‚»?
+    question: >-
+      Инна записала в файл слово «Привет» на ноутбуке с macOS, а Савва открыл этот файл
+      программой без `encoding` на Windows, где стоит Python 3.14, и увидел «РџСЂРёРІРµС‚». Что
+      произошло?
+    options:
+      - Файл повредился, когда его копировали
+      - Файл записан в UTF-8, а прочитан в другой кодировке
+      - Python на Windows не умеет читать русский текст
+    correct: 1
+    explanation: >-
+      Байты в файле те же самые, но Python переводил их в буквы по другой таблице — cp1251: так
+      Python 3.14 и более ранние версии читают файлы на русской Windows. Если при чтении указать
+      `encoding="utf-8"`, «Привет» вернётся. На macOS и Linux по умолчанию и так UTF-8 (а с
+      Python 3.15 — и на Windows), поэтому программа без `encoding` «работает у автора» и
+      ломается у коллеги со старым Python на Windows.
+    coach: >-
+      Кракозябры почти всегда значат не «файл сломался», а «прочитали не в той кодировке».
+
+  - id: practice-boxes
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m7-l1-e1
+      kind: repeat
+      title: Коробки для переезда
+      statement: |-
+        Семья переезжает, и каждую коробку нужно подписать номером. В файле `boxes.txt` записано,
+        что лежит в каждой коробке, — по строке на коробку. Напиши программу, которая выводит
+        пронумерованный список, а последней строкой — сколько всего коробок. Пробелы по краям
+        строк из файла в вывод попадать не должны.
+
+        Для файла из задания вывод такой:
+
+        ```text
+        1. посуда
+        2. книги
+        3. зимние вещи
+        Всего: 3
+        ```
+      input: Файл `boxes.txt` — по одной строке на коробку. Файл может быть и пустым.
+      output: "Строки `номер. содержимое` с номерами от 1, последняя — `Всего: N`."
+      constraints:
+        - Читай данные из файла `boxes.txt`, а не записывай список в код.
+        - "В `open()` укажи кодировку: `encoding=\"utf-8\"`."
+      files:
+        boxes.txt: |
+          посуда
+          книги
+          зимние вещи
+      starterCode: |
+        # Прочитай boxes.txt и выведи пронумерованный список коробок
+        # Последней строкой выведи «Всего: N»
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: файл из задания"
+          example: true
+          expected: |-
+            1. посуда
+            2. книги
+            3. зимние вещи
+            Всего: 3
+        - id: t2
+          kind: io
+          title: "Пример 2: пять коробок"
+          example: true
+          files:
+            boxes.txt: |
+              инструменты
+              игрушки
+              постельное бельё
+              лампы
+              документы
+          expected: |-
+            1. инструменты
+            2. игрушки
+            3. постельное бельё
+            4. лампы
+            5. документы
+            Всего: 5
+        - id: t3
+          kind: io
+          title: "Граничный случай: пустой файл"
+          edge: true
+          files:
+            boxes.txt: ""
+          expected: "Всего: 0"
+        - id: t4
+          kind: io
+          title: "Граничный случай: в конце файла нет перевода строки"
+          edge: true
+          files:
+            boxes.txt: "посуда\nкниги"
+          expected: |-
+            1. посуда
+            2. книги
+            Всего: 2
+        - id: t5
+          kind: io
+          title: "Граничный случай: пробелы по краям строки"
+          edge: true
+          files:
+            boxes.txt: "  лампы  \nкниги\n"
+          expected: |-
+            1. лампы
+            2. книги
+            Всего: 2
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            В одном из `open()` не указана кодировка. Добавь `encoding="utf-8"` — иначе на
+            Windows со старым Python (до 3.15) русский текст превратится в кракозябры.
+      criteria:
+        - Строки читаются из `boxes.txt`, номера идут подряд с 1.
+        - Перевод строки и пробелы по краям из файла в вывод не попадают, пустых строк между пунктами нет.
+        - "Последняя строка — `Всего: N`; для пустого файла — `Всего: 0`."
+        - "В `open()` указана кодировка `encoding=\"utf-8\"`."
+      hints:
+        - >-
+          В примере «Сколько я пробежал» уже есть и перебор строк файла, и счётчик. Подумай, что
+          приходит в `line` вместе с текстом и в какой момент увеличивать счётчик, чтобы первая
+          коробка получила номер 1.
+        - |-
+          Нумерация со счётчиком на другом материале:
+          ```python
+          number = 0
+          for city in ["Казань", "Тула"]:
+              number += 1
+              print(f"{number}) {city}")
+          ```
+          Строка из файла отличается тем, что на конце у неё `\n`: `"Тула\n".strip()` даёт `"Тула"`.
+        - |-
+          Каркас:
+          ```text
+          count = 0
+          with open(имя файла, encoding=…) as f:
+              для каждой строки line из f:
+                  увеличить count
+                  вывести count, точку, пробел и line без \n и пробелов по краям
+          вывести "Всего: " и count
+          ```
+      solution:
+        code: |
+          count = 0
+          with open("boxes.txt", encoding="utf-8") as f:
+              for line in f:
+                  count += 1
+                  print(f"{count}. {line.strip()}")
+          print(f"Всего: {count}")
+        explanation: >-
+          `for line in f` отдаёт строки файла по одной, вместе с `\n` на конце. Счётчик
+          увеличивается до `print`, поэтому нумерация начинается с 1. `line.strip()` убирает и
+          перевод строки, и пробелы по краям, а пробел внутри «зимние вещи» остаётся. Итог
+          печатается уже после цикла: для пустого файла цикл не выполнится ни разу, и выйдет
+          `Всего: 0`.
+      altSolutions:
+        - code: |
+            count = 0
+            with open("boxes.txt", "r", encoding="utf-8") as file:
+                for line in file:
+                    count = count + 1
+                    name = line.strip()
+                    print(str(count) + ". " + name)
+            print("Всего:", count)
+          note: Режим "r" указан явно, склейка строк вместо f-строки.
+        - code: |
+            boxes = []
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    boxes.append(line.strip())
+            for i in range(len(boxes)):
+                print(f"{i + 1}. {boxes[i]}")
+            print(f"Всего: {len(boxes)}")
+          note: Сначала собрать список, потом вывести его с номерами.
+        - code: |
+            with open("boxes.txt", encoding="utf-8") as f:
+                parts = f.read().split("\n")
+            count = 0
+            for part in parts:
+                if part.strip() != "":
+                    count += 1
+                    print(f"{count}. {part.strip()}")
+            print(f"Всего: {count}")
+          note: f.read() и split("\n") с пропуском пустых кусков.
+        - code: |
+            with open("boxes.txt", encoding="utf-8") as f:
+                lines = f.read().splitlines()
+            for i in range(len(lines)):
+                print(f"{i + 1}. {lines[i].strip()}")
+            print(f"Всего: {len(lines)}")
+          note: splitlines() (он появится в следующем уроке) делит текст на строки без \n.
+        - code: |
+            number = 0
+            with open("boxes.txt", encoding="utf-8") as boxes_file:
+                for row in boxes_file:
+                    number = number + 1
+                    print(number, ". ", row.strip(), sep="")
+            print("Всего: " + str(number))
+          note: Другие имена, print с sep="", склейка для итога.
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    item = line.strip()
+                    if item == "":
+                        continue
+                    count += 1
+                    print(f"{count}. {item}")
+            print(f"Всего: {count}")
+          note: Улучшение из afterPass — пустые строки пропускаются через continue.
+        - code: |
+            with open("boxes.txt", encoding="utf-8") as f:
+                lines = f.readlines()
+            i = 0
+            while i < len(lines):
+                print(f"{i + 1}. {lines[i].strip()}")
+                i += 1
+            print(f"Всего: {len(lines)}")
+          note: readlines() и while с индексом.
+        - code: |
+            result = []
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    result.append(f"{len(result) + 1}. {line.strip()}")
+            result.append(f"Всего: {len(result)}")
+            print("\n".join(result))
+          note: Список готовых строк и один print через join.
+        - code: |
+            f = open("boxes.txt", encoding="utf-8")
+            text = f.read()
+            f.close()
+            count = 0
+            for line in text.split("\n"):
+                if line.strip() != "":
+                    count += 1
+                    print(str(count) + ". " + line.strip())
+            print("Всего:", count)
+          note: open без with и close() вручную, read().split("\n") с пропуском пустых кусков.
+      wrongSolutions:
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    print(f"{count}. {line}")
+            print(f"Всего: {count}")
+          note: Строка печатается вместе с \n — между пунктами пустые строки.
+          expectMistake: extra-blank-lines
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                text = f.read()
+            for line in text:
+                count += 1
+                print(f"{count}. {line.strip()}")
+            print(f"Всего: {count}")
+          note: Перебор строки из f.read() идёт по буквам.
+          expectMistake: chars-not-lines
+        - code: |
+            with open("boxes.txt", encoding="utf-8") as f:
+                parts = f.read().split("\n")
+            count = 0
+            for part in parts:
+                count += 1
+                print(f"{count}. {part.strip()}")
+            print(f"Всего: {count}")
+          note: split("\n") оставляет пустой кусок после последнего \n — лишняя «коробка».
+          expectMistake: split-tail
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    print(f"{count}. {line.strip()}")
+                    count += 1
+            print(f"Всего: {count}")
+          note: Счётчик увеличивается после print — нумерация с нуля.
+          expectMistake: count-from-zero
+        - code: |
+            count = 0
+            with open("box.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    print(f"{count}. {line.strip()}")
+            print(f"Всего: {count}")
+          note: Опечатка в имени файла.
+          expectMistake: file-name
+        - code: |
+            count = 0
+            with open("boxes.txt") as f:
+                for line in f:
+                    count += 1
+                    print(f"{count}. {line.strip()}")
+            print(f"Всего: {count}")
+          note: Не указана кодировка — в тренажёре вывод верный, на Windows будут кракозябры.
+          expectMistake: no-encoding
+        - code: |
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    count = 0
+                    count += 1
+                    print(f"{count}. {line.strip()}")
+            print(f"Всего: {count}")
+          note: Счётчик обнуляется на каждом шаге цикла.
+          expectMistake: counter-in-loop
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                print("Коробки:")
+            for line in f:
+                count += 1
+                print(f"{count}. {line.strip()}")
+            print(f"Всего: {count}")
+          note: Цикл по файлу стоит после блока with — файл уже закрыт.
+          expectMistake: closed-file
+        - code: |
+            with open("boxes.txt", encoding="utf-8") as f:
+                words = f.read().split()
+            count = 0
+            for word in words:
+                count += 1
+                print(f"{count}. {word}")
+            print(f"Всего: {count}")
+          note: split() без аргумента режет «зимние вещи» на две коробки.
+          expectMistake: split-words
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    name = line.replace("\n", "")
+                    print(f"{count}. {name}")
+            print(f"Всего: {count}")
+          note: Убран только перевод строки (replace), пробелы по краям остались.
+          expectMistake: spaces-left
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    name = line.rstrip("\n")
+                    print(f"{count}. {name}")
+            print(f"Всего: {count}")
+          note: rstrip("\n") убирает только перевод строки — пробелы в начале остались.
+          expectMistake: spaces-left
+        - code: |
+            with open("boxes.txt", encoding="utf-8") as f:
+                lines = f.read().strip().split("\n")
+            for i in range(len(lines)):
+                print(f"{i + 1}. {lines[i].strip()}")
+            print(f"Всего: {len(lines)}")
+          note: Для пустого файла split даёт [""] — одна коробка без подписи.
+          expectMistake: null
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    print(f"{count}. {line[:-1]}")
+            print(f"Всего: {count}")
+          note: line[:-1] — у последней строки без \n отрезается буква.
+          expectMistake: null
+        - code: |
+            count = 1
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    print(f"{count}. {line.strip()}")
+                    count += 1
+            print(f"Всего: {count}")
+          note: Счётчик с 1 и увеличение после print — итог на 1 больше.
+          expectMistake: null
+        - code: |
+            count = 0
+            with open("boxes.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    print(f"{count}. {line}", end="")
+            print(f"Всего: {count}")
+          note: end="" вместо strip() — без \n в конце файла итог приклеивается.
+          expectMistake: null
+      mistakes:
+        - id: closed-file
+          when:
+            errorIncludes: closed file
+          where: Строки после блока `with`
+          why: >-
+            Файл закрывается, как только кончается блок `with`. Строка, на которой остановилась
+            программа, работает с `f` уже после блока, а файл закрыт: `I/O operation on closed
+            file`.
+          try: >-
+            Сдвинь цикл по файлу внутрь блока — с отступом под `with`. После блока можно
+            пользоваться переменными, которые ты заполнил внутри, но не самим `f`.
+          verify: 'В «Примере 1» должно получиться три пункта и `Всего: 3`.'
+        - id: file-name
+          when:
+            errorType: FileNotFoundError
+          where: Имя файла в `open()`
+          why: >-
+            Python не нашёл рядом с программой файл с таким именем. В рабочей папке лежит
+            `boxes.txt` — его видно в блоке «Файлы задания». Имя должно совпадать до буквы: без
+            опечаток, с тем же расширением `.txt` и строчными буквами.
+          try: Скопируй имя файла из условия — `boxes.txt` — и вставь его в `open()`.
+          verify: Ошибка FileNotFoundError должна исчезнуть, а в «Примере 1» появится список из трёх коробок.
+        - id: chars-not-lines
+          when:
+            outputIncludes: "1. п\n2. о"
+          where: Цикл `for` после `f.read()`
+          why: >-
+            `f.read()` вернул весь текст файла одним значением-строкой, со всеми `\n` внутри. Цикл
+            `for` по такому значению идёт **по символам**: «п», «о», «с»… Поэтому каждая буква
+            получила свой номер. По строкам файла идёт только цикл по самому файлу.
+          try: >-
+            Перебирай сам файл — `for line in f:` внутри блока `with`. Тогда за шаг цикла
+            приходит целая строка.
+          verify: 'В «Примере 1» должно получиться три пункта и `Всего: 3`.'
+        - id: extra-blank-lines
+          when:
+            outputIncludes: "посуда\n\n"
+          where: "`print` внутри цикла"
+          why: >-
+            Строка из файла приходит вместе с `\n` на конце, а `print` добавляет свой перевод
+            строки. Два перевода подряд — и между пунктами появляется пустая строка.
+          try: Убери перевод строки и пробелы по краям — выводи `line.strip()`.
+          verify: В «Примере 1» пункты должны идти подряд, без пустых строк между ними.
+        - id: split-tail
+          when:
+            outputIncludes: "4.\nВсего: 4"
+          where: '`split("\n")`'
+          why: >-
+            `split("\n")` режет текст по переводам строк. Файл заканчивается `\n`, поэтому после
+            последнего разреза остаётся пустой кусок `""` — он и стал четвёртой «коробкой» без
+            подписи.
+          try: >-
+            Перебирай файл построчно — `for line in f:`, — или пропускай пустые куски:
+            `if part.strip() == "": continue`.
+          verify: 'В «Примере 1» должно получиться `Всего: 3`.'
+        - id: split-words
+          when:
+            outputIncludes: "3. зимние\n4. вещи"
+          where: "`split()` без аргумента"
+          why: >-
+            `split()` без аргумента режет текст по любым пробелам, а не только по переводам строк.
+            Поэтому «зимние вещи» распались на две коробки: «зимние» и «вещи».
+          try: >-
+            Перебирай сам файл — `for line in f:` — и убирай края через `line.strip()`: пробел
+            внутри строки останется.
+          verify: 'В «Примере 1» должно получиться `3. зимние вещи` и `Всего: 3`.'
+        - id: count-from-zero
+          when:
+            outputIncludes: "0. посуда"
+          where: Порядок строк внутри цикла
+          why: >-
+            Номер печатается раньше, чем увеличивается счётчик, поэтому первая коробка получила
+            номер 0. Итог при этом верный: к концу цикла счётчик всё-таки досчитал до 3.
+          try: Поменяй строки местами — сначала `count += 1`, потом `print`.
+          verify: В «Примере 1» первая строка должна быть `1. посуда`.
+        - id: counter-in-loop
+          when:
+            outputIncludes: "1. посуда\n1. книги"
+          where: "`count = 0` внутри цикла"
+          why: >-
+            Все коробки получили номер 1: счётчик обнуляется на каждом шаге цикла, а потом
+            сразу становится 1. Начальное значение задают один раз — до цикла.
+          try: Перенеси `count = 0` выше блока `with`.
+          verify: 'В «Примере 1» должны получиться номера 1, 2, 3 и `Всего: 3`.'
+        - id: spaces-left
+          when:
+            failedTest: t5
+            outputIncludes: "  лампы"
+          where: То, что убирает `\n` из строки
+          why: >-
+            Перевод строки убран, а пробелы по краям, которые были в файле, остались — отсюда
+            лишние пробелы перед «лампы». `replace("\n", "")`, `rstrip("\n")` и срез `line[:-1]`
+            трогают только `\n`.
+          try: Используй `line.strip()` — он убирает и перевод строки, и пробелы по краям.
+          verify: 'Проверка «Граничный случай: пробелы по краям строки» должна стать зелёной.'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Всего:"
+          where: Вызов `open()`
+          why: >-
+            В `open()` не указана кодировка. В тренажёре этого не видно: здесь по умолчанию
+            UTF-8. А на русской Windows с Python 3.14 и раньше файл прочитается в cp1251, и
+            вместо «посуда» будут кракозябры или ошибка UnicodeDecodeError.
+          try: Добавь в `open()` аргумент `encoding="utf-8"`.
+          verify: Проверка «Кодировка указана» должна стать зелёной.
+      afterPass: >-
+        Список печатается аккуратно при любом числе строк — даже для пустого файла. Улучшение:
+        пропускай пустые строки через `if line.strip() == "": continue` — тогда случайный пустой
+        абзац в файле не превратится в коробку без подписи.
+      skills: [files-paths, accumulators, string-methods]
+
+  - id: w-twice
+    type: predict
+    title: Две записи в дневник
+    prompt: >-
+      У `open` бывает второй аргумент — режим. `"w"` (от write — «писать») открывает файл для
+      записи, а `f.write(текст)` записывает в него текст. Программа записывает в дневник
+      понедельник, потом вторник, а потом читает, что получилось. Как думаешь, что она выведет?
+    code: |-
+      with open("log.txt", "w", encoding="utf-8") as f:
+          f.write("Пн: 5 км\n")
+      with open("log.txt", "w", encoding="utf-8") as f:
+          f.write("Вт: 3 км\n")
+      with open("log.txt", encoding="utf-8") as f:
+          print(f.read())
+    options:
+      - |-
+        Пн: 5 км
+        Вт: 3 км
+      - "Вт: 3 км"
+      - "Пн: 5 км"
+    answer: "Вт: 3 км"
+    explanation: >-
+      Режим `"w"` стирает файл в момент открытия. Второй `open` стёр понедельник ещё до того, как
+      записался вторник. Кажется, что второй блок допишет строку, но дописывает другой режим —
+      `"a"`: с ним во втором `open` строк было бы две. Загляни в «Файлы после запуска» — в
+      `log.txt` одна строка. Все режимы разберём в следующем шаге.
+    coach: >-
+      Открывая файл на запись, сначала реши: копить записи или начать с чистого листа.
+
+  - id: files-write
+    type: theory
+    title: Записать заново или дописать
+    body: |-
+      Второй аргумент `open` — **режим**. Он говорит, что мы собираемся делать с файлом:
+
+      - `"r"` — читать (read). Это режим по умолчанию, поэтому до сих пор мы его не писали.
+      - `"w"` — писать (write). Если файла нет, он создаётся. Если файл есть, **всё его
+        содержимое стирается в момент открытия** — ещё до того, как ты что-то записал. Поэтому
+        в прогнозе понедельник и пропал.
+      - `"a"` — дописывать (append). Новое добавляется в конец, старое остаётся. Если файла нет,
+        он создаётся.
+
+      ```python
+      with open("plan.txt", "a", encoding="utf-8") as f:
+          f.write("суббота: длинная пробежка\n")
+      ```
+
+      Пишет в файл `f.write(текст)`. У него две особенности:
+
+      - принимает **ровно одну строку**: и `f.write(5)`, и `f.write("км:", 5)` — ошибка
+        TypeError. Число сначала преврати в текст: `f.write(f"{km}\n")` или `str(km)`;
+      - **сам не переводит строку**: без `\n` в конце следующая запись приклеится к этой.
+
+      Есть вариант попроще: `print(km, file=f)` печатает не на экран, а в файл. Как обычно у
+      `print`, число превращается в текст само, а в конце ставится `\n`.
+
+      Два частых заблуждения: «`"w"` допишет в конец» — нет, он начинает файл с чистого листа; и
+      «`write` сам перенесёт строку» — нет, перевод строки пишешь ты.
+
+      **Правило для работы с данными:** результат обработки записывай в **новый** файл, а
+      исходный не трогай. Если в программе окажется ошибка, исходные данные останутся целы, и
+      программу можно просто исправить и запустить снова. Дневник, который программа пополняет, —
+      другое дело: дописывать в него и есть её работа. Подробнее об учебной папке и копиях — в
+      следующем уроке.
+    simpler: >-
+      `"w"` — вырвать из тетради все листы и писать заново. `"a"` — открыть тетрадь на последней
+      странице и продолжить. `write` пишет ровно то, что ему дали, и даже новую строку сам не
+      начинает.
+    coach: >-
+      Одна буква в `open` решает, останутся ли старые записи — это та самая ошибка из истории
+      Стаса. Перед `"w"` спроси себя: этот файл точно можно стереть?
+
+  - id: practice-runs
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m7-l1-e2
+      kind: modify
+      title: Пробежка за сегодня
+      statement: |-
+        Лада дорабатывает свою программу для брата. Пока программа только считает пробежки из
+        `runs.txt`. Пусть теперь она сначала спрашивает сегодняшнюю дистанцию и дописывает её в
+        `runs.txt` отдельной строкой, а отчёт учитывает и новую запись. Старые записи должны
+        остаться на месте.
+
+        Например, в `runs.txt` записаны 5, 3.5 и 7, а сегодня Стас пробежал 4 км. Вывод:
+
+        ```text
+        Пробежек: 4, всего км: 19.5
+        ```
+
+        А в файле после запуска четыре строки: `5`, `3.5`, `7` и `4`.
+      input: Одна строка — сегодняшняя дистанция в километрах, например `4` или `2.5`.
+      output: >-
+        Одна строка: `Пробежек: N, всего км: S`. Сумма дробная, поэтому 6 км выводятся как `6.0`.
+      constraints:
+        - Старые записи в `runs.txt` не стирай — новая запись добавляется в конец файла.
+        - Каждая запись — на своей строке.
+        - "В каждом `open()` укажи кодировку `encoding=\"utf-8\"`."
+      files:
+        runs.txt: |
+          5
+          3.5
+          7
+      starterCode: |
+        total = 0
+        count = 0
+        with open("runs.txt", encoding="utf-8") as f:
+            for line in f:
+                count += 1
+                total += float(line)
+        print(f"Пробежек: {count}, всего км: {total}")
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: сегодня 4 км"
+          example: true
+          stdin: "4\n"
+          expected: "Пробежек: 4, всего км: 19.5"
+        - id: t2
+          kind: io
+          title: "Пример 2: в дневнике одна запись"
+          example: true
+          stdin: "2.5\n"
+          files:
+            runs.txt: "10\n"
+          expected: "Пробежек: 2, всего км: 12.5"
+        - id: t3
+          kind: io
+          title: "Граничный случай: дневник пустой"
+          edge: true
+          stdin: "6\n"
+          files:
+            runs.txt: ""
+          expected: "Пробежек: 1, всего км: 6.0"
+        - id: t4
+          kind: assert
+          title: Старые записи на месте
+          example: true
+          stdin: "4\n"
+          code: |
+            import os
+            assert os.path.exists("runs.txt")
+            with open("runs.txt", encoding="utf-8") as check_file:
+                saved = check_file.read()
+            assert saved.startswith("5\n3.5\n7\n")
+          message: >-
+            После запуска в `runs.txt` остаются старые записи 5, 3.5 и 7, а сегодняшняя стоит
+            после них.
+        - id: t5
+          kind: assert
+          title: Новая запись — последней строкой
+          stdin: "4\n"
+          code: |
+            import os
+            assert os.path.exists("runs.txt")
+            with open("runs.txt", encoding="utf-8") as check_file:
+                rows = check_file.read().splitlines()
+            assert len(rows) == 4 and rows[3].strip() in ("4", "4.0")
+          message: >-
+            После запуска в `runs.txt` ровно четыре строки: `5`, `3.5`, `7` и последней —
+            сегодняшняя `4`.
+        - id: t5b
+          kind: assert
+          title: Запись заканчивается переводом строки
+          stdin: "4\n"
+          code: |
+            import os
+            assert os.path.exists("runs.txt")
+            with open("runs.txt", encoding="utf-8") as check_file:
+                saved = check_file.read()
+            assert saved.endswith("\n")
+          message: >-
+            После запуска `runs.txt` заканчивается переводом строки `\n`. Иначе завтрашняя запись
+            приклеится к сегодняшней.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          stdin: "4\n"
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            В одном из `open()` не указана кодировка. Добавь `encoding="utf-8"` — иначе на
+            Windows со старым Python (до 3.15) русский текст превратится в кракозябры.
+      criteria:
+        - Сегодняшняя дистанция берётся из ввода и дописывается в конец `runs.txt`.
+        - Старые записи остаются в файле, новая стоит отдельной строкой и заканчивается `\n`.
+        - Отчёт считается после записи и учитывает сегодняшнюю пробежку.
+        - "В каждом `open()` указана кодировка `encoding=\"utf-8\"`."
+      hints:
+        - >-
+          Подумай о двух вещах. Что должно произойти раньше: запись сегодняшней пробежки или
+          подсчёт? И в каком режиме открыть файл для записи, чтобы старые строки не пропали?
+        - |-
+          Дописать строку в конец файла на другом примере, в список дел:
+          ```python
+          task = "полить цветы"
+          with open("todo.txt", "a", encoding="utf-8") as f:
+              f.write(task + "\n")
+          ```
+          Строка встанет в конец `todo.txt`, всё, что там было, останется. `write` принимает
+          одну строку, поэтому `"\n"` приклеен к тексту через `+`.
+        - |-
+          Каркас:
+          ```text
+          distance = input(...)
+          with open("runs.txt", режим дописывания, encoding=...) as f:
+              записать одну строку: distance, а в конце "\n"
+          # дальше — код подсчёта без изменений
+          ```
+      solution:
+        code: |
+          distance = input("Сколько км сегодня? ")
+          with open("runs.txt", "a", encoding="utf-8") as f:
+              f.write(distance + "\n")
+
+          total = 0
+          count = 0
+          with open("runs.txt", encoding="utf-8") as f:
+              for line in f:
+                  count += 1
+                  total += float(line)
+          print(f"Пробежек: {count}, всего км: {total}")
+        explanation: >-
+          Сначала дистанция дописывается в конец файла: режим `"a"` не трогает старые строки, а
+          `"\n"` заканчивает новую запись, чтобы завтрашняя не приклеилась к ней. Первый блок
+          `with` закрывает файл, и запись уже на диске. Потом тот же файл открывается заново для
+          чтения, и цикл считает все строки вместе с сегодняшней. Превращать ввод в число для
+          записи не нужно: в файл пишется текст.
+      altSolutions:
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as diary:
+                print(distance, file=diary)
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: print(..., file=...) сам добавляет перевод строки.
+        - code: |
+            km = float(input())
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(f"{km}\n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Дистанция сначала превращена в число и записана через f-строку («4.0»).
+        - code: |
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance + "\n")
+            count += 1
+            total += float(distance)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Сначала подсчёт старых записей, потом запись и добавка сегодняшней к итогу.
+        - code: |
+            today = input()
+            with open("runs.txt", encoding="utf-8") as f:
+                old = f.read()
+            with open("runs.txt", "w", encoding="utf-8") as f:
+                f.write(old + today + "\n")
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Прочитать старое и переписать файл в режиме "w" — старое плюс новое.
+        - code: |
+            distance = input("Дистанция: ").strip()
+            with open("runs.txt", mode="a", encoding="utf-8") as f:
+                f.write(distance)
+                f.write("\n")
+            total = 0.0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count = count + 1
+                    total = total + float(line.strip())
+            print(f"Пробежек: {count}, всего км: {total:.1f}")
+          note: mode= по имени, два вызова write, strip() ввода, формат :.1f.
+        - code: |
+            km = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(f"{km}\n")
+            runs = []
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    runs.append(float(line))
+            print("Пробежек: " + str(len(runs)) + ", всего км: " + str(sum(runs)))
+          note: Список чисел, len и sum, склейка через str().
+        - code: |
+            km = float(input())
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                print(km, file=f)
+            count = 0
+            total = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {round(total, 1)}")
+          note: float(input()), print(km, file=f) и round(total, 1).
+      wrongSolutions:
+        - code: |
+            distance = input()
+            with open("runs.txt", "w", encoding="utf-8") as f:
+                f.write(distance + "\n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Режим "w" стёр старые записи.
+          expectMistake: mode-w
+        - code: |
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance + "\n")
+          note: Запись после подсчёта — отчёт её не видит.
+          expectMistake: not-counted
+        - code: |
+            distance = input()
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                f.write(distance + "\n")
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Запись в файл, открытый для чтения, — not writable.
+          expectMistake: wrong-mode-op
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write("\n" + distance)
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Перевод строки в начале записи — в файле пустая строка, float() падает.
+          expectMistake: blank-in-file
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance)
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Нет перевода строки — отчёт верный, но следующая запись приклеится.
+          expectMistake: no-newline
+        - code: |
+            distance = input()
+            with open("runs.txt", "a") as f:
+                f.write(distance + "\n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: В open для записи не указана кодировка.
+          expectMistake: no-encoding
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance + "\n")
+
+            total = 0
+            count = 0
+            with open("run.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Опечатка в имени файла при чтении.
+          expectMistake: file-name
+        - code: |
+            distance = int(input())
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(str(distance) + "\n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: int(input()) — дробная дистанция 2.5 даёт ValueError.
+          expectMistake: int-distance
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance + "\n")
+
+            total = 0
+            count = 0
+            for line in f:
+                count += 1
+                total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Подсчёт по файлу f из блока дописывания — файл уже закрыт.
+          expectMistake: closed-file
+        - code: |
+            distance = float(input())
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance)
+                f.write("\n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: В write передано число.
+          expectMistake: write-not-str
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance, "\n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Два значения через запятую, как в print, — write принимает одно.
+          expectMistake: write-not-str
+        - code: |
+            distance = input()
+            total = 0
+            count = 0
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance + "\n")
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Чтение из файла, открытого на дописывание, — not readable.
+          expectMistake: wrong-mode-op
+        - code: |
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+
+            distance = input()
+            with open("runs.txt", "w", encoding="utf-8") as f:
+                f.write(distance + "\n")
+            count += 1
+            total += float(distance)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Подсчёт, потом запись в режиме "w" — отчёт верный, но старые записи стёрты.
+          expectMistake: old-erased
+        - code: |
+            distance = input()
+            with open("runs.txt", encoding="utf-8") as f:
+                old = f.read()
+            with open("runs.txt", "w", encoding="utf-8") as f:
+                f.write(distance + "\n" + old)
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Новая запись поставлена в начало файла.
+          expectMistake: old-erased
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance + "\n")
+            with open("runs.txt", encoding="utf-8") as f:
+                parts = f.read().split("\n")
+            total = 0
+            count = 0
+            for part in parts:
+                count += 1
+                total += float(part)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: split("\n") оставляет пустой кусок после последнего \n — float("") падает.
+          expectMistake: empty-piece
+        - code: |
+            distance = input()
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            count += 1
+            total += float(distance)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Сегодняшняя пробежка прибавлена к итогу, но в файл не записана.
+          expectMistake: not-saved
+        - code: |
+            distance = input()
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(distance + "/n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Опечатка "/n" вместо "\n" — общий разбор ValueError точно называет «4/n».
+          expectMistake: null
+        - code: |
+            km = float(input())
+            with open("runs.txt", "a", encoding="utf-8") as f:
+                f.write(km + "\n")
+
+            total = 0
+            count = 0
+            with open("runs.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += float(line)
+            print(f"Пробежек: {count}, всего км: {total}")
+          note: Число плюс строка — общий разбор «Число и строка через +» точен.
+          expectMistake: null
+      mistakes:
+        - id: closed-file
+          when:
+            errorIncludes: closed file
+          where: Строки после блока `with`
+          why: >-
+            Файл закрывается, как только кончается блок `with`. Строка, на которой остановилась
+            программа, работает с `f` уже после блока, а файл закрыт: `I/O operation on closed
+            file`.
+          try: >-
+            Для подсчёта открой файл заново в своём блоке `with` — как в стартовом коде — и
+            перебирай строки внутри этого блока.
+          verify: 'В «Примере 1» должно получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: file-name
+          when:
+            errorType: FileNotFoundError
+          where: Имя файла в `open()` для чтения
+          why: >-
+            Python не нашёл рядом с программой файл с таким именем. В рабочей папке лежит
+            `runs.txt` — его видно в блоке «Файлы задания». Режим `"a"` при опечатке ошибку не
+            выдаёт, он молча создаёт новый файл. А чтение без режима требует, чтобы файл уже был.
+          try: >-
+            Посмотри на последнюю строку ошибки — там имя, которое искал Python. Скопируй
+            `runs.txt` из условия в каждый `open()`.
+          verify: 'Ошибка FileNotFoundError должна исчезнуть, а в «Примере 1» — получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: wrong-mode-op
+          when:
+            errorType: UnsupportedOperation
+          where: Режим в `open()` и то, что потом делают с файлом
+          why: >-
+            Это ошибка в коде, а не ограничение тренажёра: на компьютере будет то же самое. Файл
+            открыт в одном режиме, а с ним делают другое. Без режима `open` открывает файл только
+            для чтения, и писать в него нельзя (`not writable`). А из файла, открытого на
+            дописывание, нельзя читать (`not readable`).
+          try: >-
+            Раздели работу на два блока `with`: сначала `open(…, "a", …)` и запись, потом
+            отдельный `open` для чтения и подсчёт.
+          verify: 'В «Примере 1» должно получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: write-not-str
+          when:
+            errorIncludes: write()
+          where: Вызов `f.write`
+          why: >-
+            `write` принимает ровно одну строку. Число туда не пройдёт: `f.write(4.0)` — TypeError.
+            Второе значение через запятую, как в `print`, — тоже ошибка: `f.write(distance, "\n")`.
+            `print` сам превращает числа в текст и разделяет значения, а `write` — нет.
+          try: >-
+            Собери запись в одну строку: `f.write(distance + "\n")`, а если `distance` уже число —
+            `f.write(f"{distance}\n")`.
+          verify: 'Ошибка TypeError должна исчезнуть, а в «Примере 1» — получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: int-distance
+          when:
+            errorIncludes: invalid literal for int()
+          where: "`int()` для дистанции"
+          why: >-
+            Дистанции бывают дробными — 2.5, 3.5, а `int()` превращает в число только целые:
+            `int("2.5")` — ValueError.
+          try: >-
+            Для дробных чисел нужен `float()`. А для записи в файл число вообще не нужно — в файл
+            пишется текст: `f.write(distance + "\n")`.
+          verify: 'В «Примере 2» должно получиться `Пробежек: 2, всего км: 12.5`.'
+        - id: blank-in-file
+          when:
+            errorIncludes: "float: '\\n'"
+          where: Строка, которую пишет `f.write`
+          why: >-
+            В `runs.txt` появилась пустая строка, и `float()` не может превратить её в число. Файл
+            и так кончается переводом строки, поэтому `"\n"` в **начале** новой записи даёт пустую
+            строку между старыми записями и сегодняшней.
+          try: >-
+            Ставь перевод строки в конце записи: `distance + "\n"`. Загляни в «Файлы после
+            запуска» — в `runs.txt` должно быть четыре строки без пустых.
+          verify: 'В «Примере 1» должно получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: empty-piece
+          when:
+            errorIncludes: "float: ''"
+          where: Значение, которое попало во `float()`
+          why: >-
+            Во `float()` попала пустая строка `""`. Так бывает, когда текст файла режут
+            `split("\n")`: файл кончается `\n`, и после последнего разреза остаётся пустой кусок.
+            Или в `runs.txt` появилась пустая строка, и `strip()` превратил её в `""`.
+          try: >-
+            Перебирай сам файл — `for line in f:`, как в стартовом коде. Если в «Файлах после
+            запуска» в `runs.txt` видна пустая строка — ставь `"\n"` в конце записи, а не в
+            начале.
+          verify: 'В «Примере 1» должно получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: mode-w
+          when:
+            outputIncludes: "Пробежек: 1, всего км: 4.0"
+          where: "`open` для записи сегодняшней пробежки"
+          why: >-
+            Отчёт увидел только сегодняшнюю запись. Чаще всего виноват режим `"w"`: он стирает файл
+            в момент открытия, и записи 5, 3.5 и 7 пропадают. Это та самая ошибка из истории Стаса.
+            Если режим уже `"a"`, проверь имя файла: при опечатке `"a"` создаёт новый пустой файл, и
+            программа пишет и читает его, а не `runs.txt`.
+          try: >-
+            Открой `runs.txt` в режиме дописывания `"a"` — новая строка встанет в конец, старые
+            останутся.
+          verify: 'В «Примере 1» должно получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: not-counted
+          when:
+            outputIncludes: "Пробежек: 3, всего км: 15.5"
+          where: Место и имя файла в записи
+          why: >-
+            Отчёт не увидел сегодняшнюю пробежку: когда шёл подсчёт, её в `runs.txt` не было. Так
+            бывает, если запись ещё не добавлена, если она стоит после подсчёта или ушла в другой
+            файл: при опечатке в имени режим `"a"` не выдаёт ошибку, а молча создаёт новый файл.
+          try: >-
+            Прочитай ввод и допиши его в файл до подсчёта, имя — `runs.txt`. Нажми «Запустить» и
+            загляни в «Файлы после запуска»: изменённым должен быть `runs.txt`, а не новый файл.
+          verify: 'В «Примере 1» должно получиться `Пробежек: 4, всего км: 19.5`.'
+        - id: old-erased
+          when:
+            failedTest: t4
+            outputIncludes: "Пробежек: 4, всего км: 19.5"
+          where: "`open` для записи сегодняшней пробежки"
+          why: >-
+            Отчёт верный, но `runs.txt` после запуска не начинается со старых записей 5, 3.5 и 7:
+            файл переписан заново, и старое пропало или сдвинулось. Чаще всего виноват режим
+            `"w"`: он стирает файл в момент открытия. Это та самая ошибка из истории Стаса.
+          try: >-
+            Открой `runs.txt` для записи в режиме `"a"`: новая строка встанет в конец, старые
+            останутся на месте. Проверь по «Файлам после запуска».
+          verify: Проверка «Старые записи на месте» должна стать зелёной.
+        - id: not-saved
+          when:
+            failedTest: t5
+            outputIncludes: "Пробежек: 4, всего км: 19.5"
+          where: Запись сегодняшней пробежки в файл
+          why: >-
+            Отчёт верный, но последней строкой в `runs.txt` после запуска не стоит сегодняшняя
+            дистанция. Так бывает, если пробежку прибавили к итогу, а в файл не записали или
+            записали в файл с другим именем. Завтра программа о ней не узнает.
+          try: >-
+            Допиши дистанцию в `runs.txt` в режиме `"a"` до подсчёта — тогда отчёт учтёт её сам.
+            Проверь по «Файлам после запуска».
+          verify: Проверка «Новая запись — последней строкой» должна стать зелёной.
+        - id: no-newline
+          when:
+            failedTest: t5b
+            outputIncludes: "Пробежек: 4, всего км: 19.5"
+          where: Строка, которую пишет `f.write`
+          why: >-
+            Отчёт верный, но новая запись не закончилась переводом строки. `write` не добавляет
+            `\n` сам, поэтому завтрашняя запись приклеится к сегодняшней: вместо 4 и 6 в файле
+            окажется 46.
+          try: Допиши `"\n"` в конец записываемой строки.
+          verify: Проверка «Запись заканчивается переводом строки» должна стать зелёной.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "Пробежек:"
+          where: Вызовы `open()`
+          why: >-
+            В одном из `open()` не указана кодировка. Сейчас в дневнике только цифры, и разницы не
+            видно. Но стоит появиться в файле русскому слову, например «парк», — и на русской
+            Windows с Python 3.14 и раньше запись или чтение без кодировки пойдут в cp1251:
+            получатся кракозябры или ошибка UnicodeDecodeError.
+          try: Добавь `encoding="utf-8"` в каждый `open()` — и для записи, и для чтения.
+          verify: Проверка «Кодировка указана» должна стать зелёной.
+      afterPass: >-
+        Записи копятся, а отчёт сразу учитывает сегодняшнюю. В тренажёре каждый запуск начинается с
+        исходного файла, а на компьютере `runs.txt` рос бы от запуска к запуску, как настоящий
+        дневник. Улучшение: убирай пробелы по краям ввода — `input().strip()`, — чтобы в файл не
+        попадало лишнее.
+      skills: [files-paths, type-conversion]
+
+  - id: practice-report
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m7-l1-e3
+      kind: write
+      title: Итоги тренировки по дартсу
+      statement: |-
+        В клубе дартса после тренировки записывают очки каждой серии — трёх бросков подряд — в
+        файл `scores.txt`, по одному целому числу в строке. Между сериями иногда остаются пустые
+        строки (бывает, что в них есть пробелы), их считать не нужно.
+
+        Напиши программу, которая создаёт файл отчёта `report.txt` из двух строк: сколько было
+        серий и сколько очков набрано всего. Для файла из задания (120, 95 и 150) отчёт такой:
+
+        ```text
+        Серий: 3
+        Сумма: 365
+        ```
+
+        На экран программа выводит одну строку: `Отчёт сохранён в report.txt`. Файл `scores.txt`
+        не меняй — отчёт пишется в новый файл.
+      input: >-
+        Файл `scores.txt`: по одному целому числу от 0 до 180 в строке, бывают пустые строки.
+      output: >-
+        Файл `report.txt` из двух строк: `Серий: N` и `Сумма: S`. На экране —
+        `Отчёт сохранён в report.txt`.
+      constraints:
+        - "`scores.txt` не меняй: отчёт — в новом файле `report.txt`."
+        - Если `report.txt` остался с прошлого раза, новый отчёт заменяет его целиком.
+        - Каждая часть отчёта — на своей строке.
+        - "В каждом `open()` укажи кодировку `encoding=\"utf-8\"`."
+      files:
+        scores.txt: |
+          120
+          95
+          150
+      starterCode: |
+        # 1. Прочитай scores.txt и посчитай число серий и сумму очков
+        # 2. Запиши две строки отчёта в report.txt
+        # 3. Выведи «Отчёт сохранён в report.txt»
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: сообщение на экране"
+          example: true
+          expected: Отчёт сохранён в report.txt
+        - id: t2
+          kind: assert
+          title: "Пример 2: отчёт для трёх серий"
+          example: true
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+            with open("report.txt", encoding="utf-8") as check_file:
+                got = [row.strip() for row in check_file if row.strip() != ""]
+            assert got == ["Серий: 3", "Сумма: 365"]
+          message: "В `report.txt` две строки: `Серий: 3` и `Сумма: 365`."
+        - id: t3
+          kind: assert
+          title: "Пример 3: одна серия"
+          example: true
+          files:
+            scores.txt: "80\n"
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+            with open("report.txt", encoding="utf-8") as check_file:
+                got = [row.strip() for row in check_file if row.strip() != ""]
+            assert got == ["Серий: 1", "Сумма: 80"]
+          message: "Для файла с одной серией 80 в `report.txt`: `Серий: 1` и `Сумма: 80`."
+        - id: t4
+          kind: assert
+          title: "Граничный случай: пустые строки"
+          edge: true
+          files:
+            scores.txt: "40\n   \n75\n\n"
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+            with open("report.txt", encoding="utf-8") as check_file:
+                got = [row.strip() for row in check_file if row.strip() != ""]
+            assert got == ["Серий: 2", "Сумма: 115"]
+          message: >-
+            Пустые строки — не серии, даже если в них есть пробелы. Для файла «40, строка из
+            пробелов, 75, пустая строка» в отчёте `Серий: 2` и `Сумма: 115`.
+        - id: t5
+          kind: assert
+          title: "Граничный случай: серии по 0 очков"
+          edge: true
+          files:
+            scores.txt: "0\n0\n"
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+            with open("report.txt", encoding="utf-8") as check_file:
+                got = [row.strip() for row in check_file if row.strip() != ""]
+            assert got == ["Серий: 2", "Сумма: 0"]
+          message: "Серия на 0 очков — тоже серия. Для двух таких серий в отчёте `Серий: 2` и `Сумма: 0`."
+        - id: t6
+          kind: assert
+          title: "Граничный случай: в конце файла нет перевода строки"
+          edge: true
+          files:
+            scores.txt: "180\n60"
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+            with open("report.txt", encoding="utf-8") as check_file:
+                got = [row.strip() for row in check_file if row.strip() != ""]
+            assert got == ["Серий: 2", "Сумма: 240"]
+          message: >-
+            У последней строки файла `\n` может и не быть. Для файла «180, 60» в отчёте
+            `Серий: 2` и `Сумма: 240`.
+        - id: t7
+          kind: assert
+          title: "Граничный случай: старый отчёт уже есть"
+          edge: true
+          files:
+            report.txt: |
+              Серий: 1
+              Сумма: 10
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+            with open("report.txt", encoding="utf-8") as check_file:
+                got = [row.strip() for row in check_file if row.strip() != ""]
+            assert "Серий: 1" not in got and "Сумма: 10" not in got
+          message: >-
+            Если `report.txt` остался с прошлого раза, новый отчёт его заменяет: старых строк
+            `Серий: 1` и `Сумма: 10` после запуска в файле нет.
+        - id: t-exists
+          kind: assert
+          title: Файл report.txt создан
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+          message: >-
+            После запуска рядом с программой появляется файл `report.txt` — имя точно такое,
+            латиницей и строчными буквами.
+        - id: t-lines
+          kind: assert
+          title: В отчёте две строки
+          code: |
+            import os
+            assert os.path.exists("report.txt")
+            with open("report.txt", encoding="utf-8") as check_file:
+                rows = [row for row in check_file if row.strip() != ""]
+            assert len(rows) == 2
+          message: Каждая часть отчёта стоит на своей строке — в `report.txt` ровно две строки.
+        - id: t-src
+          kind: assert
+          title: Исходный файл не изменился
+          code: |
+            with open("scores.txt", encoding="utf-8") as check_file:
+                assert check_file.read() == "120\n95\n150\n"
+          message: После запуска `scores.txt` остаётся таким же, каким был, — отчёт пишется в другой файл.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            calls = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Call)
+                     and (getattr(n.func, "id", None) in names or getattr(n.func, "attr", None) in names)]
+            assert all(any(k.arg == "encoding" for k in c.keywords) for c in calls)
+          message: >-
+            В одном из `open()` не указана кодировка. Добавь `encoding="utf-8"` — иначе на
+            Windows со старым Python (до 3.15) русский текст превратится в кракозябры.
+      criteria:
+        - Пустые строки и строки из одних пробелов пропускаются, остальные превращаются в числа.
+        - Число серий и сумма считаются по числам из файла, а не записаны в код.
+        - "`report.txt` содержит две строки: `Серий: N` и `Сумма: S`; старый отчёт заменяется новым."
+        - "`scores.txt` не меняется, на экране — `Отчёт сохранён в report.txt`."
+        - "В каждом `open()` указана кодировка `encoding=\"utf-8\"`."
+      hints:
+        - >-
+          Раздели программу на две части: сначала прочитать `scores.txt` и посчитать два числа,
+          потом записать их в новый файл. Какие накопители из модуля про циклы здесь нужны и что
+          делать со строкой, в которой после `strip()` ничего не осталось?
+        - |-
+          Запись нескольких строк в файл на другом примере — список покупок:
+          ```python
+          apples = 5
+          with open("shopping.txt", "w", encoding="utf-8") as f:
+              f.write("Хлеб: 1\n")
+              f.write(f"Яблоки: {apples}\n")
+          ```
+          Каждая запись заканчивается `\n`, число попадает в строку через f-строку.
+        - |-
+          Каркас:
+          ```text
+          count, total — начать с 0
+          with open("scores.txt", …) as f:
+              для каждой строки:
+                  убрать пробелы и \n; пустую пропустить (continue)
+                  превратить в число, обновить count и total
+          with open("report.txt", "w", …) as f:
+              записать две строки, каждую с \n
+          print("Отчёт сохранён в report.txt")
+          ```
+      solution:
+        code: |
+          count = 0
+          total = 0
+          with open("scores.txt", encoding="utf-8") as f:
+              for line in f:
+                  text = line.strip()
+                  if text == "":
+                      continue
+                  count += 1
+                  total += int(text)
+
+          with open("report.txt", "w", encoding="utf-8") as f:
+              f.write(f"Серий: {count}\n")
+              f.write(f"Сумма: {total}\n")
+
+          print("Отчёт сохранён в report.txt")
+        explanation: >-
+          Первый блок `with` только читает: пустая строка — даже с пробелами — после `strip()`
+          становится `""`, и `continue` переходит к следующей. Второй блок открывает новый файл
+          `report.txt` в режиме `"w"`: отчёт каждый раз считается заново, старый не жалко
+          стереть, а `scores.txt` остаётся нетронутым. `write` не переводит строку сам, поэтому у
+          каждой записи в конце `\n`, а числа попадают в текст через f-строку.
+      altSolutions:
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as report:
+                print("Серий:", count, file=report)
+                print("Сумма:", total, file=report)
+            print("Отчёт сохранён в report.txt")
+          note: print(..., file=...) вместо write.
+        - code: |
+            scores = []
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() != "":
+                        scores.append(int(line))
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write("Серий: " + str(len(scores)) + "\n")
+                f.write("Сумма: " + str(sum(scores)) + "\n")
+            print("Отчёт сохранён в report.txt")
+          note: Список чисел, потом len и sum; склейка строк через str().
+        - code: |
+            with open("scores.txt", encoding="utf-8") as f:
+                parts = f.read().split()
+            count = 0
+            total = 0
+            for part in parts:
+                count += 1
+                total += int(part)
+            report = f"Серий: {count}\nСумма: {total}\n"
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(report)
+            print("Отчёт сохранён в report.txt")
+          note: split() без аргументов сам пропускает пустые строки; весь отчёт одной строкой.
+        - code: |
+            with open("report.txt", "w", encoding="utf-8") as report:
+                count = 0
+                total = 0
+                with open("scores.txt", encoding="utf-8") as scores:
+                    for row in scores:
+                        row = row.strip()
+                        if row != "":
+                            count += 1
+                            total += int(row)
+                report.write(f"Серий: {count}\n")
+                report.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт открыт первым, чтение — во вложенном with.
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    count += 1
+                    total += int(line)
+            text = "Серий: " + str(count) + "\n" + "Сумма: " + str(total)
+            with open("report.txt", mode="w", encoding="utf-8") as f:
+                f.write(text)
+            print("Отчёт сохранён в", "report.txt")
+          note: Один write без \n после последней строки, mode= по имени, print через запятую.
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() != "":
+                        count += 1
+                        total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as out:
+                print(f"Серий: {count}", file=out)
+                print(file=out)
+                print(f"Сумма: {total}  ", file=out)
+            print("Отчёт сохранён в report.txt")
+          note: Пустая строка между частями отчёта и пробелы в конце строки — не ошибка.
+        - code: |
+            source = open("scores.txt", "r", encoding="utf-8")
+            lines = source.readlines()
+            source.close()
+            numbers = []
+            for line in lines:
+                if line.strip() != "":
+                    numbers.append(int(line.strip()))
+            report = open("report.txt", "w", encoding="utf-8")
+            report.write(f"Серий: {len(numbers)}\n")
+            report.write(f"Сумма: {sum(numbers)}\n")
+            report.close()
+            print("Отчёт сохранён в report.txt")
+          note: open без with, readlines() и close() вручную.
+      wrongSolutions:
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт открыт без режима "w" — open пытается прочитать несуществующий report.txt.
+          expectMistake: file-missing
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write("Серий: " + count + "\n")
+                f.write("Сумма: " + total + "\n")
+            print("Отчёт сохранён в report.txt")
+          note: Строка склеивается с числом — TypeError.
+          expectMistake: text-plus-number
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Пустые строки не пропускаются — int("\n") падает.
+          expectMistake: blank-line
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line == "\n":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Проверка line == "\n" не узнаёт строку из пробелов — int() падает.
+          expectMistake: blank-line
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("scores.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт записан поверх исходного файла.
+          expectMistake: no-report
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            print(f"Серий: {count}")
+            print(f"Сумма: {total}")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт печатается на экран вместо файла.
+          expectMistake: no-report
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("Report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Опечатка в имени отчёта (Report.txt).
+          expectMistake: no-report
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("scores.txt", "a", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт дописан в конец scores.txt (режим "a" не спасает исходный файл).
+          expectMistake: no-report
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}")
+                f.write(f"Сумма: {total}")
+            print("Отчёт сохранён в report.txt")
+          note: Без \n всё слиплось в одну строку.
+          expectMistake: one-line
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Строка «Сумма» забыта — в отчёте одна строка, ничего не слиплось.
+          expectMistake: one-line
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "a", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт открыт в режиме "a" — старый отчёт не заменяется.
+          expectMistake: report-appended
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as report:
+                report.write(f"Серий: {count}\n")
+            report.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Вторая строка отчёта пишется уже после блока with — файл закрыт.
+          expectMistake: closed-file
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт пишется в тот же f, что открыт для чтения scores.txt, — not writable.
+          expectMistake: wrong-mode-op
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write("Серий:", count)
+                f.write("Сумма:", total)
+            print("Отчёт сохранён в report.txt")
+          note: Как в print, два значения через запятую — write принимает одно.
+          expectMistake: write-not-str
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write("Серий: ")
+                f.write(count)
+                f.write("\n")
+                f.write("Сумма: ")
+                f.write(total)
+                f.write("\n")
+            print("Отчёт сохранён в report.txt")
+          note: В write передано число.
+          expectMistake: write-not-str
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    count += 1
+                    if line.strip() == "":
+                        continue
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Счётчик увеличивается до пропуска пустой строки — сообщение t4 объясняет.
+          expectMistake: null
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    text = line.strip()
+                    if text == "":
+                        continue
+                    count += 1
+                    total += text
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Забыт int() — к сумме прибавляется текст.
+          expectMistake: text-not-number
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+                f.write("Отчёт сохранён в report.txt\n")
+          note: Сообщение ушло в файл, а на экран ничего не выведено.
+          expectMistake: null
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w", encoding="utf-8") as f:
+                f.write(f"Серий: {count}\n")
+                f.write("Сумма: ")
+                f.write(total + "\n")
+            print("Отчёт сохранён в report.txt")
+          note: Число плюс "\n" — общий разбор «Число и строка через +» точен (не text-not-number).
+          expectMistake: null
+        - code: |
+            count = 0
+            total = 0
+            with open("scores.txt", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    count += 1
+                    total += int(line)
+            with open("report.txt", "w") as f:
+                f.write(f"Серий: {count}\n")
+                f.write(f"Сумма: {total}\n")
+            print("Отчёт сохранён в report.txt")
+          note: Отчёт записан без кодировки.
+          expectMistake: no-encoding
+      mistakes:
+        - id: closed-file
+          when:
+            errorIncludes: closed file
+          where: Строки после блока `with`
+          why: >-
+            Файл закрывается, как только кончается блок `with`. Строка, на которой остановилась
+            программа, пишет в файл уже после блока, а файл закрыт: `I/O operation on closed
+            file`.
+          try: >-
+            Сдвинь все `write` для отчёта внутрь блока `with open("report.txt", "w", …)` — с
+            отступом под ним.
+          verify: 'Ошибка должна исчезнуть, а проверка «Пример 2: отчёт для трёх серий» — стать зелёной.'
+        - id: wrong-mode-op
+          when:
+            errorType: UnsupportedOperation
+          where: Файл, в который пишется отчёт
+          why: >-
+            Это ошибка в коде, а не ограничение тренажёра: на компьютере будет то же самое. Без
+            режима `open` открывает файл только для чтения, и писать в него нельзя
+            (`not writable`). Чаще всего так бывает, когда отчёт пишут через тот же `f`, которым
+            читают `scores.txt`.
+          try: >-
+            Пиши отчёт в отдельном блоке: `with open("report.txt", "w", encoding="utf-8") as
+            report:` — и `report.write(…)` внутри него.
+          verify: 'Ошибка должна исчезнуть, а проверка «Пример 2: отчёт для трёх серий» — стать зелёной.'
+        - id: file-missing
+          when:
+            errorType: FileNotFoundError
+          where: "`open()`, на котором остановилась программа"
+          why: >-
+            `open()` без режима открывает файл для чтения, а файла с таким именем рядом с
+            программой нет. Если в ошибке `report.txt` — режим не указан: чтобы создать файл и
+            писать в него, нужен `"w"`. Если там имя файла с очками — оно написано не так, как в
+            блоке «Файлы задания».
+          try: >-
+            Посмотри на последнюю строку ошибки — там имя файла. Отчёт открывай так:
+            `open("report.txt", "w", encoding="utf-8")`, а имя файла с очками скопируй из условия —
+            `scores.txt`.
+          verify: Ошибка FileNotFoundError должна исчезнуть.
+        - id: write-not-str
+          when:
+            errorIncludes: write()
+          where: Строки, которые пишут в `report.txt`
+          why: >-
+            `write` принимает ровно одну строку. Число туда не пройдёт (`f.write(total)` —
+            TypeError), а второе значение через запятую, как в `print`, — тоже ошибка:
+            `f.write("Сумма:", total)`. `print` сам превращает числа в текст и разделяет значения,
+            а `write` — нет.
+          try: 'Собери каждую запись в одну строку f-строкой: `f.write(f"Сумма: {total}\n")`.'
+          verify: 'Ошибка TypeError должна исчезнуть, а проверка «Пример 2: отчёт для трёх серий» — стать зелёной.'
+        - id: text-plus-number
+          when:
+            errorIncludes: can only concatenate str
+          where: Склейка текста и числа через `+`
+          why: >-
+            Через `+` строку можно склеить только со строкой, а `count` и `total` — числа:
+            `"Сумма: " + total` останавливает программу с TypeError.
+          try: 'Собери строку f-строкой: `f.write(f"Сумма: {total}\n")` — или через `str(total)`.'
+          verify: 'Ошибка TypeError должна исчезнуть, а проверка «Пример 2: отчёт для трёх серий» — стать зелёной.'
+        - id: text-not-number
+          when:
+            errorIncludes: "+=: 'int' and 'str'"
+          where: Строка, где очки прибавляются к сумме
+          why: >-
+            Строка из файла — это текст, даже если в ней одни цифры: `line.strip()` даёт `"120"`,
+            а не число 120. Прибавить текст к числу нельзя — TypeError.
+          try: Преврати строку в число перед сложением — `int(text)`.
+          verify: 'Ошибка TypeError должна исчезнуть, а проверка «Пример 2: отчёт для трёх серий» — стать зелёной.'
+        - id: blank-line
+          when:
+            errorIncludes: invalid literal for int()
+          where: "`int(…)` внутри цикла"
+          why: >-
+            В файле есть пустая строка — в ней только `\n`, а иногда ещё пробелы. `int()` не может
+            превратить пустоту в число — ValueError. Проверка `line == "\n"` строку с пробелами
+            не узнает.
+          try: >-
+            Перед `int()` проверь строку: если после `strip()` она пустая, пропусти её —
+            `if line.strip() == "": continue`.
+          verify: 'Проверка «Граничный случай: пустые строки» должна стать зелёной.'
+        - id: no-report
+          when:
+            failedTest: t-exists
+            outputIncludes: Отчёт сохранён
+          where: Запись отчёта
+          why: >-
+            После запуска рядом с программой нет файла `report.txt`. Нажми «Запустить» и загляни в
+            «Файлы после запуска». Изменён `scores.txt` — значит, отчёт записан поверх очков и
+            стёр исходные данные. Появился файл с другим именем — имя не совпало. Там пусто —
+            отчёт печатается на экран, а не пишется в файл.
+          try: >-
+            Открой новый файл `open("report.txt", "w", encoding="utf-8")` и пиши отчёт в него через
+            `f.write`, а `scores.txt` только читай.
+          verify: Проверки «Файл report.txt создан» и «Исходный файл не изменился» должны стать зелёными.
+        - id: one-line
+          when:
+            failedTest: t-lines
+            outputIncludes: Отчёт сохранён
+          where: Строки, которые пишет `f.write`
+          why: >-
+            В `report.txt` не две строки. Чаще всего записи слиплись: `write` не ставит `\n` сам,
+            и получается «Серий: 3Сумма: 365». Бывает и так, что одной из записей нет. Загляни в
+            «Файлы после запуска» — там видно, что случилось.
+          try: Проверь, что пишутся обе строки отчёта и каждая заканчивается символом `\n`.
+          verify: Проверка «В отчёте две строки» должна стать зелёной.
+        - id: report-appended
+          when:
+            failedTest: t7
+            outputIncludes: Отчёт сохранён
+          where: Режим в `open` для `report.txt`
+          why: >-
+            Новый отчёт дописался к старому: строки с прошлого раза остались в `report.txt`. Так
+            работает режим `"a"` — он сохраняет всё, что было в файле. А отчёт каждый раз
+            считается заново по всем очкам, поэтому старый нужно заменять.
+          try: >-
+            Открой `report.txt` в режиме `"w"`: он очистит файл в момент открытия.
+          verify: 'Проверка «Граничный случай: старый отчёт уже есть» должна стать зелёной.'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: Отчёт сохранён
+          where: Вызовы `open()`
+          why: >-
+            В одном из `open()` не указана кодировка. В тренажёре это незаметно, а на русской
+            Windows с Python 3.14 и раньше «Серий» и «Сумма» запишутся в cp1251 — и в редакторе с
+            UTF-8 превратятся в кракозябры.
+          try: Добавь `encoding="utf-8"` в каждый `open()` — и для чтения, и для записи.
+          verify: Проверка «Кодировка указана» должна стать зелёной.
+      afterPass: >-
+        Отчёт лежит в отдельном файле, а исходные очки целы: если в программе найдётся ошибка, её
+        можно исправить и запустить ещё раз. Улучшение: добавь третью строку отчёта
+        `Средняя: …` — например, `round(total / count, 1)`, если серии в файле есть.
+      skills: [files-paths, accumulators, loop-control]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Файл открывают так: `with open(имя, режим, encoding=\"utf-8\") as f:` — после блока `with` Python закрывает файл сам."
+      - "Режим `\"r\"` — читать (по умолчанию), `\"w\"` — стереть и писать заново, `\"a\"` — дописать в конец."
+      - "Строки из файла приходят с `\\n` на конце — его убирает `strip()`. А `write` не ставит `\\n` сам и принимает только одну строку."
+      - "Кодировку указываем всегда: без `encoding=\"utf-8\"` на русской Windows с Python 3.14 и раньше текст превращается в кракозябры, а программу могут запустить где угодно."
+    question: >-
+      Почему в Практике 2 дневник открыт в режиме `"a"`, а в Практике 3 отчёт — в режиме `"w"`?
+      Что будет, если перепутать режимы?
+    answer: >-
+      Дневник должен копиться: каждый запуск добавляет строку к старым, поэтому `"a"`. Отчёт
+      каждый раз считается заново по всем очкам, поэтому `"w"` стирает старый. Если перепутать,
+      с `"w"` дневник каждый вечер будет терять историю — как у Стаса в первой версии программы, а
+      с `"a"` новый отчёт приклеится к старому, и в файле окажутся оба.

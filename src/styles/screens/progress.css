@@ -1,0 +1,372 @@
+/* Владелец: directions; экран «Прогресс» (спецификация редизайна, 4.8).
+   ≥ 1200 px: навыки и карточка ученика слева, боковая панель 380 справа (у каждой колонки своя прокрутка).
+   Уже — одна колонка: навыки, секции боковой панели, карточка ученика последней (.prog-card-end).
+   Данные разделяют линии; процентов и серий нет. */
+
+.prog {
+  --side-w: 380px;
+}
+
+.prog-page {
+  max-width: 960px;
+}
+
+/* ------------------------------------------------------------ навыки по модулям */
+.prog-modules {
+  display: flex;
+  flex-direction: column;
+}
+
+.prog-module + .prog-module {
+  margin-top: var(--sp-8);
+}
+
+.prog-module + .prog-module-closed {
+  margin-top: var(--sp-8);
+}
+
+.prog-module-closed:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+/* Название модуля может переноситься на телефоне — межстрочный 1.5. */
+.prog-module-closed > summary {
+  line-height: var(--lh-14-wrap);
+}
+
+.prog-closed-st {
+  color: var(--text-2);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.prog-module-closed .disclosure-body {
+  padding-bottom: var(--sp-4);
+}
+
+.prog-module-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-4);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.prog-module-head h2,
+.prog-card h2 {
+  font: 600 var(--fs-16) / var(--lh-16) var(--font-sans);
+}
+
+.prog-count {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+.prog-skills {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Навык: название и статус в одну строку, доказательства — под ними на всю ширину. */
+.skill-row {
+  display: grid;
+  grid-template-areas:
+    'title state'
+    'proof proof';
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--sp-1) var(--sp-4);
+  align-items: start;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.prog-skills > .skill-row:last-child {
+  border-bottom: 0;
+}
+
+.skill-row > .badge {
+  grid-area: state;
+}
+
+.skill-title {
+  grid-area: title;
+  min-width: 0;
+  padding-top: 2px;
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.skill-row > .prog-evidence {
+  grid-area: proof;
+  min-width: 0;
+}
+
+.prog-evidence {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+div.prog-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+/* Доказательства — пункты с маркером и висячим отступом: перенесённая строка остаётся внутри своего пункта,
+   между пунктами 8. */
+.prog-proofs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0 0 0 18px;
+  list-style: disc;
+}
+
+.prog-proofs li::marker {
+  color: var(--text-3);
+}
+
+/* ------------------------------------------------------------ карточка ученика: блок-«файл» */
+.prog-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-10);
+}
+
+/* В одну колонку карточка — после боковой панели, отдельной областью на линии. */
+.prog-card-end {
+  border-top: 1px solid var(--line);
+}
+
+.prog-card-end .prog-card {
+  margin-top: 0;
+}
+
+.prog-file {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+}
+
+.prog-file-tab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-3);
+  min-height: 40px;
+  padding: 2px var(--sp-1) 2px var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-2) var(--r-2) 0 0;
+  background: var(--bg-panel);
+}
+
+.prog-file-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-code);
+}
+
+.prog-file-name svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-2);
+}
+
+.prog-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.prog-copy-failed {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.prog-file-body {
+  max-height: 400px;
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  overflow: auto;
+  color: var(--text);
+  font: 400 var(--fs-14) / 1.6 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.prog-file-body:focus-visible {
+  outline-offset: -2px;
+}
+
+/* ------------------------------------------------------------ боковая панель */
+.prog-side {
+  border-left: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.prog-side-sec + .prog-side-sec {
+  border-top: 1px solid var(--line);
+}
+
+.prog-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--gutter) var(--sp-4);
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.prog-row .row-meta {
+  margin-top: 1px;
+}
+
+.prog-row .row-sub {
+  margin-top: 2px;
+}
+
+.prog-row-name {
+  font-weight: 500;
+}
+
+/* Номер урока в плане повторения — как в рядах «На повторение» на «Сегодня» («12.10» помещается). */
+.prog-num {
+  width: 40px;
+}
+
+/* «сегодня» в плане повторения — основным цветом и жирнее, дата — вторичным. */
+.prog-row .prog-due {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.prog-time {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--gutter) var(--sp-4);
+}
+
+.prog-total {
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Шкала: подпись максимума справа над пунктиром — верхним краем области столбиков. */
+.activity-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.activity-scale {
+  align-self: flex-end;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* 14 столбиков по дням: день без занятий — черта 2 px, с занятием — янтарный столбик (максимум — до пунктира). */
+.activity-bars {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: var(--sp-1);
+  height: 100px;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.activity-bars > span {
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.activity-bars i {
+  display: block;
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent-edge);
+}
+
+.activity-bars i[data-empty='true'] {
+  height: 2px;
+  border-radius: 0;
+  background: var(--line-strong);
+}
+
+.activity-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ раскладки */
+@media (max-width: 1199px) {
+  .prog {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .prog > * {
+    overflow: visible;
+  }
+
+  .prog-side {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  /* Во всю ширину столбики были бы плитами: шкала остаётся шириной боковой панели. */
+  .prog-time > * {
+    max-width: 380px;
+  }
+}
+
+/* Планшет в портрете: навыки и карточка — колонкой 720 по центру; ряды боковой панели — во всю ширину. */
+@media (max-width: 899px) {
+  .prog-page {
+    max-width: calc(720px + 2 * var(--sp-4));
+    margin-inline: auto;
+  }
+}
+
+/* Узкий телефон: «Скопировать» и «Скачать .md» — кнопками-значками 44 × 44 в одной строке с именем файла. */
+@media (max-width: 479px) {
+  .prog-file-tab {
+    flex-wrap: nowrap;
+  }
+
+  .prog-file-actions {
+    flex-wrap: nowrap;
+  }
+
+  .prog-file-actions .btn {
+    position: relative;
+    width: var(--touch);
+    padding: 0;
+  }
+
+  .prog-btn-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

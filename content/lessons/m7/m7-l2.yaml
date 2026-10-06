@@ -1,0 +1,2048 @@
+id: m7-l2
+module: m7
+number: "7.2"
+title: Пути и учебная папка
+objective: >-
+  Строить пути к файлам через pathlib, проверять, есть ли файл, понимать, от какой папки считается
+  относительный путь, перебирать файлы папки и записывать результат в новый файл, не трогая
+  исходный.
+minutes: [25, 30]
+prerequisites: [m7-l1]
+skills: [files-paths]
+environment: python
+
+story:
+  title: Файл, которого «нет»
+  fictional: true
+  text: >-
+    Вера Павловна ведёт в школьной библиотеке список выданных книг в текстовом файле.
+    Девятиклассник Дима, её помощник, написал программу, которая наводит в списке порядок: дома
+    всё работало, а на библиотечном компьютере программа заявила, что файла нет, хотя он лежал
+    рядом с ней. Оказалось, программу запускали из другой папки, и Python искал
+    файл там. А во время проверки Дима чуть не записал пустой список поверх настоящего — с тех пор
+    он пробует программы только на копиях, в отдельной учебной папке.
+
+why: >-
+  Программа ищет файл не «где-нибудь на компьютере», а по пути — адресу из папок и имени файла.
+  Например, `library/books.txt` значит: «в текущей папке есть папка library, а в ней — файл
+  books.txt».
+
+usedIn: >-
+  Скрипты автоматизации: разложить фотографии по папкам, собрать отчёт из десятка файлов,
+  переименовать выгрузки. Программы, которые загружают настройки и шаблоны из папки рядом с собой.
+  Обработка выгрузок из учётных программ и резервные копии.
+
+steps:
+  - id: paths
+    type: theory
+    title: Путь — адрес файла
+    body: |-
+      В уроке 7.1 файл лежал рядом с программой, и хватало имени: `open("runs.txt", …)`. Но обычно
+      файлы разложены по папкам, и программе нужен **путь** — адрес файла: цепочка папок и имя
+      файла в конце.
+
+      - **Абсолютный путь** начинается от диска: `C:\Users\Anya\Documents\books.txt` (на macOS и
+        Linux — от корня `/`: `/Users/anya/books.txt`). Он работает, откуда бы ни запустили
+        программу, но на другом компьютере такой папки может не оказаться.
+      - **Относительный путь**, например `library/books.txt`, считается от **текущей папки** —
+        той, из которой запустили программу. В терминале её путь виден слева от курсора
+        (урок 0.4). Две точки `..` означают «папка на уровень выше».
+
+      Главная ловушка: относительный путь считается **от текущей папки, а не от папки с
+      программой**. Запустили программу из другой папки — и она «не видит» файл, который лежит
+      рядом с ней.
+
+      **Модуль pathlib.** Для работы с путями в Python есть модуль `pathlib`. Подключаем его так:
+
+      ```python
+      from pathlib import Path
+      ```
+
+      Это форма `from … import …` из урока 3.5: берём из модуля одно имя — `Path` — и пишем его без
+      приставки.
+
+      `Path("library")` — путь к папке. Знак `/` приклеивает к пути следующую часть:
+      `Path("library") / "books.txt"`. Разделитель Python подставит сам: на Windows это `\`, на
+      macOS, Linux и в тренажёре — `/`.
+
+      У пути есть части:
+
+      ```text
+      books = Path("library") / "books.txt"
+      books.name    →  books.txt    имя целиком
+      books.stem    →  books        имя без расширения
+      books.suffix  →  .txt         расширение
+      books.parent  →  library      папка, где лежит файл
+      ```
+
+      Две проверки: `books.exists()` отвечает `True`, если по пути что-то есть, а
+      `books.is_file()` — только если там именно **файл**, а не папка.
+
+      Чтение и запись одной командой: `books.read_text(encoding="utf-8")` открывает файл, читает
+      весь текст и закрывает его, а `books.write_text(текст, encoding="utf-8")` записывает текст и,
+      как режим `"w"`, стирает старый. Функция `open()` тоже принимает путь:
+      `open(books, encoding="utf-8")`.
+
+      `read_text()` возвращает весь текст одной строкой. Метод строки `splitlines()` делит её на
+      список строк и убирает `\n`: `"Дюна\nХоббит\n".splitlines()` даёт `['Дюна', 'Хоббит']`.
+
+      **Как устроен урок:** теория и три задания в тренажёре — около получаса. Последний шаг — на
+      твоём компьютере, минут на 5–10, его можно сделать отдельным заходом.
+    simpler: >-
+      Путь — это адрес: «папка library, в ней файл books.txt». Относительный адрес считается от
+      того места, где ты стоишь, — от текущей папки, а не от папки с программой. `Path` собирает
+      адрес из частей знаком `/` и отвечает на вопросы: как зовут файл, какое у него расширение,
+      есть ли он на самом деле.
+    coach: >-
+      Когда программа «не видит» файл, который точно есть, первый вопрос: из какой папки её
+      запустили?
+
+  - id: library
+    type: example
+    title: Есть ли список книг?
+    body: >-
+      Список книг лежит в папке `library` — открой блок «Файлы задания», чтобы его увидеть.
+      Программа собирает путь, показывает его части и читает файл, только если он есть.
+    code: |-
+      from pathlib import Path
+
+      folder = Path("library")
+      books = folder / "books.txt"
+      print(books.name, books.suffix)
+      if books.is_file():
+          text = books.read_text(encoding="utf-8")
+          print("Строк в файле:", len(text.splitlines()))
+      else:
+          print("Нет файла", books.name)
+    files:
+      library/books.txt: "Дюна\nСолярис\nХоббит\nМастер и Маргарита\n"
+    notes:
+      - line: 1
+        text: Из модуля pathlib берём одно имя — `Path`.
+      - line: 3
+        text: >-
+          `Path("library")` — только адрес папки. Сама по себе эта строка ничего не создаёт и не
+          проверяет.
+      - line: 4
+        text: Знак `/` приклеивает имя файла — получается путь `library/books.txt`.
+      - line: 5
+        text: Части пути — `.name`, имя целиком, и `.suffix`, расширение. Файл для этого не нужен.
+      - line: 6
+        text: >-
+          Проверка до чтения: `is_file()` отвечает `True`, только если по пути лежит файл.
+          `exists()` сказал бы `True` и для папки.
+      - line: 7
+        text: '`read_text` открывает файл, читает весь текст и закрывает его — `with` не нужен.'
+      - line: 8
+        text: '`splitlines()` делит текст на список строк без `\n`, а `len` считает, сколько их.'
+    tryIt: >-
+      Замени `"books.txt"` на `"readers.txt"` и запусти — сработает ветка `else`: такого файла в
+      папке нет. Потом верни `books.txt` и добавь строку `print(books.stem, books.parent)` —
+      посмотри на остальные части пути.
+
+  - id: other-folder
+    type: predict
+    title: Запуск из другой папки
+    prompt: >-
+      В текущей папке лежат файл `books.txt` и папка `archive`. Команда `os.chdir("archive")`
+      делает то же, что `cd archive` в терминале: меняет текущую папку. Здесь она только изображает
+      запуск программы из другой папки — в своих программах мы её не используем. Как думаешь, что
+      выведет программа?
+    code: |-
+      import os
+      from pathlib import Path
+
+      print(Path("books.txt").exists())
+      os.chdir("archive")  # как команда cd archive в терминале
+      print(Path("books.txt").exists())
+      print(Path("../books.txt").exists())
+    files:
+      books.txt: "Дюна\nСолярис\n"
+      archive/2025.txt: "Хоббит\n"
+    options:
+      - |-
+        True
+        True
+        True
+      - |-
+        True
+        False
+        True
+      - |-
+        True
+        False
+        False
+    answer: |-
+      True
+      False
+      True
+    explanation: |-
+      Файл никуда не делся — изменилась текущая папка. В первый раз Python ищет `books.txt` в
+      текущей папке и находит. После «cd archive» тот же относительный путь означает
+      `archive/books.txt`, а такого файла нет. `../books.txt` — «подняться на папку выше и взять
+      books.txt» — снова находит. Ровно это случилось с программой Димы: её запустили из другой
+      папки.
+
+      Выход — строить путь от папки самой программы. В переменной `__file__` Python хранит путь к
+      файлу программы, поэтому `Path(__file__).parent / "books.txt"` найдёт файл рядом с ней,
+      откуда бы её ни запустили. Попробуешь это на компьютере в последнем шаге урока.
+    coach: >-
+      Относительный путь — как «третья дверь налево»: куда он приведёт, зависит от того, где ты
+      стоишь.
+
+  - id: practice-exists
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m7-l2-e1
+      kind: repeat
+      title: Есть ли такой файл?
+      statement: |-
+        В папке `library` лежат файлы библиотеки — их видно в блоке «Файлы задания». Вера
+        Павловна вводит имя файла, а программа отвечает, есть ли такой файл в папке `library` и
+        сколько в нём строк.
+
+        Если файл есть:
+
+        ```text
+        Файл books.txt, строк: 4
+        ```
+
+        Если файла нет:
+
+        ```text
+        Нет файла journal.txt в папке library
+        ```
+
+        Пробелы по краям имени убери. Папка — не файл: если так называется папка, ответ тоже
+        «Нет файла…».
+      input: Одна строка — имя файла, например `books.txt`.
+      output: "Одна строка: `Файл <имя>, строк: N` или `Нет файла <имя> в папке library`."
+      constraints:
+        - Файл ищи только в папке `library`.
+        - Пустой файл — тоже файл, строк в нём 0.
+        - Читай файлы с `encoding="utf-8"`.
+      files:
+        library/books.txt: "Дюна\nСолярис\nХоббит\nМастер и Маргарита\n"
+        library/readers.txt: "Аня\nБорис\nВика"
+        library/empty.txt: ""
+        library/archive/2025.txt: "Дюна\nХоббит\n"
+      starterCode: |
+        from pathlib import Path
+
+        name = input("Имя файла: ")
+        # Собери путь к файлу name в папке library
+        # Если это файл — выведи «Файл …, строк: …», иначе — «Нет файла … в папке library»
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "books.txt\n"
+          expected: "Файл books.txt, строк: 4"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: "Пример 2: такого файла нет"
+          example: true
+          stdin: "journal.txt\n"
+          expected: Нет файла journal.txt в папке library
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: последняя строка без перевода строки"
+          edge: true
+          stdin: "readers.txt\n"
+          expected: "Файл readers.txt, строк: 3"
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: пустой файл"
+          edge: true
+          stdin: "empty.txt\n"
+          expected: "Файл empty.txt, строк: 0"
+          compare:
+            ignoreSpaces: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: пробелы вокруг имени"
+          edge: true
+          stdin: "  books.txt  \n"
+          expected: "Файл books.txt, строк: 4"
+          compare:
+            ignoreSpaces: true
+        - id: t6
+          kind: io
+          title: "Граничный случай: так называется папка"
+          edge: true
+          stdin: "archive\n"
+          expected: Нет файла archive в папке library
+          compare:
+            ignoreSpaces: true
+        - id: t7
+          kind: io
+          title: "Граничный случай: main.py есть в текущей папке, но не в library"
+          edge: true
+          stdin: "main.py\n"
+          expected: Нет файла main.py в папке library
+          compare:
+            ignoreSpaces: true
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          stdin: "books.txt\n"
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            # read_text("utf-8") и write_text(текст, "utf-8") — кодировка без имени, тоже верно
+            positional = {"read_text": 1, "write_text": 2}
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.Call):
+                    name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+                    if name in names:
+                        by_position = len(node.args) >= positional.get(name, 4)
+                        assert by_position or any(keyword.arg == "encoding" for keyword in node.keywords)
+          message: >-
+            В одном из `open()`, `read_text()` или `write_text()` не указана кодировка. Добавь
+            `encoding="utf-8"` — иначе на Windows со старым Python (до 3.15) русский текст
+            превратится в кракозябры.
+      criteria:
+        - Путь строится из папки `library` и введённого имени, пробелы по краям имени убраны.
+        - Файл читается только после проверки, что по пути лежит именно файл; для папки и несуществующего имени — «Нет файла…».
+        - Строки считаются как строки текста — пустой файл даёт 0, последняя строка без `\n` тоже считается.
+        - Кодировка при чтении указана.
+      hints:
+        - >-
+          Посмотри на пример «Есть ли список книг?»: там путь собирается из папки и имени файла, а
+          читается файл только после проверки. Здесь то же самое, только имя приходит из ввода.
+          Какая из двух проверок пути не спутает файл с папкой?
+        - |-
+          Тот же приём на другой папке:
+          ```python
+          photo = Path("photos") / "sea.jpg"
+          if photo.is_file():
+              print("Есть фото", photo.name)
+          else:
+              print("Нет фото", photo.name)
+          ```
+          А число строк текста — это `len(текст.splitlines())`.
+        - |-
+          Каркас:
+          ```text
+          name = input(…).strip()
+          path = Path("library") / name
+          if по пути лежит файл:
+              text = прочитать path с encoding="utf-8"
+              print(f"Файл {name}, строк: {…}")
+          else:
+              print(f"Нет файла {name} в папке library")
+          ```
+      solution:
+        code: |
+          from pathlib import Path
+
+          name = input("Имя файла: ").strip()
+          path = Path("library") / name
+          if path.is_file():
+              text = path.read_text(encoding="utf-8")
+              print(f"Файл {name}, строк: {len(text.splitlines())}")
+          else:
+              print(f"Нет файла {name} в папке library")
+        explanation: >-
+          `strip()` убирает пробелы по краям имени. `Path("library") / name` строит путь внутри
+          папки library — от текущей папки, где запущена программа. `is_file()` отвечает `True`
+          только для файла, поэтому папка archive и несуществующие имена попадают в `else`, а
+          `read_text` вызывается только для настоящего файла. `splitlines()` делит текст на строки:
+          у пустого файла их 0, а последняя строка без `\n` тоже считается.
+      altSolutions:
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                count = 0
+                with open(path, encoding="utf-8") as f:
+                    for line in f:
+                        count += 1
+                print("Файл " + name + ", строк: " + str(count))
+            else:
+                print("Нет файла", name, "в папке library")
+          note: Подсчёт строк циклом по файлу из урока 7.1, вывод склейкой и через запятые.
+        - code: |
+            from pathlib import Path
+
+            name = input()
+            name = name.strip()
+            path = Path("library/" + name)
+            if not path.is_file():
+                print(f"Нет файла {path.name} в папке library")
+            else:
+                lines = path.read_text(encoding="utf-8").splitlines()
+                print("Файл", name + ",", "строк:", len(lines))
+          note: Путь склеен строкой с «/», проверка через not, имя из path.name.
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            name = input("Имя файла: ").strip()
+            path = folder / name
+            if path.exists() and path.is_file():
+                text = path.read_text(encoding="utf-8")
+                lines = text.splitlines()
+                print(f"Файл {path.name}, строк: {len(lines)}")
+            else:
+                print(f"Нет файла {name} в папке {folder.name}")
+          note: Две проверки подряд и имя папки из folder.name.
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library", name)
+            if path.is_file():
+                text = path.read_text("utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Path из двух частей и кодировка без имени аргумента — read_text("utf-8").
+      wrongSolutions:
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = "library" / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Знак / между двумя строками — Path забыт, TypeError.
+          expectMistake: str-slash
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            text = path.read_text(encoding="utf-8")
+            if path.is_file():
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Файл читается до проверки — на несуществующем имени FileNotFoundError.
+          expectMistake: read-before-check
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.exists():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: exists() вместо is_file() — папку archive пытается прочитать как файл.
+          expectMistake: exists-folder
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library" + name)
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Строки склеены через + без разделителя — librarybooks.txt.
+          expectMistake: plus-not-slash
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path(name)
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Путь без папки — файл ищется в текущей папке.
+          expectMistake: no-folder
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text)}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: len(text) считает символы, а не строки.
+          expectMistake: chars-count
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.split())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: split() режет по пробелам — «Мастер и Маргарита» считается за три.
+          expectMistake: split-lines
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                lines = text.strip().split("\n")
+                print(f"Файл {name}, строк: {len(lines)}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: split по переводу строки — у пустого файла получается одна «строка».
+          expectMistake: split-lines
+        - code: |
+            from pathlib import Path
+
+            name = input("Имя файла: ")
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Пробелы по краям имени не убраны.
+          expectMistake: no-strip
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {path}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {path} в папке library")
+          note: Печатается весь путь вместо имени.
+          expectMistake: full-path
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                lines = path.read_text(encoding="utf-8").splitlines()
+                print("Файл", name, ", строк:", len(lines))
+            else:
+                print("Нет файла", name, "в папке library")
+          note: Запятая отдельным значением в print — перед ней пробел.
+          expectMistake: space-before-comma
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                count = text.count("\n")
+                print(f"Файл {name}, строк: {count}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Считаются переводы строк — последняя строка без \n теряется.
+          expectMistake: count-newlines
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text()
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Не указана кодировка.
+          expectMistake: no-encoding
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file:
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Метод is_file без скобок — условие всегда верно.
+          expectMistake: no-parens
+        - code: |
+            from pathlib import Path
+
+            name = input()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name.strip()}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name.strip()} в папке library")
+          note: strip() только при печати — путь собран из имени с пробелами.
+          expectMistake: no-strip
+        - code: |
+            from pathlib import Path
+
+            name = input()
+            path = Path("library") / name.strip()
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(text.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: strip() только для пути — в ответ попадает имя с пробелами.
+          expectMistake: no-strip-print
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                lines = path.read_text(encoding="utf-8").splitlines()
+                print("Файл " + name + ", строк: " + len(lines))
+            else:
+                print("Нет файла " + name + " в папке library")
+          note: Склейка строки с числом — TypeError; кодировка указана, ученик видит общий разбор ошибки.
+          expectMistake: null
+        - code: |
+            from pathlib import Path
+
+            name = input().strip()
+            path = Path("library") / name
+            if path.is_file():
+                text = path.read_text(encoding="utf-8")
+                print(f"Файл {name}, строк: {len(txt.splitlines())}")
+            else:
+                print(f"Нет файла {name} в папке library")
+          note: Опечатка в имени переменной — NameError; кодировка указана, ученик видит общий разбор ошибки.
+          expectMistake: null
+      mistakes:
+        - id: str-slash
+          when:
+            errorIncludes: "for /: 'str' and 'str'"
+          where: Строка, где собирается путь
+          why: >-
+            Знак `/` собирает путь, только если хотя бы одна из частей — `Path`. Здесь обе части —
+            обычные строки, а делить строку на строку Python не умеет.
+          try: 'Начни путь с `Path`: `Path("library") / name`.'
+        - id: no-parens
+          when:
+            codeRegex: '\.(is_file|exists)\s*:'
+          where: Строка с `if`
+          why: >-
+            Без скобок метод не вызывается: `path.is_file` — это сам метод, а не ответ `True` или
+            `False`. Python считает такое условие всегда выполненным, и программа пытается прочитать
+            даже файл, которого нет.
+          try: 'Вызови метод — со скобками: `path.is_file()`.'
+          verify: "«Пример 2» должен вывести «Нет файла journal.txt в папке library»."
+        - id: read-before-check
+          when:
+            errorType: FileNotFoundError
+          where: Строка с `read_text` или `open`
+          why: >-
+            Python не нашёл файл по пути, который собрала программа, и `read_text` (или `open`)
+            остановил её ошибкой FileNotFoundError. Так бывает, когда чтение стоит до проверки или
+            без неё: в тестах есть имена, которых в папке library нет. Ещё одна причина — путь
+            собран без папки library.
+          try: >-
+            Собери путь `Path("library") / name`, проверь его через `is_file()` и читай файл только
+            внутри `if`.
+          verify: "«Пример 2» должен вывести «Нет файла journal.txt в папке library»."
+        - id: exists-folder
+          when:
+            errorType: IsADirectoryError
+          why: >-
+            В тесте с именем archive путь ведёт к папке. `exists()` ответил `True` — по пути
+            действительно что-то есть, — и программа попыталась прочитать папку как файл.
+            `exists()` проверяет, есть ли что-нибудь по пути, а `is_file()` — есть ли там именно
+            файл.
+          try: Замени `exists()` на `is_file()`.
+          verify: Граничный случай «так называется папка» должен вывести «Нет файла archive в папке library».
+        - id: plus-not-slash
+          when:
+            codeRegex: '["'']library["'']\s*\+'
+            outputIncludes: Нет файла books.txt
+          where: Строка, где собирается путь
+          why: >-
+            `"library" + name` склеивает строки как есть, без разделителя: получается
+            `librarybooks.txt`, а такого файла нет. Знак `/` у Path ставит между частями пути
+            разделитель сам.
+          try: 'Собери путь так: `Path("library") / name`.'
+          verify: "«Пример 1» должен вывести «Файл books.txt, строк: 4»."
+        - id: no-folder
+          when:
+            failedTest: t1
+            outputIncludes: Нет файла books.txt
+          where: Строка, где собирается путь
+          why: >-
+            Файл books.txt есть, но программа его не нашла — значит, ищет не там. Путь без папки,
+            например `Path(name)`, ведёт прямо в текущую папку, а books.txt лежит в папке library.
+            Проверь и имя папки: library — строчными буквами, без опечаток.
+          try: 'Начни путь с папки: `Path("library") / name`.'
+          verify: "«Пример 1» должен вывести «Файл books.txt, строк: 4»."
+        - id: chars-count
+          when:
+            outputIncludes: "строк: 39"
+          why: >-
+            `len(text)` считает символы текста — буквы, пробелы и переводы строк, а не строки. В
+            books.txt 39 символов и 4 строки.
+          try: Сначала раздели текст на строки — `text.splitlines()`, — и уже у списка возьми `len`.
+        - id: full-path
+          when:
+            outputIncludes: library/
+          where: Строка с `print`
+          why: >-
+            В ответе весь путь, например `library/books.txt`, а нужно только имя файла. К тому же на
+            Windows путь напечатается через `\` — ответ будет зависеть от компьютера.
+          try: Печатай имя из ввода или `path.name` — имя без папок.
+          verify: "«Пример 1» должен вывести «Файл books.txt, строк: 4»."
+        - id: space-before-comma
+          when:
+            failedTest: t1
+            outputIncludes: " , строк"
+          where: Строка с `print` для найденного файла
+          why: >-
+            Перед запятой лишний пробел. Когда значения в `print` перечислены через запятую, Python
+            ставит между ними пробел — и перед отдельной строкой `", строк:"` тоже.
+          try: 'Собери строку целиком через f-строку: `f"Файл {name}, строк: {…}"` — или приклей запятую к имени: `name + ","`.'
+        - id: count-newlines
+          when:
+            outputIncludes: "readers.txt, строк: 2"
+          why: >-
+            Похоже, строки посчитаны по переводам строки `\n`. Но в конце readers.txt перевода строки
+            нет, и последняя строка «Вика» не посчитана.
+          try: 'Считай сами строки: `len(text.splitlines())` — `splitlines()` учитывает и последнюю строку без `\n`.'
+          verify: Граничный случай «последняя строка без перевода строки» должен вывести 3 строки.
+        - id: split-lines
+          when:
+            codeRegex: '\.split\('
+            outputIncludes: "строк: "
+          why: >-
+            `split` делит текст не на строки. `split()` без аргумента режет по пробелам, и «Мастер и
+            Маргарита» превращается в три части. Деление по `"\n"` оставляет лишний пустой
+            элемент: у пустого файла получается `['']` — одна «строка» вместо нуля.
+          try: 'Используй `splitlines()`: он делит текст именно на строки и лишних элементов не даёт.'
+        - id: no-strip
+          when:
+            failedTest: t5
+            outputIncludes: Нет файла
+          where: Строка с `input()`
+          why: >-
+            Пробелы вокруг имени попали в путь: программа ищет файл «  books.txt  » — с пробелами
+            в имени, а такого файла нет. Если `strip()` стоит только в `print`, путь всё равно
+            собран из имени с пробелами.
+          try: >-
+            Убери пробелы сразу при вводе: `name = input().strip()` — тогда и путь, и ответ получат
+            чистое имя.
+          verify: 'Граничный случай «пробелы вокруг имени» должен вывести «Файл books.txt, строк: 4».'
+        - id: no-strip-print
+          when:
+            failedTest: t5
+            outputIncludes: "  books.txt"
+          where: Строки с `input()` и `print`
+          why: >-
+            Файл нашёлся, но в ответ попало имя с пробелами. `name.strip()` возвращает новую строку
+            и не меняет саму переменную `name`.
+          try: >-
+            Убери пробелы один раз, сразу при вводе: `name = input().strip()` — тогда и путь, и
+            ответ получат чистое имя.
+          verify: 'Граничный случай «пробелы вокруг имени» должен вывести «Файл books.txt, строк: 4».'
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: "строк:"
+          where: Вызов `read_text` или `open`
+          why: >-
+            Кодировка не указана. В тренажёре текст всё равно прочитался, а на Windows Python 3.14 и
+            раньше без подсказки читает файлы в другой кодировке — и русский текст превращается в кракозябры
+            или в ошибку UnicodeDecodeError.
+          try: Добавь `encoding="utf-8"` в `read_text(...)` или `open(...)`.
+      afterPass: >-
+        Программа ищет файл по точному адресу и не путает файл с папкой. Можно улучшить сообщение
+        для пустого ввода: сейчас программа ответит «Нет файла  в папке library» — путь стал просто
+        `library`, а это папка. Понятнее было бы «Введи имя файла».
+      skills: [files-paths, conditions, string-methods]
+
+  - id: copies
+    type: theory
+    title: Учебная папка, копии и sorted()
+    body: |-
+      **Правило учебной папки.** Программа, которая записывает файлы, может ошибиться, и эта ошибка
+      дорогая: `write_text` и режим `"w"` стирают старое содержимое мгновенно, а в корзину оно не
+      попадает. Поэтому новые программы, которые пишут файлы, сначала запускают в отдельной
+      учебной папке на **копиях** данных, а не на оригиналах.
+
+      Второе правило знакомо по уроку 7.1 — **результат в новый файл**. Программа читает
+      `books.txt`, а пишет в `sorted.txt`. Если результат вышел не таким, исходник цел: поправил
+      код и запустил снова.
+
+      **sorted().** Навести порядок помогает встроенная функция `sorted()`. Она получает список
+      (или другой набор значений) и возвращает **новый** список, упорядоченный по возрастанию:
+      числа — от меньшего к большему, строки — по алфавиту. Старый список при этом не меняется —
+      та же идея, что с копиями:
+
+      ```python
+      titles = ["Хоббит", "Дюна", "Солярис"]
+      ordered = sorted(titles)
+      print(ordered)   # ['Дюна', 'Солярис', 'Хоббит']
+      print(titles)    # ['Хоббит', 'Дюна', 'Солярис']
+      ```
+
+      Поэтому строка `sorted(titles)` без присваивания ничего не даёт: новый список создан и тут
+      же потерян. Сохрани его в переменную или сразу используй.
+
+      Строки `sorted()` сравнивает по кодам букв: заглавные идут раньше строчных, строчная «ё» —
+      после «я», а заглавная «Ё» — даже раньше «А». Для названий с заглавной буквы и без «ё»
+      получается обычный алфавит.
+
+      Чтобы записать список в файл, собери его в один текст знакомым `join`:
+      `"\n".join(ordered)` ставит перевод строки между элементами.
+    simpler: >-
+      Пробуй на копии и пиши результат в новый файл — тогда ошибка программы стоит пару минут, а
+      не потерянных данных. `sorted(список)` — «дай мне этот список по порядку»: он отдаёт новый
+      список, а старый не трогает.
+    coach: >-
+      Перед запуском программы, которая пишет файлы, спроси себя: что пропадёт, если она
+      ошибётся? Если что-то важное — работай на копии.
+
+  - id: practice-sorted
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m7-l2-e2
+      kind: modify
+      title: Список по алфавиту
+      statement: |-
+        Это программа Димы из истории. Сейчас она читает список книг `library/books.txt` и
+        печатает, сколько в нём названий. Измени её:
+
+        1. Запиши те же названия **по алфавиту** в новый файл `sorted.txt` в той же папке
+           `library` — по одному названию на строку.
+        2. Вместо строки «Книг в списке: …» выведи `Записано книг: N`.
+
+        Файл `books.txt` не меняй: результат — только в новый файл. Программу будут запускать не
+        раз: если `sorted.txt` остался от прошлого запуска, запиши его заново.
+
+        Для списка из блока «Файлы задания» программа выводит:
+
+        ```text
+        Записано книг: 4
+        ```
+
+        А в файле `library/sorted.txt` оказываются строки:
+
+        ```text
+        Дюна
+        Мастер и Маргарита
+        Солярис
+        Хоббит
+        ```
+
+        Что программа записала, видно под выводом в блоке «Файлы после запуска».
+      input: Ввода нет. Данные — файл `library/books.txt`, по одному названию на строку.
+      output: "Строка `Записано книг: N` и новый файл `library/sorted.txt` с названиями по алфавиту."
+      constraints:
+        - "`books.txt` после запуска остаётся прежним."
+        - Названия начинаются с заглавной буквы и без «ё» — `sorted()` расставит их по алфавиту.
+        - Записывай файл с `encoding="utf-8"`.
+      files:
+        library/books.txt: "Дюна\nСолярис\nХоббит\nМастер и Маргарита\n"
+      starterCode: |
+        from pathlib import Path
+
+        folder = Path("library")
+        books = folder / "books.txt"
+        titles = books.read_text(encoding="utf-8").splitlines()
+        print("Книг в списке:", len(titles))
+      tests:
+        - id: t1
+          kind: io
+          title: Пример
+          example: true
+          expected: "Записано книг: 4"
+          compare:
+            ignoreSpaces: true
+        - id: t-file
+          kind: assert
+          title: Файл sorted.txt создан в папке library
+          example: true
+          code: |
+            import os
+
+            assert os.path.isfile("library/sorted.txt")
+          message: В папке library появляется новый файл sorted.txt.
+        - id: t-lines
+          kind: assert
+          title: Каждое название — на своей строке
+          code: |
+            import os
+
+            assert os.path.isfile("library/sorted.txt")
+            lines = open("library/sorted.txt", encoding="utf-8").read().splitlines()
+            assert len(lines) == 4
+            assert "" not in lines
+          message: В sorted.txt столько строк, сколько книг в списке, — по одному названию на строку, без пустых строк.
+        - id: t-order
+          kind: assert
+          title: Названия по алфавиту
+          example: true
+          code: |
+            import os
+
+            assert os.path.isfile("library/sorted.txt")
+            lines = open("library/sorted.txt", encoding="utf-8").read().splitlines()
+            assert lines == ["Дюна", "Мастер и Маргарита", "Солярис", "Хоббит"]
+          message: В sorted.txt — те же названия, что в books.txt, но по алфавиту.
+        - id: t-src
+          kind: assert
+          title: Исходный список не изменился
+          code: |
+            text = open("library/books.txt", encoding="utf-8").read()
+            assert text == "Дюна\nСолярис\nХоббит\nМастер и Маргарита\n"
+          message: Файл books.txt остаётся как был — результат записывается только в новый файл.
+        - id: t2
+          kind: io
+          title: Другой список
+          files:
+            library/books.txt: "Обломов\nВий\nХоббит\nАнна Каренина\nГамлет\n"
+          expected: "Записано книг: 5"
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: assert
+          title: Другой список по алфавиту
+          files:
+            library/books.txt: "Обломов\nВий\nХоббит\nАнна Каренина\nГамлет\n"
+          code: |
+            import os
+
+            assert os.path.isfile("library/sorted.txt")
+            lines = open("library/sorted.txt", encoding="utf-8").read().splitlines()
+            assert lines == ["Анна Каренина", "Вий", "Гамлет", "Обломов", "Хоббит"]
+          message: Для другого списка в sorted.txt тоже названия по алфавиту.
+        - id: t4
+          kind: io
+          title: "Граничный случай: одна книга без перевода строки"
+          edge: true
+          files:
+            library/books.txt: "Дюна"
+          expected: "Записано книг: 1"
+          compare:
+            ignoreSpaces: true
+        - id: t-rerun
+          kind: assert
+          title: "Граничный случай: sorted.txt остался от прошлого запуска"
+          edge: true
+          files:
+            library/sorted.txt: "Хоббит\nДюна\n"
+          code: |
+            import os
+
+            assert os.path.isfile("library/sorted.txt")
+            lines = open("library/sorted.txt", encoding="utf-8").read().splitlines()
+            assert lines == ["Дюна", "Мастер и Маргарита", "Солярис", "Хоббит"]
+          message: >-
+            Если sorted.txt остался от прошлого запуска, программа записывает его заново, а не
+            дописывает в конец.
+        - id: t-enc
+          kind: assert
+          title: Кодировка указана
+          code: |
+            import ast
+
+            source = open(__file__, encoding="utf-8").read()
+            names = {"open", "read_text", "write_text"}
+            # read_text("utf-8") и write_text(текст, "utf-8") — кодировка без имени, тоже верно
+            positional = {"read_text": 1, "write_text": 2}
+            for node in ast.walk(ast.parse(source)):
+                if isinstance(node, ast.Call):
+                    name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+                    if name in names:
+                        by_position = len(node.args) >= positional.get(name, 4)
+                        assert by_position or any(keyword.arg == "encoding" for keyword in node.keywords)
+          message: >-
+            В одном из `open()`, `read_text()` или `write_text()` не указана кодировка. Добавь
+            `encoding="utf-8"` — иначе на Windows со старым Python (до 3.15) русский текст
+            превратится в кракозябры.
+      criteria:
+        - Названия упорядочены (например, через `sorted()`) и записаны в новый файл `library/sorted.txt`, по одному на строку.
+        - Исходный файл `books.txt` не изменился, а `sorted.txt` от прошлого запуска записывается заново, а не дописывается.
+        - "Программа выводит `Записано книг: N`, где N — число названий."
+        - Кодировка при записи указана.
+      hints:
+        - >-
+          Задача из трёх шагов: упорядочить названия, собрать путь к новому файлу в той же папке и
+          записать туда текст. Какая функция из теории возвращает упорядоченный список? И какой
+          путь не заденет books.txt?
+        - |-
+          Те же приёмы на другом материале:
+          ```python
+          scores = [7, 3, 9]
+          ordered = sorted(scores)          # [3, 7, 9], а scores не изменился
+          text = "\n".join(["чай", "сок"])  # "чай\nсок" — две строки
+          Path("menu.txt").write_text(text, encoding="utf-8")
+          ```
+        - |-
+          Каркас — вместо последней строки программы:
+          ```text
+          ordered = sorted(…)
+          result = folder / "sorted.txt"
+          result.write_text("\n".join(…), encoding="utf-8")
+          print("Записано книг:", …)
+          ```
+      solution:
+        code: |
+          from pathlib import Path
+
+          folder = Path("library")
+          books = folder / "books.txt"
+          titles = books.read_text(encoding="utf-8").splitlines()
+          ordered = sorted(titles)
+          result = folder / "sorted.txt"
+          result.write_text("\n".join(ordered) + "\n", encoding="utf-8")
+          print("Записано книг:", len(ordered))
+        explanation: >-
+          `sorted(titles)` возвращает новый список по алфавиту, а `titles` остаётся как был.
+          `"\n".join(ordered)` собирает из списка текст: между названиями встают переводы строк, а
+          `+ "\n"` завершает последнюю строку, как принято в текстовых файлах. Путь
+          `folder / "sorted.txt"` ведёт в ту же папку library, но к новому файлу, поэтому books.txt
+          не меняется.
+      altSolutions:
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            with open(folder / "sorted.txt", "w", encoding="utf-8") as f:
+                for title in sorted(titles):
+                    f.write(title + "\n")
+            print("Записано книг:", len(titles))
+          note: Запись в цикле через open и write, как в уроке 7.1.
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            titles.sort()
+            Path("library/sorted.txt").write_text("\n".join(titles), encoding="utf-8")
+            print(f"Записано книг: {len(titles)}")
+          note: Метод списка sort() (его разберём в модуле 10) и путь одной строкой, без перевода строки в конце файла.
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            count = 0
+            with open(folder / "sorted.txt", "w", encoding="utf-8") as f:
+                for title in sorted(titles):
+                    print(title, file=f)
+                    count += 1
+            print("Записано книг:", count)
+          note: print(..., file=f) и отдельный счётчик записанных строк.
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            text = ""
+            for title in sorted(titles):
+                text = text + title + "\n"
+            (books.parent / "sorted.txt").write_text(text, "utf-8")
+            print("Записано книг:", len(titles))
+          note: Текст накоплен в цикле, путь через books.parent, кодировка без имени аргумента.
+      wrongSolutions:
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            ordered = sorted(titles)
+            folder / "sorted.txt".write_text("\n".join(ordered), encoding="utf-8")
+            print("Записано книг:", len(ordered))
+          note: Без скобок вокруг пути — write_text вызывается у строки "sorted.txt".
+          expectMistake: str-method
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            ordered = sorted(titles)
+            (Path("Library") / "sorted.txt").write_text("\n".join(ordered), encoding="utf-8")
+            print("Записано книг:", len(ordered))
+          note: Папка Library с заглавной буквы — такой папки нет, FileNotFoundError при записи.
+          expectMistake: no-such-path
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            for title in sorted(titles):
+                with open(folder / "sorted.txt", "a", encoding="utf-8") as f:
+                    f.write(title + "\n")
+            print("Записано книг:", len(titles))
+          note: Режим "a" из урока 7.1 — второй запуск допишет список ещё раз.
+          expectMistake: append-mode
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            f = open(folder / "sorted.txt", "w", encoding="utf-8")
+            f.write("\n".join(sorted(titles)))
+            print("Записано книг:", len(titles))
+          note: Файл открыт без with и не закрыт — проверка видит его пустым.
+          expectMistake: not-closed
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            ordered = sorted(titles)
+            result = folder / "sorted.txt"
+            for title in ordered:
+                result.write_text(title + "\n", encoding="utf-8")
+            print("Записано книг:", len(ordered))
+          note: write_text в цикле — каждый вызов стирает файл, остаётся последнее название.
+          expectMistake: write-text-loop
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            ordered = sorted(titles)
+            (folder / "sorted.txt").write_text("\n".join(titles), encoding="utf-8")
+            print("Записано книг:", len(ordered))
+          note: Отсортировал, но в файл записан исходный titles.
+          expectMistake: not-sorted
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            ordered = sorted(titles)
+            (folder / "sorted.txt").write_text("\n".join(ordered), encoding="utf-8")
+            print("Записано книг: " + len(ordered))
+          note: Склейка строки с числом — TypeError; кодировка указана, ученик видит общий разбор ошибки.
+          expectMistake: null
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            (folder / "sorted.txt").write_text(sorted(titles), encoding="utf-8")
+            print("Записано книг:", len(titles))
+          note: В write_text передан список, а не текст.
+          expectMistake: list-not-text
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            books.write_text("\n".join(sorted(titles)), encoding="utf-8")
+            print("Записано книг:", len(titles))
+          note: Результат записан поверх исходного books.txt.
+          expectMistake: overwrote-source
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            Path("sorted.txt").write_text("\n".join(sorted(titles)), encoding="utf-8")
+            print("Записано книг:", len(titles))
+          note: Новый файл записан рядом с программой, а не в папку library.
+          expectMistake: wrong-place
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            (folder / "sorted.txt").write_text(str(sorted(titles)), encoding="utf-8")
+            print("Записано книг:", len(titles))
+          note: В файл записано str(список) — одна строка со скобками.
+          expectMistake: one-line
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            for title in sorted(titles):
+                with open(folder / "sorted.txt", "w", encoding="utf-8") as f:
+                    f.write(title + "\n")
+            print("Записано книг:", len(titles))
+          note: Файл открывается в режиме w заново на каждом шаге — остаётся последнее название.
+          expectMistake: one-line
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            sorted(titles)
+            (folder / "sorted.txt").write_text("\n".join(titles), encoding="utf-8")
+            print("Записано книг:", len(titles))
+          note: Результат sorted() не сохранён — titles в прежнем порядке.
+          expectMistake: sorted-not-saved
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            (folder / "sorted.txt").write_text("\n".join(titles), encoding="utf-8")
+            print("Записано книг:", len(titles))
+          note: Список вовсе не отсортирован.
+          expectMistake: not-sorted
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            (folder / "sorted.txt").write_text("\n".join(sorted(titles)))
+            print("Записано книг:", len(titles))
+          note: Не указана кодировка при записи.
+          expectMistake: no-encoding
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            print("Книг в списке:", len(titles))
+            ordered = sorted(titles)
+            (folder / "sorted.txt").write_text("\n".join(ordered), encoding="utf-8")
+            print("Записано книг:", len(ordered))
+          note: Старая строка вывода осталась.
+          expectMistake: old-print
+        - code: |
+            from pathlib import Path
+
+            folder = Path("library")
+            books = folder / "books.txt"
+            titles = books.read_text(encoding="utf-8").splitlines()
+            ordered = titles.sort()
+            (folder / "sorted.txt").write_text("\n".join(ordered), encoding="utf-8")
+            print("Записано книг:", len(titles))
+          note: Результат titles.sort() — None, а не список.
+          expectMistake: sort-none
+      mistakes:
+        - id: str-method
+          when:
+            errorIncludes: "'str' object has no attribute 'write_text'"
+          where: Строка с `write_text`
+          why: >-
+            Точка сильнее знака `/`: Python сначала вызывает `"sorted.txt".write_text(...)` — у
+            обычной строки, а у строк такого метода нет.
+          try: >-
+            Сохрани путь в переменную: `result = folder / "sorted.txt"`, потом
+            `result.write_text(...)`. Или возьми путь в скобки: `(folder / "sorted.txt").write_text(...)`.
+        - id: list-not-text
+          when:
+            errorIncludes: must be str
+          where: Строка с `write_text` или `write`
+          why: >-
+            Записать в файл можно только текст, а сюда передали список. Список сначала нужно
+            собрать в одну строку.
+          try: >-
+            Склей названия через перевод строки: `"\n".join(список)` — и запиши получившийся
+            текст.
+        - id: sort-none
+          when:
+            errorIncludes: can only join an iterable
+          where: Строка с `.sort()`
+          why: >-
+            Метод списка `sort()` упорядочивает сам список и ничего не возвращает — в переменной
+            оказывается `None`, и `join` не может собрать из него текст. А `sorted()` возвращает
+            новый список.
+          try: 'Напиши `ordered = sorted(titles)` — или вызови `titles.sort()` отдельной строкой и дальше работай с `titles`.'
+        - id: no-such-path
+          when:
+            errorType: FileNotFoundError
+          where: Путь в строке, где программа остановилась
+          why: >-
+            Python не нашёл папку или файл из пути. `write_text` и `open(..., "w")` создают новый
+            файл, но не папку: папка из пути должна уже быть. Частая причина — опечатка или
+            заглавная буква в имени: в тренажёре `Library` и `library` — разные папки.
+          try: 'Собери путь от готовой переменной: `folder / "sorted.txt"` — там папка уже записана верно.'
+        - id: old-print
+          when:
+            outputIncludes: Книг в списке
+          where: Строка `print("Книг в списке:", …)`
+          why: >-
+            Осталась строка из прежней версии программы — «Книг в списке: …». По условию программа
+            выводит только «Записано книг: N».
+          try: Удали старый `print` или замени в нём подпись.
+          verify: "«Пример» должен вывести одну строку «Записано книг: 4»."
+        - id: overwrote-source
+          when:
+            failedTest: t-src
+            outputIncludes: Записано книг
+          where: Строка с `write_text` или `open(..., "w")`
+          why: >-
+            Файл books.txt изменился — программа записала результат поверх исходного списка. Именно
+            так Дима чуть не потерял настоящий список: `write_text` и режим `"w"` стирают старое
+            содержимое сразу, и в корзину оно не попадает.
+          try: 'Пиши в новый путь — `folder / "sorted.txt"`, — а books.txt только читай.'
+          verify: Проверка «Исходный список не изменился» должна стать зелёной.
+        - id: wrong-place
+          when:
+            failedTest: t-file
+            outputIncludes: Записано книг
+          where: Путь, по которому записывается файл
+          why: >-
+            Файла library/sorted.txt нет. Скорее всего, он записан не в папку library или назван
+            иначе: например, `Path("sorted.txt")` создаёт файл прямо в текущей папке, а не в
+            library. Загляни в блок «Файлы после запуска» — там видно, какой файл создала программа.
+          try: 'Собери путь от той же папки, что и books.txt: `folder / "sorted.txt"`.'
+        - id: not-closed
+          when:
+            failedTest: t-lines
+            codeRegex: '(?<![\s\S])(?![\s\S]*\.close\(\))[\s\S]*^\s*\w+\s*=\s*open\('
+          where: Строка с `open`
+          why: >-
+            Файл открыт без `with` и не закрыт. Записанный текст Python сначала копит в памяти и
+            отправляет в файл, когда файл закрывают, — поэтому проверка увидела sorted.txt пустым.
+          try: >-
+            Открой файл через `with open(...) as f:` — `with` сам закроет файл, когда блок
+            закончится. Или запиши весь текст одной командой `write_text`.
+          verify: Посмотри на sorted.txt в «Файлах после запуска» — там должно быть 4 строки.
+        - id: write-text-loop
+          when:
+            failedTest: t-lines
+            codeRegex: '^[ \t]+.*\.write_text\('
+            outputIncludes: Записано книг
+          where: Строка с `write_text` внутри цикла
+          why: >-
+            `write_text` вызывается в цикле. Каждый вызов, как режим `"w"`, стирает файл и пишет
+            заново — в sorted.txt остаётся только последнее название.
+          try: >-
+            Собери весь текст до записи — `"\n".join(ordered)` — и вызови `write_text` один раз,
+            без цикла.
+          verify: Посмотри на sorted.txt в «Файлах после запуска» — там должно быть 4 строки.
+        - id: one-line
+          when:
+            failedTest: t-lines
+            outputIncludes: Записано книг
+          why: >-
+            В sorted.txt не те строки. Все названия слипаются в одну строку, если записать
+            `str(список)`, `"".join(список)` или `f.write(title)` без `\n`. Лишний `\n` добавляет
+            пустые строки. А файл, который открывают в режиме `"w"` заново на каждом шаге цикла,
+            каждый раз стирается — остаётся одно последнее название.
+          try: >-
+            Собери весь текст через `"\n".join(...)` и запиши его один раз — или открой файл один раз
+            до цикла и внутри пиши `f.write(title + "\n")`.
+          verify: Посмотри на sorted.txt в «Файлах после запуска» — там должно быть 4 строки.
+        - id: sorted-not-saved
+          when:
+            codeRegex: '^\s*sorted\('
+            failedTest: t-order
+          where: Строка `sorted(...)`
+          why: >-
+            Вызов `sorted(titles)` сам по себе ничего не меняет: он возвращает новый упорядоченный
+            список, а тот сразу теряется — его никуда не сохранили. `titles` остаётся в прежнем
+            порядке.
+          try: 'Сохрани результат: `ordered = sorted(titles)` — и записывай в файл уже его.'
+        - id: not-sorted
+          when:
+            failedTest: t-order
+            outputIncludes: Записано книг
+          why: >-
+            В sorted.txt те же названия, но в исходном порядке. Либо список перед записью не
+            отсортирован, либо в `join` попал исходный `titles`, а не результат `sorted()`.
+          try: 'Запиши в файл именно упорядоченный список: `ordered = sorted(titles)` — и дальше `"\n".join(ordered)`.'
+        - id: append-mode
+          when:
+            failedTest: t-rerun
+            codeRegex: '["'']a["'']'
+          where: Строка с `open(..., "a", ...)`
+          why: >-
+            Когда sorted.txt остался от прошлого запуска, программа дописала новый список в его
+            конец — в файле оказались и старые строки, и новые. Режим `"a"` не стирает старое: он
+            хорош для дневника пробежек из урока 7.1, а файл-результат записывают заново при каждом
+            запуске.
+          try: 'Открой sorted.txt в режиме `"w"` — или запиши весь текст одной командой `write_text`.'
+          verify: Граничный случай «sorted.txt остался от прошлого запуска» должен стать зелёным.
+        - id: no-encoding
+          when:
+            failedTest: t-enc
+            outputIncludes: Записано книг
+          where: Вызов `write_text`, `read_text` или `open`
+          why: >-
+            Кодировка не указана. В тренажёре файл всё равно записался в UTF-8, а на Windows Python
+            3.14 и раньше без подсказки пишет в другой кодировке — и другая программа прочитает кракозябры.
+          try: Добавь `encoding="utf-8"` в каждый `write_text(...)`, `read_text(...)` и `open(...)`.
+      afterPass: >-
+        Результат — в новом файле, исходный список цел: так и выглядит правило «результат — в новый
+        файл». Улучшение: если в books.txt окажутся пустые строки, они попадут в начало
+        sorted.txt — их можно пропускать, собирая названия в новый список циклом с `if`.
+      skills: [files-paths, lists, string-methods]
+
+  - id: folder
+    type: theory
+    title: Все файлы папки
+    body: |-
+      Чтобы перебрать все файлы папки, у пути есть метод `iterdir()`:
+
+      ```python
+      for path in Path("music").iterdir():
+          print(path.name)
+      ```
+
+      Он выдаёт по очереди всё, что лежит в папке, — файлы и вложенные папки, каждый как путь,
+      у которого есть `.name`, `.stem` и `.suffix`. Порядок **не гарантирован**: на одном
+      компьютере он окажется алфавитным, на другом — каким угодно. Если порядок важен, оберни
+      перебор в `sorted()` — он умеет упорядочивать и пути:
+      `for path in sorted(Path("music").iterdir()):`.
+
+      Какой это файл, подскажет расширение `path.suffix`. Но расширение бывает записано
+      заглавными буквами: фотоаппараты и старые программы любят `.JPG` и `.MP3`. Сравнивай без
+      учёта регистра: `path.suffix.lower() == ".mp3"`.
+
+      Есть и метод `glob`: `Path("music").glob("*.mp3")` выдаёт только пути по шаблону (`*` — любые
+      символы), но регистр букв он на разных компьютерах учитывает по-разному, так что
+      `suffix.lower()` надёжнее.
+    simpler: >-
+      `iterdir()` — «покажи всё, что лежит в папке». Порядок может быть любым, поэтому
+      `sorted(...)`. Тип файла узнаём по `suffix`, приведённому к строчным буквам.
+    coach: >-
+      В настоящих папках всегда найдётся `.JPG` заглавными или лишний файл — программа должна
+      быть к этому готова.
+
+  - id: practice-songs
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m7-l2-e3
+      kind: write
+      title: Песни для концерта
+      statement: |-
+        Записи песен для школьного концерта собрали в папку `music`, но туда же попали обложка и
+        текст песни. Выведи названия песен — файлов с расширением `.mp3` — без расширения, по
+        алфавиту, каждое в виде `- Весна`. Последней строкой выведи `Песен: N`.
+
+        Расширение может быть записано в любом регистре: `Дождь.MP3` и `Ночь.Mp3` — тоже песни.
+
+        Для файлов из блока «Файлы задания»:
+
+        ```text
+        - Весна
+        - Зима
+        - Лето
+        Песен: 3
+        ```
+      input: Ввода нет. Данные — файлы в папке `music`.
+      output: "Названия песен по алфавиту, каждое после `- `, затем строка `Песен: N`."
+      constraints:
+        - Папка может выдавать файлы в любом порядке — в выводе порядок всегда алфавитный.
+        - Песня — файл с расширением `.mp3`, записанным в любом регистре.
+      files:
+        music/Лето.mp3: "аудио\n"
+        music/обложка.jpg: "картинка\n"
+        music/Весна.mp3: "аудио\n"
+        music/текст песни.txt: "слова песни\n"
+        music/Зима.mp3: "аудио\n"
+      starterCode: |
+        from pathlib import Path
+
+        # Перебери файлы папки music и выведи названия песен по алфавиту
+        # В конце — «Песен: N»
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          expected: |-
+            - Весна
+            - Зима
+            - Лето
+            Песен: 3
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          files:
+            music/Лето.mp3: null
+            music/обложка.jpg: null
+            music/Весна.mp3: null
+            music/текст песни.txt: null
+            music/Зима.mp3: null
+            music/Утро.mp3: "аудио\n"
+            music/Вечер.mp3: "аудио\n"
+          expected: |-
+            - Вечер
+            - Утро
+            Песен: 2
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: песен нет"
+          edge: true
+          files:
+            music/Лето.mp3: null
+            music/Весна.mp3: null
+            music/текст песни.txt: null
+            music/Зима.mp3: null
+          expected: "Песен: 0"
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: расширение в другом регистре"
+          edge: true
+          files:
+            music/Лето.mp3: null
+            music/обложка.jpg: null
+            music/Весна.mp3: null
+            music/текст песни.txt: null
+            music/Зима.mp3: null
+            music/Дождь.MP3: "аудио\n"
+            music/Ветер.mp3: "аудио\n"
+            music/Ночь.Mp3: "аудио\n"
+          expected: |-
+            - Ветер
+            - Дождь
+            - Ночь
+            Песен: 3
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: mp3 в имени, но не в расширении"
+          edge: true
+          files:
+            music/Лето.mp3: null
+            music/обложка.jpg: null
+            music/Весна.mp3: null
+            music/текст песни.txt: null
+            music/Зима.mp3: null
+            music/mp3.txt: "список песен\n"
+            music/Вальс.mp3.part: "недокачано\n"
+            music/Гимн.mp3: "аудио\n"
+          expected: |-
+            - Гимн
+            Песен: 1
+          compare:
+            ignoreSpaces: true
+            ignoreBlankLines: true
+      criteria:
+        - Перебираются файлы папки `music`, в список попадают только файлы с расширением `.mp3` в любом регистре.
+        - Названия выводятся без расширения и по алфавиту — независимо от порядка файлов в папке.
+        - 'Последняя строка — `Песен: N`, где N — число песен; если песен нет, выводится `Песен: 0`.'
+      hints:
+        - >-
+          Для каждого файла папки нужно решить две вещи: песня ли это и как её назвать в списке.
+          Какие части пути из теории отвечают на эти вопросы? И что сделает порядок одинаковым на
+          любом компьютере?
+        - |-
+          Приём на одном файле:
+          ```python
+          p = Path("photos") / "Море.JPG"
+          print(p.suffix)                    # .JPG
+          print(p.suffix.lower() == ".jpg")  # True
+          print(p.stem)                      # Море
+          ```
+          А `sorted(Path("photos").iterdir())` выдаёт пути из папки по алфавиту.
+        - |-
+          Каркас:
+          ```text
+          count = 0
+          for path in sorted(…iterdir()):
+              if расширение path строчными буквами == ".mp3":
+                  print("-", …)
+                  count += 1
+          print("Песен:", count)
+          ```
+      solution:
+        code: |
+          from pathlib import Path
+
+          count = 0
+          for path in sorted(Path("music").iterdir()):
+              if path.suffix.lower() == ".mp3":
+                  print("-", path.stem)
+                  count += 1
+          print("Песен:", count)
+        explanation: >-
+          `sorted(Path("music").iterdir())` перебирает файлы папки по алфавиту, в каком бы порядке
+          их ни выдала папка. `suffix.lower()` превращает `.MP3` в `.mp3`, поэтому песня с
+          заглавным расширением тоже попадает в список, а `mp3.txt` — нет: его расширение `.txt`.
+          `stem` — имя без расширения. Счётчик растёт только внутри `if`, а итог печатается после
+          цикла.
+      altSolutions:
+        - code: |
+            from pathlib import Path
+
+            songs = []
+            for path in Path("music").iterdir():
+                if path.suffix.lower() == ".mp3":
+                    songs.append(path.stem)
+            for song in sorted(songs):
+                print(f"- {song}")
+            print(f"Песен: {len(songs)}")
+          note: Сначала собрать названия в список, потом отсортировать именно его.
+        - code: |
+            from pathlib import Path
+
+            folder = Path("music")
+            count = 0
+            for path in sorted(folder.glob("*")):
+                name = path.name
+                if name[-4:].lower() == ".mp3":
+                    print("- " + name[:-4])
+                    count = count + 1
+            print("Песен: " + str(count))
+          note: glob("*") — все файлы, расширение и название через срезы строки.
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.is_file() and path.name.lower().endswith(".mp3"):
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Проверка is_file() и endswith по имени в нижнем регистре.
+        - code: |
+            from pathlib import Path
+
+            n = 0
+            for p in sorted(Path("music").iterdir()):
+                if p.suffix.upper() != ".MP3":
+                    continue
+                n += 1
+                print("-", p.stem)
+            print()
+            print("Песен:", n)
+          note: suffix.upper() и continue, пустая строка перед итогом.
+      wrongSolutions:
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix == ".mp3" or ".MP3":
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Вторая половина or — просто строка, условие всегда истинно (ловушка из урока 2.4).
+          expectMistake: always-true
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix.lower == ".mp3":
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: lower без скобок — сравнивается сам метод, условие всегда ложно.
+          expectMistake: lower-no-parens
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix == ".mp3" or path.suffix == ".MP3":
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Два сравнения вместо lower() — Ночь.Mp3 не ловится.
+          expectMistake: two-cases
+        - code: |
+            from pathlib import Path
+
+            songs = []
+            for path in Path("music").iterdir():
+                if path.suffix.lower() == ".mp3":
+                    songs.append(path.stem)
+            sorted(songs)
+            for song in songs:
+                print("-", song)
+            print("Песен:", len(songs))
+          note: Результат sorted(songs) не сохранён — порядок прежний.
+          expectMistake: sorted-lost
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if ".mp3" in path.name.lower():
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: «.mp3 есть в имени» с точкой — принимает недокачанный Вальс.mp3.part.
+          expectMistake: name-contains
+        - code: |
+            from pathlib import Path
+
+            folder = Path("music")
+            for path in sorted(folder.iterdir()):
+                if path.suffix.lower() == ".mp3":
+                    print("-", path.stem)
+            print("Песен:", len(list(folder.iterdir())))
+          note: Число песен — длина списка всех файлов папки.
+          expectMistake: counted-all
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("Music").iterdir()):
+                if path.suffix.lower() == ".mp3":
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Имя папки с заглавной буквы — такой папки нет.
+          expectMistake: folder-name
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix.lower() == ".mp3":
+                    print("-", path.stem)
+                    count += 1
+                    print("Песен:", count)
+          note: Итог печатается внутри цикла.
+          expectMistake: count-in-loop
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").glob("*.mp3")):
+                print("-", path.stem)
+                count += 1
+            print("Песен:", count)
+          note: glob("*.mp3") различает регистр — Дождь.MP3 пропущен.
+          expectMistake: glob-case
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix == ".mp3":
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Сравнение расширения без lower().
+          expectMistake: suffix-case
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if "mp3" in path.name.lower():
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Проверка «mp3 есть в имени» принимает mp3.txt.
+          expectMistake: name-contains
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix.lower() == ".mp3":
+                    print("-", path.name)
+                    count += 1
+            print("Песен:", count)
+          note: Печатается имя с расширением.
+          expectMistake: with-suffix
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in Path("music").iterdir():
+                if path.suffix.lower() == ".mp3":
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Без sorted — порядок, в котором папка выдала файлы.
+          expectMistake: unsorted
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix.lower() == ".mp3":
+                    print("-", path.stem)
+                count += 1
+            print("Песен:", count)
+          note: Счётчик растёт для каждого файла, а не только для песен.
+          expectMistake: counted-all
+        - code: |
+            from pathlib import Path
+
+            count = 0
+            for path in sorted(Path("music").iterdir()):
+                if path.suffix.lower() == "mp3":
+                    print("-", path.stem)
+                    count += 1
+            print("Песен:", count)
+          note: Расширение сравнивается без точки.
+          expectMistake: no-dot
+      mistakes:
+        - id: folder-name
+          when:
+            errorType: FileNotFoundError
+          where: Строка с `Path(...)` и `iterdir()`
+          why: >-
+            Папки с таким именем в текущей папке нет, и `iterdir()` остановил программу ошибкой
+            FileNotFoundError. Папка называется `music`, строчными буквами: в тренажёре, как на
+            Linux, `Music` и `music` — разные имена. На Windows и обычно на macOS программа бы
+            сработала, но полагаться на это нельзя.
+          try: Скопируй имя папки из блока «Файлы задания».
+        - id: lower-no-parens
+          when:
+            codeRegex: '\.lower\s*[=!]='
+            outputEquals: "Песен: 0"
+          where: Проверка расширения
+          why: >-
+            Без скобок `lower` не вызывается: сравнивается сам метод, а не строка, — и условие
+            всегда ложно.
+          try: 'Вызови метод — со скобками: `path.suffix.lower()`.'
+          verify: "«Пример 1» должен вывести три песни."
+        - id: no-dot
+          when:
+            codeRegex: '["'']mp3["'']'
+            outputEquals: "Песен: 0"
+          where: Проверка расширения
+          why: >-
+            Ни одна песня не нашлась: `suffix` возвращает расширение вместе с точкой — `.mp3`, а
+            сравнение идёт со строкой без точки.
+          try: 'Сравнивай с `".mp3"` — с точкой.'
+          verify: "«Пример 1» должен вывести три песни."
+        - id: count-in-loop
+          when:
+            outputIncludes: "Песен: 1\n-"
+          where: Строка с `print("Песен:", …)`
+          why: >-
+            Строка «Песен: …» печатается внутри цикла — после каждой песни. Итог нужен один раз,
+            когда цикл закончился.
+          try: Убери у этого `print` отступ, чтобы он стоял после цикла, на одном уровне с `for`.
+        - id: glob-case
+          when:
+            codeIncludes: glob(
+            outputEquals: |-
+              - Ветер
+              Песен: 1
+          where: Строка с `glob`
+          why: >-
+            Песни `Дождь.MP3` и `Ночь.Mp3` потерялись: шаблон `glob("*.mp3")` в тренажёре, как на
+            macOS и Linux, различает строчные и заглавные буквы. На Windows программа сработала бы —
+            и сломалась бы у друга с другим компьютером.
+          try: Перебирай все файлы через `iterdir()` и сравнивай `path.suffix.lower()` с `".mp3"`.
+        - id: suffix-case
+          when:
+            outputEquals: |-
+              - Ветер
+              Песен: 1
+          where: Проверка расширения
+          why: >-
+            Песни `Дождь.MP3` и `Ночь.Mp3` потерялись: у них в расширении заглавные буквы, а
+            сравнение `==` различает строчные и заглавные.
+          try: 'Приведи расширение к строчным перед сравнением: `path.suffix.lower() == ".mp3"`.'
+        - id: two-cases
+          when:
+            outputEquals: |-
+              - Ветер
+              - Дождь
+              Песен: 2
+          where: Проверка расширения
+          why: >-
+            Песня `Ночь.Mp3` потерялась: два сравнения — с `".mp3"` и с `".MP3"` — покрывают не все
+            варианты. Бывают ещё `.Mp3` и `.mP3`.
+          try: 'Замени оба сравнения одним: `path.suffix.lower() == ".mp3"` — оно подходит для любого регистра.'
+        - id: name-contains
+          when:
+            outputIncludes: Вальс
+          where: Проверка, песня ли это
+          why: >-
+            В список попал файл, у которого mp3 есть в имени, но расширение другое: `mp3.txt` или
+            недокачанный `Вальс.mp3.part`. Проверка «mp3 есть в имени» — даже с точкой —
+            срабатывает на любое имя, где встречаются эти буквы. А песня — это файл, у которого
+            `.mp3` именно расширение, конец имени.
+          try: 'Проверяй расширение: `path.suffix.lower() == ".mp3"`.'
+        - id: with-suffix
+          when:
+            outputIncludes: .mp3
+          where: Строка с `print` названия
+          why: В списке названия вместе с расширением. `.name` — имя целиком, а имя без расширения — `.stem`.
+          try: Печатай `path.stem`.
+        - id: sorted-lost
+          when:
+            codeRegex: '^\s*sorted\('
+            outputEquals: |-
+              - Лето
+              - Весна
+              - Зима
+              Песен: 3
+          where: Строка `sorted(...)`
+          why: >-
+            `sorted()` вернул новый упорядоченный список, но его никуда не сохранили — он тут же
+            потерялся, а старый список остался в прежнем порядке.
+          try: 'Перебирай сам результат: `for song in sorted(songs):` — или сохрани его: `songs = sorted(songs)`.'
+        - id: unsorted
+          when:
+            outputEquals: |-
+              - Лето
+              - Весна
+              - Зима
+              Песен: 3
+          where: Строка с `for`
+          why: >-
+            Названия идут в том порядке, в каком их выдала папка, а он не обязан быть алфавитным: в
+            тренажёре — в порядке создания файлов, на другом компьютере — иначе.
+          try: >-
+            Оберни перебор в `sorted()`: `for path in sorted(Path("music").iterdir()):` — или
+            собери названия в список и выведи `sorted(список)`.
+        - id: always-true
+          when:
+            outputIncludes: "- обложка"
+          where: Проверка, песня ли это
+          why: >-
+            В список попали обложка и текст песни — условие пропускает любой файл. Частая причина —
+            `path.suffix == ".mp3" or ".MP3"`: вторая половина — просто непустая строка, а она
+            всегда считается истинной (ловушка из урока 2.4).
+          try: 'Оставь одно сравнение: `path.suffix.lower() == ".mp3"`.'
+        - id: counted-all
+          when:
+            outputIncludes: "Песен: 5"
+          where: Подсчёт песен
+          why: >-
+            Посчитаны все файлы папки — вместе с обложкой и текстом песни. Счётчик должен расти
+            только для песен.
+          try: >-
+            Считай только песни: `count += 1` — внутри `if`, рядом с `print` названия. Если берёшь
+            длину списка, в нём должны быть только песни, а не все файлы папки.
+      afterPass: >-
+        Программа не зависит ни от регистра расширения, ни от порядка файлов в папке — на настоящих
+        компьютерах это частые сюрпризы. Улучшение: в конце выводить ещё и число прочих файлов,
+        например `Других файлов: 2`.
+      skills: [files-paths, accumulators, string-methods]
+
+  - id: on-computer
+    type: checklist
+    title: Пути на твоём компьютере
+    body: |-
+      На компьютере текущая папка зависит от того, откуда запущена программа, — проверим это
+      сами. Новая команда одна: `Path.cwd()` — текущая папка (cwd — current working directory,
+      «текущая рабочая папка»). А `Path(__file__).parent` — папка самой программы, как в
+      объяснении к прогнозу «Запуск из другой папки».
+
+      Инструкция написана для Windows; отличия для macOS и Linux — в «Если не получается». На всё
+      нужно минут 5–10, и это можно сделать отдельным заходом.
+    items:
+      - id: folder
+        text: >-
+          **Заведи папку для модуля.** В учебной папке `python-practice` из урока 0.4 создай папку
+          `m7`, а в ней — папку `data`.
+        help: >-
+          Правый щелчок по пустому месту в папке → «Создать» → «Папку» (на macOS — «Новая папка»).
+          Имена — латиницей и без пробелов: их проще набирать в терминале.
+      - id: copies
+        text: >-
+          **Положи в `data` копию.** Скопируй туда какой-нибудь свой текстовый файл или создай в
+          Блокноте файл `notes.txt` с парой строк по-русски.
+        help: >-
+          Копия — это Ctrl+C и Ctrl+V (на macOS — Cmd+C и Cmd+V): оригинал остаётся на месте.
+          Перетаскивание мышью в другую папку на том же диске **перемещает** файл, а не копирует
+          его. Сохраняя файл в Блокноте, проверь, что в окне сохранения выбрана кодировка UTF-8.
+          Экспериментируй только на копиях — никогда на фотографиях, документах и таблицах, которые
+          тебе нужны.
+      - id: where
+        text: |-
+          **Где запущена программа?** Создай в папке `m7` файл `where.py`:
+
+          ```python
+          from pathlib import Path
+
+          print("Текущая папка:", Path.cwd())
+          print("Папка программы:", Path(__file__).parent)
+          data = Path("data")
+          print("data найдена:", data.exists())
+          ```
+
+          Открой терминал в папке `m7` и запусти `python where.py`. Обе папки совпадут, а последней
+          строкой будет `data найдена: True`.
+        help: >-
+          Как открыть терминал в нужной папке и что делать, если команда `python` не работает, —
+          в уроке 0.4, пункты «Открой терминал в учебной папке» и «Проверь установку». Сработала
+          только `py` — пиши `py where.py`. На macOS и Linux — `python3 where.py`.
+      - id: parent-folder
+        text: >-
+          **Запусти из другой папки.** В том же терминале перейди на папку выше командой `cd ..` и
+          запусти программу оттуда: `python m7\where.py`. Текущая папка стала другой, и программа
+          пишет `data найдена: False`, хотя папка `data` на месте. Это та самая ошибка из истории
+          Димы.
+        help: >-
+          `cd ..` — «перейти на уровень выше»: путь слева от курсора станет короче на одну папку.
+          На macOS и Linux путь пишется через `/`: `python3 m7/where.py`.
+      - id: fix
+        text: >-
+          **Почини путь.** Замени строку `data = Path("data")` на
+          `data = Path(__file__).parent / "data"`, сохрани файл и запусти программу из обеих папок:
+          из `python-practice` — `python m7\where.py`, из `m7` — `cd m7`, затем `python where.py`.
+          Оба раза в конце будет `data найдена: True`.
+        help: >-
+          Вывод не изменился — проверь, сохранён ли файл: терминал запускает то, что записано на
+          диске (урок 0.4). Если захочешь записать в коде путь целиком, помни: в обычной строке
+          обратная косая черта — особый знак, и `"C:\Users\…"` даёт ошибку SyntaxError из-за
+          сочетания `\U`. Пиши `r"C:\Users\…"` — с буквой r перед кавычкой — или собирай путь через
+          `Path` и `/`.
+    coach: >-
+      Этот шаг не проверяется автоматически — отмечай пункты по результату. Его можно пройти в
+      другой день: задания в тренажёре от него не зависят.
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - Относительный путь считается от текущей папки — той, откуда запустили программу, а не от папки, где она лежит.
+      - "`Path(\"library\") / \"books.txt\"` собирает путь; у пути есть `.name`, `.stem`, `.suffix`, `.parent`, а `is_file()` проверяет, что это файл, до чтения."
+      - "`read_text` и `write_text` с `encoding=\"utf-8\"` читают и пишут файл одной командой; `splitlines()` делит текст на строки, `sorted()` возвращает новый упорядоченный список."
+      - Файлы папки перебирает `sorted(папка.iterdir())`, тип файла подскажет `suffix.lower()`. Программы, которые пишут файлы, пробуем на копиях в учебной папке, а результат кладём в новый файл.
+    question: >-
+      Программа Димы читает `Path("data") / "notes.txt"`. Запущенная из своей папки, она работает,
+      а из папки выше пишет, что файла нет. Почему так и как сделать, чтобы она находила файл,
+      откуда бы её ни запустили?
+    answer: >-
+      Путь `data/notes.txt` относительный: Python ищет его от текущей папки, а в папке уровнем
+      выше никакой папки `data` нет. Если строить путь от папки самой программы —
+      `Path(__file__).parent / "data" / "notes.txt"`, — он не зависит от того, откуда программу
+      запустили.

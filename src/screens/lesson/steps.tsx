@@ -1,14 +1,34 @@
 // Шаги урока, кроме заданий: история, теория, пример, прогноз, порядок действий,
 // вопрос, чек-лист для внешнего инструмента и закрепление.
+// Раскладка (спецификация редизайна, 4.3 и 4.5): шаг-«документ» — одна панель section.pane.pane-doc с колонкой
+// текста; пример — две панели: «Пример» (pane-task) и код (pane-code). Наставник — портал в колонку кадра урока;
+// в нём только содержание курса (step.coach, «Проще», разборы). Нечего сказать — колонки наставника нет.
 
-import { ArrowDown, ArrowRight, ArrowUp, CircleAlert, CircleCheck, CircleX, FileCode2, Play, RotateCcw, Shuffle, Square } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  CalendarClock,
+  CircleAlert,
+  CircleCheck,
+  CircleX,
+  FileCode2,
+  GripVertical,
+  Lightbulb,
+  ListChecks,
+  MessageSquareText,
+  Play,
+  RotateCcw,
+  Shuffle,
+  Square,
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useRunnerState } from '../../app/hooks.ts';
 import { buildRunFeedback } from '../../coach/feedback.ts';
 import { CodeBlock } from '../../components/CodeBlock.tsx';
 import { InlineText, Markdown } from '../../components/Markdown.tsx';
 import { rovingKeyDown, rovingTabIndex } from '../../components/roving.ts';
-import { Notice, StatusBadge, formatDate, formatMinutes } from '../../components/ui.tsx';
+import { Disclosure, Kbd, Notice, Spinner, StatusBadge, StatusLine, Tag, formatDate, formatMinutes } from '../../components/ui.tsx';
 import type {
   ChecklistStep as ChecklistStepData,
   ExampleStep as ExampleStepData,
@@ -20,11 +40,15 @@ import type {
   TheoryStep as TheoryStepData,
 } from '../../content/schema.ts';
 import { CodeEditor } from '../../editor/CodeEditor.tsx';
+import { stepEnvironment } from '../../runner/environment.ts';
 import { pythonRunner, type RunOutcome } from '../../runner/runner.ts';
+import type { RunEnvironment } from '../../runner/types.ts';
 import { isDue } from '../../storage/schedule.ts';
 import type { LessonRecord, ReviewRecord, SelfCheck } from '../../storage/types.ts';
-import { CoachNote, CoachPanel, CoachPortal, FeedbackCard, InfoCard, SuccessCard } from './coach.tsx';
+import { CoachNote, CoachPanel, CoachPortal, FeedbackCard, HintCard, SuccessCard, useLessonFrame } from './coach.tsx';
+import { ChangedFiles, EnvironmentInfo } from './environment.tsx';
 import { Transcript } from './results.tsx';
+import type { PaneAttributes } from './LessonScreen.tsx';
 import { isActiveReview } from './review.ts';
 import { StoryIllustration } from './StoryIllustration.tsx';
 import { LessonPlayground } from './LessonPlayground.tsx';
@@ -68,49 +92,64 @@ function Verdict({ ok, children }: { ok: boolean; children: string }) {
   );
 }
 
+/**
+ * Шаг-«документ»: панель кадра урока с колонкой текста (до 760 px, слева). Заголовок шага — первый h2
+ * в .lesson-main: на него кадр переводит фокус после «Далее». Рядом с заголовком — метки вида шага.
+ */
+function DocPane({ id, title, tags, className, children }: { id: string; title: string; tags?: ReactNode; className?: string; children: ReactNode }) {
+  return (
+    <section className={`pane pane-doc step-card${className ? ` ${className}` : ''}`} aria-labelledby={`${id}-title`}>
+      <div className="doc-col">
+        <div className="step-head">
+          <h2 id={`${id}-title`} className="step-title">
+            {title}
+          </h2>
+          {tags && <div className="step-tags">{tags}</div>}
+        </div>
+        {children}
+      </div>
+    </section>
+  );
+}
+
 // ------------------------------------------------------------ вступление
 
 export function IntroStep({ lesson }: { lesson: Lesson }) {
   return (
-    <>
-      <section className="step-card illustrated-intro" aria-labelledby="intro-title">
-        <StoryIllustration lessonId={lesson.id} title={lesson.story.title} />
-        <div className="story">
-          <h2 id="intro-title" className="story-title">
-            {lesson.story.title}
-          </h2>
-          <Markdown text={lesson.story.text} />
-          {lesson.story.fictional && <p className="story-note">История-пример: придумана для наглядности.</p>}
-        </div>
-        <LessonPlayground key={lesson.id} lessonId={lesson.id} />
-        <div className="intro-facts">
-          <div className="fact">
-            <span className="label">Зачем это нужно</span>
-            <Markdown text={lesson.why} />
-          </div>
-          <div className="fact">
-            <span className="label">Где это используется</span>
-            <Markdown text={lesson.usedIn} />
-          </div>
-        </div>
-        <dl className="kv">
-          <dt>Цель урока</dt>
-          <dd>{lesson.objective}</dd>
-          <dt>Время</dt>
-          <dd>{formatMinutes(lesson.minutes)}</dd>
-          <dt>Среда</dt>
-          <dd>{ENV_LABEL[lesson.environment]}</dd>
-        </dl>
-      </section>
-      <CoachPortal>
-        <CoachPanel>
-          <p>
-            Урок короткий: история, одна идея, пример и практика. Можно остановиться на любом шаге — место сохранится.
-          </p>
-          <p className="small muted">Застрянешь в задании — здесь появятся разбор ошибки и подсказки.</p>
-        </CoachPanel>
-      </CoachPortal>
-    </>
+    <DocPane
+      id="intro"
+      className="intro-step"
+      title={lesson.story.title}
+      tags={lesson.story.fictional ? <Tag>Вымышленная история</Tag> : undefined}
+    >
+      <StoryIllustration lessonId={lesson.id} title={lesson.story.title} />
+      <div className="story">
+        <Markdown text={lesson.story.text} />
+      </div>
+      <LessonPlayground key={lesson.id} lessonId={lesson.id} />
+      <div className="intro-facts">
+        <section className="intro-fact" aria-labelledby="intro-why">
+          <h3 id="intro-why" className="intro-fact-title">
+            Зачем это нужно
+          </h3>
+          <Markdown text={lesson.why} />
+        </section>
+        <section className="intro-fact" aria-labelledby="intro-used">
+          <h3 id="intro-used" className="intro-fact-title">
+            Где это используется
+          </h3>
+          <Markdown text={lesson.usedIn} />
+        </section>
+      </div>
+      <dl className="kv intro-kv">
+        <dt>Цель урока</dt>
+        <dd>{lesson.objective}</dd>
+        <dt>Время</dt>
+        <dd>{formatMinutes(lesson.minutes)}</dd>
+        <dt>Среда</dt>
+        <dd>{ENV_LABEL[lesson.environment]}</dd>
+      </dl>
+    </DocPane>
   );
 }
 
@@ -119,33 +158,39 @@ export function IntroStep({ lesson }: { lesson: Lesson }) {
 export function TheoryStep({ step }: { step: TheoryStepData }) {
   const [simpler, setSimpler] = useState(false);
   useEffect(() => setSimpler(false), [step.id]);
+  const simplerId = `${step.id}-simpler`;
   return (
     <>
-      <section className="step-card" aria-labelledby={`${step.id}-title`}>
-        <h2 id={`${step.id}-title`} className="step-title">
-          {step.title}
-        </h2>
+      <DocPane id={step.id} title={step.title}>
         <Markdown text={step.body} />
-      </section>
-      <CoachPortal>
-        <CoachPanel
-          actions={
-            step.simpler ? (
-              <button type="button" className="btn btn-block" onClick={() => setSimpler((value) => !value)} aria-pressed={simpler}>
-                {simpler ? 'Скрыть простое объяснение' : 'Объясни проще'}
-              </button>
-            ) : undefined
-          }
-        >
-          {step.coach ? <CoachNote text={step.coach} /> : <p>Прочитай и переходи к примеру — там всё станет нагляднее.</p>}
-          {simpler && step.simpler && (
-            <div className="hint-card">
-              <div className="label">Проще</div>
-              <Markdown text={step.simpler} className="prose-compact" />
-            </div>
-          )}
-        </CoachPanel>
-      </CoachPortal>
+      </DocPane>
+      {(step.coach || step.simpler) && (
+        <CoachPortal>
+          <CoachPanel
+            actions={
+              step.simpler ? (
+                <button
+                  type="button"
+                  className="btn btn-block"
+                  onClick={() => setSimpler((value) => !value)}
+                  aria-expanded={simpler}
+                  aria-controls={simpler ? simplerId : undefined}
+                >
+                  <Lightbulb aria-hidden="true" />
+                  {simpler ? 'Скрыть простое объяснение' : 'Объясни проще'}
+                </button>
+              ) : undefined
+            }
+          >
+            {step.coach && <CoachNote text={step.coach} />}
+            {simpler && step.simpler && (
+              <HintCard id={simplerId} label="Проще">
+                <Markdown text={step.simpler} className="prose-compact" />
+              </HintCard>
+            )}
+          </CoachPanel>
+        </CoachPortal>
+      )}
     </>
   );
 }
@@ -156,10 +201,10 @@ function useQuickRun() {
   const runner = useRunnerState();
   const [outcome, setOutcome] = useState<RunOutcome | null>(null);
   const [running, setRunning] = useState(false);
-  async function run(code: string, stdin = '') {
+  async function run(code: string, stdin = '', environment?: RunEnvironment) {
     if (running || runner.phase === 'busy') return null;
     setRunning(true);
-    const result = await pythonRunner.run(code, stdin);
+    const result = await pythonRunner.run(code, stdin, environment ? { environment } : {});
     setRunning(false);
     setOutcome(result);
     return result;
@@ -167,156 +212,236 @@ function useQuickRun() {
   return { outcome, setOutcome, running, run, runner };
 }
 
-function RunOutput({ outcome, running, loading }: { outcome: RunOutcome | null; running: boolean; loading: boolean }) {
+/**
+ * Итог запуска: вывод программы или короткий статус. Пустое состояние — одной строкой.
+ * file — строка прогона над выводом («Запуск example.py · ввод Катя · 12 мс»): повторный запуск с тем же
+ * выводом всё равно виден по новому времени.
+ */
+function RunOutput({
+  outcome,
+  running,
+  loading,
+  file,
+  stdin,
+}: {
+  outcome: RunOutcome | null;
+  running: boolean;
+  loading: boolean;
+  file?: string;
+  stdin?: string;
+}) {
   if (running) {
     return (
-      <div className="run-state">
-        <span className="spinner" aria-hidden="true" />
-        {loading ? 'Загружаю Python… В первый раз это может занять до минуты.' : 'Программа выполняется…'}
-      </div>
+      <p className="run-line" role="status">
+        <Spinner />
+        {loading ? 'Загружаю Python…' : 'Программа выполняется…'}
+      </p>
     );
   }
-  if (!outcome) return <p className="small muted">Нажми «Запустить», чтобы увидеть, что выведет программа.</p>;
+  if (!outcome) return <p className="run-line run-empty">Запусков ещё не было</p>;
   if (outcome.status === 'timeout') {
-    return (
-      <div className="status-line status-error">
-        <CircleAlert aria-hidden="true" />
-        <span>Программа работала дольше {Math.round(outcome.limitMs / 1000)} с и была остановлена.</span>
-      </div>
-    );
+    return <StatusLine tone="err">Программа работала дольше {Math.round(outcome.limitMs / 1000)} с и была остановлена.</StatusLine>;
   }
-  if (outcome.status === 'stopped') return <p className="small muted">Программа остановлена.</p>;
-  if (outcome.status === 'failed') {
-    return (
-      <div className="status-line status-warn">
-        <CircleAlert aria-hidden="true" />
-        <span>{outcome.message}</span>
-      </div>
-    );
-  }
+  if (outcome.status === 'stopped') return <StatusLine tone="muted" icon={Square}>Программа остановлена.</StatusLine>;
+  if (outcome.status === 'failed') return <StatusLine tone="warn">{outcome.message}</StatusLine>;
   const result = outcome.result;
+  const error = result.compileError ?? result.error;
+  const input = stdinPreview(stdin);
   return (
-    <div className="stack-sm">
-      {!result.compileError && <Transcript parts={result.transcript ?? []} />}
-      {(result.compileError || result.error) && (
-        <div className="status-line status-error">
-          <CircleAlert aria-hidden="true" />
+    <div className="run-result">
+      {file && (
+        <p className="run-line run-meta">
+          <Play aria-hidden="true" />
           <span>
-            {(result.compileError ?? result.error)?.line ? `Строка ${(result.compileError ?? result.error)?.line}: ` : ''}
-            <span className="mono">{(result.compileError ?? result.error)?.summary}</span>
+            Запуск <span className="run-file">{file}</span>
+            {input && (
+              <>
+                {' · ввод '}
+                <span className="n">{input}</span>
+              </>
+            )}
+            {result.durationMs !== undefined && (
+              <>
+                {' · '}
+                {/* Короткая программа укладывается меньше чем в миллисекунду: «0 мс» читалось бы как «не запускалась». */}
+                <span className="n">{result.durationMs < 1 ? '<\u00a01' : Math.round(result.durationMs)}</span> мс
+              </>
+            )}
           </span>
-        </div>
+        </p>
       )}
+      {!result.compileError && <Transcript parts={result.transcript ?? []} />}
+      {error && (
+        <StatusLine tone="err" icon={CircleAlert}>
+          {error.line ? `Строка ${error.line}: ` : ''}
+          <span className="mono">{error.summary}</span>
+        </StatusLine>
+      )}
+      <ChangedFiles files={result.files} />
     </div>
   );
 }
 
+/** Ввод, с которым запускается программа шага: «ввод 2, 3». */
+export function stdinPreview(stdin: string | undefined): string | null {
+  const lines = stdin?.replace(/\n$/, '').split('\n') ?? [];
+  return lines.some((line) => line !== '') ? lines.join(', ') : null;
+}
+
 // ------------------------------------------------------------ пример
 
-export function ExampleStep({ step, onDone }: { step: ExampleStepData; onDone: () => void }) {
+export function ExampleStep({
+  step,
+  onDone,
+  pane,
+}: {
+  step: ExampleStepData;
+  onDone: () => void;
+  /** Атрибуты частей шага от кадра урока (панели вкладок на планшете). */
+  pane?: (value: 'task' | 'code') => PaneAttributes;
+}) {
   const [code, setCode] = useState(step.code);
   // Выбранное пояснение подсвечивает свою строку в редакторе (наведение, фокус или нажатие).
   const [activeNote, setActiveNote] = useState<number | null>(null);
   const [pinnedNote, setPinnedNote] = useState<number | null>(null);
   const { outcome, running, run, runner } = useQuickRun();
+  // На телефоне пример читается одной колонкой: «Запустить» — под редактором, над выводом.
+  const narrow = useLessonFrame().layout === 'narrow';
   const feedback = outcome ? buildRunFeedback(code, outcome) : null;
   const noteLine = activeNote ?? pinnedNote;
+  const editorRef = useRef<HTMLDivElement>(null);
+  const changed = code !== step.code;
 
   async function execute() {
-    const result = await run(code, step.stdin ?? '');
+    const result = await run(code, step.stdin ?? '', stepEnvironment(step));
     if (result) onDone();
   }
 
+  // «Вернуть пример» есть только после правки и исчезает после нажатия — фокус переходит в редактор.
+  function reset() {
+    setCode(step.code);
+    editorRef.current?.querySelector<HTMLElement>('.cm-content')?.focus();
+  }
+
+  const actions = (
+    <div className="ex-actions">
+      {running && (
+        <button type="button" className="btn btn-danger btn-sm" onClick={() => pythonRunner.stop()}>
+          <Square aria-hidden="true" />
+          Остановить
+        </button>
+      )}
+      {/* После первого запуска шаг выполнен: главное действие — «Далее», «Запустить» становится обычной кнопкой. */}
+      <button
+        type="button"
+        className={outcome ? 'btn btn-sm' : 'btn btn-primary btn-sm'}
+        onClick={() => void execute()}
+        disabled={running || runner.phase === 'busy'}
+        aria-keyshortcuts="Control+Enter"
+      >
+        {running ? <Spinner /> : <Play aria-hidden="true" />}
+        Запустить
+        <Kbd>Ctrl ↵</Kbd>
+      </button>
+    </div>
+  );
+
   return (
     <>
-      <section className="step-card" aria-labelledby={`${step.id}-title`}>
-        <h2 id={`${step.id}-title`} className="step-title">
-          {step.title}
-        </h2>
-        {step.body && <Markdown text={step.body} />}
-        <div className="stack-sm">
-          <span className="label" id={`${step.id}-notes`}>
-            Что важно в этом коде
-          </span>
-          <ul className="notes-list" aria-labelledby={`${step.id}-notes`}>
-            {step.notes.map((note) => (
-              <li key={note.line}>
-                <button
-                  type="button"
-                  className={`note-btn${noteLine === note.line ? ' is-active' : ''}`}
-                  aria-pressed={pinnedNote === note.line}
-                  onClick={() => setPinnedNote((value) => (value === note.line ? null : note.line))}
-                  onMouseEnter={() => setActiveNote(note.line)}
-                  onMouseLeave={() => setActiveNote(null)}
-                  onFocus={() => setActiveNote(note.line)}
-                  onBlur={() => setActiveNote(null)}
-                >
-                  <span className="line-tag">строка {note.line}</span>
-                  <span>
-                    <InlineText text={note.text} />
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+      <section className="pane pane-task step-card example-card" aria-labelledby={`${step.id}-title`} {...pane?.('task')}>
+        <div className="pane-head">
+          <span className="plabel">Пример</span>
         </div>
-        {step.tryIt && (
-          <div className="prose-note prose-note-lesson">
-            <strong>Попробуй: </strong>
-            <InlineText text={step.tryIt} />
+        <div className="pane-body step-body">
+          <h2 id={`${step.id}-title`} className="step-title">
+            {step.title}
+          </h2>
+          {step.body && <Markdown text={step.body} />}
+          <div className="notes">
+            <h3 className="notes-title" id={`${step.id}-notes`}>
+              Что важно в этом коде
+            </h3>
+            <ul className="notes-list" aria-labelledby={`${step.id}-notes`}>
+              {step.notes.map((note) => (
+                <li key={note.line}>
+                  <button
+                    type="button"
+                    className={`note-btn${noteLine === note.line ? ' is-active' : ''}`}
+                    aria-pressed={pinnedNote === note.line}
+                    onClick={() => setPinnedNote((value) => (value === note.line ? null : note.line))}
+                    onMouseEnter={() => setActiveNote(note.line)}
+                    onMouseLeave={() => setActiveNote(null)}
+                    onFocus={() => setActiveNote(note.line)}
+                    onBlur={() => setActiveNote(null)}
+                  >
+                    <span className="tag line-tag">
+                      строка <span className="n">{note.line}</span>
+                    </span>
+                    <span className="note-text">
+                      <InlineText text={note.text} />
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
-        )}
+          {step.tryIt && (
+            <p className="prose-note try-note">
+              <strong>Попробуй: </strong>
+              <InlineText text={step.tryIt} />
+            </p>
+          )}
+          <EnvironmentInfo source={step} />
+        </div>
       </section>
-      <section className="workbench" aria-label="Пример кода">
-        <div className="wb-head">
-          <span className="wb-file">
+      <section className="pane pane-code workbench example-bench" aria-label="Пример кода" {...pane?.('code')}>
+        <div className="ex-bar">
+          <span className="ex-file">
             <FileCode2 aria-hidden="true" />
-            example.py
+            <span className="ex-file-name">example.py</span>
           </span>
-          <span className="wb-env">
-            <span className="nowrap env-text">Можно менять и запускать</span>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCode(step.code)} disabled={code === step.code}>
+          {changed && (
+            <button type="button" className="btn btn-ghost btn-sm ex-reset" onClick={reset}>
               <RotateCcw aria-hidden="true" />
               <span>Вернуть пример</span>
             </button>
-          </span>
-        </div>
-        <CodeEditor
-          value={code}
-          onChange={setCode}
-          onSubmit={() => void execute()}
-          ariaLabel={`Пример «${step.title}». Ctrl+Enter — запустить.`}
-          errorLine={feedback?.line ?? null}
-          noteLine={noteLine}
-          minLines={Math.max(4, step.code.split('\n').length + 1)}
-        />
-        <div className="wb-actions">
-          <button type="button" className="btn btn-primary" onClick={() => void execute()} disabled={running || runner.phase === 'busy'}>
-            {running ? <span className="spinner" aria-hidden="true" /> : <Play aria-hidden="true" />}
-            Запустить
-          </button>
-          {running && (
-            <button type="button" className="btn btn-danger" onClick={() => pythonRunner.stop()}>
-              <Square aria-hidden="true" />
-              Остановить
-            </button>
           )}
-          <span className="hint-keys">
-            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> — запустить
-          </span>
+          {!narrow && actions}
         </div>
-        <div className="wb-results">
-          <div className="results-body">
-            <span className="label">Результат</span>
-            <RunOutput outcome={outcome} running={running} loading={runner.phase === 'loading' || runner.phase === 'restarting'} />
+        <div className="ex-editor" ref={editorRef}>
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            onSubmit={() => void execute()}
+            ariaLabel={`Пример «${step.title}». Ctrl+Enter — запустить.`}
+            errorLine={feedback?.line ?? null}
+            noteLine={noteLine}
+            minLines={Math.max(4, step.code.split('\n').length + 1)}
+          />
+        </div>
+        {narrow && actions}
+        <section className="ex-output" aria-labelledby={`${step.id}-output`}>
+          <div className="ex-output-head">
+            <h3 className="plabel" id={`${step.id}-output`}>
+              Вывод
+            </h3>
           </div>
-        </div>
+          <div className="ex-output-body" aria-live="polite">
+            <RunOutput
+              outcome={outcome}
+              running={running}
+              loading={runner.phase === 'loading' || runner.phase === 'restarting'}
+              file="example.py"
+              stdin={step.stdin}
+            />
+          </div>
+        </section>
       </section>
-      <CoachPortal>
-        <CoachPanel>
-          {feedback ? <FeedbackCard feedback={feedback} /> : step.coach ? <CoachNote text={step.coach} /> : <p>Запусти пример, затем измени одну деталь и запусти снова — так лучше видно, за что отвечает каждая строка.</p>}
-        </CoachPanel>
-      </CoachPortal>
+      {(feedback || step.coach) && (
+        <CoachPortal>
+          <CoachPanel>{feedback ? <FeedbackCard feedback={feedback} /> : step.coach && <CoachNote text={step.coach} />}</CoachPanel>
+        </CoachPortal>
+      )}
     </>
   );
 }
@@ -342,6 +467,7 @@ export function PredictStep({
   const [focusCheck, setFocusCheck] = useState(0);
   useFocusWhen(resultRef, focusResult);
   useFocusWhen(checkRef, focusCheck);
+  const input = stdinPreview(step.stdin);
 
   const matched = useMemo(() => {
     if (!revealed || !answer) return null;
@@ -356,27 +482,25 @@ export function PredictStep({
       ? answer === step.answer
       : normalizeOutput(answer).replace(/[ \t]+/g, ' ').toLowerCase() === normalizeOutput(step.answer).replace(/[ \t]+/g, ' ').toLowerCase();
     onAnswer(answer, answer ? isMatch : null);
-    await run(step.code, step.stdin ?? '');
+    await run(step.code, step.stdin ?? '', stepEnvironment(step));
   }
 
   return (
     <>
-      <section className="step-card" aria-labelledby={`${step.id}-title`}>
-        <div className="step-title-row">
-          <h2 id={`${step.id}-title`} className="step-title">
-            {step.title}
-          </h2>
-          <span className="badge badge-accent">Как ты думаешь?</span>
-        </div>
+      <DocPane id={step.id} title={step.title} tags={<Tag>Прогноз</Tag>}>
         <Markdown text={step.prompt} />
-        <CodeBlock code={step.code} label="Код для прогноза" />
-        {step.stdin && (
-          <p className="small muted">
-            Ввод: <span className="mono">{step.stdin.trim().split('\n').join(', ')}</span>
-          </p>
-        )}
+        <div className="predict-code">
+          <CodeBlock code={step.code} file="программа" label="Код для прогноза" />
+          {input && (
+            <p className="predict-input">
+              <span className="predict-input-label">Ввод</span>
+              <span className="n">{input}</span>
+            </p>
+          )}
+        </div>
+        <EnvironmentInfo source={step} />
         {step.options ? (
-          <div className="options" role="radiogroup" aria-label="Варианты ответа" onKeyDown={(event) => rovingKeyDown(event)}>
+          <div className="options options-output" role="radiogroup" aria-label="Варианты ответа" onKeyDown={(event) => rovingKeyDown(event)}>
             {step.options.map((option, optionIndex) => {
               const result = revealed ? (option === step.answer ? 'correct' : option === answer ? 'wrong' : undefined) : undefined;
               return (
@@ -392,8 +516,10 @@ export function PredictStep({
                   onClick={() => setAnswer(option)}
                 >
                   <span className="option-mark" aria-hidden="true" />
-                  {/* Варианты — это вывод программы: все набраны моноширинным шрифтом. */}
-                  <span className="option-text mono">{option}</span>
+                  {/* Варианты — это вывод программы: моноширинным, как в консоли. */}
+                  <span className="option-text">
+                    <code className="option-code">{option}</code>
+                  </span>
                   {result === 'correct' && <Verdict ok>{option === answer ? 'верно — твой ответ' : 'верный ответ'}</Verdict>}
                   {result === 'wrong' && <Verdict ok={false}>твой ответ</Verdict>}
                 </button>
@@ -401,7 +527,7 @@ export function PredictStep({
             })}
           </div>
         ) : (
-          <label className="field">
+          <label className="field predict-field">
             <span className="field-label">Что появится на экране?</span>
             <textarea
               className="textarea mono"
@@ -409,12 +535,12 @@ export function PredictStep({
               value={answer}
               disabled={revealed}
               onChange={(event) => setAnswer(event.target.value)}
-              placeholder="Напиши вывод построчно"
+              placeholder="Вывод построчно"
             />
           </label>
         )}
-        <div className="row">
-          {!revealed ? (
+        {!revealed && (
+          <div className="step-actions">
             <button
               ref={checkRef}
               type="button"
@@ -422,43 +548,53 @@ export function PredictStep({
               onClick={() => void reveal()}
               disabled={!answer.trim() && Boolean(step.options)}
             >
-              {answer.trim() ? 'Проверить прогноз' : 'Не знаю — покажи'}
+              {/* Без варианта ответа кнопка ждёт выбора; в поле можно не писать ничего — тогда просто показать запуск. */}
+              {answer.trim() || step.options ? 'Проверить прогноз' : 'Не знаю — покажи'}
             </button>
-          ) : (
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                setRevealed(false);
-                setOutcome(null);
-                setFocusCheck((value) => value + 1);
-              }}
-            >
-              <RotateCcw aria-hidden="true" />
-              Попробовать ещё раз
-            </button>
-          )}
-        </div>
-        {revealed && (
-          <div className="stack-sm step-result" aria-live="polite" ref={resultRef}>
-            {matched === true && <StatusBadge tone="good">Прогноз совпал</StatusBadge>}
-            {matched === false && <StatusBadge tone="warn">Прогноз не совпал — разберёмся</StatusBadge>}
-            {matched === null && <StatusBadge tone="muted">Без прогноза</StatusBadge>}
-            <span className="label">Настоящий запуск</span>
-            <RunOutput outcome={outcome} running={running} loading={runner.phase === 'loading' || runner.phase === 'restarting'} />
-            <Markdown text={step.explanation} />
           </div>
         )}
-      </section>
-      <CoachPortal>
-        <CoachPanel>
-          {step.coach ? (
+        {revealed && (
+          <div className="step-result" aria-live="polite" ref={resultRef}>
+            <div className="step-result-status">
+              {matched === true && <StatusBadge tone="ok">Прогноз совпал</StatusBadge>}
+              {matched === false && <StatusBadge tone="warn">Прогноз не совпал</StatusBadge>}
+              {matched === null && <StatusBadge tone="muted">Без прогноза</StatusBadge>}
+            </div>
+            <section className="run-box" aria-labelledby={`${step.id}-run`}>
+              <div className="run-box-head">
+                <h3 className="plabel" id={`${step.id}-run`}>
+                  Настоящий запуск
+                </h3>
+              </div>
+              <div className="run-box-body">
+                <RunOutput outcome={outcome} running={running} loading={runner.phase === 'loading' || runner.phase === 'restarting'} />
+              </div>
+            </section>
+            <Markdown text={step.explanation} />
+            <div className="step-actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setRevealed(false);
+                  setOutcome(null);
+                  setFocusCheck((value) => value + 1);
+                }}
+              >
+                <RotateCcw aria-hidden="true" />
+                Попробовать ещё раз
+              </button>
+            </div>
+          </div>
+        )}
+      </DocPane>
+      {step.coach && (
+        <CoachPortal>
+          <CoachPanel>
             <CoachNote text={step.coach} />
-          ) : (
-            <p>Сначала предскажи результат, потом смотри запуск. Ошибиться в прогнозе полезно: так видно, что стоит повторить.</p>
-          )}
-        </CoachPanel>
-      </CoachPortal>
+          </CoachPanel>
+        </CoachPortal>
+      )}
     </>
   );
 }
@@ -509,6 +645,11 @@ export function OrderStep({
   // Ответ показан приложением: это не решение ученика — ни «Порядок верный», ни отметки шага.
   const [revealed, setRevealed] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  // После «Поднять / Опустить» фокус остаётся на кнопке переставленного пункта, а новое место объявляется.
+  const [moved, setMoved] = useState<{ id: string; direction: 'up' | 'down'; tick: number } | null>(null);
+  const [announce, setAnnounce] = useState('');
+  const listRef = useRef<HTMLOListElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const checkRef = useRef<HTMLButtonElement>(null);
   const [focusResult, setFocusResult] = useState(0);
@@ -519,6 +660,14 @@ export function OrderStep({
   const locked = solved || revealed;
   const text = new Map(step.items.map((item) => [item.id, item.text]));
 
+  useEffect(() => {
+    if (!moved) return;
+    const row = listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(moved.id)}"]`);
+    const same = row?.querySelector<HTMLButtonElement>(`button[data-direction="${moved.direction}"]`);
+    const other = row?.querySelector<HTMLButtonElement>(`button[data-direction="${moved.direction === 'up' ? 'down' : 'up'}"]`);
+    (same && !same.disabled ? same : other)?.focus();
+  }, [moved]);
+
   function move(index: number, delta: number) {
     const target = index + delta;
     if (target < 0 || target >= order.length) return;
@@ -526,9 +675,12 @@ export function OrderStep({
     [next[index], next[target]] = [next[target], next[index]];
     setOrder(next);
     setChecked(null);
+    setMoved((value) => ({ id: order[index], direction: delta < 0 ? 'up' : 'down', tick: (value?.tick ?? 0) + 1 }));
+    setAnnounce(`${text.get(order[index])} — ${target + 1} из ${order.length}`);
   }
 
   function drop(targetId: string) {
+    setDropTarget(null);
     if (!dragging || dragging === targetId) return;
     const next = order.filter((id) => id !== dragging);
     next.splice(next.indexOf(targetId), 0, dragging);
@@ -561,25 +713,40 @@ export function OrderStep({
 
   return (
     <>
-      <section className="step-card" aria-labelledby={`${step.id}-title`}>
-        <div className="step-title-row">
-          <h2 id={`${step.id}-title`} className="step-title">
-            {step.title}
-          </h2>
-          <span className="badge badge-accent">Без кода</span>
-        </div>
+      <DocPane id={step.id} title={step.title} tags={<Tag>Без кода</Tag>}>
         <Markdown text={step.prompt} />
-        <ol className="order-list" aria-label="Шаги — расставь по порядку">
+        <ol className="order-list" aria-label="Шаги — расставь по порядку" ref={listRef} data-locked={locked}>
           {order.map((id, index) => (
             <li
               key={id}
+              data-id={id}
               className="order-item"
               data-result={checked ? (checked[index] ? 'ok' : 'bad') : undefined}
+              data-dragging={dragging === id || undefined}
+              data-drop={(dropTarget === id && dragging !== id) || undefined}
               draggable={!locked}
-              onDragStart={() => setDragging(id)}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={() => drop(id)}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'move';
+                setDragging(id);
+              }}
+              onDragEnd={() => {
+                setDragging(null);
+                setDropTarget(null);
+              }}
+              onDragOver={(event) => {
+                if (!dragging) return;
+                event.preventDefault();
+                if (dropTarget !== id) setDropTarget(id);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                drop(id);
+              }}
             >
+              {!locked && <GripVertical aria-hidden="true" className="order-grip" />}
+              <span className="order-num n" aria-hidden="true">
+                {index + 1}
+              </span>
               <span className="order-text">{text.get(id)}</span>
               {checked && !solved && <Verdict ok={checked[index]}>{checked[index] ? 'на месте' : 'не на месте'}</Verdict>}
               {!locked && (
@@ -587,7 +754,9 @@ export function OrderStep({
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm btn-icon"
+                    data-direction="up"
                     aria-label={`Поднять: ${text.get(id)}`}
+                    title="Поднять"
                     onClick={() => move(index, -1)}
                     disabled={index === 0}
                   >
@@ -596,7 +765,9 @@ export function OrderStep({
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm btn-icon"
+                    data-direction="down"
                     aria-label={`Опустить: ${text.get(id)}`}
+                    title="Опустить"
                     onClick={() => move(index, 1)}
                     disabled={index === order.length - 1}
                   >
@@ -607,9 +778,13 @@ export function OrderStep({
             </li>
           ))}
         </ol>
+        <div className="visually-hidden" role="status" aria-live="polite">
+          {announce}
+        </div>
         {!locked ? (
-          <div className="row">
+          <div className="step-actions">
             <button ref={checkRef} type="button" className="btn btn-primary" onClick={check}>
+              <ListChecks aria-hidden="true" />
               Проверить порядок
             </button>
             {attempts >= 2 && (
@@ -617,29 +792,16 @@ export function OrderStep({
                 Показать ответ
               </button>
             )}
-            {checked && (
-              <span className="status-line status-error">
-                <CircleAlert aria-hidden="true" />
-                Переставь шаги с пометкой «не на месте».
-              </span>
-            )}
+            {checked && <StatusLine tone="err">Есть шаги не на месте</StatusLine>}
           </div>
         ) : (
-          <div className="stack-sm step-result" aria-live="polite" ref={resultRef}>
-            {revealed ? (
-              <>
-                <StatusBadge tone="muted">Ответ показан</StatusBadge>
-                <p className="step-result-text">
-                  Правильный порядок показан — попробуй объяснить себе, почему он именно такой. Потом можно собрать его заново
-                  самому.
-                </p>
-              </>
-            ) : (
-              <StatusBadge tone="good">Порядок верный</StatusBadge>
-            )}
+          <div className="step-result" aria-live="polite" ref={resultRef}>
+            <div className="step-result-status">
+              {revealed ? <StatusBadge tone="muted">Ответ показан</StatusBadge> : <StatusBadge tone="ok">Порядок верный</StatusBadge>}
+            </div>
             <Markdown text={step.explanation} />
             {revealed && (
-              <div className="row">
+              <div className="step-actions">
                 <button type="button" className="btn" onClick={shuffleAgain}>
                   <Shuffle aria-hidden="true" />
                   Собрать заново
@@ -648,16 +810,14 @@ export function OrderStep({
             )}
           </div>
         )}
-      </section>
-      <CoachPortal>
-        <CoachPanel>
-          {step.coach ? (
+      </DocPane>
+      {step.coach && (
+        <CoachPortal>
+          <CoachPanel>
             <CoachNote text={step.coach} />
-          ) : (
-            <p>Программист сначала раскладывает задачу на шаги. Перетащи пункты или двигай их стрелками.</p>
-          )}
-        </CoachPanel>
-      </CoachPortal>
+          </CoachPanel>
+        </CoachPortal>
+      )}
     </>
   );
 }
@@ -681,10 +841,7 @@ export function QuizStep({
   useFocusWhen(resultRef, focusResult);
   return (
     <>
-      <section className="step-card" aria-labelledby={`${step.id}-title`}>
-        <h2 id={`${step.id}-title`} className="step-title">
-          {step.title}
-        </h2>
+      <DocPane id={step.id} title={step.title} tags={<Tag>Вопрос</Tag>}>
         <Markdown text={step.question} />
         <div className="options" role="radiogroup" aria-label="Варианты ответа" onKeyDown={(event) => rovingKeyDown(event)}>
           {step.options.map((option, index) => {
@@ -712,7 +869,7 @@ export function QuizStep({
           })}
         </div>
         {!answered ? (
-          <div className="row">
+          <div className="step-actions">
             <button
               type="button"
               className="btn btn-primary"
@@ -727,15 +884,21 @@ export function QuizStep({
             </button>
           </div>
         ) : (
-          <div className="stack-sm step-result" aria-live="polite" ref={resultRef}>
-            {choice === step.correct ? <StatusBadge tone="good">Верно</StatusBadge> : <StatusBadge tone="warn">Не совсем</StatusBadge>}
+          <div className="step-result" aria-live="polite" ref={resultRef}>
+            <div className="step-result-status">
+              {choice === step.correct ? <StatusBadge tone="ok">Верно</StatusBadge> : <StatusBadge tone="warn">Не совсем</StatusBadge>}
+            </div>
             <Markdown text={step.explanation} />
           </div>
         )}
-      </section>
-      <CoachPortal>
-        <CoachPanel>{step.coach ? <CoachNote text={step.coach} /> : <p>Короткий вопрос на понимание — без оценки.</p>}</CoachPanel>
-      </CoachPortal>
+      </DocPane>
+      {step.coach && (
+        <CoachPortal>
+          <CoachPanel>
+            <CoachNote text={step.coach} />
+          </CoachPanel>
+        </CoachPortal>
+      )}
     </>
   );
 }
@@ -752,6 +915,7 @@ export function ChecklistStep({
   onChange: (done: string[]) => void;
 }) {
   const done = new Set(record?.checklists[step.id] ?? []);
+  const count = step.items.filter((item) => done.has(item.id)).length;
   function toggle(id: string) {
     const next = new Set(done);
     if (next.has(id)) next.delete(id);
@@ -760,41 +924,49 @@ export function ChecklistStep({
   }
   return (
     <>
-      <section className="step-card" aria-labelledby={`${step.id}-title`}>
-        <div className="step-title-row">
-          <h2 id={`${step.id}-title`} className="step-title">
-            {step.title}
-          </h2>
-          <span className="badge badge-warn">Внешний инструмент</span>
-        </div>
+      <DocPane
+        id={step.id}
+        title={step.title}
+        tags={
+          <>
+            <Tag>Внешний инструмент</Tag>
+            <Tag>Отмечаешь сам</Tag>
+          </>
+        }
+      >
         <Markdown text={step.body} />
-        <ul className="checklist">
-          {step.items.map((item) => (
-            <li key={item.id} data-done={done.has(item.id)}>
-              <label className="check">
-                <input type="checkbox" checked={done.has(item.id)} onChange={() => toggle(item.id)} />
-                <Markdown text={item.text} />
-              </label>
-              {item.help && (
-                <details className="disclosure" style={{ marginTop: 8 }}>
-                  <summary>Если не получается</summary>
-                  <div className="disclosure-body">
+        <div className="step-checklist">
+          <ul className="checklist">
+            {step.items.map((item) => (
+              <li key={item.id} data-done={done.has(item.id)}>
+                <label className="check">
+                  <input type="checkbox" checked={done.has(item.id)} onChange={() => toggle(item.id)} />
+                  <Markdown text={item.text} />
+                </label>
+                {item.help && (
+                  <Disclosure summary="Если не получается" className="check-help">
                     <Markdown text={item.help} className="prose-compact" />
-                  </div>
-                </details>
-              )}
-            </li>
-          ))}
-        </ul>
-        <p className="small muted">
-          Отметки ставишь ты сам: приложение не видит твой компьютер и не может проверить установку за тебя.
-        </p>
-      </section>
-      <CoachPortal>
-        <CoachPanel>
-          {step.coach ? <CoachNote text={step.coach} /> : <p>Делай по одному пункту. Если что-то пошло не так — раскрой «Если не получается».</p>}
-        </CoachPanel>
-      </CoachPortal>
+                  </Disclosure>
+                )}
+              </li>
+            ))}
+          </ul>
+          {count === step.items.length ? (
+            <StatusLine tone="ok">Все пункты отмечены</StatusLine>
+          ) : (
+            <p className="checklist-count">
+              Отмечено <span className="n">{count}</span> из <span className="n">{step.items.length}</span>
+            </p>
+          )}
+        </div>
+      </DocPane>
+      {step.coach && (
+        <CoachPortal>
+          <CoachPanel>
+            <CoachNote text={step.coach} />
+          </CoachPanel>
+        </CoachPortal>
+      )}
     </>
   );
 }
@@ -828,15 +1000,28 @@ export function RecapStep({
   onReview: (success: boolean) => Promise<ReviewRecord | undefined>;
   onFinish: () => void;
 }) {
+  const activeReview = isActiveReview(review) ? review : null;
+  // Повторение засчитывается только в свой день: раньше срока интервал не сокращается.
+  const reviewDue = activeReview !== null && isDue(activeReview.dueAt, Date.now());
   const [answer, setAnswer] = useState(record?.recap?.answer ?? '');
-  const [shown, setShown] = useState(Boolean(record?.recap?.selfCheck));
+  // В день повторения ответ наставника снова закрыт: сначала вспомнить самому, потом сравнить.
+  const [shown, setShown] = useState(Boolean(record?.recap?.selfCheck) && !reviewDue);
   const [reviewResult, setReviewResult] = useState<{ success: boolean; text: string } | null>(null);
   const [reviewPending, setReviewPending] = useState(false);
   const selfCheck = record?.recap?.selfCheck ?? null;
   const finished = Boolean(record?.completedAt);
-  const activeReview = isActiveReview(review) ? review : null;
-  // Повторение засчитывается только в свой день: раньше срока интервал не сокращается.
-  const reviewDue = activeReview !== null && isDue(activeReview.dueAt, Date.now());
+  // Решение по повторению — после вопроса и ответа наставника, на месте самооценки.
+  const reviewAsk = reviewDue && !reviewResult;
+  // «Тема — в повторении» — у самооценки, которая её туда поставила; строка вверху — только если тема там с прошлого раза.
+  const selfReview = shown && !reviewAsk && !reviewResult && (selfCheck === 'partly' || selfCheck === 'not-yet');
+  // Повторение читается из базы позже записи урока: если день повторения выяснился уже после открытия шага,
+  // ответ наставника закрывается (ученик его ещё не открывал — шаг только что показан).
+  const dueSeen = useRef(reviewDue);
+  useEffect(() => {
+    if (!reviewDue || dueSeen.current) return;
+    dueSeen.current = true;
+    setShown(false);
+  }, [reviewDue]);
 
   const answerRef = useRef<HTMLDivElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
@@ -858,7 +1043,7 @@ export function RecapStep({
       setReviewResult({
         success,
         text: !success
-          ? 'Вернёмся к теме завтра. Это нормально: навык складывается из нескольких подходов.'
+          ? 'Вернёмся к теме завтра.'
           : next?.doneAt
             ? 'Повторение завершено: тема закреплена.'
             : `Повторение засчитано. Следующее — ${formatDate(next?.dueAt ?? Date.now())}.`,
@@ -871,36 +1056,17 @@ export function RecapStep({
 
   return (
     <>
-      <section className="step-card" aria-labelledby={`${step.id}-title`}>
-        <h2 id={`${step.id}-title`} className="step-title">
-          {step.title}
-        </h2>
-        {reviewDue && !reviewResult && (
-          <Notice
-            tone="accent"
-            title="Пора повторить тему"
-            action={
-              <>
-                <button type="button" className="btn btn-primary btn-sm" disabled={reviewPending} onClick={() => void answerReview(true)}>
-                  Повторил — понимаю
-                </button>
-                <button type="button" className="btn btn-sm" disabled={reviewPending} onClick={() => void answerReview(false)}>
-                  Пока не держится
-                </button>
-              </>
-            }
-          >
-            {activeReview.reason}. Перечитай главное ниже и ответь на вопрос своими словами, а потом честно отметь, держится ли
-            тема.
+      <DocPane id={step.id} title={step.title} className="recap-step">
+        {reviewAsk && (
+          <Notice tone="accent" title="Пора повторить тему">
+            {activeReview.reason}.
           </Notice>
         )}
-        {reviewResult && (
-          <div ref={reviewRef}>
-            <Notice tone={reviewResult.success ? 'good' : 'muted'}>{reviewResult.text}</Notice>
-          </div>
-        )}
-        {activeReview && !reviewDue && !reviewResult && (
-          <p className="small muted">Тема в повторении: вернёмся к ней {formatDate(activeReview.dueAt)}.</p>
+        {activeReview && !reviewDue && !reviewResult && !selfReview && (
+          <p className="recap-due">
+            <CalendarClock aria-hidden="true" />
+            <span>Повторение {formatDate(activeReview.dueAt)}</span>
+          </p>
         )}
         <ul className="recap-points">
           {step.points.map((point) => (
@@ -912,125 +1078,150 @@ export function RecapStep({
             </li>
           ))}
         </ul>
-        <hr className="divider" />
-        <label className="field">
-          <span className="field-label">Вопрос на понимание: {step.question}</span>
-          <span className="field-hint">Ответь своими словами — это только для тебя, оценки нет.</span>
-          <textarea
-            className="textarea"
-            rows={3}
-            value={answer}
-            onChange={(event) => setAnswer(event.target.value)}
-            onBlur={() => onSave(answer, selfCheck)}
-          />
-        </label>
-        {!shown ? (
-          <div className="row">
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                setShown(true);
-                setFocusAnswer((value) => value + 1);
-                onSave(answer, selfCheck);
-              }}
-            >
-              Сравнить с ответом наставника
-            </button>
-          </div>
-        ) : (
-          <div className="stack-sm">
-            <div className="hint-card" ref={answerRef}>
-              <div className="label">Ответ наставника</div>
-              <Markdown text={step.answer} className="prose-compact" />
-            </div>
-            <div className="stack-sm">
-              <span className="field-label" id={`${step.id}-self`}>
-                Как оцениваешь своё понимание?
-              </span>
-              {/* Выбор сразу сохраняется и ставит тему на повторение, поэтому стрелки только переводят фокус. */}
-              <div
-                className="segmented"
-                role="radiogroup"
-                aria-labelledby={`${step.id}-self`}
-                onKeyDown={(event) => rovingKeyDown(event, { select: false })}
+        <div className="recap-section">
+          <label className="field recap-question">
+            <span className="field-label">Вопрос на понимание</span>
+            <span className="recap-question-text">{step.question}</span>
+            <textarea
+              className="textarea recap-answer"
+              rows={3}
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+              onBlur={() => onSave(answer, selfCheck)}
+            />
+          </label>
+          {!shown ? (
+            <div className="step-actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setShown(true);
+                  setFocusAnswer((value) => value + 1);
+                  onSave(answer, selfCheck);
+                }}
               >
-                {SELF_CHECK.map((option, optionIndex) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selfCheck === option.value}
-                    tabIndex={rovingTabIndex(selfCheck === option.value, optionIndex, selfCheck !== null)}
-                    onClick={() => onSave(answer, option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+                <MessageSquareText aria-hidden="true" />
+                Сравнить с ответом наставника
+              </button>
             </div>
-          </div>
-        )}
-        <hr className="divider" />
-        {exercisesLeft.length > 0 ? (
-          <div className="stack-sm">
-            <div className="status-line status-warn">
-              <CircleAlert aria-hidden="true" />
-              <span>Остались нерешённые задания — урок будет засчитан, когда они пройдут проверку:</span>
-            </div>
-            <ul className="bullets small">
-              {exercisesLeft.map((item) => (
-                <li key={item.id}>
-                  <a href={`#${item.index}`} onClick={(event) => {
-                    event.preventDefault();
-                    window.dispatchEvent(new CustomEvent('praktika:goto-step', { detail: item.index }));
-                  }}>
-                    {item.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : finished ? (
-          <div ref={doneRef}>
-            <SuccessCard title="Урок завершён">Прогресс сохранён. {nextLesson ? 'Дальше — следующий урок.' : ''}</SuccessCard>
-          </div>
-        ) : (
-          <div className="row">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => {
-                setFocusFinish((value) => value + 1);
-                onFinish();
-              }}
-            >
-              <CircleCheck aria-hidden="true" />
-              Завершить урок
-            </button>
-          </div>
-        )}
-        {finished && nextLesson && (
-          <div className="row">
-            <a ref={nextRef} className="btn btn-primary btn-wrap" href={nextLesson.href}>
-              <span>Следующий урок: {nextLesson.title}</span>
-              <ArrowRight aria-hidden="true" />
-            </a>
-          </div>
-        )}
-      </section>
-      <CoachPortal>
-        <CoachPanel>
-          {selfCheck === 'not-yet' || selfCheck === 'partly' ? (
-            <InfoCard title="Вернёмся к этому">
-              Тема попадёт в повторение. Можно открыть примеры урока ещё раз — это нормально, навык складывается из нескольких
-              подходов.
-            </InfoCard>
           ) : (
-            <p>Закрепление: коротко вспомни главное и ответь своими словами. Объяснить — значит понять.</p>
+            <>
+              <div className="recap-answer-card" ref={answerRef}>
+                <HintCard label="Ответ наставника">
+                  <Markdown text={step.answer} className="prose-compact" />
+                </HintCard>
+              </div>
+              {reviewResult ? (
+                <div className="recap-review-result" ref={reviewRef}>
+                  <Notice tone={reviewResult.success ? 'ok' : 'muted'}>{reviewResult.text}</Notice>
+                </div>
+              ) : (
+                <div className="recap-self">
+                  <span className="field-label" id={`${step.id}-self`}>
+                    Как оцениваешь своё понимание?
+                  </span>
+                  {reviewAsk ? (
+                    // День повторения: вместо самооценки — итог повторения (засчитать или начать интервалы заново).
+                    <div className="step-actions recap-review-actions" role="group" aria-labelledby={`${step.id}-self`}>
+                      <button type="button" className="btn btn-primary" disabled={reviewPending} onClick={() => void answerReview(true)}>
+                        <CircleCheck aria-hidden="true" />
+                        Повторил — понимаю
+                      </button>
+                      <button type="button" className="btn" disabled={reviewPending} onClick={() => void answerReview(false)}>
+                        <RotateCcw aria-hidden="true" />
+                        Пока не держится
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Выбор сразу сохраняется и ставит тему на повторение, поэтому стрелки только переводят фокус. */}
+                      <div
+                        className="segmented"
+                        role="radiogroup"
+                        aria-labelledby={`${step.id}-self`}
+                        onKeyDown={(event) => rovingKeyDown(event, { select: false })}
+                      >
+                        {SELF_CHECK.map((option, optionIndex) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            role="radio"
+                            aria-checked={selfCheck === option.value}
+                            tabIndex={rovingTabIndex(selfCheck === option.value, optionIndex, selfCheck !== null)}
+                            onClick={() => onSave(answer, option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      {selfReview && (
+                        <StatusLine tone="warn" icon={CalendarClock} className="recap-self-status">
+                          Тема — в повторении
+                          {activeReview && !reviewDue ? ` · ${formatDate(activeReview.dueAt)}` : ''}
+                        </StatusLine>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
-        </CoachPanel>
-      </CoachPortal>
+        </div>
+        <div className="recap-section recap-finish">
+          {exercisesLeft.length > 0 ? (
+            <>
+              <StatusLine tone="warn">Остались задания:</StatusLine>
+              <ul className="recap-left">
+                {exercisesLeft.map((item) => (
+                  <li key={item.id}>
+                    <a
+                      className="recap-left-link"
+                      href={`#${item.index}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        window.dispatchEvent(new CustomEvent('praktika:goto-step', { detail: item.index }));
+                      }}
+                    >
+                      <span className="recap-left-num n" aria-hidden="true">
+                        {item.index + 1}
+                      </span>
+                      <span className="recap-left-title">{item.title}</span>
+                      <ArrowRight aria-hidden="true" className="recap-left-arrow" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : finished ? (
+            <div ref={doneRef}>
+              <SuccessCard title="Урок завершён" />
+            </div>
+          ) : (
+            <div className="step-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  setFocusFinish((value) => value + 1);
+                  onFinish();
+                }}
+              >
+                <CircleCheck aria-hidden="true" />
+                Завершить урок
+              </button>
+            </div>
+          )}
+          {finished && nextLesson && (
+            <div className="step-actions">
+              <a ref={nextRef} className="btn btn-primary btn-wrap" href={nextLesson.href}>
+                <span>Следующий урок: {nextLesson.title}</span>
+                <ArrowRight aria-hidden="true" />
+              </a>
+            </div>
+          )}
+        </div>
+      </DocPane>
     </>
   );
 }

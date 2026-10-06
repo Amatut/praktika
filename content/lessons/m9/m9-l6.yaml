@@ -1,0 +1,3963 @@
+id: m9-l6
+module: m9
+number: "9.6"
+title: "Самостоятельная работа: тесты для списка задач"
+objective: >-
+  Самостоятельно написать набор тестов к функциям списка задач — обычные и граничные случаи и
+  ошибки — и с помощью теста найти и исправить спрятанную ошибку.
+minutes: [30, 40]
+prerequisites: [m9-l5]
+skills: [assert-checks, edge-cases, exception-tests, pytest-basics, regression-tests]
+environment: python
+
+story:
+  title: Ноль вместо десяти
+  fictional: true
+  text: >-
+    Надежда, координатор волонтёрского центра, добавила в свою программу учёта задач сроки и
+    заодно переписала проверку номера задачи — проверка на ноль при этом потерялась. Через неделю
+    «Уборка парка» оказалась отмеченной, хотя её никто не делал: Надежда набрала «готово 0» вместо
+    «готово 10», и программа молча отметила последнюю задачу. Вечер ушёл на то, чтобы сверить
+    каждую отметку с записями волонтёров. Теперь перед каждой правкой Надежда запускает набор
+    тестов, и номер 0 в нём проверяется. Сегодня ты соберёшь такой набор сам.
+
+why: >-
+  Набор тестов — страховка, с которой программу можно смело менять. Например, тест «номер 0 —
+  ошибка» не даст незаметно отметить выполненной не ту задачу.
+
+usedIn: >-
+  Прежде чем дорабатывать старый или чужой код, разработчики пишут тесты на его нынешнее поведение
+  и только потом меняют код. Так принято в проектах, которые живут долго.
+
+steps:
+  - id: reminder
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа: два задания, и подсказки в них откроются только после первой
+      проверки. Это не запрет на помощь — просто сначала попробуй сам.
+
+      Всё нужное ты уже знаешь:
+
+      - Тест — функция с именем `test_…`, внутри — проверки `assert результат == ожидание`
+        (урок 9.1). Ожидание считай по описанию функции, а не по её выводу.
+      - Кроме обычных случаев проверяй границы и особые входы: первый и последний элемент, ноль,
+        пустую строку, пустой список (урок 9.2).
+      - Каждый тест сам готовит свои данные и не рассчитывает на другие тесты (урок 9.3). Внизу
+        файла тестов — блок `if __name__ == "__main__":`: в тренажёре он вызывает тесты, а pytest
+        на компьютере находит их сам.
+      - Тест на ошибку — приём с флагом: `raised = False`, вызов внутри `try`,
+        `except ValueError:` ставит флаг в `True`, в конце `assert raised` (урок 9.4). Лови
+        именно `ValueError`, а не любое исключение.
+      - Ошибку сначала воспроизводят тестом, видят, что он красный, и только потом исправляют код
+        (урок 9.5).
+
+      **Как тренажёр проверит твои тесты.** На верных функциях они должны пройти. Потом он по
+      очереди подставит версии функций с ошибками — «мутантов» — и на каждой хотя бы один твой
+      тест должен упасть. Ещё он запустит каждый тест отдельно от остальных и все тесты в обратном
+      порядке: ни один тест не должен зависеть от других.
+
+      **Порядок работы:** прочитай описание функций → выпиши случаи (обычные, граничные, ошибки) →
+      напиши тесты → «Запустить» → «Проверить».
+
+      Первое задание самое длинное. Если время вышло после него, остановись: второе задание сделай
+      в следующий раз. В конце урока есть блок «Тесты в твоём проекте». Он для компьютера и для
+      отдельного дня: на него нужно ещё 20–30 минут.
+    simpler: >-
+      Сегодня два задания без подсказок до первой проверки. В первом пишешь тесты: на каждое
+      правило из описания — свой тест, тесты на ошибку — приёмом с флагом. Во втором сначала
+      ловишь ошибку тестом и только потом исправляешь функцию.
+    coach: >-
+      Цель — не «много тестов», а тесты, которые ловят ошибки. На каждое правило в описании
+      функции — хотя бы один тест.
+
+  - id: bug-routine
+    type: order
+    title: Порядок работы с ошибкой
+    prompt: >-
+      Пользователь прислал сообщение об ошибке в программе. Расставь шаги работы с ней по
+      порядку — во втором задании этот порядок пригодится.
+    items:
+      - id: reproduce
+        text: Воспроизвести ошибку на маленьком примере
+      - id: red
+        text: Записать пример в тест и убедиться, что тест падает
+      - id: fix
+        text: Исправить код
+      - id: green
+        text: "Запустить этот тест: теперь он проходит"
+      - id: all
+        text: "Запустить все тесты: остальное не сломалось"
+      - id: commit
+        text: Сохранить исправление вместе с тестом одним коммитом
+    explanation: >-
+      Тест пишут до исправления: красный тест доказывает, что он действительно ловит эту ошибку.
+      Тест, написанный после, может проходить и на старом коде — тогда он ничего не сторожит. Все
+      тесты в конце нужны потому, что исправление в одном месте иногда ломает другое. А тест и
+      исправление в одном коммите — понятная история: видно, какую ошибку нашли и чем её закрыли.
+    coach: Это тот же порядок «красный → зелёный», что в уроке 9.5.
+
+  - id: main-task
+    type: exercise
+    title: "Задание 1: набор тестов"
+    exercise:
+      id: m9-l6-e1
+      kind: write
+      title: Тесты для списка задач
+      statement: |-
+        В файле `tasks.py` три функции списка задач. Его код можно открыть в блоке «Файлы
+        задания», но тесты пиши по описанию ниже — так тестируют и чужой код.
+
+        - `add_task(tasks, title)` добавляет в конец списка `tasks` задачу — словарь
+          `{"title": название, "done": False}` — и возвращает её. Пробелы по краям названия
+          убирает. Если название пустое или состоит из одних пробелов, выбрасывает `ValueError`,
+          а список не меняет.
+        - `complete_task(tasks, number)` отмечает выполненной задачу номер `number`: её `"done"`
+          становится `True`. Номера идут с 1: первая задача — номер 1, последняя — `len(tasks)`.
+          На номер вне этого диапазона выбрасывает `ValueError` и ничего не отмечает.
+        - `pending_titles(tasks)` возвращает список названий невыполненных задач в том же
+          порядке, что в `tasks`.
+
+        Напиши в `test_tasks.py` набор тестов для всех трёх функций: обычные случаи, граничные
+        случаи и ошибки. Вызови тесты в блоке `if __name__ == "__main__":` и выведи
+        `Все тесты прошли`. В стартовом коде уже есть помощник `two_tasks()`: каждый вызов
+        возвращает новый список из двух задач. Пользоваться им не обязательно.
+
+        Как проверяется набор:
+
+        1. Все тесты проходят на верных функциях из `tasks.py`.
+        2. Тесты не зависят друг от друга: каждый проходит сам по себе, а все вместе — и в
+           обратном порядке.
+        3. Тренажёр по очереди подставляет версии функций с типичными ошибками. На каждой такой
+           версии хотя бы один твой тест должен упасть.
+      input: "Ввода нет: тесты вызывают функции напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - "`tasks.py` только для чтения: функции подключает первая строка стартового кода."
+        - Каждый тест сам создаёт свой список задач — пустой или через `two_tasks()`.
+        - "Тесты на ошибку — приёмом с флагом и `except ValueError`: pytest в тренажёре нет."
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+      filename: test_tasks.py
+      files:
+        tasks.py: |
+          def add_task(tasks, title):
+              title = title.strip()
+              if title == "":
+                  raise ValueError("название задачи не может быть пустым")
+              task = {"title": title, "done": False}
+              tasks.append(task)
+              return task
+
+
+          def complete_task(tasks, number):
+              if number < 1 or number > len(tasks):
+                  raise ValueError(f"нет задачи с номером {number}")
+              tasks[number - 1]["done"] = True
+
+
+          def pending_titles(tasks):
+              result = []
+              for task in tasks:
+                  if not task["done"]:
+                      result.append(task["title"])
+              return result
+      starterCode: |
+        from tasks import add_task, complete_task, pending_titles
+
+
+        def two_tasks():
+            # Помощник, а не тест: имя без test_.
+            # Каждый вызов создаёт новый список из двух задач.
+            tasks = []
+            add_task(tasks, "Полить цветы")
+            add_task(tasks, "Вынести мусор")
+            return tasks
+
+
+        # Напиши тесты для трёх функций из tasks.py:
+        # обычные случаи, граничные случаи и ошибки (ValueError).
+        # Каждый тест готовит свои данные сам.
+
+
+        if __name__ == "__main__":
+            # вызови здесь свои тесты
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          example: true
+          expected: Все тесты прошли
+          compare:
+            mode: contains
+            ignoreCase: true
+            ignoreSpaces: true
+        - id: t-has
+          kind: assert
+          title: Есть тесты
+          code: |
+            assert [name for name, value in list(globals().items())
+                    if name.startswith("test_") and callable(value)]
+          message: В файле есть хотя бы одна функция, имя которой начинается с `test_`.
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на верных функциях
+          code: |
+            _space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+            exec(compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), _space)
+            for _name, _value in list(_space.items()):
+                if _name.startswith("test_") and callable(_value):
+                    _value()
+          message: Все твои тесты проходят на верных функциях из `tasks.py`.
+        - id: t-alone
+          kind: assert
+          title: Тесты не зависят друг от друга
+          code: |
+            _code = compile(open(__file__, encoding="utf-8").read(), __file__, "exec")
+
+
+            def _fresh():
+                space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                exec(_code, space)
+                return space
+
+
+            def _passes(space, name):
+                try:
+                    space[name]()
+                except Exception:
+                    return False
+                return True
+
+
+            _all = _fresh()
+            _names = [name for name, value in list(_all.items())
+                      if name.startswith("test_") and callable(value)]
+            _bad = []
+            # Если тесты падают уже в порядке файла, это зона проверки t-ref.
+            if all(_passes(_all, name) for name in _names):
+                for _name in reversed(_names):
+                    if not _passes(_fresh(), _name):
+                        _bad.append(_name + " (отдельно)")
+                _back = _fresh()
+                for _name in reversed(_names):
+                    if not _passes(_back, _name):
+                        _bad.append(_name + " (в обратном порядке)")
+            assert not _bad, "зависят от других тестов: " + ", ".join(_bad)
+          message: >-
+            Каждый тест проходит и сам по себе, а все вместе — и в обратном порядке: тренажёр
+            запускает их так, как это может сделать pytest.
+        - id: t-m-empty
+          kind: assert
+          title: "Тесты замечают ошибку: задача с пустым названием"
+          edge: true
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, title):
+                title = title.strip()
+                task = {"title": title, "done": False}
+                tasks.append(task)
+                return task
+
+
+            assert _caught("add_task", _mutant)
+          message: Ни один тест не упал на версии `add_task`, которая молча добавляет задачу с пустым названием.
+        - id: t-m-spaces
+          kind: assert
+          title: "Тесты замечают ошибку: название из одних пробелов"
+          edge: true
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, title):
+                if title == "":
+                    raise ValueError("название задачи не может быть пустым")
+                title = title.strip()
+                task = {"title": title, "done": False}
+                tasks.append(task)
+                return task
+
+
+            assert _caught("add_task", _mutant)
+          message: >-
+            Ни один тест не упал на версии `add_task`, которая проверяет пустоту до того, как
+            убрать пробелы.
+        - id: t-m-strip
+          kind: assert
+          title: "Тесты замечают ошибку: пробелы по краям остаются"
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, title):
+                if title.strip() == "":
+                    raise ValueError("название задачи не может быть пустым")
+                task = {"title": title, "done": False}
+                tasks.append(task)
+                return task
+
+
+            assert _caught("add_task", _mutant)
+          message: Ни один тест не упал на версии `add_task`, которая сохраняет название с пробелами по краям.
+        - id: t-m-offby1
+          kind: assert
+          title: "Тесты замечают ошибку: отмечается следующая задача"
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, number):
+                if number < 1 or number > len(tasks):
+                    raise ValueError(f"нет задачи с номером {number}")
+                tasks[number]["done"] = True
+
+
+            assert _caught("complete_task", _mutant)
+          message: >-
+            Ни один тест не упал на версии `complete_task`, которая отмечает не задачу с этим
+            номером, а следующую за ней.
+        - id: t-m-last
+          kind: assert
+          title: "Тесты замечают ошибку: последнюю задачу нельзя отметить"
+          edge: true
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, number):
+                if number < 1 or number >= len(tasks):
+                    raise ValueError(f"нет задачи с номером {number}")
+                tasks[number - 1]["done"] = True
+
+
+            assert _caught("complete_task", _mutant)
+          message: Ни один тест не упал на версии `complete_task`, которая не даёт отметить последнюю задачу.
+        - id: t-m-zero
+          kind: assert
+          title: "Тесты замечают ошибку: номер 0 отмечает последнюю задачу"
+          edge: true
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, number):
+                if number > len(tasks):
+                    raise ValueError(f"нет задачи с номером {number}")
+                tasks[number - 1]["done"] = True
+
+
+            assert _caught("complete_task", _mutant)
+          message: >-
+            Ни один тест не упал на версии `complete_task` без проверки нижней границы: там номер 0
+            молча отмечает последнюю задачу.
+        - id: t-m-upper
+          kind: assert
+          title: "Тесты замечают ошибку: номер больше числа задач"
+          edge: true
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, number):
+                if number < 1:
+                    raise ValueError(f"нет задачи с номером {number}")
+                tasks[number - 1]["done"] = True
+
+
+            assert _caught("complete_task", _mutant)
+          message: >-
+            Ни один тест не упал на версии `complete_task` без проверки верхней границы: на номер
+            больше числа задач она выбрасывает IndexError, а не ValueError.
+        - id: t-m-type
+          kind: assert
+          title: "Тесты отличают ValueError от другой ошибки"
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks, number):
+                if number < 1:
+                    raise TypeError(f"нет задачи с номером {number}")
+                if number > len(tasks):
+                    raise ValueError(f"нет задачи с номером {number}")
+                tasks[number - 1]["done"] = True
+
+
+            assert _caught("complete_task", _mutant)
+          message: >-
+            Ни один тест не упал на версии `complete_task`, которая на номер 0 выбрасывает не
+            ValueError, а другое исключение.
+        - id: t-m-pending
+          kind: assert
+          title: "Тесты замечают ошибку: выполненные задачи в pending_titles"
+          code: |
+            import sys as _sys
+            import time as _time
+            import tasks as _module
+
+
+            def _caught(name, impl):
+                # True, если на версии с ошибкой хотя бы один тест упал или не завершился:
+                # тест, который на мутанте зацикливается, тоже его заметил.
+                deadline = _time.perf_counter() + 1.5
+
+                def tracer(frame, event, arg):
+                    if _time.perf_counter() > deadline:
+                        raise TimeoutError("тест не завершился на версии с ошибкой")
+                    return tracer
+
+                def limited(fn, *args):
+                    old_trace = _sys.gettrace()
+                    _sys.settrace(tracer)
+                    try:
+                        fn(*args)
+                    finally:
+                        _sys.settrace(old_trace)
+
+                old = getattr(_module, name)
+                setattr(_module, name, impl)
+                try:
+                    space = {"__name__": "test_tasks_check", "__builtins__": __builtins__}
+                    try:
+                        limited(exec, compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), space)
+                    except Exception:
+                        return True
+                    for key, value in list(space.items()):
+                        if key.startswith("test_") and callable(value):
+                            try:
+                                limited(value)
+                            except Exception:
+                                return True
+                    return False
+                finally:
+                    setattr(_module, name, old)
+
+
+            def _mutant(tasks):
+                result = []
+                for task in tasks:
+                    result.append(task["title"])
+                return result
+
+
+            assert _caught("pending_titles", _mutant)
+          message: Ни один тест не упал на версии `pending_titles`, которая возвращает и выполненные задачи.
+      criteria:
+        - "Имя каждого теста говорит, что он проверяет: например, `test_complete_zero`."
+        - Есть обычные случаи, граничные случаи и ошибки — на каждое правило из описания функций.
+        - Тесты на ошибку ловят именно `ValueError` приёмом с флагом и заканчиваются `assert raised`.
+        - Каждый тест сам создаёт свой список задач и проходит без остальных и в любом порядке.
+        - Все тесты проходят на верных функциях, а на каждой версии с ошибкой хотя бы один падает.
+        - Программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          Выпиши для каждой функции три строки: обычный случай, граница, ошибка. Перечитай
+          описание по фразам: каждая фраза — правило, и у каждого правила должен быть свой тест.
+          Где у номеров задач границы — и какие номера лежат сразу за ними?
+        - |-
+          Тот же приём на другой функции. Допустим, `remove_item(items, number)` удаляет товар из
+          списка покупок по номеру с 1, а на неверный номер выбрасывает `ValueError`. Тест на
+          ошибку:
+
+          ```python
+          def test_remove_zero():
+              items = ["чай", "сахар"]
+              raised = False
+              try:
+                  remove_item(items, 0)
+              except ValueError:
+                  raised = True
+              assert raised, "номер 0 должен давать ValueError"
+              assert items == ["чай", "сахар"]
+          ```
+
+          Последняя строка проверяет, что после ошибки список не изменился.
+        - |-
+          Возможный набор имён — по одному правилу на тест:
+
+          ```text
+          test_add_task             обычное добавление: задача вернулась и попала в список
+          test_add_strips_spaces    пробелы по краям убраны
+          test_add_empty_title      "" → ValueError, список пуст
+          test_add_spaces_only      "   " → ValueError, список пуст
+          test_complete_first       номер 1, проверка через pending_titles
+          test_complete_last        номер len(tasks), проверка через pending_titles
+          test_complete_zero        0 → ValueError, ничего не отмечено
+          test_complete_too_big     len(tasks) + 1 → ValueError
+          test_pending_empty        пустой список → []
+          ```
+
+          Каркас одного теста:
+
+          ```text
+          def test_complete_last():
+              tasks = новый список из двух задач (two_tasks())
+              отметить задачу номер 2
+              assert pending_titles(tasks) == [название первой]
+          ```
+      solution:
+        code: |
+          from tasks import add_task, complete_task, pending_titles
+
+
+          def two_tasks():
+              # Помощник, а не тест: имя без test_.
+              # Каждый вызов создаёт новый список из двух задач.
+              tasks = []
+              add_task(tasks, "Полить цветы")
+              add_task(tasks, "Вынести мусор")
+              return tasks
+
+
+          def test_add_task():
+              tasks = []
+              task = add_task(tasks, "Купить хлеб")
+              assert task == {"title": "Купить хлеб", "done": False}
+              assert tasks == [task]
+
+
+          def test_add_strips_spaces():
+              tasks = []
+              add_task(tasks, "  Позвонить маме ")
+              assert pending_titles(tasks) == ["Позвонить маме"]
+
+
+          def test_add_empty_title():
+              tasks = []
+              raised = False
+              try:
+                  add_task(tasks, "")
+              except ValueError:
+                  raised = True
+              assert raised, "пустое название должно давать ValueError"
+              assert tasks == []
+
+
+          def test_add_spaces_only():
+              tasks = []
+              raised = False
+              try:
+                  add_task(tasks, "   ")
+              except ValueError:
+                  raised = True
+              assert raised, "название из пробелов должно давать ValueError"
+              assert tasks == []
+
+
+          def test_complete_first():
+              tasks = two_tasks()
+              complete_task(tasks, 1)
+              assert pending_titles(tasks) == ["Вынести мусор"]
+
+
+          def test_complete_last():
+              tasks = two_tasks()
+              complete_task(tasks, 2)
+              assert pending_titles(tasks) == ["Полить цветы"]
+
+
+          def test_complete_zero():
+              tasks = two_tasks()
+              raised = False
+              try:
+                  complete_task(tasks, 0)
+              except ValueError:
+                  raised = True
+              assert raised, "номер 0 должен давать ValueError"
+              assert pending_titles(tasks) == ["Полить цветы", "Вынести мусор"]
+
+
+          def test_complete_too_big():
+              tasks = two_tasks()
+              raised = False
+              try:
+                  complete_task(tasks, 3)
+              except ValueError:
+                  raised = True
+              assert raised, "номер больше числа задач должен давать ValueError"
+              assert pending_titles(tasks) == ["Полить цветы", "Вынести мусор"]
+
+
+          def test_pending_empty():
+              assert pending_titles([]) == []
+
+
+          if __name__ == "__main__":
+              test_add_task()
+              test_add_strips_spaces()
+              test_add_empty_title()
+              test_add_spaces_only()
+              test_complete_first()
+              test_complete_last()
+              test_complete_zero()
+              test_complete_too_big()
+              test_pending_empty()
+              print("Все тесты прошли")
+        explanation: >-
+          На каждое правило из описания — свой тест, и каждый тест берёт новый список: пустой или из
+          `two_tasks()`. Задача у тестов разная. `test_add_strips_spaces` ловит версию, которая
+          проверяет `title.strip()`, а сохраняет название без `strip`. `test_add_spaces_only` ловит
+          проверку пустоты до `strip`: название из пробелов прошло бы как настоящее.
+          `test_complete_first` и `test_complete_last` ловят сдвиг индекса на единицу, а
+          `test_complete_last` — ещё и сравнение `>=` вместо `>`. `test_complete_zero` ловит
+          версию без проверки нижней границы: номер 0 превращается в индекс −1 и молча отмечает
+          последнюю задачу. `test_complete_too_big` ловит версию без проверки верхней границы: там
+          номер 3 даёт IndexError, а не ValueError. Поэтому в тестах на ошибку стоит именно
+          `except ValueError` — `except Exception` поймал бы и IndexError, и тест бы её не заметил.
+          Тесты на ошибку ещё и проверяют, что после ошибки список не изменился. Ожидания взяты из
+          описания функций, а не из их вывода.
+      altSolutions:
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_empty():
+                raised = False
+                try:
+                    add_task([], "")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_add_spaces_only():
+                raised = False
+                try:
+                    add_task([], "   ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_too_big():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 2)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_empty()
+                test_add_spaces_only()
+                test_complete_last()
+                test_complete_zero()
+                test_complete_too_big()
+                print("Все тесты прошли")
+          note: >-
+            Шесть коротких тестов без помощника two_tasks — этого хватает, чтобы поймать все
+            подставленные ошибки.
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def three_tasks():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                add_task(tasks, "Цветы")
+                return tasks
+
+
+            def test_add_returns_task():
+                tasks = []
+                task = add_task(tasks, "  Хлеб  ")
+                assert task == {"title": "Хлеб", "done": False}
+                assert tasks == [task]
+
+
+            def test_add_bad_titles():
+                for title in ["", "   "]:
+                    raised = False
+                    try:
+                        add_task([], title)
+                    except ValueError:
+                        raised = True
+                    assert raised, f"нет ValueError для «{title}»"
+
+
+            def test_complete_first_and_last():
+                tasks = three_tasks()
+                complete_task(tasks, 1)
+                complete_task(tasks, 3)
+                assert tasks[0]["done"]
+                assert not tasks[1]["done"]
+                assert tasks[2]["done"]
+
+
+            def test_complete_bad_numbers():
+                for number in [0, -1, 4]:
+                    tasks = three_tasks()
+                    raised = False
+                    try:
+                        complete_task(tasks, number)
+                    except ValueError:
+                        raised = True
+                    assert raised, f"нет ValueError для номера {number}"
+
+
+            def test_pending_after_complete():
+                tasks = three_tasks()
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб", "Цветы"]
+
+
+            if __name__ == "__main__":
+                test_add_returns_task()
+                test_add_bad_titles()
+                test_complete_first_and_last()
+                test_complete_bad_numbers()
+                test_pending_after_complete()
+                print("Все тесты прошли")
+          note: >-
+            Вспомогательная функция three_tasks (имя без test_, тренажёр не считает её тестом),
+            проверка словарей через tasks[0]["done"] и циклы по неверным входам.
+        - code: |
+            import tasks
+
+
+            def test_add_and_strip():
+                items = []
+                tasks.add_task(items, " Хлеб ")
+                tasks.add_task(items, "Почта")
+                assert tasks.pending_titles(items) == ["Хлеб", "Почта"]
+
+
+            def test_add_empty_and_spaces():
+                items = []
+                raised_empty = False
+                try:
+                    tasks.add_task(items, "")
+                except ValueError:
+                    raised_empty = True
+                raised_spaces = False
+                try:
+                    tasks.add_task(items, "  ")
+                except ValueError:
+                    raised_spaces = True
+                assert raised_empty
+                assert raised_spaces
+                assert items == []
+
+
+            def test_complete_one_task():
+                items = []
+                tasks.add_task(items, "Хлеб")
+                tasks.complete_task(items, 1)
+                assert tasks.pending_titles(items) == []
+
+
+            def test_complete_zero():
+                items = []
+                tasks.add_task(items, "Хлеб")
+                tasks.add_task(items, "Почта")
+                raised = False
+                try:
+                    tasks.complete_task(items, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+                assert tasks.pending_titles(items) == ["Хлеб", "Почта"]
+
+
+            def test_complete_too_big():
+                items = []
+                tasks.add_task(items, "Хлеб")
+                raised = False
+                try:
+                    tasks.complete_task(items, 2)
+                except ValueError:
+                    raised = True
+                assert raised
+                assert items == [{"title": "Хлеб", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_add_and_strip()
+                test_add_empty_and_spaces()
+                test_complete_one_task()
+                test_complete_zero()
+                test_complete_too_big()
+                print("Все тесты прошли")
+          note: >-
+            import tasks и вызовы через точку; список назван items, чтобы не закрыть имя модуля.
+            Граница «последняя задача» проверена на списке из одной задачи.
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def new_list():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                return tasks
+
+
+            def check_bad_number(number):
+                tasks = new_list()
+                raised = False
+                try:
+                    complete_task(tasks, number)
+                except ValueError:
+                    raised = True
+                assert raised, f"номер {number} должен давать ValueError"
+                assert pending_titles(tasks) == ["Хлеб", "Почта"]
+
+
+            def test_add():
+                tasks = []
+                task = add_task(tasks, " Хлеб ")
+                assert task["title"] == "Хлеб"
+                assert task["done"] == False
+
+
+            def test_add_bad():
+                for title in ["", " ", "    "]:
+                    tasks = []
+                    raised = False
+                    try:
+                        add_task(tasks, title)
+                    except ValueError:
+                        raised = True
+                    assert raised
+                    assert len(tasks) == 0
+
+
+            def test_complete():
+                tasks = new_list()
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+                complete_task(tasks, 1)
+                assert pending_titles(tasks) == []
+
+
+            def test_bad_numbers():
+                check_bad_number(0)
+                check_bad_number(3)
+                check_bad_number(-5)
+
+
+            test_add()
+            test_add_bad()
+            test_complete()
+            test_bad_numbers()
+            print("Все тесты прошли")
+          note: >-
+            Вспомогательная функция с параметром (имя без test_) и вызовы тестов без блока
+            if __name__ — проверка всё равно находит и запускает тесты.
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_bad():
+                for title in ["", "   "]:
+                    raised = False
+                    try:
+                        add_task([], title)
+                    except ValueError:
+                        raised = True
+                    assert raised
+
+
+            def test_complete_bad_numbers():
+                for number in [0, 3]:
+                    tasks = []
+                    add_task(tasks, "Хлеб")
+                    add_task(tasks, "Почта")
+                    raised = False
+                    try:
+                        complete_task(tasks, number)
+                    except ValueError:
+                        raised = True
+                    assert raised
+
+
+            def test_complete_from_the_end():
+                tasks = []
+                for title in ["Хлеб", "Почта", "Цветы"]:
+                    add_task(tasks, title)
+                while len(pending_titles(tasks)) > 0:
+                    complete_task(tasks, len(pending_titles(tasks)))
+                assert tasks[0]["done"] and tasks[1]["done"] and tasks[2]["done"]
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_bad()
+                test_complete_bad_numbers()
+                test_complete_from_the_end()
+                print("Все тесты прошли")
+          note: >-
+            Цикл while, который отмечает задачи с конца, пока pending_titles не опустеет. На
+            версии pending_titles с ошибкой он не завершается — проверка считает это пойманной
+            ошибкой, а не зависанием.
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            # add_task
+            def test_add_task_rules():
+                tasks = []
+                first = add_task(tasks, "Кормить кота")
+                second = add_task(tasks, "  Полить фикус  ")
+                assert tasks == [first, second]
+                assert second["title"] == "Полить фикус"
+                assert first["done"] == False
+
+                for title in ["", "  "]:
+                    error = False
+                    try:
+                        add_task(tasks, title)
+                    except ValueError:
+                        error = True
+                    assert error == True
+                assert len(tasks) == 2
+
+
+            # complete_task
+            def test_complete_task_rules():
+                tasks = []
+                add_task(tasks, "Кормить кота")
+                add_task(tasks, "Полить фикус")
+                add_task(tasks, "Пропылесосить")
+
+                complete_task(tasks, len(tasks))
+                assert tasks[-1]["done"] == True
+                assert tasks[-2]["done"] == False
+
+                for number in [0, len(tasks) + 1]:
+                    error = False
+                    try:
+                        complete_task(tasks, number)
+                    except ValueError:
+                        error = True
+                    assert error == True
+
+
+            # pending_titles
+            def test_pending_titles_rules():
+                tasks = []
+                assert pending_titles(tasks) == []
+                add_task(tasks, "Кормить кота")
+                add_task(tasks, "Полить фикус")
+                complete_task(tasks, 1)
+                assert "Кормить кота" not in pending_titles(tasks)
+                assert pending_titles(tasks) == ["Полить фикус"]
+
+
+            if __name__ == "__main__":
+                test_add_task_rules()
+                test_complete_task_rules()
+                test_pending_titles_rules()
+                print("Все тесты прошли")
+          note: По одному большому тесту на функцию, флаг с другим именем и сравнение error == True.
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_empty_title_error():
+                tasks = []
+                try:
+                    add_task(tasks, "")
+                except ValueError:
+                    pass
+                else:
+                    assert False, "пустое название должно давать ValueError"
+                assert tasks == []
+
+
+            def test_blank_title_error():
+                tasks = []
+                try:
+                    add_task(tasks, "      ")
+                except ValueError:
+                    pass
+                else:
+                    assert False, "название из пробелов должно давать ValueError"
+
+
+            def test_title_is_stripped():
+                tasks = []
+                task = add_task(tasks, "   Позвонить врачу   ")
+                assert task["title"] == "Позвонить врачу"
+
+
+            def test_only_one_task_is_completed():
+                tasks = []
+                add_task(tasks, "А")
+                add_task(tasks, "Б")
+                complete_task(tasks, 2)
+                assert tasks[0]["done"] == False
+                assert tasks[1]["done"] == True
+
+
+            def test_bad_numbers_error():
+                for number in [0, 3]:
+                    tasks = []
+                    add_task(tasks, "А")
+                    add_task(tasks, "Б")
+                    try:
+                        complete_task(tasks, number)
+                    except ValueError:
+                        pass
+                    else:
+                        assert False, f"номер {number} должен давать ValueError"
+
+
+            def test_pending_after_completion():
+                tasks = []
+                add_task(tasks, "А")
+                add_task(tasks, "Б")
+                add_task(tasks, "В")
+                complete_task(tasks, 1)
+                complete_task(tasks, 3)
+                assert pending_titles(tasks) == ["Б"]
+
+
+            if __name__ == "__main__":
+                test_empty_title_error()
+                test_blank_title_error()
+                test_title_is_stripped()
+                test_only_one_task_is_completed()
+                test_bad_numbers_error()
+                test_pending_after_completion()
+                print()
+                print("Все тесты прошли!")
+          note: >-
+            try/except/else с assert False вместо флага (в курсе — только в скрытых проверках),
+            пустая строка и «!» в выводе.
+        - code: |
+            import tasks
+
+
+            def test_add_to_end_and_strip():
+                items = [{"title": "Бассейн", "done": True}]
+                new_task = tasks.add_task(items, "   Йога")
+                assert new_task == {"title": "Йога", "done": False}
+                assert items == [{"title": "Бассейн", "done": True}, {"title": "Йога", "done": False}]
+
+
+            def test_add_rejects_blank():
+                for title in ["", "  "]:
+                    items = []
+                    caught = False
+                    try:
+                        tasks.add_task(items, title)
+                    except ValueError:
+                        caught = True
+                    assert caught
+                    assert items == []
+
+
+            def test_complete_marks_only_that_task():
+                items = [
+                    {"title": "Йога", "done": False},
+                    {"title": "Бассейн", "done": False},
+                    {"title": "Растяжка", "done": False},
+                ]
+                tasks.complete_task(items, 3)
+                assert items[0]["done"] == False
+                assert items[1]["done"] == False
+                assert items[2]["done"] == True
+
+
+            def test_complete_wrong_numbers():
+                for number in [0, 4]:
+                    items = [
+                        {"title": "Йога", "done": False},
+                        {"title": "Бассейн", "done": False},
+                        {"title": "Растяжка", "done": False},
+                    ]
+                    caught = False
+                    try:
+                        tasks.complete_task(items, number)
+                    except ValueError:
+                        caught = True
+                    assert caught, "номер " + str(number)
+
+
+            def test_pending_keeps_order():
+                items = [
+                    {"title": "Йога", "done": False},
+                    {"title": "Бассейн", "done": True},
+                    {"title": "Растяжка", "done": False},
+                ]
+                assert tasks.pending_titles(items) == ["Йога", "Растяжка"]
+
+
+            if __name__ == "__main__":
+                all_tests = [
+                    test_add_to_end_and_strip,
+                    test_add_rejects_blank,
+                    test_complete_marks_only_that_task,
+                    test_complete_wrong_numbers,
+                    test_pending_keeps_order,
+                ]
+                for test in all_tests:
+                    test()
+                print("ВСЕ ТЕСТЫ ПРОШЛИ")
+          note: >-
+            Списки задач собраны вручную из словарей, тесты вызываются циклом по списку функций,
+            итоговая строка заглавными буквами.
+      wrongSolutions:
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                assert tasks == [{"title": "Хлеб", "done": False}]
+
+
+            def test_complete():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 1)
+                assert pending_titles(tasks) == ["Почта"]
+
+
+            if __name__ == "__main__":
+                test_add()
+                test_complete()
+                print("Все тесты прошли")
+          note: Только удобные обычные случаи — ни ошибок, ни границ.
+          expectMistake: missed-empty
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_empty():
+                raised = False
+                try:
+                    add_task([], "")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_empty()
+                test_complete_last()
+                test_complete_zero()
+                print("Все тесты прошли")
+          note: Пустое название проверено, а название из одних пробелов — нет.
+          expectMistake: missed-spaces
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_bad():
+                raised = False
+                try:
+                    add_task([], "  ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add()
+                test_add_bad()
+                test_complete_last()
+                test_complete_zero()
+                print("Все тесты прошли")
+          note: Названия в тестах без пробелов по краям — правило про strip не проверено.
+          expectMistake: missed-strip
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_bad():
+                raised = False
+                try:
+                    add_task([], "  ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 1)
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_pending():
+                tasks = [{"title": "Хлеб", "done": True}, {"title": "Почта", "done": False}]
+                assert pending_titles(tasks) == ["Почта"]
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_bad()
+                test_complete()
+                test_complete_zero()
+                test_pending()
+                print("Все тесты прошли")
+          note: complete_task вызывается, но результат отметки ничем не проверен.
+          expectMistake: missed-offby1
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_bad():
+                raised = False
+                try:
+                    add_task([], "  ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_first():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                add_task(tasks, "Цветы")
+                complete_task(tasks, 1)
+                assert pending_titles(tasks) == ["Почта", "Цветы"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_bad()
+                test_complete_first()
+                test_complete_zero()
+                print("Все тесты прошли")
+          note: Отмечается только первая задача из трёх — граница «последняя задача» не проверена.
+          expectMistake: missed-last
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_bad():
+                raised = False
+                try:
+                    add_task([], "  ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_bad()
+                test_complete_last()
+                test_complete_zero()
+                print("Все тесты прошли")
+          note: В тесте на номер 0 нет assert raised — он не может упасть.
+          expectMistake: missed-zero
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert tasks[0]["title"] == "Хлеб"
+
+
+            def test_add_bad():
+                raised = False
+                try:
+                    add_task([], "  ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert tasks[1]["done"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_too_big():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 2)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_pending():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                assert pending_titles(tasks) == ["Хлеб", "Почта"]
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_bad()
+                test_complete_last()
+                test_complete_zero()
+                test_complete_too_big()
+                test_pending()
+                print("Все тесты прошли")
+          note: pending_titles проверена только на списке, где ничего не выполнено.
+          expectMistake: missed-pending
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+            tasks = []
+
+
+            def test_add():
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                assert pending_titles(tasks) == ["Хлеб", "Почта"]
+
+
+            def test_complete_last():
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            if __name__ == "__main__":
+                test_add()
+                test_complete_last()
+                print("Все тесты прошли")
+          note: Общий список на уровне модуля — второй тест рассчитывает на задачи из первого.
+          expectMistake: not-independent
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_pending_after_complete():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                add_task(tasks, "Цветы")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == []
+
+
+            if __name__ == "__main__":
+                test_pending_after_complete()
+                print("Все тесты прошли")
+          note: Неверное ожидание — после одной отметки из трёх ждут пустой список.
+          expectMistake: wrong-expectation
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_complete():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 1)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            if __name__ == "__main__":
+                print("Все тесты прошли")
+          note: Тест не вызван в блоке запуска, а ожидание в нём неверное — при «Запустить» этого не видно.
+          expectMistake: wrong-expectation-silent
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                complete_task(tasks, 0)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            if __name__ == "__main__":
+                test_complete_zero()
+                print("Все тесты прошли")
+          note: Тест на ошибку без флага — ValueError останавливает программу.
+          expectMistake: unhandled-error
+        - code: |
+            import tasks
+
+
+            def test_add():
+                tasks = []
+                tasks.add_task(tasks, "Хлеб")
+                assert tasks == [{"title": "Хлеб", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_add()
+                print("Все тесты прошли")
+          note: Список назван tasks, как модуль, и закрыл его собой.
+          expectMistake: list-shadows-module
+        - code: |
+            import pytest
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_empty():
+                with pytest.raises(ValueError):
+                    add_task([], "")
+
+
+            if __name__ == "__main__":
+                test_add_empty()
+                print("Все тесты прошли")
+          note: pytest в тренажёре нет.
+          expectMistake: pytest-import
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def check_add():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            if __name__ == "__main__":
+                check_add()
+                print("Все тесты прошли")
+          note: Функция с проверками названа не по правилу test_….
+          expectMistake: no-tests
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_bad_number(number):
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, number)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_bad_number(0)
+                test_bad_number(2)
+                print("Все тесты прошли")
+          note: У функции test_… есть параметр — pytest и тренажёр вызывают тесты без аргументов.
+          expectMistake: test-with-params
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def add_task(tasks, title):
+                title = title.strip()
+                if title == "":
+                    raise ValueError("пустое название")
+                task = {"title": title, "done": False}
+                tasks.append(task)
+                return task
+
+
+            def test_add():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                assert tasks == [{"title": "Хлеб", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_add()
+                print("Все тесты прошли")
+          note: Копия функции в файле тестов — тесты проверяют копию, а не модуль.
+          expectMistake: copied-functions
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                assert tasks[0]["title"] = "Хлеб"
+
+
+            if __name__ == "__main__":
+                test_add()
+                print("Все тесты прошли")
+          note: Один знак = в assert.
+          expectMistake: assert-single-eq
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_bad():
+                raised = False
+                try:
+                    add_task([], "  ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_bad()
+                test_complete_last()
+                test_complete_zero()
+          note: Набор хороший, но строка «Все тесты прошли» удалена.
+          expectMistake: silent
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+            tasks = []
+
+
+            def test_add():
+                add_task(tasks, "Хлеб")
+                assert tasks == [{"title": "Хлеб", "done": False}]
+
+
+            def test_add_strips():
+                add_task(tasks, "  Почта ")
+                assert tasks == [{"title": "Почта", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_add()
+                test_add_strips()
+                print("Все тесты прошли")
+          note: Общий список вне функций — второй тест видит задачу из первого и падает уже при «Запустить».
+          expectMistake: shared-list
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+            START = [{"title": "Хлеб", "done": False}, {"title": "Почта", "done": False}]
+
+
+            def test_complete_first():
+                tasks = START.copy()
+                complete_task(tasks, 1)
+                assert pending_titles(tasks) == ["Почта"]
+
+
+            def test_complete_last():
+                tasks = START.copy()
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            if __name__ == "__main__":
+                test_complete_first()
+                test_complete_last()
+                print("Все тесты прошли")
+          note: Копия START.copy() — новый список, но словари в нём те же, и первый тест портит данные второго.
+          expectMistake: shared-list
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_empty():
+                tasks = []
+                raised = False
+                try:
+                    add_task(tasks, "")
+                except ValueError:
+                    raised == True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add_empty()
+                print("Все тесты прошли")
+          note: В except сравнение raised == True вместо присваивания — флаг не ставится.
+          expectMistake: flag-compare
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                return pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_empty():
+                raised = False
+                try:
+                    add_task([], "")
+                except ValueError:
+                    raised = True
+                return raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                return pending_titles(tasks) == ["Хлеб"]
+
+
+            if __name__ == "__main__":
+                print(test_add_strips())
+                print(test_add_empty())
+                print(test_complete_last())
+                print("Все тесты прошли")
+          note: return вместо assert — тесты возвращают True/False и упасть не могут.
+          expectMistake: return-not-assert
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+            tasks = []
+            add_task(tasks, "Хлеб")
+            add_task(tasks, "Почта")
+
+
+            def test_pending_start():
+                assert pending_titles(tasks) == ["Хлеб", "Почта"]
+
+
+            def test_complete_last():
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_strips():
+                items = []
+                add_task(items, "  Сыр ")
+                assert pending_titles(items) == ["Сыр"]
+
+
+            def test_add_bad():
+                for title in ["", "   "]:
+                    raised = False
+                    try:
+                        add_task([], title)
+                    except ValueError:
+                        raised = True
+                    assert raised
+
+
+            def test_complete_bad_numbers():
+                for number in [0, 2]:
+                    items = []
+                    add_task(items, "Сыр")
+                    raised = False
+                    try:
+                        complete_task(items, number)
+                    except ValueError:
+                        raised = True
+                    assert raised
+
+
+            if __name__ == "__main__":
+                test_pending_start()
+                test_complete_last()
+                test_add_strips()
+                test_add_bad()
+                test_complete_bad_numbers()
+                print("Все тесты прошли")
+          note: >-
+            Общий список вне функций: в порядке файла и поодиночке тесты проходят, а в обратном
+            порядке test_pending_start видит отметку из test_complete_last.
+          expectMistake: not-independent
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_spaces():
+                raised = False
+                try:
+                    add_task([], "   ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_spaces()
+                test_complete_last()
+                test_complete_zero()
+                print("Все тесты прошли")
+          note: Нет теста на номер больше числа задач — правило «вне диапазона сверху» не проверено.
+          expectMistake: missed-upper
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_spaces():
+                raised = False
+                try:
+                    add_task([], "   ")
+                except Exception:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_zero():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 0)
+                except Exception:
+                    raised = True
+                assert raised
+
+
+            def test_complete_too_big():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                raised = False
+                try:
+                    complete_task(tasks, 2)
+                except Exception:
+                    raised = True
+                assert raised
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_spaces()
+                test_complete_last()
+                test_complete_zero()
+                test_complete_too_big()
+                print("Все тесты прошли")
+          note: Все тесты на ошибку ловят except Exception — любое исключение, а не ValueError.
+          expectMistake: broad-except
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_complete_first():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 0)
+                assert pending_titles(tasks) == ["Почта"]
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_complete_first()
+                print("Все тесты прошли")
+          note: Номера считаются с 0, как индексы, — обычный тест вызывает complete_task(tasks, 0).
+          expectMistake: unhandled-error
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert tasks == [{"title": "Хлеб", "done": False}]
+
+
+            def test_add_spaces():
+                raised = False
+                try:
+                    add_task([], "   ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert tasks[0]["done"] == False
+                assert tasks[1]["done"] == True
+
+
+            def test_complete_bad_numbers():
+                for number in [0, 3]:
+                    tasks = []
+                    add_task(tasks, "Хлеб")
+                    add_task(tasks, "Почта")
+                    raised = False
+                    try:
+                        complete_task(tasks, number)
+                    except ValueError:
+                        raised = True
+                    assert raised
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_spaces()
+                test_complete_last()
+                test_complete_bad_numbers()
+                print("Все тесты прошли")
+          note: pending_titles не вызывается ни разу — отметки проверены только через "done".
+          expectMistake: missed-pending
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strips():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert pending_titles(tasks) == ["Хлеб"]
+
+
+            def test_add_spaces():
+                raised = False
+                try:
+                    add_task([], "   ")
+                except ValueError:
+                    raised = True
+                assert raised
+
+
+            def test_pending_empty():
+                assert pending_titles([]) == []
+
+
+            if __name__ == "__main__":
+                test_add_strips()
+                test_add_spaces()
+                test_pending_empty()
+                print("Все тесты прошли")
+          note: complete_task не тестируется вовсе.
+          expectMistake: missed-offby1
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_pending():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                assert pending_title(tasks) == ["Хлеб"]
+
+
+            if __name__ == "__main__":
+                test_pending()
+                print("Все тесты прошли")
+          note: Опечатка в имени функции — NameError. Нужен общий разбор ошибки, а не «нет функций test_».
+          expectMistake: null
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_add_strip():
+                tasks = []
+                add_task(tasks, "  Хлеб ")
+                assert tasks[0]["name"] == "Хлеб"
+
+
+            if __name__ == "__main__":
+                test_add_strip()
+                print("Все тесты прошли")
+          note: Ключ name вместо title — KeyError, общий разбор ошибки.
+          expectMistake: null
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_complete():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                task = complete_task(tasks, 1)
+                assert task["done"] == True
+
+
+            if __name__ == "__main__":
+                test_complete()
+                print("Все тесты прошли")
+          note: Ждёт, что complete_task вернёт задачу, а она возвращает None — TypeError, общий разбор.
+          expectMistake: null
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def test_complete_last():
+                tasks = []
+                add_task(tasks, "Хлеб")
+                add_task(tasks, "Почта")
+                complete_task(tasks, 2)
+                assert tasks[2]["done"] == True
+
+
+            if __name__ == "__main__":
+                test_complete_last()
+                print("Все тесты прошли")
+          note: Номер 2 взят как индекс 2 — IndexError, общий разбор ошибки.
+          expectMistake: null
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def two_tasks():
+                # Помощник, а не тест: имя без test_.
+                # Каждый вызов создаёт новый список из двух задач.
+                tasks = []
+                add_task(tasks, "Полить цветы")
+                add_task(tasks, "Вынести мусор")
+                return tasks
+
+
+            # Напиши тесты для трёх функций из tasks.py:
+            # обычные случаи, граничные случаи и ошибки (ValueError).
+            # Каждый тест готовит свои данные сам.
+
+
+            if __name__ == "__main__":
+                # вызови здесь свои тесты
+                print("Все тесты прошли")
+          note: "Стартовый код: тестов ещё нет — разбор no-tests, помощник two_tasks ему не мешает."
+          expectMistake: no-tests
+        - code: |
+            from tasks import add_task, complete_task, pending_titles
+
+
+            def two_tasks():
+                tasks = []
+                add_task(tasks, "Полить цветы")
+                add_task(tasks, "Вынести мусор")
+                return tasks
+
+
+            tasks = two_tasks()
+
+
+            def test_complete_first():
+                complete_task(tasks, 1)
+                assert pending_titles(tasks) == ["Вынести мусор"]
+
+
+            def test_complete_last():
+                complete_task(tasks, 2)
+                assert pending_titles(tasks) == ["Полить цветы"]
+
+
+            if __name__ == "__main__":
+                test_complete_first()
+                test_complete_last()
+                print("Все тесты прошли")
+          note: "Общий список вне функций через two_tasks() — второй тест видит отметку первого."
+          expectMistake: shared-list
+      mistakes:
+        - id: assert-single-eq
+          when:
+            errorType: SyntaxError
+            codeRegex: '^\s*assert\s[^=\n]*[^=!<>]=(?!=)'
+          why: >-
+            В `assert` стоит один знак `=`. Это присваивание, а в проверке нужно сравнение, поэтому
+            Python не понимает строку и не запускает файл.
+          try: Замени `=` на `==` в строке с `assert`.
+          verify: Нажми «Запустить» — SyntaxError должна исчезнуть.
+        - id: pytest-import
+          when:
+            errorIncludes: pytest
+          why: >-
+            В тренажёре pytest нет: это сторонняя библиотека, она стоит только у тебя на
+            компьютере, в окружении проекта. Поэтому `import pytest` и `pytest.raises` здесь не
+            работают.
+          try: >-
+            Пиши тесты на чистом Python. Для ошибок — приём с флагом: `raised = False`, вызов
+            внутри `try`, `except ValueError:` ставит флаг, в конце `assert raised`. `pytest.raises`
+            пригодится в блоке «Тесты в твоём проекте».
+        - id: unhandled-error
+          when:
+            errorType: ValueError
+          where: Тест, на котором остановилась программа (строка в traceback)
+          why: >-
+            Тест вызвал функцию с неверными данными, функция честно выбросила `ValueError`, а тест
+            её не поймал — и программа остановилась. Функция здесь права.
+          try: >-
+            Если это тест на ошибку, оберни вызов в приём с флагом из урока 9.4: `raised = False`,
+            вызов внутри `try`, `except ValueError:` ставит флаг в `True`, после — `assert raised`.
+            Если это обычный случай, проверь сами данные: номера задач идут с 1, а название не
+            пустое.
+          verify: Нажми «Запустить» — программа должна дойти до «Все тесты прошли».
+        - id: list-shadows-module
+          when:
+            errorType: AttributeError
+            errorIncludes: "'list' object has no attribute"
+          why: >-
+            Список внутри теста назван `tasks` — так же, как модуль. Список закрыл собой модуль, и
+            `tasks.add_task` ищет функцию у списка, а у списка её нет.
+          try: >-
+            Назови список иначе, например `items`. Или подключи функции строкой
+            `from tasks import add_task, complete_task, pending_titles` из стартового кода — тогда
+            имя `tasks` для списка свободно.
+        - id: test-with-params
+          when:
+            errorType: TypeError
+            errorIncludes: test_
+          where: Функция `test_…` с параметром в скобках
+          why: >-
+            Тренажёр сам вызывает каждую функцию `test_…` без аргументов. У твоей тестовой функции
+            есть параметр, поэтому такой вызов падает с TypeError. pytest тоже не знает, что
+            передать в `number`: сам он подставляет только свои особые параметры, например
+            `tmp_path`.
+          try: >-
+            Переименуй её во вспомогательную без `test_` в имени, например `check_bad_number(number)`.
+            А тест без параметров, например `test_bad_numbers()`, пусть вызывает её с нужными
+            номерами.
+        - id: shared-list
+          when:
+            errorType: AssertionError
+            # Список на уровне модуля (строка без отступа), который потом передают в функции
+            # или копируют в тестах.
+            codeRegex: '^(\w+)[ \t]*=[ \t]*(?:\[|two_tasks\(\))[\s\S]*?(?:\b(?:add_task|complete_task|pending_titles)\([ \t]*\1\b|(?<![=!<>])=[ \t]*\1(?:\.copy\(\))?[ \t]*$)'
+          where: Список задач, созданный вне функций теста
+          why: >-
+            Тесты делят один список: он создан вне функций, и каждый тест видит задачи и отметки,
+            которые оставили другие. Поэтому тест падает при общем запуске, хотя ожидание в нём
+            может быть верным. `.copy()` не спасает, если внутри словари: в копии списка лежат те
+            же самые словари задач.
+          try: >-
+            Пусть каждый тест в начале сам создаёт свой список — `tasks = []` или
+            `tasks = two_tasks()` внутри функции теста — и сам добавляет в него всё нужное.
+          verify: Нажми «Запустить» — программа должна дойти до «Все тесты прошли».
+        - id: flag-compare
+          when:
+            errorType: AssertionError
+            # Отдельная строка-сравнение вроде «raised == True»: флаг не меняется.
+            codeRegex: '^[ \t]+\w+[ \t]*==[ \t]*True[ \t]*(?:#.*)?$'
+          where: Строка с флагом внутри `except`
+          why: >-
+            В `except` стоит сравнение `raised == True`: оно ничего не меняет, и флаг остаётся
+            `False`. Поэтому `assert raised` падает, хотя функция честно выбросила `ValueError`.
+          try: Поставь флаг присваиванием с одним знаком `=`, то есть `raised = True`.
+          verify: Нажми «Запустить» — программа должна дойти до «Все тесты прошли».
+        - id: wrong-expectation
+          when:
+            errorType: AssertionError
+          where: Упавший `assert` (строка в traceback)
+          why: >-
+            Тест упал на верных функциях из `tasks.py`. Значит, ожидание в нём не совпадает с
+            описанием: ошибка в тесте, а не в функциях.
+          try: >-
+            Найди в traceback строку с упавшим `assert` и посчитай ожидание заново по описанию,
+            шаг за шагом. Частые причины: `pending_titles` возвращает только невыполненные задачи,
+            номера идут с 1, а пробелы по краям названия убираются.
+          verify: Нажми «Запустить» — программа должна напечатать «Все тесты прошли».
+        - id: no-tests
+          when:
+            failedTest: t-has
+            # В коде нет ни одного «def test_…»: иначе t-has не прошла из-за ошибки выполнения.
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]*def[ \t]+test_)'
+          why: >-
+            В файле нет ни одной функции, имя которой начинается с `test_`. Тренажёр, как и pytest,
+            находит тесты только по такому имени.
+          try: >-
+            Назови тесты `test_…`, например `test_add_empty_title`, и вызови их в блоке
+            `if __name__ == "__main__":`.
+        - id: wrong-expectation-silent
+          when:
+            failedTest: t-ref
+            outputIncludes: Все тесты прошли
+          why: >-
+            Программа печатает «Все тесты прошли», но тренажёр сам вызвал твои тесты — и какой-то
+            из них упал на верных функциях. Скорее всего, этот тест не вызывается в блоке
+            `if __name__`, поэтому при «Запустить» его падения не видно.
+          try: >-
+            Вызови все тесты в блоке `if __name__ == "__main__":` и нажми «Запустить»: traceback
+            покажет упавший `assert`. Потом сверь ожидание в нём с описанием функции.
+        - id: not-independent
+          when:
+            failedTest: t-alone
+            outputIncludes: Все тесты прошли
+          why: >-
+            В порядке файла тесты проходят, а по отдельности или в обратном порядке какой-то из них
+            падает. Он рассчитывает на данные, которые приготовил или изменил другой тест, —
+            например, на общий список задач вне функций. pytest может запустить один тест отдельно
+            или в другом порядке, и тогда такой тест упадёт.
+          try: >-
+            Пусть каждый тест в начале сам создаёт свой список — `tasks = []` или
+            `tasks = two_tasks()` внутри функции теста — и сам добавляет в него всё, что нужно для
+            проверки.
+          verify: Тест «Тесты не зависят друг от друга» должен стать зелёным.
+        - id: copied-functions
+          when:
+            codeRegex: '^def (add_task|complete_task|pending_titles)\('
+          where: Функции из `tasks.py`, скопированные в файл тестов
+          why: >-
+            В файле тестов свои копии функций из `tasks.py`, и тесты проверяют копии. Ошибку в
+            настоящем модуле они не заметят — а тренажёр подставляет версии с ошибками именно в
+            `tasks.py`.
+          try: Удали копии функций из `test_tasks.py` и оставь импорт `from tasks import …` из стартового кода.
+        - id: return-not-assert
+          when:
+            outputIncludes: Все тесты прошли
+            # В функции test_… есть строка return.
+            codeRegex: '^def test_\w*\([^)]*\):[^\n]*(?:\n(?:[ \t][^\n]*)?)*?\n[ \t]+return\b'
+          where: Тесты с `return`
+          why: >-
+            Тест возвращает результат сравнения через `return`, но на это значение никто не
+            смотрит, поэтому тест не может упасть. Тест падает только на `assert` или на ошибке.
+          try: Замени в тестах `return сравнение` на `assert сравнение`, а `return raised` — на `assert raised`.
+        - id: missed-empty
+          when:
+            failedTest: t-m-empty
+            outputIncludes: Все тесты прошли
+          where: Тесты для `add_task`
+          why: >-
+            Ни один тест не упал на версии `add_task`, которая молча добавляет задачу с пустым
+            названием. Правило «пустое название — `ValueError`» пока ничем не проверено.
+          try: Добавь тест на ошибку для пустого названия — приёмом с флагом из урока 9.4.
+        - id: missed-spaces
+          when:
+            failedTest: t-m-spaces
+            outputIncludes: Все тесты прошли
+          where: Тесты для `add_task`
+          why: >-
+            Есть версия `add_task`, которая проверяет пустоту до того, как убрать пробелы: название
+            из одних пробелов проходит в ней как настоящее. Твои тесты её не заметили — этот особый
+            вход не проверен.
+          try: Добавь тест на ошибку для названия, в котором нет ничего, кроме пробелов.
+        - id: missed-strip
+          when:
+            failedTest: t-m-strip
+            outputIncludes: Все тесты прошли
+          where: Тесты для `add_task`
+          why: >-
+            Есть версия `add_task`, которая сохраняет название вместе с пробелами по краям. Ни один
+            тест этого не заметил: правило «пробелы по краям убираются» не проверено.
+          try: >-
+            Добавь тест: добавь задачу с пробелами по краям названия и проверь, какое название
+            сохранилось — в самой задаче или в `pending_titles`.
+        - id: missed-offby1
+          when:
+            failedTest: t-m-offby1
+            outputIncludes: Все тесты прошли
+          where: Тесты для `complete_task`
+          why: >-
+            Есть версия `complete_task`, которая отмечает не задачу с этим номером, а следующую.
+            Твои тесты её не заметили: нет теста, который после `complete_task` проверяет, какая
+            именно задача стала выполненной.
+          try: >-
+            Добавь тест: отметь задачу и проверь результат — какие задачи остались невыполненными
+            (`pending_titles`) или какое значение `"done"` у нужной задачи.
+        - id: missed-last
+          when:
+            failedTest: t-m-last
+            outputIncludes: Все тесты прошли
+          where: Тесты для `complete_task`
+          why: >-
+            Есть версия `complete_task`, которая считает последний номер неверным и выбрасывает
+            `ValueError`. Твои тесты её не заметили: граница «последняя задача» не проверена.
+          try: Добавь тест, где отмечается последняя задача списка — номер, равный `len(tasks)`.
+        - id: missed-zero
+          when:
+            failedTest: t-m-zero
+            outputIncludes: Все тесты прошли
+          where: Тесты для `complete_task`
+          why: >-
+            Есть версия `complete_task` без проверки нижней границы: номер 0 превращается в индекс
+            −1 и молча отмечает последнюю задачу. Твои тесты её не заметили — номер 0 не проверен,
+            или тест на него ничего не утверждает.
+          try: >-
+            Добавь тест на ошибку для номера 0 приёмом с флагом. Проверь, что в конце теста стоит
+            `assert raised`: без него тест не может упасть.
+        - id: broad-except
+          when:
+            failedTest: t-m-type
+            outputIncludes: Все тесты прошли
+            codeRegex: 'except\s*:|except\s+(?:Base)?Exception\b'
+          where: Строка с `except` в тесте на ошибку
+          why: >-
+            `except Exception` (и `except:` без типа) ловит любое исключение. Тренажёр подставил
+            версию `complete_task`, которая на номер 0 выбрасывает не ValueError, а другое
+            исключение, и твой тест её пропустил: флаг поднялся, хотя функция нарушила описание.
+          try: Лови ровно тот тип, который обещает описание, — `except ValueError`.
+        - id: missed-upper
+          when:
+            failedTest: t-m-upper
+            outputIncludes: Все тесты прошли
+          where: Тесты для `complete_task`
+          why: >-
+            Есть версия `complete_task` без проверки верхней границы: на номер больше числа задач
+            она падает с IndexError, а не с ValueError. Твои тесты её не заметили: либо теста на
+            такой номер нет, либо он ловит любое исключение, например через `except Exception`.
+          try: >-
+            Добавь тест на ошибку для номера `len(tasks) + 1` приёмом с флагом и лови в нём именно
+            `except ValueError`.
+        - id: missed-pending
+          when:
+            failedTest: t-m-pending
+            outputIncludes: Все тесты прошли
+          where: Тесты для `pending_titles`
+          why: >-
+            Есть версия `pending_titles`, которая возвращает все названия подряд, и выполненные
+            тоже. Твои тесты её не заметили: `pending_titles` не проверена на списке, где часть
+            задач уже выполнена.
+          try: >-
+            Добавь тест, где часть задач отмечена выполненной, и проверь, что `pending_titles`
+            вернула только остальные.
+        - id: silent
+          when:
+            failedTest: t-io
+            # Строки «Все тесты прошли» нет во всём коде: иначе t-io не прошла из-за ошибки.
+            codeRegex: '(?<![\s\S])(?![\s\S]*Все тесты прошли)'
+          why: >-
+            Тесты в порядке, но программа не печатает строку «Все тесты прошли». Тест «Вывод
+            программы» ждёт её после вызова тестов.
+          try: >-
+            Верни в блок `if __name__ == "__main__":` после вызовов тестов строку
+            `print("Все тесты прошли")`.
+      afterPass: >-
+        Набор ловит все подставленные ошибки, и тесты не зависят друг от друга. Такой же набор ты
+        соберёшь для своего проекта в блоке «Тесты в твоём проекте»: там pytest найдёт тесты сам,
+        а блок `if __name__` ему не помешает. Одно улучшение: если в тестах на ошибку нет проверки,
+        что список не изменился, добавь её после `assert raised` — например, `assert tasks == []`
+        для пустого названия.
+      skills: [assert-checks, edge-cases, exception-tests, pytest-basics]
+      noHintsBeforeAttempt: true
+
+  - id: bug-task
+    type: exercise
+    title: "Задание 2: ошибка из сообщения"
+    exercise:
+      id: m9-l6-e2
+      kind: fix
+      title: Выполненные задачи не удаляются
+      statement: |-
+        В список задач добавили кнопку «Удалить выполненные». За неё отвечает функция
+        `clear_done(tasks)`: она возвращает список без выполненных задач, а невыполненные
+        остаются в прежнем порядке. Пользователь пишет: «Иногда после „Удалить выполненные“
+        выполненная задача остаётся в списке».
+
+        Сделай по порядку, как в уроке 9.5:
+
+        1. Найди расположение задач, на котором функция ошибается. Пробуй разные списки через
+           «Запустить».
+        2. Запиши этот случай в тест `test_…` и убедись, что тест падает на нынешней функции.
+        3. Исправь функцию так, чтобы тест прошёл. Тест не удаляй: он будет сторожить эту
+           ошибку.
+
+        Чтобы не набирать словари целиком, в стартовом коде есть помощник `make_task`:
+        `make_task("Хлеб", True)` — то же самое, что `{"title": "Хлеб", "done": True}`.
+
+        Проверяй в тесте то, что функция **возвращает**, а не исходный список. Верная версия может
+        вернуть новый список, а может удалить задачи из самого списка — тест должен проходить на
+        обеих.
+      input: "Ввода нет: тесты вызывают функцию напрямую."
+      output: "Одна строка: `Все тесты прошли`."
+      constraints:
+        - "Регрессионный тест остаётся в файле: на старой функции он падает, на исправленной проходит."
+        - Подсказки откроются после первой проверки — сначала попробуй сам.
+      starterCode: |
+        def clear_done(tasks):
+            for task in tasks:
+                if task["done"]:
+                    tasks.remove(task)
+            return tasks
+
+
+        def make_task(title, done):
+            # Помощник: make_task("Хлеб", True) — то же, что {"title": "Хлеб", "done": True}
+            return {"title": title, "done": done}
+
+
+        # Сообщение пользователя: «Иногда после „Удалить выполненные“
+        # выполненная задача остаётся в списке».
+        # 1. Найди случай, на котором это происходит, и запиши его в тест.
+        # 2. Убедись, что тест падает, и исправь функцию.
+        # Опыт для «Запустить» — убери # в начале строки и меняй список:
+        # print(clear_done([make_task("Хлеб", True), make_task("Почта", False)]))
+
+
+        if __name__ == "__main__":
+            # вызови здесь свои тесты
+            print("Все тесты прошли")
+      tests:
+        - id: t-io
+          kind: io
+          title: Вывод программы
+          expected: Все тесты прошли
+          compare:
+            mode: contains
+            ignoreCase: true
+            ignoreSpaces: true
+        - id: t-has
+          kind: assert
+          title: Есть тест
+          code: |
+            assert [name for name, value in list(globals().items())
+                    if name.startswith("test_") and callable(value)]
+          message: В файле есть хотя бы одна функция, имя которой начинается с `test_`.
+        - id: t-catches
+          kind: assert
+          title: Тест ловит ошибку из сообщения
+          code: |
+            def _original(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            _space = {"__name__": "check", "__builtins__": __builtins__}
+            exec(compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), _space)
+            _space["clear_done"] = _original
+            _caught = False
+            for _name, _value in list(_space.items()):
+                if _name.startswith("test_") and callable(_value):
+                    try:
+                        _value()
+                    except Exception:
+                        _caught = True
+            assert _caught
+          message: Хотя бы один твой тест падает на исходной версии `clear_done` — той, на которую жалуется пользователь.
+        - id: t-ref
+          kind: assert
+          title: Тесты проходят на верной функции с новым списком
+          code: |
+            def _reference(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            _space = {"__name__": "check", "__builtins__": __builtins__}
+            exec(compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), _space)
+            _space["clear_done"] = _reference
+            for _name, _value in list(_space.items()):
+                if _name.startswith("test_") and callable(_value):
+                    _value()
+          message: >-
+            Твои тесты проходят на верной версии `clear_done`, которая возвращает новый список и
+            не меняет исходный.
+        - id: t-ref-inplace
+          kind: assert
+          title: Тесты проходят на верной функции, которая меняет сам список
+          code: |
+            def _in_place(tasks):
+                for task in tasks[:]:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            _space = {"__name__": "check", "__builtins__": __builtins__}
+            exec(compile(open(__file__, encoding="utf-8").read(), __file__, "exec"), _space)
+            _space["clear_done"] = _in_place
+            for _name, _value in list(_space.items()):
+                if _name.startswith("test_") and callable(_value):
+                    _value()
+          message: >-
+            Твои тесты проходят и на верной версии `clear_done`, которая удаляет выполненные задачи
+            из самого списка и возвращает его.
+        - id: c-apart
+          kind: call
+          title: Выполненные задачи через одну
+          example: true
+          call: 'clear_done([{"title": "Хлеб", "done": True}, {"title": "Почта", "done": False}, {"title": "Цветы", "done": True}])'
+          expected: "[{'title': 'Почта', 'done': False}]"
+        - id: c-none
+          kind: call
+          title: Ни одной выполненной
+          example: true
+          call: 'clear_done([{"title": "Хлеб", "done": False}, {"title": "Почта", "done": False}])'
+          expected: "[{'title': 'Хлеб', 'done': False}, {'title': 'Почта', 'done': False}]"
+        - id: c-neighbors
+          kind: call
+          title: Две выполненные подряд
+          call: 'clear_done([{"title": "Хлеб", "done": True}, {"title": "Почта", "done": True}, {"title": "Цветы", "done": False}])'
+          expected: "[{'title': 'Цветы', 'done': False}]"
+        - id: c-all
+          kind: call
+          title: Все задачи выполнены
+          edge: true
+          call: 'clear_done([{"title": "Хлеб", "done": True}, {"title": "Почта", "done": True}, {"title": "Цветы", "done": True}, {"title": "Мусор", "done": True}])'
+          expected: "[]"
+        - id: c-empty
+          kind: call
+          title: Пустой список
+          edge: true
+          call: clear_done([])
+          expected: "[]"
+        - id: c-order
+          kind: call
+          title: Порядок невыполненных сохраняется
+          call: 'clear_done([{"title": "Хлеб", "done": False}, {"title": "Почта", "done": True}, {"title": "Цветы", "done": False}, {"title": "Мусор", "done": True}, {"title": "Звонок", "done": True}, {"title": "Книга", "done": False}])'
+          expected: "[{'title': 'Хлеб', 'done': False}, {'title': 'Цветы', 'done': False}, {'title': 'Книга', 'done': False}]"
+      criteria:
+        - "Есть регрессионный тест `test_…`: на исходной функции он падает, на исправленной проходит."
+        - Функция возвращает только невыполненные задачи в прежнем порядке — при любом расположении выполненных.
+        - >-
+          Тесты проверяют то, что функция возвращает, и проходят на любой верной версии функции —
+          и с новым списком, и с удалением из самого списка.
+        - Программа печатает «Все тесты прошли».
+      hints:
+        - >-
+          Попробуй разные расположения выполненных задач: одна, несколько через одну, несколько
+          подряд, в конце списка. На каком из них выполненная задача остаётся? Выведи результат
+          через `print` — с помощником `make_task` это одна строка — и нажми «Запустить».
+        - |-
+          То же явление на числах:
+
+          ```python
+          nums = [1, 1, 2]
+          for n in nums:
+              if n == 1:
+                  nums.remove(n)
+          print(nums)   # [1, 2]
+          ```
+
+          После `remove` все следующие элементы сдвигаются на место влево, а цикл идёт к
+          следующему месту — и перескакивает через соседа удалённого. Поэтому удалять из списка,
+          по которому идёт цикл, опасно. Это та же ловушка, что в задаче про пустые пункты в
+          списке покупок из урока 4.3.
+        - |-
+          Каркас:
+
+          ```text
+          def clear_done(tasks):
+              result = []
+              для каждой задачи в tasks:
+                  если задача не выполнена — добавить её в result
+              вернуть result
+
+
+          def test_…():
+              tasks = [две выполненные задачи подряд, за ними невыполненная — через make_task]
+              assert clear_done(tasks) == [только невыполненная задача]
+          ```
+      solution:
+        code: |
+          def clear_done(tasks):
+              result = []
+              for task in tasks:
+                  if not task["done"]:
+                      result.append(task)
+              return result
+
+
+          def make_task(title, done):
+              # Помощник: make_task("Хлеб", True) — то же, что {"title": "Хлеб", "done": True}
+              return {"title": title, "done": done}
+
+
+          def test_clear_done_neighbors():
+              tasks = [
+                  make_task("Купить хлеб", True),
+                  make_task("Полить цветы", True),
+                  make_task("Вынести мусор", False),
+              ]
+              assert clear_done(tasks) == [make_task("Вынести мусор", False)]
+
+
+          def test_clear_done_keeps_open():
+              tasks = [make_task("Купить хлеб", False), make_task("Полить цветы", False)]
+              assert clear_done(tasks) == [
+                  make_task("Купить хлеб", False),
+                  make_task("Полить цветы", False),
+              ]
+
+
+          if __name__ == "__main__":
+              test_clear_done_neighbors()
+              test_clear_done_keeps_open()
+              print("Все тесты прошли")
+        explanation: >-
+          Исходная функция удаляет задачи из списка, по которому идёт цикл. После `remove`
+          следующие задачи сдвигаются на место влево, а цикл переходит к следующему месту и
+          перескакивает через задачу, которая встала на место удалённой. Поэтому ошибка видна
+          только на соседних выполненных задачах, а через одну всё работает — как с пустыми
+          пунктами списка покупок в уроке 4.3. Исправление — не менять список во время перебора, а
+          собрать новый из невыполненных задач. `test_clear_done_neighbors` сначала упал на старой
+          функции — значит, он действительно ловит эту ошибку и не даст ей вернуться. Второй тест
+          проверяет, что невыполненные задачи функция не трогает.
+      altSolutions:
+        - code: |
+            def clear_done(tasks):
+                for task in tasks[:]:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def test_done_in_a_row():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                result = clear_done(tasks)
+                titles = []
+                for task in result:
+                    titles.append(task["title"])
+                assert titles == ["Цветы"]
+
+
+            if __name__ == "__main__":
+                test_done_in_a_row()
+                print("Все тесты прошли")
+          note: Цикл по копии tasks[:], удаление из оригинала; тест сравнивает названия.
+        - code: |
+            def clear_done(tasks):
+                i = 0
+                while i < len(tasks):
+                    if tasks[i]["done"]:
+                        del tasks[i]
+                    else:
+                        i += 1
+                return tasks
+
+
+            def test_all_done():
+                tasks = [{"title": "Хлеб", "done": True}, {"title": "Почта", "done": True}]
+                assert clear_done(tasks) == []
+
+
+            def test_one_done():
+                tasks = [{"title": "Хлеб", "done": True}, {"title": "Почта", "done": False}]
+                assert clear_done(tasks) == [{"title": "Почта", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_all_done()
+                test_one_done()
+                print("Все тесты прошли")
+          note: while с ручным индексом — индекс растёт только тогда, когда задачу не удалили.
+        - code: |
+            def clear_done(tasks):
+                return [task for task in tasks if not task["done"]]
+
+
+            def test_regression_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": False},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": True},
+                ]
+                assert clear_done(tasks) == [{"title": "Хлеб", "done": False}], "выполненная задача осталась"
+
+
+            if __name__ == "__main__":
+                test_regression_neighbors()
+                print("Все тесты прошли")
+          note: Генератор списка (в курсе не изучался, но решение верное); выполненные подряд — в конце списка.
+        - code: |
+            def clear_done(tasks):
+                for i in range(len(tasks) - 1, -1, -1):
+                    if tasks[i]["done"]:
+                        del tasks[i]
+                return tasks
+
+
+            def test_two_done_together():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                result = clear_done(tasks)
+                assert len(result) == 1
+                assert result[0]["title"] == "Цветы"
+
+
+            test_two_done_together()
+            print("Все тесты прошли")
+          note: >-
+            Перебор с конца: удаление не сдвигает задачи, которые цикл ещё не прошёл. Тест вызван
+            без блока if __name__ и проверяет длину и название.
+        - code: |
+            def clear_done(tasks):
+                for task in tasks.copy():
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def make_task(title, done):
+                return {"title": title, "done": done}
+
+
+            # Сообщение пользователя: выполненная задача осталась в списке.
+            # Остаётся, когда две выполненные стоят подряд.
+            def test_clear_done_two_in_a_row():
+                tasks = [
+                    make_task("Хлеб", False),
+                    make_task("Почта", True),
+                    make_task("Цветы", True),
+                    make_task("Мусор", False),
+                ]
+                assert clear_done(tasks) == [make_task("Хлеб", False), make_task("Мусор", False)]
+
+
+            if __name__ == "__main__":
+                print(clear_done([make_task("a", True), make_task("b", True)]))
+                test_clear_done_two_in_a_row()
+                print("Все тесты прошли")
+          note: Цикл по tasks.copy(), как в уроке 4.3; отладочный print оставлен — проверка вывода его допускает.
+        - code: |
+            def clear_done(tasks):
+                changed = True
+                while changed:
+                    changed = False
+                    for task in tasks:
+                        if task["done"]:
+                            tasks.remove(task)
+                            changed = True
+                            break
+                return tasks
+
+
+            def test_done_at_end():
+                tasks = [
+                    {"title": "Хлеб", "done": False},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": True},
+                ]
+                result = clear_done(tasks)
+                assert len(result) == 1
+                assert result[0] == {"title": "Хлеб", "done": False}
+
+
+            if __name__ == "__main__":
+                test_done_at_end()
+                print("Все тесты прошли")
+          note: while повторяет проход, пока есть что удалить; после каждого remove цикл for прерывается.
+        - code: |
+            def test_bug_from_message():
+                before = [
+                    {"title": "Зарядка", "done": True},
+                    {"title": "Душ", "done": True},
+                    {"title": "Завтрак", "done": False},
+                    {"title": "Работа", "done": True},
+                ]
+                expected = [{"title": "Завтрак", "done": False}]
+                assert clear_done(before) == expected
+
+
+            def clear_done(tasks):
+                kept = []
+                for task in tasks:
+                    if not task["done"]:
+                        kept.append(task)
+                return kept
+
+
+            print("Проверяю...")
+            test_bug_from_message()
+            print()
+            print("Все тесты прошли")
+          note: Тест написан выше функции, вызовы на уровне модуля, отладочный вывод перед итоговой строкой.
+      wrongSolutions:
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            if __name__ == "__main__":
+                print("Все тесты прошли")
+          note: Функция исправлена, но регрессионного теста нет.
+          expectMistake: no-tests
+        - code: |
+            def clear_done(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Тест красный — ошибка поймана, но функция ещё не исправлена.
+          expectMistake: red-now-fix
+        - code: |
+            def clear_done(tasks):
+                for i in range(len(tasks)):
+                    if tasks[i]["done"]:
+                        del tasks[i]
+                return tasks
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Удаление по индексу в цикле по range — список укорачивается, индекс выходит за край.
+          expectMistake: index-shift
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Условие наоборот — остаются выполненные задачи.
+          expectMistake: inverted
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_clear_done():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": False},
+                    {"title": "Цветы", "done": True},
+                ]
+                assert clear_done(tasks) == [{"title": "Почта", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_clear_done()
+                print("Все тесты прошли")
+          note: Функция исправлена, но тест взят на удобном случае «через одну» — старая функция его проходит.
+          expectMistake: no-regression
+        - code: |
+            def clear_done(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Цикл повторён дважды — для двух подряд хватает, для четырёх нет.
+          expectMistake: still-skips
+        - code: |
+            def clear_done(tasks):
+                for task in tasks[:]:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                clear_done(tasks)
+                assert tasks == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Тест проверяет исходный список, а не то, что функция вернула.
+          expectMistake: checks-original-list
+        - code: |
+            import pytest
+
+
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: import pytest — в тренажёре его нет.
+          expectMistake: pytest-import
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+          note: Всё верно, но строка «Все тесты прошли» удалена.
+          expectMistake: silent
+        - code: |
+            def clear_done(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Почта", "done": True}, {"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Функция не исправлена, а ожидание в тесте списано с её вывода.
+          expectMistake: fitted-expectation
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                clear_done(tasks)
+                assert tasks == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Функция исправлена через новый список, а тест по привычке смотрит исходный список.
+          expectMistake: unused-result
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task["title"])
+                return result
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == ["Цветы"]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Функция возвращает названия, а не задачи, и тест подогнан под это.
+          expectMistake: returns-titles
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if task["done"]:
+                        continue
+                    result = result + [task]
+                return result
+
+
+            def test_neighbors_and_input_untouched():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                result = clear_done(tasks)
+                assert result == [{"title": "Цветы", "done": False}]
+                assert len(tasks) == 3
+
+
+            if __name__ == "__main__":
+                test_neighbors_and_input_untouched()
+                print("Все тесты прошли")
+          note: Функция верная, но тест требует, чтобы исходный список не менялся, — условие этого не обещает.
+          expectMistake: checks-input-untouched
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                    return result
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: return внутри цикла — функция возвращает результат после первой задачи.
+          expectMistake: red-after-fix
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_clear_done():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                result = clear_done(tasks)
+                assert result == ["Цветы"]
+
+
+            if __name__ == "__main__":
+                test_clear_done()
+                print("Все тесты прошли")
+          note: Функция исправлена, но тест ждёт список названий вместо задач.
+          expectMistake: red-after-fix
+        - code: |
+            def clear_done(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                        break
+                return tasks
+
+
+            def test_neighbors():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: break после первого remove — удаляется только одна выполненная задача, тест честно красный.
+          expectMistake: red-now-fix
+        - code: |
+            def clear_done(tasks):
+                for i in range(len(tasks)):
+                    if tasks[i]["done"]:
+                        tasks.pop(i)
+                return tasks
+
+
+            def test_clear_done():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                test_clear_done()
+                print("Все тесты прошли")
+          note: pop по номеру в цикле по range — та же IndexError, что с del.
+          expectMistake: index-shift
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_clear_done():
+                tasks = [
+                    {"title": "Хлеб", "done": True},
+                    {"title": "Почта", "done": True},
+                    {"title": "Цветы", "done": False},
+                ]
+                result = clear_done(tasks)
+                assert result[0]["name"] == "Цветы"
+
+
+            if __name__ == "__main__":
+                test_clear_done()
+                print("Все тесты прошли")
+          note: Ключ name вместо title — KeyError в тесте, общий разбор ошибки.
+          expectMistake: null
+        - code: |
+            def clear_done(tasks):
+                result = []
+                for task in tasks:
+                    if not task["done"]:
+                        result.append(task)
+                return result
+
+
+            def test_neighbors():
+                tasks = [make_task("Хлеб", True), make_task("Почта", True), make_task("Цветы", False)]
+                assert clear_don(tasks) == [make_task("Цветы", False)]
+
+
+            def make_task(title, done):
+                return {"title": title, "done": done}
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: Опечатка в имени функции — NameError, общий разбор ошибки, а не «нет функций test_».
+          expectMistake: null
+        - code: |
+            def clear_done(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def make_task(title, done):
+                return {"title": title, "done": done}
+
+
+            def test_one_by_one():
+                tasks = [make_task("Хлеб", True), make_task("Почта", False), make_task("Цветы", True)]
+                assert clear_done(tasks) == [make_task("Почта", False)]
+
+
+            if __name__ == "__main__":
+                test_one_by_one()
+                print("Все тесты прошли")
+          note: Функция не тронута, тест на удобном случае «через одну» — ошибку он не воспроизводит.
+          expectMistake: no-regression
+        - code: |
+            def clear_done(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def make_task(title, done):
+                return {"title": title, "done": done}
+
+
+            def test_neighbors():
+                tasks = [make_task("Хлеб", True), make_task("Почта", True), make_task("Цветы", False)]
+                assert clear_done(tasks) == [make_task("Цветы", False)]
+
+
+            if __name__ == "__main__":
+                test_neighbors()
+                print("Все тесты прошли")
+          note: "Красный тест через make_task — функция ещё не исправлена."
+          expectMistake: red-now-fix
+        - code: |
+            def clear_done(tasks):
+                for task in tasks:
+                    if task["done"]:
+                        tasks.remove(task)
+                return tasks
+
+
+            def test_neighbors():
+                tasks = [{"title": "Хлеб", "done": True}, {"title": "Почта", "done": True}, {"title": "Цветы", "done": False}]
+                assert clear_done(tasks) == [{"title": "Цветы", "done": False}]
+
+
+            if __name__ == "__main__":
+                print("Все тесты прошли")
+          note: "Тест написан, но не вызван в блоке запуска, а функция ещё прежняя."
+          expectMistake: still-skips
+      mistakes:
+        - id: pytest-import
+          when:
+            errorIncludes: pytest
+          why: >-
+            В тренажёре pytest нет: это сторонняя библиотека, она стоит только у тебя на компьютере,
+            в окружении проекта.
+          try: Убери `import pytest` — регрессионный тест здесь пишется на чистом Python через `assert`.
+        - id: index-shift
+          when:
+            errorType: IndexError
+            # Удаление по номеру места: del tasks[i], tasks.pop(i) или tasks.remove(tasks[i]).
+            codeRegex: '\bdel[ \t]+\w+\[|\.pop\(|\.remove\([ \t]*\w+\['
+          where: Цикл в `clear_done`, который удаляет задачи по номеру
+          why: >-
+            Список укорачивается прямо во время перебора: после каждого удаления задач становится
+            меньше, а `range(len(tasks))` посчитан заранее, для полного списка. Номера мест
+            уезжают, и цикл доходит до места, которого уже нет.
+          try: >-
+            Не удаляй задачи из списка, по которому идёт цикл. Собери новый список: пустой
+            `result`, в цикле — `append` невыполненных задач, в конце — `return result`.
+          verify: Нажми «Запустить» — IndexError должна исчезнуть.
+        - id: inverted
+          when:
+            failedTest: c-none
+            codeRegex: 'if\s+\w+\[["'']done["'']\]\s*(==\s*True\s*)?:\s*\n\s*\w+\.append\('
+          where: Условие перед `append` в `clear_done`
+          why: >-
+            Условие стоит наоборот: в новый список попадают выполненные задачи, а невыполненные
+            пропадают. Из списка, где ничего не выполнено, функция возвращает пустой список.
+          try: Добавляй в новый список задачи, у которых `"done"` — `False`, то есть невыполненные.
+        - id: returns-titles
+          when:
+            failedTest: c-none
+            codeRegex: '\.append\([ \t]*\w+\[["'']title["'']\][ \t]*\)'
+          where: Строка с `append` в `clear_done`
+          why: >-
+            Функция складывает в новый список только названия задач, а должна возвращать сами
+            задачи — словари с `"title"` и `"done"`, как в исходном списке.
+          try: Добавляй в новый список задачу целиком — `result.append(task)` — и поправь ожидание в тесте.
+        - id: unused-result
+          when:
+            errorType: AssertionError
+            # Вызов clear_done(...) отдельной строкой: то, что функция вернула, никуда не попадает.
+            codeRegex: '^[ \t]+clear_done\([^\n]*\)[ \t]*$'
+          where: Строка с вызовом `clear_done` в тесте
+          why: >-
+            Тест вызывает `clear_done`, но не смотрит на то, что она вернула, а проверяет исходный
+            список. Верная версия может собрать новый список и исходный не трогать — тогда такой
+            тест упадёт, даже если функция работает правильно.
+          try: >-
+            Проверяй то, что функция вернула: `assert clear_done(tasks) == […]` или
+            `result = clear_done(tasks)`, а потом `assert result == […]`.
+          verify: Нажми «Запустить» и посмотри, что теперь говорит тест о самой функции.
+        - id: red-now-fix
+          when:
+            errorType: AssertionError
+            # Функция всё ещё удаляет задачи из списка, по которому идёт цикл.
+            codeRegex: 'for[ \t]+\w+[ \t]+in[ \t]+(\w+)[ \t]*:(?:\n[ \t][^\n]*)*?\n[ \t]+\1\.remove\('
+          where: Функция `clear_done` (тест упал на ней)
+          why: >-
+            Тест упал — значит, он воспроизводит ошибку из сообщения. Это и есть красный тест:
+            теперь исправь функцию, а тест оставь как есть.
+          try: >-
+            Не удаляй задачи из списка, по которому идёт цикл: собери новый список из
+            невыполненных. Увидеть ошибку своими глазами поможет `print` того, что вернула функция
+            на твоём примере.
+          verify: Нажми «Запустить» — тот же тест должен пройти, а программа напечатать «Все тесты прошли».
+        - id: red-after-fix
+          when:
+            errorType: AssertionError
+          where: Упавший `assert` в тесте (строка в traceback)
+          why: >-
+            Тест падает на твоей нынешней версии `clear_done`. Значит, ожидание в тесте и то, что
+            функция возвращает, расходятся: либо в функции ещё есть ошибка, либо ожидание
+            посчитано неверно.
+          try: >-
+            Выведи через `print`, что функция вернула на примере из теста, и сравни с описанием:
+            остаются словари невыполненных задач — не названия — в прежнем порядке. Вернулось не
+            то — ищи ошибку в функции. Вернулось верное — поправь ожидание в тесте.
+          verify: Нажми «Запустить» — тест должен пройти, а программа напечатать «Все тесты прошли».
+        - id: fitted-expectation
+          when:
+            failedTest: t-ref
+            outputIncludes: Все тесты прошли
+            # Функция осталась прежней: цикл по списку и remove из него же.
+            codeRegex: 'for[ \t]+(\w+)[ \t]+in[ \t]+(\w+)[ \t]*:[ \t]*\n[ \t]+if[ \t]+\1\[["'']done["'']\][ \t]*:[ \t]*\n[ \t]+\2\.remove\([ \t]*\1[ \t]*\)'
+          where: Ожидание в тесте
+          why: >-
+            Функция ещё прежняя, а твой тест на ней проходит — и не проходит на исправленной
+            версии. Похоже, ожидание в тесте списано с того, что вернула старая функция, а не
+            посчитано по описанию: после «Удалить выполненные» в списке не должно остаться ни одной
+            задачи с `"done": True`.
+          try: >-
+            Посчитай ожидание по описанию: только невыполненные задачи, в прежнем порядке. Тест
+            должен упасть на нынешней функции — это и есть красный тест. Потом исправь функцию.
+        - id: no-tests
+          when:
+            failedTest: t-has
+            # В коде нет ни одного «def test_…»: иначе t-has не прошла из-за ошибки выполнения.
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]*def[ \t]+test_)'
+          why: >-
+            В файле нет ни одной функции `test_…`. Без регрессионного теста ошибка может тихо
+            вернуться при следующей правке — и никто этого не заметит.
+          try: >-
+            Напиши тест `test_…` на случай из сообщения пользователя, вызови его в блоке
+            `if __name__ == "__main__":` и проверь: на старой функции он должен падать.
+        - id: no-regression
+          when:
+            failedTest: t-catches
+            outputIncludes: Все тесты прошли
+          why: >-
+            Твои тесты проходят и на исходной функции — той, на которую жалуется пользователь.
+            Значит, они не воспроизводят ошибку: выполненные задачи в них стоят так, что старая
+            функция справляется.
+          try: >-
+            Поищи расположение, на котором старая функция ошибается: попробуй несколько выполненных
+            задач в разных местах списка. Этот случай и запиши в тест.
+          verify: Тест «Тест ловит ошибку из сообщения» должен стать зелёным.
+        - id: still-skips
+          when:
+            failedTest: c-all
+            outputIncludes: Все тесты прошли
+          why: >-
+            Функция всё ещё оставляет выполненные задачи, когда их несколько подряд: например, из
+            четырёх выполненных подряд одна или две остаются в списке. Похоже, она по-прежнему
+            удаляет задачи из списка, по которому идёт цикл.
+          try: >-
+            Не удаляй задачи из списка, по которому идёт цикл, — собери новый список из
+            невыполненных. И проверь, что твой тест вызывается в блоке `if __name__`: тогда при
+            «Запустить» он покажет, что функция ещё ошибается.
+        - id: checks-original-list
+          when:
+            failedTest: t-ref
+            outputIncludes: Все тесты прошли
+          why: >-
+            Твой тест не проходит на верной версии функции, которая возвращает новый список и не
+            меняет исходный. Скорее всего, тест смотрит на исходный список после вызова, а не на
+            то, что функция вернула. Такой тест зависит от способа исправления, а не от результата.
+          try: >-
+            Сравнивай в тесте то, что вернула функция: `assert clear_done(tasks) == […]`. И сверь
+            ожидание: остаются только невыполненные задачи в прежнем порядке.
+        - id: checks-input-untouched
+          when:
+            failedTest: t-ref-inplace
+            outputIncludes: Все тесты прошли
+          why: >-
+            Твой тест не проходит на верной версии функции, которая удаляет выполненные задачи
+            прямо из списка и возвращает его. Похоже, тест требует, чтобы исходный список не
+            менялся, — а описание этого не обещает.
+          try: >-
+            Проверяй только то, что функция вернула: `assert clear_done(tasks) == […]` — без
+            проверок исходного списка после вызова.
+        - id: silent
+          when:
+            failedTest: t-io
+            # Строки «Все тесты прошли» нет во всём коде: иначе t-io не прошла из-за ошибки.
+            codeRegex: '(?<![\s\S])(?![\s\S]*Все тесты прошли)'
+          why: Тесты в порядке, но программа не печатает строку «Все тесты прошли».
+          try: >-
+            Верни в блок `if __name__ == "__main__":` после вызовов тестов строку
+            `print("Все тесты прошли")`.
+      afterPass: >-
+        Ошибка найдена тестом, исправлена, и теперь её сторожит регрессионный тест: если кто-то
+        снова начнёт удалять задачи прямо во время перебора, тест покраснеет. Одно улучшение:
+        добавь тест, где выполнены все задачи подряд, — он проверит исправление на длинной серии.
+      skills: [regression-tests, edge-cases, lists]
+      noHintsBeforeAttempt: true
+
+  - id: own-project
+    type: checklist
+    title: Тесты в твоём проекте
+    body: >-
+      Этот блок — на компьютере, и лучше в отдельный день: на него нужно 20–30 минут. Работай в
+      своём проекте «Список задач» (или в учебном мини-проекте из урока 8.2) с включённым
+      окружением. Команды — для Windows и «Командной строки» (cmd), как в уроках 8.3 и 9.3, а
+      отличия для macOS и Linux — в «Если не получается».
+    items:
+      - id: prepare
+        text: >-
+          **Подготовь проект.** Открой «Командную строку» в папке проекта, включи окружение — в
+          начале строки появится `(.venv)` — и проверь pytest: `python -m pytest --version`. Если
+          его нет, поставь: `python -m pip install pytest` — и допиши строку `pytest` в
+          `requirements.txt`.
+        help: >-
+          Окружение включается командой `.venv\Scripts\activate`, как в уроках 8.3 и 9.3. На macOS
+          и Linux — `source .venv/bin/activate` и `python3` вместо `python`. Для установки нужен
+          интернет: без него остановись здесь и вернись позже. `No module named pytest` после
+          установки — окружение не включено или pytest поставлен в другое.
+      - id: importable
+        text: >-
+          **Проверь, что модуль с функциями подключается тихо.** Всё, что запускает меню и
+          спрашивает ввод, должно стоять под `if __name__ == "__main__":` (урок 8.2). Иначе pytest
+          при импорте запустит программу.
+        help: >-
+          Симптом: pytest падает ещё при сборе тестов — в отчёте `ERROR collecting` и сообщение
+          про чтение ввода, примерно `reading from stdin while output is captured`. Значит, при
+          импорте сработал `input()`.
+          Перенеси вызов главного цикла под `if __name__ == "__main__":`. В проекте после урока
+          8.2 функции лежат в `todo/tasks.py`, а меню — в `main.py` под этим условием, так что
+          здесь всё уже в порядке.
+      - id: write
+        text: >-
+          **Напиши тесты.** Рядом с `main.py` создай файл `test_tasks.py` и напиши в нём не меньше
+          пяти тестов: обычный случай, пустой список, неверный номер задачи, пустое название и
+          регрессионный — на ошибку, которую ты уже встречал в своём проекте.
+        help: |-
+          Если такой ошибки в проекте ещё не было, возьми случай, который раньше проверял вручную
+          после каждой правки, и запиши его тестом.
+
+          Импорт — по устройству проекта, например `from todo.tasks import add_task, mark_done`.
+          Вызывать тесты внизу файла не нужно: pytest найдёт их сам. Тест на ошибку на компьютере
+          короче, чем в тренажёре:
+
+          ```python
+          import pytest
+          from todo.tasks import add_task
+
+
+          def test_empty_title():
+              with pytest.raises(ValueError):
+                  add_task([], "   ")
+          ```
+
+          Если твоя функция на неверный номер не выбрасывает исключение, а возвращает `False`
+          (как `mark_done` в учебном мини-проекте), проверка проще: `assert not mark_done(tasks, 0)`.
+          Если пустое название проверяет меню, а не функция, перенеси проверку в функцию с
+          `raise ValueError` (урок 9.4) — тогда её можно проверить тестом. А если функция печатает
+          результат вместо `return`, сначала исправь это: assert видит то, что функция вернула, а
+          не то, что она напечатала (урок 9.1).
+      - id: tmp-path
+        text: |-
+          **Проверь сохранение во временной папке**, чтобы не испортить настоящий файл с задачами.
+          Если твои функции пока не принимают путь к файлу, загляни в «Если не получается»:
+
+          ```python
+          from todo.storage import load_tasks, save_tasks
+
+
+          def test_save_and_load(tmp_path):
+              path = tmp_path / "tasks.json"
+              save_tasks([{"title": "Купить хлеб", "done": False}], path)
+              assert load_tasks(path) == [{"title": "Купить хлеб", "done": False}]
+          ```
+        help: >-
+          `tmp_path` — параметр теста: pytest сам передаёт в него путь к новой пустой папке
+          (объект `Path`, как в уроке 7.2), а после тестов папку можно не убирать. Если в
+          `save_tasks` и `load_tasks` имя файла зашито внутри (`DATA_FILE`), добавь параметр со
+          значением по умолчанию: `def save_tasks(tasks, path=DATA_FILE):` и
+          `def load_tasks(path=DATA_FILE):`, а внутри открывай `path`. Меню в `main.py` менять не
+          придётся. Имена функций в примере замени на свои.
+      - id: run
+        text: >-
+          **Запусти:** `python -m pytest -v`. Все тесты должны быть `PASSED`. Потом сломай одну
+          функцию нарочно, запусти снова, найди в отчёте упавший тест — и верни всё как было.
+        help: >-
+          В конце отчёта примерно такая строка: `6 passed in 0.05s` — число тестов и время у
+          тебя будут другими. `collected 0 items` — файл или функции названы не `test_…` либо
+          терминал открыт не в папке проекта. `No module named 'todo'` — pytest не видит папку
+          проекта: запускай его из этой папки командой `python -m pytest`, она добавляет текущую
+          папку к местам, где Python ищет модули.
+      - id: commit
+        text: >-
+          **Сохрани в Git:** `git status`, затем `git add` для `test_tasks.py`, `requirements.txt`
+          и изменённых модулей, и `git commit -m "Тесты для списка задач"`.
+        help: >-
+          pytest создаёт папку `.pytest_cache`, а Python — `__pycache__`. Им в истории не место:
+          проверь, что в `.gitignore` есть строки `.pytest_cache/` и `__pycache__/` (уроки 8.4 и
+          9.3), и допиши недостающую. Если `git status` показывает эти папки, значит, строки
+          ещё нет.
+    coach: Отмечай пункт по результату в терминале, а не по прочтении.
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - "Тест падал на верных функциях — ожидание разошлось с описанием. Считай ожидание по условию, а не по выводу программы: урок 9.1."
+      - "Тесты не замечали ошибок на границах, в пустом названии, на номере 0 — повтори группы случаев и границы: урок 9.2. Не проходил тест «Тесты не зависят друг от друга» — урок 9.3. Тесты на ValueError не получались или ловили любое исключение — повтори приём с флагом: урок 9.4."
+      - "Регрессионный тест не падал на старой функции — повтори порядок «красный → зелёный»: урок 9.5. Не нашёл, почему `clear_done` оставляет задачу, — повтори удаление из списка во время перебора: урок 4.3."
+      - "Если оба задания решены без подсказок, модуль пройден — можно переходить к модулю 10. Блок «Тесты в твоём проекте» сделай в отдельный день."
+    question: Выбери два своих теста из первого задания и объясни, какую ошибку ловит каждый.
+    answer: >-
+      Например, так. `test_complete_zero` ловит версию без проверки нижней границы: номер 0
+      превращается в индекс −1 и молча отмечает последнюю задачу, а тест ждёт `ValueError`.
+      `test_add_spaces_only` ловит проверку пустоты до `strip`: название из одних пробелов прошло
+      бы как настоящее, а тест ждёт `ValueError`.

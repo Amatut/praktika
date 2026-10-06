@@ -1,0 +1,2331 @@
+id: m8-l2
+module: m8
+number: "8.2"
+title: "Свои модули и пакет: проект из нескольких файлов"
+objective: >-
+  Выносить функции в свой модуль, подключать их через import и from … import, а код запуска
+  прятать под if __name__ == "__main__", чтобы модуль импортировался без лишних действий.
+minutes: [25, 30]
+prerequisites: [m8-l1, m5-l5]
+skills: [modules-imports, function-design]
+environment: python
+
+story:
+  title: Девятьсот строк в одном рюкзаке
+  fictional: true
+  text: >-
+    Тимур из походного клуба «Азимут» два года дописывал программу для сборов: вес рюкзаков,
+    продукты, список снаряжения — всё в одном файле, который разросся до девятисот строк. Когда
+    Тимуру взялась помогать сестра Соня, она полдня искала, где считается вес палатки, а потом
+    поправила не тот кусок и сломала расчёт продуктов. Тимур разложил код по файлам: `gear.py` —
+    снаряжение, `food.py` — продукты, `main.py` — меню. Теперь каждую часть можно открыть и
+    проверить отдельно, а функцию подсчёта веса — подключить и в другой программе клуба.
+
+why: >-
+  Когда код растёт, его раскладывают по смыслу в разные файлы — как вещи по ящикам. Например, загрузка и
+  сохранение задач живут в `storage.py`, а `main.py` только спрашивает команды и вызывает нужные
+  функции.
+
+usedIn: >-
+  Так устроен любой проект больше пары сотен строк. Библиотеки, которые ты будешь ставить через pip
+  в уроке 8.3, — это те же модули и пакеты, только написанные другими людьми. А pytest в модуле 9
+  импортирует твои модули, чтобы проверить их функции.
+
+steps:
+  - id: modules
+    type: theory
+    title: Модуль — это файл
+    body: |-
+      Пока программа короткая, всё помещается в один файл. Когда в нём сотни строк, нужное
+      приходится искать, а правка в одном месте ломает другое. Поэтому код раскладывают по смыслу
+      в разные файлы.
+
+      **Модуль** — это любой файл `.py`. Модули стандартной библиотеки ты уже подключал:
+      `import random` (урок 3.5), `from pathlib import Path` (урок 7.2), `from datetime import date`
+      (урок 8.1). Свой модуль подключается точно так же. Пусть рядом с программой лежит файл
+      `gear.py` с функцией `total_weight`. Есть два способа.
+
+      ```python
+      import gear
+
+      print(gear.total_weight([1.2, 0.8]))
+      ```
+
+      `import gear` выполняет файл gear.py и даёт программе одно имя — `gear`. Функции модуля
+      достают через точку: `gear.total_weight(...)`. Часть `gear.` перед именем функции —
+      **приставка**, как `random.` в уроке 3.5.
+
+      ```python
+      from gear import total_weight
+
+      print(total_weight([1.2, 0.8]))
+      ```
+
+      `from gear import total_weight` кладёт в программу само имя функции, и приставка `gear.`
+      не нужна. Зато имени `gear` в программе нет. Несколько имён перечисляют через запятую:
+      `from gear import total_weight, per_person`. Бывает и короткое имя для модуля:
+      `import gear as g`, дальше — `g.total_weight(...)`.
+
+      Имя модуля пишут **без `.py`**: `import gear`, а не `import gear.py`.
+
+      **Где Python ищет модуль.** Сначала — в папке запускаемой программы, потом — в стандартной
+      библиотеке и в библиотеках, которые ты установишь сам (урок 8.3). Отсюда правило: не называй
+      свои файлы как стандартные
+      модули — `random.py`, `json.py`, `datetime.py`. Такой файл закроет собой настоящий модуль, и
+      `import random` подключит твой черновик.
+
+      **Модуль выполняется при импорте.** Встретив `import`, Python выполняет файл модуля сверху
+      вниз: создаёт функции и переменные, а заодно запускает всё остальное, что стоит вне
+      функций, — например, `print`.
+
+      Частое заблуждение: «import копирует код модуля в мою программу». Нет: модуль живёт
+      отдельно, со своими именами, а программа получает к нему доступ — через имя модуля или через
+      имена, которые она забрала из него.
+    simpler: >-
+      Модуль — файл с функциями. `import gear` — «возьми ящик gear», `gear.функция()` — «достань
+      из ящика». `from gear import функция` — «достань сразу, ящик не нужен».
+    coach: >-
+      Правило одного ящика: в модуле — функции на одну тему, в main.py — только запуск.
+
+  - id: units-module
+    type: example
+    title: Модуль клуба
+    body: |-
+      Клуб ходит и по зарубежным картам, где расстояния в милях. Функции перевода Тимур вынес в
+      модуль `units.py`. Он лежит рядом с программой — его видно в блоке «Файлы задания»:
+
+      ```python
+      KM_IN_MILE = 1.609
+
+
+      def km_to_miles(km):
+          return round(km / KM_IN_MILE, 1)
+
+
+      def miles_to_km(miles):
+          return round(miles * KM_IN_MILE, 1)
+      ```
+
+      Программа ниже — это `main.py`. Нажми «Запустить».
+    code: |-
+      import units
+
+      print(units.km_to_miles(42.2))
+      print(units.miles_to_km(3))
+    files:
+      units.py: |
+        KM_IN_MILE = 1.609
+
+
+        def km_to_miles(km):
+            return round(km / KM_IN_MILE, 1)
+
+
+        def miles_to_km(miles):
+            return round(miles * KM_IN_MILE, 1)
+    notes:
+      - line: 1
+        text: >-
+          `import units` находит файл units.py в папке программы и выполняет его. Имя модуля — без
+          `.py`.
+      - line: 3
+        text: >-
+          Функция модуля — через точку: сначала имя модуля, потом имя функции. Марафонские
+          42,2 км — это 26,2 мили (программа печатает `26.2`).
+      - line: 4
+        text: >-
+          Вторая функция переводит обратно: 3 мили — это 4,8 км. Константу `KM_IN_MILE`
+          программа не трогает — ею пользуются функции внутри модуля, но при желании её можно
+          достать: `units.KM_IN_MILE`.
+    tryIt: >-
+      Замени первую строку на `from units import km_to_miles` и запусти: программа остановится с
+      NameError — имени `units` больше нет. Почини: добавь `miles_to_km` в ту же строку import
+      через запятую и убери приставку `units.` у обоих вызовов.
+    coach: >-
+      Модуль один, а подключать его можно в любой программе клуба — достаточно положить файл рядом.
+
+  - id: import-twice
+    type: predict
+    title: Сколько раз загрузится модуль?
+    prompt: |-
+      В модуле `greet.py` есть `print` вне функции:
+
+      ```python
+      print("Загружаю greet")
+
+
+      def hello(name):
+          return f"Привет, {name}!"
+      ```
+
+      Программа ниже подключает его дважды, двумя разными способами. Как думаешь, что она
+      выведет?
+    code: |-
+      import greet
+      from greet import hello
+      print(hello("Тимур"))
+    files:
+      greet.py: |
+        print("Загружаю greet")
+
+
+        def hello(name):
+            return f"Привет, {name}!"
+    options:
+      - |-
+        Загружаю greet
+        Загружаю greet
+        Привет, Тимур!
+      - |-
+        Загружаю greet
+        Привет, Тимур!
+      - Привет, Тимур!
+    answer: |-
+      Загружаю greet
+      Привет, Тимур!
+    explanation: >-
+      При первом импорте Python выполняет файл модуля целиком — и `print` в нём тоже — и
+      запоминает готовый модуль. Второй импорт, в какой бы форме он ни был, файл заново не
+      выполняет: `from greet import hello` берёт функцию из уже загруженного модуля. Модуль
+      выполняется один раз за запуск программы. Но всё, что стоит в нём вне функций, выполнится
+      в каждой программе, которая его подключит. Поэтому в модуле держат определения, а не
+      действия, — как быть с проверками, разберём в следующей теории.
+    coach: >-
+      Если бы в greet.py стоял `input()`, любая программа с `import greet` начала бы с чужого
+      вопроса.
+
+  - id: practice-gear
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m8-l2-e1
+      kind: repeat
+      title: Рюкзак на всех
+      statement: |-
+        Перед походом Тимур взвешивает общие вещи — палатку, котелок, аптечку — и делит груз
+        поровну. Функции для этого уже написаны в модуле `gear.py` (он лежит рядом с программой,
+        его видно в блоке «Файлы задания»):
+
+        ```python
+        def total_weight(weights):
+            total = 0
+            for weight in weights:
+                total += weight
+            return round(total, 1)
+
+
+        def per_person(total, people):
+            return round(total / people, 1)
+        ```
+
+        `total_weight` получает список весов и возвращает общий вес, `per_person` — общий вес и
+        число людей и возвращает долю каждого.
+
+        Допиши `main.py`: чтение ввода уже есть, осталось подключить модуль `gear` и посчитать
+        его функциями общий вес и вес на каждого. Для ввода `1.2 0.8 2.5` и `3` вывод такой:
+
+        ```text
+        Общий вес: 4.5 кг
+        На каждого: 1.5 кг
+        ```
+      input: Первая строка — веса вещей в килограммах через пробел, вторая — число людей.
+      output: "Две строки: `Общий вес: <число> кг` и `На каждого: <число> кг`."
+      constraints:
+        - Считай функциями из `gear.py`, не переписывай их в `main.py`.
+        - >-
+          Модуль `gear.py` менять не нужно. Проверка подложит и поправленный клубом `gear.py` —
+          программа должна сразу считать по нему.
+      files:
+        gear.py: |
+          def total_weight(weights):
+              total = 0
+              for weight in weights:
+                  total += weight
+              return round(total, 1)
+
+
+          def per_person(total, people):
+              return round(total / people, 1)
+      starterCode: |
+        # Подключи модуль gear
+
+
+        weights = []
+        for part in input().split():
+            weights.append(float(part))
+        people = int(input())
+
+        # Посчитай функциями из gear общий вес и вес на каждого и выведи две строки:
+        # Общий вес: … кг
+        # На каждого: … кг
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "1.2 0.8 2.5\n3\n"
+          expected: |-
+            Общий вес: 4.5 кг
+            На каждого: 1.5 кг
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "3.4 1.1 0.7 2.2\n2\n"
+          expected: |-
+            Общий вес: 7.4 кг
+            На каждого: 3.7 кг
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: одна вещь, один человек"
+          edge: true
+          stdin: "5\n1\n"
+          expected: |-
+            Общий вес: 5.0 кг
+            На каждого: 5.0 кг
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: мелочь на четверых"
+          edge: true
+          stdin: "0.3 0.3 0.3\n4\n"
+          expected: |-
+            Общий вес: 0.9 кг
+            На каждого: 0.2 кг
+          compare:
+            ignoreSpaces: true
+        - id: t5
+          kind: assert
+          title: Модуль gear подключён
+          stdin: "1.2 0.8 2.5\n3\n"
+          code: |-
+            import sys
+
+            assert "gear" in sys.modules, "модуль gear не подключён"
+          message: Программа подключает модуль gear через `import gear` или `from gear import …`.
+        - id: t6
+          kind: io
+          title: "Клуб поправил gear.py: округление до сотых"
+          stdin: "1.25 1.5\n3\n"
+          files:
+            gear.py: |
+              def total_weight(weights):
+                  total = 0
+                  for weight in weights:
+                      total += weight
+                  return round(total, 2)
+
+
+              def per_person(total, people):
+                  return round(total / people, 2)
+          expected: |-
+            Общий вес: 2.75 кг
+            На каждого: 0.92 кг
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - Модуль `gear` подключён через `import gear` или `from gear import …`.
+        - >-
+          Общий вес и вес на каждого посчитаны функциями модуля, а не копиями или формулами в
+          `main.py`: если клуб поправит gear.py, программа сразу считает по-новому.
+        - Вывод — две строки в формате из условия, для любых весов и числа людей.
+      hints:
+        - >-
+          Функции уже написаны, программе осталось их подключить и передать им числа из ввода.
+          Посмотри на пример «Модуль клуба»: какая строка подключает units и как потом
+          вызываются его функции?
+        - >-
+          На другом модуле: `import units`, затем `units.km_to_miles(10)`. Или
+          `from units import km_to_miles`, затем просто `km_to_miles(10)`. Обрати внимание:
+          `per_person` ждёт уже посчитанный общий вес, а не список весов.
+        - |-
+          Каркас (чтение ввода уже есть в стартовом коде):
+          ```text
+          import …
+
+          total = gear.…(weights)
+          print(f"Общий вес: {…} кг")
+          print(f"На каждого: {gear.…(total, people)} кг")
+          ```
+      solution:
+        code: |
+          import gear
+
+          weights = []
+          for part in input().split():
+              weights.append(float(part))
+          people = int(input())
+
+          total = gear.total_weight(weights)
+          print(f"Общий вес: {total} кг")
+          print(f"На каждого: {gear.per_person(total, people)} кг")
+        explanation: >-
+          `import gear` находит файл gear.py в папке программы и даёт имя `gear`, а функции модуля
+          вызываются через точку. Сначала `total_weight` складывает веса, потом её результат вместе
+          с числом людей уходит в `per_person`. Подойдёт и `from gear import total_weight,
+          per_person` — тогда вызовы пишутся без приставки.
+      altSolutions:
+        - code: |
+            from gear import total_weight, per_person
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = total_weight(weights)
+            share = per_person(total, people)
+            print("Общий вес:", total, "кг")
+            print("На каждого:", share, "кг")
+          note: from … import обоих имён, вывод через запятые в print.
+        - code: |
+            import gear as g
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = g.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {g.per_person(total, people)} кг")
+          note: Короткое имя модуля через as.
+        - code: |
+            import gear
+
+
+            def main():
+                weights = []
+                for part in input().split():
+                    weights.append(float(part))
+                people = int(input())
+                total = gear.total_weight(weights)
+                print(f"Общий вес: {total} кг")
+                print(f"На каждого: {gear.per_person(total, people)} кг")
+
+
+            main()
+          note: Своя функция main() из урока 5.5 — проверка не должна её отклонять.
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total_weight = gear.total_weight(weights)
+            per_person = gear.per_person(total_weight, people)
+            print(f"Общий вес: {total_weight} кг")
+            print(f"На каждого: {per_person} кг")
+          note: >-
+            Результаты названы так же, как функции модуля: после import gear эти имена в main.py
+            свободны.
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            print("Общий вес:", gear.total_weight(weights), "кг")
+            print("На каждого:", gear.per_person(gear.total_weight(weights), people), "кг")
+          note: Вложенный вызов вместо переменной, print через запятые.
+      wrongSolutions:
+        - code: |
+            import gear.py
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = gear.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {gear.per_person(total, people)} кг")
+          note: Имя модуля с .py.
+          expectMistake: import-with-py
+        - code: |
+            from gear import total_weight
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {gear.per_person(total, people)} кг")
+          note: После from … import используют приставку gear.
+          expectMistake: prefix-after-from
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {per_person(total, people)} кг")
+          note: После import gear функции вызваны без приставки.
+          expectMistake: no-prefix
+        - code: |
+            from gear import total_weight
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {per_person(total, people)} кг")
+          note: Второе имя не перечислено в from … import.
+          expectMistake: missing-name
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            print(f"Общий вес: {gear.total_weight(weights)} кг")
+            print(f"На каждого: {gear.per_person(weights, people)} кг")
+          note: В per_person передан список весов вместо общего веса.
+          expectMistake: list-to-per-person
+        - code: |
+            def total_weight(weights):
+                total = 0
+                for weight in weights:
+                    total += weight
+                return round(total, 1)
+
+
+            def per_person(total, people):
+                return round(total / people, 1)
+
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {per_person(total, people)} кг")
+          note: Функции скопированы в main.py, модуль не подключён.
+          expectMistake: copied
+        - code: |
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = round(sum(weights), 1)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {round(total / people, 1)} кг")
+          note: Всё посчитано вручную, без модуля.
+          expectMistake: not-imported
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = gear.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {gear.per_person(people, total)} кг")
+          note: Аргументы per_person перепутаны местами.
+          expectMistake: swapped-args
+        - code: |
+            import Gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = Gear.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {Gear.per_person(total, people)} кг")
+          note: Имя модуля с большой буквы.
+          expectMistake: module-not-found
+        - code: |
+            import gear
+
+            weights = input().split()
+            people = int(input())
+
+            total = gear.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {gear.per_person(total, people)} кг")
+          note: В модуль переданы строки из split, а не числа.
+          expectMistake: strings-to-module
+        - code: |
+            # Подключи модуль gear
+
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = gear.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {gear.per_person(total, people)} кг")
+          note: Вызовы через gear. написаны, а строку import забыли.
+          expectMistake: forgot-import
+        - code: |
+            import gear as g
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = g.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {gear.per_person(total, people)} кг")
+          note: Модуль подключён как g, а в одном вызове приставка gear.
+          expectMistake: alias-prefix
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            print(f"Общий вес: {gear.total_weight(weights)} кг")
+            print(f"На каждого: {gear.per_person(total, people)} кг")
+          note: Имя параметра total из def per_person принято за готовую переменную.
+          expectMistake: param-as-variable
+        - code: |
+            from gear import total_weight, per_person
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            print(f"Общий вес: {total_weight(weights)} кг")
+            print(f"На каждого: {per_person(total, people)} кг")
+          note: Та же путаница с параметром total, но через from … import.
+          expectMistake: param-as-variable
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = gear.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {gear.per_person(total, peple)} кг")
+          note: Опечатка в своей переменной при import gear — разбор про приставку не должен сработать.
+          expectMistake: null
+        - code: |
+            from gear import total_weight, per_person
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {per_person(totl, people)} кг")
+          note: Опечатка в своей переменной при from … import — разбор про список имён не должен сработать.
+          expectMistake: null
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = round(sum(weights), 1)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {round(total / people, 1)} кг")
+          note: gear подключён, но всё посчитано вручную.
+          expectMistake: manual-calc
+        - code: |
+            import gear
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            total = gear.total_weight(weights)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {round(total / people, 1)} кг")
+          note: total_weight из модуля, а per_person заменена формулой.
+          expectMistake: manual-calc
+        - code: |
+            # Подключи модуль gear
+
+
+            weights = []
+            for part in input().split():
+                weights.append(float(part))
+            people = int(input())
+
+            # Посчитай функциями из gear общий вес и вес на каждого и выведи две строки:
+            # Общий вес: … кг
+            # На каждого: … кг
+            total = round(sum(weights), 1)
+            print(f"Общий вес: {total} кг")
+            print(f"На каждого: {round(total / people, 1)} кг")
+          note: Комментарии стартового кода оставлены, модуль не подключён, всё вручную.
+          expectMistake: not-imported
+      mistakes:
+        - id: import-with-py
+          when:
+            errorIncludes: gear.py
+          why: >-
+            В `import` пишут имя модуля, а не имя файла. Точку Python читает как «модуль `py`
+            внутри папки `gear`», а `gear` — обычный файл, не папка. Отсюда и `'gear' is not a
+            package` в сообщении.
+          try: "Убери `.py`: `import gear`."
+          verify: Ошибка ModuleNotFoundError должна исчезнуть, а «Пример 1» — пройти.
+        - id: module-not-found
+          when:
+            errorType: ModuleNotFoundError
+          why: >-
+            Python не нашёл модуль с таким именем в папке программы. Имя в `import` должно
+            совпадать с именем файла без `.py` буква в букву — и большие буквы тоже различаются.
+          try: 'Файл называется `gear.py`, значит, подключай `import gear` — маленькими буквами.'
+          verify: Ошибка ModuleNotFoundError должна исчезнуть, а «Пример 1» — пройти.
+        - id: forgot-import
+          when:
+            errorIncludes: name 'gear' is not defined
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]*(import|from)[ \t]+gear\b)'
+          why: >-
+            Вызовы `gear.…` есть, а строки, которая подключает модуль, нет. Пока модуль не
+            подключён, имя `gear` программе неизвестно.
+          try: 'Первой строкой main.py напиши `import gear`.'
+          verify: Ошибка NameError должна исчезнуть, а «Пример 1» — пройти.
+        - id: alias-prefix
+          when:
+            errorIncludes: name 'gear' is not defined
+            codeRegex: '^import gear as \w+'
+          why: >-
+            После `import gear as g` модуль доступен только под коротким именем, которое стоит после
+            `as`. Имени `gear` в программе нет.
+          try: >-
+            Пиши все вызовы через имя после `as` — или подключи модуль просто `import gear`.
+          verify: Ошибка NameError должна исчезнуть, а «Пример 1» — пройти.
+        - id: prefix-after-from
+          when:
+            errorIncludes: name 'gear' is not defined
+            codeRegex: '^from gear import'
+          why: >-
+            `from gear import total_weight` забирает из модуля только перечисленное имя. Самого
+            имени `gear` в программе после этого нет, поэтому `gear.per_person` не находится.
+          try: >-
+            Выбери один способ. Или `import gear` и все вызовы через `gear.`, или
+            `from gear import total_weight, per_person` и вызовы без приставки.
+          verify: Ошибка NameError должна исчезнуть, а «Пример 1» — пройти.
+        - id: param-as-variable
+          when:
+            errorIncludes: name 'total' is not defined
+          why: >-
+            В строке `def per_person(total, people)` слово `total` — имя параметра, оно живёт только
+            внутри gear.py. В main.py переменной `total` нет, пока ты её не создашь.
+          try: >-
+            Сначала сохрани общий вес в переменную — `total = gear.total_weight(weights)` (или без
+            `gear.`, если подключал через from), — а потом передай её в `per_person`.
+          verify: Ошибка NameError должна исчезнуть, а «Пример 1» — пройти.
+        - id: no-prefix
+          when:
+            errorType: NameError
+            codeRegex: '^import gear\b[\s\S]*(?<![.\w])(total_weight|per_person)\s*\('
+          why: >-
+            После `import gear` функции живут внутри модуля. Имя `total_weight` без приставки
+            программа не знает — только `gear.total_weight`.
+          try: Допиши приставку `gear.` перед каждой функцией модуля.
+          verify: Ошибка NameError должна исчезнуть, а «Пример 1» — пройти.
+        - id: missing-name
+          when:
+            errorType: NameError
+            codeRegex: '^from gear import(?![^\n]*\bper_person\b)[\s\S]*(?<![.\w])per_person\s*\(|^from gear import(?![^\n]*\btotal_weight\b)[\s\S]*(?<![.\w])total_weight\s*\('
+          why: >-
+            `from … import` кладёт в программу только те имена, которые перечислены после
+            `import`. Функции, которую ты вызываешь, в этом списке нет.
+          try: 'Перечисли обе функции через запятую: `from gear import total_weight, per_person`.'
+          verify: Ошибка NameError должна исчезнуть, а «Пример 1» — пройти.
+        - id: strings-to-module
+          when:
+            errorIncludes: "'int' and 'str'"
+          why: >-
+            В `total_weight` попали строки: `split()` даёт список строк, и сложить число со строкой
+            нельзя. Ошибка возникла внутри gear.py, но виноват список, который передала программа.
+          try: >-
+            Верни чтение из стартового кода: каждую часть после `split()` превращай в число через
+            `float` и добавляй в список `weights`.
+          verify: Ошибка TypeError должна исчезнуть, а «Пример 1» — пройти.
+        - id: list-to-per-person
+          when:
+            errorIncludes: "'list' and 'int'"
+          why: >-
+            `per_person` делит общий вес на число людей, а получила список весов. Разделить список
+            на число нельзя, поэтому ошибка возникла внутри gear.py, хотя виноват вызов в main.py.
+          try: >-
+            Сначала посчитай общий вес через `total_weight`, сохрани в переменную и передай её в
+            `per_person` вместе с числом людей.
+          verify: Ошибка TypeError должна исчезнуть, а «Пример 1» — пройти.
+        - id: copied
+          when:
+            failedTest: t6
+            codeRegex: '^\s*def\s+(total_weight|per_person)\b'
+          why: >-
+            Функции переписаны в main.py. На учебном gear.py вывод верный, но копия разошлась с
+            оригиналом, как только клуб поправил gear.py: исправление попало только в модуль.
+          try: Удали свои определения функций, подключи модуль `gear` и вызывай его функции.
+          verify: Тест «Клуб поправил gear.py» должен стать зелёным.
+        - id: swapped-args
+          when:
+            codeRegex: 'per_person\(\s*people\b'
+          why: >-
+            Аргументы перепутаны местами. Функция принимает их по порядку: первым — общий вес,
+            вторым — число людей (`def per_person(total, people)`). Сейчас число людей делится на
+            вес.
+          try: 'Поменяй аргументы местами: `per_person(total, people)`.'
+          verify: 'В «Примере 1» второй строкой должно стать «На каждого: 1.5 кг».'
+        - id: not-imported
+          when:
+            failedTest: t5
+            codeRegex: '(?<![\s\S])(?=[\s\S]*^[ \t]*print\()(?![\s\S]*^[ \t]*(import|from)[ \t]+gear\b)'
+          why: >-
+            Программа считает всё сама и не подключает gear. Задача урока — пользоваться готовым
+            модулем, а не повторять его работу.
+          try: Подключи модуль `gear` и посчитай общий вес и долю каждого его функциями.
+          verify: Тесты «Модуль gear подключён» и «Клуб поправил gear.py» должны стать зелёными.
+        - id: manual-calc
+          when:
+            failedTest: t6
+            codeRegex: '\bround\(|\bsum\(|/\s*people\b'
+          why: >-
+            Клуб поправил gear.py, а вывод программы остался прежним: часть расчёта сделана в
+            main.py своей формулой, а не функцией модуля.
+          try: >-
+            Посчитай и общий вес, и долю каждого вызовами функций из gear: `total_weight` и
+            `per_person`.
+          verify: Тест «Клуб поправил gear.py» должен стать зелёным.
+      afterPass: >-
+        Программа стала короче: считают функции модуля, а main.py только читает ввод и печатает
+        итог. Тест «Клуб поправил gear.py» это и показал: модуль стал округлять до сотых, и
+        программа посчитала по-новому без единой правки в main.py.
+      skills: [modules-imports, function-design]
+
+  - id: main-and-packages
+    type: theory
+    title: Код запуска и пакеты
+    body: |-
+      Прогноз показал: всё, что стоит в модуле вне функций, выполняется при импорте. Для модуля с
+      проверочными `print` это беда — любая программа, которая его подключит, напечатает чужие
+      строки. А удалять проверку жалко: она нужна автору модуля.
+
+      **`__name__`.** Python даёт каждому файлу особую переменную `__name__` — по два подчёркивания
+      с каждой стороны. Если файл запустили напрямую (`python gear.py` или кнопка «Запустить»), в
+      ней строка `"__main__"`. Если файл импортировали — имя модуля, например `"gear"`. Поэтому код
+      запуска и проверок прячут под условие:
+
+      ```python
+      def total_weight(weights):
+          ...
+
+
+      if __name__ == "__main__":
+          print(total_weight([1.2, 0.8]))
+      ```
+
+      При прямом запуске проверка работает, а при `import gear` условие ложно, и модуль только
+      создаёт функции.
+
+      **Пакет** — папка с модулями и файлом `__init__.py`. Этот файл может быть пустым: он
+      отмечает «здесь пакет» — и для людей, и для инструментов. Например, так выглядит «Список
+      задач», разложенный по пакету:
+
+      ```text
+      todo-json/
+          main.py
+          todo/
+              __init__.py
+              storage.py
+              tasks.py
+      ```
+
+      Модули пакета подключают с именем папки: `from todo import storage` — и дальше
+      `storage.load_tasks()`. Или через точку сразу функцию: `from todo.storage import load_tasks`.
+      Запускают программу из папки проекта: `python main.py`.
+
+      Ещё две вещи пригодятся на компьютере. После импорта рядом с модулями появится папка
+      `__pycache__` — это кеш, запас модулей в переведённом виде для быстрой загрузки; её можно
+      удалять. А если два модуля подключают друг друга — это **кольцевой импорт**, и программа
+      может упасть с `ImportError`. Поэтому импорты идут в одну сторону: main.py подключает модули
+      пакета, а не наоборот.
+    simpler: >-
+      `if __name__ == "__main__":` читается как «если этот файл запустили, а не подключили». Под
+      ним — то, что нужно только при запуске. Пакет — папка с модулями и файлом `__init__.py`;
+      модули из неё подключают с именем папки: `from todo import storage`.
+    coach: >-
+      Привычка на будущее: в модуле — функции, внизу — проверка под `if __name__`. Так модуль и
+      проверить легко, и подключить можно куда угодно.
+
+  - id: club-package
+    type: example
+    title: Пакет клуба
+    body: |-
+      Тимур сложил модули клуба в пакет `club`. Все файлы видны в блоке «Файлы задания»:
+
+      ```text
+      main.py            ← программа ниже
+      club/
+          __init__.py    ← пустой файл: «здесь пакет»
+          gear.py        ← функция total_weight
+          food.py        ← функция portions и проверка под if __name__
+      ```
+
+      В `food.py` внизу стоит проверка:
+
+      ```python
+      if __name__ == "__main__":
+          print("Проверка:", portions(1, 1))
+      ```
+
+      Нажми «Запустить» и посмотри, напечатается ли она.
+    code: |-
+      from club import gear
+      from club.food import portions
+
+      print("Общий вес:", gear.total_weight([2.5, 1.2, 0.8]), "кг")
+      print("Порций на поход:", portions(4, 3))
+    files:
+      club/__init__.py: ""
+      club/gear.py: |
+        def total_weight(weights):
+            total = 0
+            for weight in weights:
+                total += weight
+            return round(total, 1)
+      club/food.py: |
+        PORTIONS_PER_DAY = 3
+
+
+        def portions(people, days):
+            return people * days * PORTIONS_PER_DAY
+
+
+        if __name__ == "__main__":
+            print("Проверка:", portions(1, 1))
+    notes:
+      - line: 1
+        text: >-
+          Из пакета `club` взять модуль `gear`. Дальше его функции — через `gear.`, как у
+          обычного модуля.
+      - line: 2
+        text: Из модуля `food` пакета `club` взять сразу функцию `portions` — без приставки.
+      - line: 5
+        text: >-
+          Строки «Проверка:» в выводе нет: при импорте `__name__` у модуля равно `"club.food"`, а
+          не `"__main__"`, и условие ложно.
+    tryIt: >-
+      Замени вторую строку на `from club import food` и поправь последний вызов так, чтобы
+      программа снова вывела 36. Потом добавь в конец `print(food.__name__)` — увидишь полное имя
+      модуля.
+    coach: >-
+      В пакете всё то же самое, что с модулями, только в пути к модулю появляется имя папки.
+
+  - id: practice-airtime
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m8-l2-e2
+      kind: fix
+      title: Модуль эфира печатает лишнее
+      statement: |-
+        Радио колледжа составляет эфирную сетку. Модуль `airtime.py` считает, сколько длится блок
+        передач, и переводит минуты в часы. Внизу автор оставил проверку — две строки `print`.
+
+        Теперь программа эфира подключает модуль строкой `import airtime`, и в её выводе каждый раз
+        появляются строки проверки `2 ч 13 мин` и `0 ч 59 мин`.
+
+        Исправь модуль:
+
+        - при прямом запуске (кнопка «Запустить») проверка печатает то же, что и сейчас;
+        - при `import airtime` модуль ничего не печатает;
+        - после импорта функции `total_minutes` и `as_hours` доступны и считают как раньше.
+      input: Ввода нет.
+      output: "При прямом запуске — две строки проверки; при импорте — ничего."
+      constraints:
+        - Функции менять не нужно.
+        - Проверку не удаляй — она нужна при прямом запуске.
+      filename: airtime.py
+      starterCode: |
+        def total_minutes(durations):
+            total = 0
+            for minutes in durations:
+                total += minutes
+            return total
+
+
+        def as_hours(minutes):
+            return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+        # Проверка модуля
+        print(as_hours(total_minutes([45, 50, 38])))
+        print(as_hours(59))
+      tests:
+        - id: t1
+          kind: io
+          title: Прямой запуск
+          example: true
+          expected: |-
+            2 ч 13 мин
+            0 ч 59 мин
+        - id: t2
+          kind: assert
+          title: Импорт молчит
+          example: true
+          code: |-
+            import contextlib
+            import io
+            import sys
+
+            sys.modules.pop("airtime", None)
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                import airtime
+            assert buffer.getvalue() == ""
+          message: При `import airtime` модуль ничего не печатает.
+        - id: t3
+          kind: assert
+          title: Функции после импорта
+          edge: true
+          code: |-
+            import contextlib
+            import io
+            import sys
+
+            sys.modules.pop("airtime", None)
+            with contextlib.redirect_stdout(io.StringIO()):
+                import airtime
+            assert hasattr(airtime, "total_minutes") and hasattr(airtime, "as_hours")
+            assert airtime.as_hours(airtime.total_minutes([30, 30])) == "1 ч 0 мин"
+            assert airtime.as_hours(0) == "0 ч 0 мин"
+          message: >-
+            После `import airtime` функции total_minutes и as_hours доступны и считают как раньше.
+      criteria:
+        - При прямом запуске выводятся те же две строки проверки.
+        - При `import airtime` модуль ничего не печатает.
+        - После импорта обе функции доступны и работают как раньше.
+      hints:
+        - >-
+          Python сам сообщает файлу, как его запустили, — через особое имя из теории «Код запуска
+          и пакеты». Что из этого файла должно выполняться всегда, а что — только при прямом
+          запуске?
+        - >-
+          На другом файле: если в `tools.py` написать `print(__name__)`, то при запуске tools.py
+          напечатается `__main__`, а при `import tools` из другой программы — `tools`. В
+          `__name__` лежит строка: `print` показывает её без кавычек, а в коде строку пишут в
+          кавычках. Например, `__name__ == "tools"` истинно, когда tools.py подключили.
+        - |-
+          Каркас:
+          ```text
+          def total_minutes(...): ...   # без изменений
+          def as_hours(...): ...        # без изменений
+
+          if __name__ == "…":
+              две строки проверки — с отступом
+          ```
+      solution:
+        code: |
+          def total_minutes(durations):
+              total = 0
+              for minutes in durations:
+                  total += minutes
+              return total
+
+
+          def as_hours(minutes):
+              return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+          if __name__ == "__main__":
+              print(as_hours(total_minutes([45, 50, 38])))
+              print(as_hours(59))
+        explanation: >-
+          При прямом запуске `__name__` равно `"__main__"`, условие истинно, и проверка печатает
+          две строки. При `import airtime` в `__name__` оказывается `"airtime"`, условие ложно:
+          модуль только создаёт функции. Определения функций остаются снаружи — они нужны и тем,
+          кто модуль подключает.
+      altSolutions:
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            def main():
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+
+
+            if __name__ == '__main__':
+                main()
+          note: Проверка в функции main(), вызов под условием; одинарные кавычки.
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            # Проверка модуля
+            if "__main__" == __name__:
+              block = total_minutes([45, 50, 38])
+              print(as_hours(block))
+              print(as_hours(59))
+          note: Сравнение в обратном порядке, комментарий над if, отступ в два пробела.
+      wrongSolutions:
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if __name__ = "__main__":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: Одно = вместо == в условии.
+          expectMistake: assign
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if name == "__main__":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: Без подчёркиваний вокруг name.
+          expectMistake: no-underscores
+        - code: |
+            if __name__ == "__main__":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+
+
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+          note: Проверка стоит выше определений функций.
+          expectMistake: check-before-defs
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if __name__ == "main":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: '"main" без подчёркиваний — условие ложно всегда.'
+          expectMistake: main-typo
+        - code: |
+            if __name__ == "__main__":
+                def total_minutes(durations):
+                    total = 0
+                    for minutes in durations:
+                        total += minutes
+                    return total
+
+                def as_hours(minutes):
+                    return f"{minutes // 60} ч {minutes % 60} мин"
+
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: Функции тоже спрятаны под условие — при импорте их нет.
+          expectMistake: functions-inside
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+          note: Проверку просто удалили.
+          expectMistake: deleted-check
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            # Проверка модуля
+            # print(as_hours(total_minutes([45, 50, 38])))
+            # print(as_hours(59))
+          note: Проверку закомментировали.
+          expectMistake: deleted-check
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if __name__ == "__main__":
+                print(as_hours(total_minutes([45, 50, 38])))
+            print(as_hours(59))
+          note: Вторая строка проверки осталась без отступа — вне условия.
+          expectMistake: print-outside
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            # Проверка модуля
+            if __name__ == __main__:
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: __main__ без кавычек.
+          expectMistake: main-no-quotes
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            # Проверка модуля
+            if __name__ == __name__:
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: Послушался подсказки Python «Did you mean '__name__'?» — сравнение с самим собой.
+          expectMistake: self-compare
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if __name__ == "airtime":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: Сравнение с именем модуля — условие перевёрнуто.
+          expectMistake: inverted
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if _name_ == "__main__":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: _name_ — по одному подчёркиванию.
+          expectMistake: no-underscores
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if __name__ == "_main_":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+          note: '"_main_" — по одному подчёркиванию.'
+          expectMistake: main-typo
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            def main():
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hours(59))
+
+
+            main()
+          note: Проверка в main(), но main() вызывается без условия.
+          expectMistake: print-outside
+        - code: |
+            def total_minutes(durations):
+                total = 0
+                for minutes in durations:
+                    total += minutes
+                return total
+
+
+            def as_hours(minutes):
+                return f"{minutes // 60} ч {minutes % 60} мин"
+
+
+            if __name__ == "__main__":
+                print(as_hours(total_minutes([45, 50, 38])))
+                print(as_hour(59))
+          note: Опечатка в имени функции под условием — разбор про print вне условия не должен сработать.
+          expectMistake: null
+      mistakes:
+        - id: assign
+          when:
+            errorType: SyntaxError
+            codeRegex: '__name__\s*=\s*["'']'
+          why: >-
+            Одно `=` — это присваивание, «положи значение в переменную». В условии нужно
+            сравнение — два знака `==`.
+          try: 'Напиши `if __name__ == "__main__":`.'
+          verify: Ошибка SyntaxError должна исчезнуть, а «Прямой запуск» — пройти.
+        - id: main-no-quotes
+          when:
+            errorIncludes: name '__main__' is not defined
+          why: >-
+            `__main__` без кавычек Python принимает за имя переменной, а такой переменной нет.
+            Подсказка Python «Did you mean: '__name__'?» здесь сбивает: слева `__name__` уже стоит,
+            а справа нужна строка.
+          try: 'Возьми `__main__` в кавычки: `if __name__ == "__main__":`.'
+          verify: Ошибка NameError должна исчезнуть, а «Прямой запуск» — пройти.
+        - id: no-underscores
+          when:
+            errorType: NameError
+            codeRegex: '^if\s+(?!__name__\b)_*name_*\s*=='
+          why: >-
+            Такой переменной в файле нет. Особое имя, которое Python даёт каждому файлу, пишется
+            с двумя подчёркиваниями с каждой стороны: `__name__`.
+          try: 'Исправь имя слева: `if __name__ == "__main__":`.'
+          verify: Ошибка NameError должна исчезнуть, а «Прямой запуск» — пройти.
+        - id: self-compare
+          when:
+            failedTest: t2
+            codeRegex: '__name__\s*==\s*__name__\b'
+          why: >-
+            `__name__ == __name__` сравнивает переменную с самой собой — это истинно всегда, и при
+            запуске, и при импорте. Справа нужна строка, которая лежит в `__name__` только при
+            прямом запуске.
+          try: 'Сравнивай со строкой в кавычках: `if __name__ == "__main__":`.'
+          verify: Тест «Импорт молчит» должен стать зелёным.
+        - id: inverted
+          when:
+            failedTest: t2
+            codeRegex: '__name__\s*==\s*["'']airtime["'']'
+          why: >-
+            При импорте в `__name__` лежит `"airtime"` — значит, проверка печатает как раз при
+            импорте, а при прямом запуске молчит. Условие перевёрнуто.
+          try: 'Сравнивай с `"__main__"`: `if __name__ == "__main__":`.'
+          verify: Тесты «Прямой запуск» и «Импорт молчит» должны стать зелёными.
+        - id: check-before-defs
+          when:
+            errorIncludes: name 'as_hours' is not defined
+          why: >-
+            Python выполняет файл сверху вниз. Проверка стоит выше функций, и к моменту вызова
+            `as_hours` ещё не создана.
+          try: Перенеси блок `if __name__ == "__main__":` в конец файла, под определения функций.
+          verify: Ошибка NameError должна исчезнуть, а «Прямой запуск» — пройти.
+        - id: main-typo
+          when:
+            codeRegex: '__name__\s*==\s*["''](?!__main__["''])_*main_*["'']'
+          why: >-
+            При прямом запуске в `__name__` лежит строка `"__main__"` — с двумя подчёркиваниями с
+            каждой стороны. Строка справа в твоём условии с ней не совпадает, поэтому проверка не
+            печатает ничего даже при запуске.
+          try: 'Сравнивай с `"__main__"`: `if __name__ == "__main__":`.'
+          verify: В «Прямом запуске» должны появиться две строки проверки.
+        - id: functions-inside
+          when:
+            failedTest: t3
+            codeRegex: '^[ \t]+def '
+          why: >-
+            Определения функций оказались внутри `if`. При импорте условие ложно, и функции просто
+            не создаются, — программе эфира нечего вызывать.
+          try: >-
+            Верни `def` на верхний уровень, без отступа. Под условием оставь только две строки
+            проверки.
+          verify: Тест «Функции после импорта» должен стать зелёным.
+        - id: deleted-check
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]*print\()'
+          why: >-
+            Импорт теперь молчит, но и при прямом запуске проверка больше ничего не печатает — её
+            удалили или закомментировали. Автору модуля она ещё пригодится.
+          try: >-
+            Верни две строки проверки в конец файла и спрячь их под
+            `if __name__ == "__main__":` с отступом.
+          verify: В «Прямом запуске» должны появиться две строки проверки.
+        - id: print-outside
+          when:
+            failedTest: t2
+            codeRegex: '^[A-Za-z_][\w.]*\('
+          why: >-
+            При импорте модуль печатает: в файле есть вызов без отступа, на верхнем уровне. Всё,
+            что стоит вне функций и вне условия, выполняется при каждом импорте.
+          try: >-
+            Сдвинь под `if __name__ == "__main__":` всё, что запускает проверку, — с одинаковым
+            отступом.
+          verify: Тест «Импорт молчит» должен стать зелёным.
+      afterPass: >-
+        Модуль стал «вежливым»: при запуске проверяет себя, при импорте молчит. Если проверок
+        станет больше, их удобно собрать в функцию `main()` и вызывать под тем же условием.
+      skills: [modules-imports]
+
+  - id: practice-water
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m8-l2-e3
+      kind: write
+      title: Модуль для счётчика воды
+      statement: |-
+        У бабушки Нины на даче огород и теплица. Каждый вечер она записывает по счётчику, сколько
+        литров воды ушло на полив за день. Внук Тимур написал для неё программу `report.py` — она
+        лежит рядом, в блоке «Файлы задания»:
+
+        ```python
+        from water import total, average
+
+        week = [310, 285, 402, 0, 260, 515, 330]
+        print(f"За неделю: {total(week)} л")
+        print(f"В среднем за день: {average(week)} л")
+        ```
+
+        Модуля `water.py` пока нет — его пишешь ты. Нужны две функции:
+
+        - `total(liters)` — возвращает сумму чисел списка;
+        - `average(liters)` — возвращает среднее, округлённое до одного знака после точки:
+          `round(…, 1)`. Для пустого списка — `0`.
+
+        При импорте модуль ничего не печатает. Кнопка «Запустить» выполняет твой `water.py`:
+        чтобы увидеть результат, добавь внизу проверку под `if __name__ == "__main__":`. Как с
+        модулем работает `report.py`, покажет «Проверить» — тест «report.py работает».
+      input: Ввода нет — числа приходят в функции через параметр.
+      output: >-
+        `total` возвращает сумму, `average` — среднее с одним знаком после точки (0 для пустого
+        списка); при импорте модуль ничего не печатает.
+      constraints:
+        - Имена функций — ровно `total` и `average`, их ждёт report.py.
+        - Проверку для «Запустить» пиши только под `if __name__ == "__main__":`.
+      filename: water.py
+      files:
+        report.py: |
+          from water import total, average
+
+          week = [310, 285, 402, 0, 260, 515, 330]
+          print(f"За неделю: {total(week)} л")
+          print(f"В среднем за день: {average(week)} л")
+      starterCode: |
+        # Модуль water: функции для отчёта о расходе воды.
+        # Его подключает report.py — посмотри её в блоке «Файлы задания».
+
+      tests:
+        - id: t2
+          kind: call
+          title: Сумма
+          example: true
+          call: total([100, 250, 50])
+          expected: "400"
+        - id: t3
+          kind: call
+          title: Среднее
+          example: true
+          call: average([100, 250, 50])
+          expected: "133.3"
+        - id: t4
+          kind: call
+          title: "Граничный случай: сумма пустого списка"
+          edge: true
+          call: total([])
+          expected: "0"
+        - id: t5
+          kind: call
+          title: "Граничный случай: среднее пустого списка"
+          edge: true
+          call: average([])
+          expected: "0"
+        - id: t6
+          kind: call
+          title: "Граничный случай: один день"
+          edge: true
+          call: average([5])
+          expected: "5.0"
+        - id: t1
+          kind: assert
+          title: report.py работает
+          example: true
+          code: |-
+            import contextlib
+            import io
+            import sys
+
+            sys.modules.pop("report", None)
+            sys.modules.pop("water", None)
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                import report
+            lines = buffer.getvalue().splitlines()
+            assert len(lines) == 2
+            assert lines[0] in ("За неделю: 2102 л", "За неделю: 2102.0 л")
+            assert lines[1] == "В среднем за день: 300.3 л"
+          message: >-
+            Программа report.py подключает модуль строкой `from water import total, average` и
+            печатает ровно две строки: «За неделю: 2102 л» и «В среднем за день: 300.3 л».
+        - id: t7
+          kind: assert
+          title: Импорт молчит
+          code: |-
+            import contextlib
+            import io
+            import sys
+
+            sys.modules.pop("water", None)
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                import water
+            assert buffer.getvalue() == ""
+          message: При `import water` модуль ничего не печатает.
+        - id: t8
+          kind: assert
+          title: Функции возвращают результат
+          code: |-
+            import contextlib
+            import io
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                assert total([1, 2]) is not None
+                assert average([1, 2]) is not None
+          message: >-
+            total и average возвращают результат через return — report.py подставляет его в текст.
+      criteria:
+        - В модуле есть функции `total` и `average` — с теми именами, которые ждёт report.py.
+        - Функции возвращают результат через `return`, а не печатают его.
+        - Среднее округлено до одного знака, для пустого списка обе функции возвращают 0.
+        - При импорте модуль ничего не печатает.
+      hints:
+        - >-
+          Начни с первой строки report.py: какие имена программа забирает из модуля и что
+          делает с результатом каждого? От этого зависят имена функций и то, что они возвращают.
+        - |-
+          Модуль с одной функцией и проверкой — на другом примере:
+          ```python
+          def to_hours(minutes):
+              return round(minutes / 60, 1)
+
+
+          if __name__ == "__main__":
+              print(to_hours(90))
+          ```
+          При «Запустить» проверка напечатает `1.5`, а при `import` — промолчит.
+        - |-
+          Каркас:
+          ```text
+          def total(liters):
+              сложить числа списка и вернуть сумму
+
+          def average(liters):
+              если в списке нет чисел — вернуть 0
+              вернуть round(сумма / количество, 1)
+
+          if __name__ == "__main__":
+              проверочные print
+          ```
+      solution:
+        code: |
+          def total(liters):
+              result = 0
+              for amount in liters:
+                  result += amount
+              return result
+
+
+          def average(liters):
+              if len(liters) == 0:
+                  return 0
+              return round(total(liters) / len(liters), 1)
+
+
+          if __name__ == "__main__":
+              print(total([100, 250, 50]))
+              print(average([100, 250, 50]))
+              print(average([]))
+        explanation: >-
+          Имена функций совпадают с теми, что report.py перечислил в `from water import …`, — это
+          договор между модулями. `average` пользуется `total` из того же модуля и до деления
+          проверяет пустой список, иначе было бы деление на ноль. Проверка под
+          `if __name__ == "__main__":` работает при «Запустить» и молчит, когда модуль подключает
+          report.py.
+      altSolutions:
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if liters == []:
+                    return 0
+                return round(sum(liters) / len(liters), 1)
+          note: Встроенная sum, сравнение с пустым списком, без проверки внизу.
+        - code: |
+            def total(liters):
+                result = 0
+                for amount in liters:
+                    result += amount
+                return result
+
+
+            def average(liters):
+                count = len(liters)
+                if count > 0:
+                    return round(total(liters) / count, 1)
+                return 0
+
+
+            def main():
+                week = [310, 285, 402, 0, 260, 515, 330]
+                print("Сумма:", total(week))
+                print("Среднее:", average(week))
+
+
+            if __name__ == "__main__":
+                main()
+          note: Проверка в функции main() под условием; ветка для непустого списка первой.
+        - code: |
+            def total(liters):
+                result = 0
+                for amount in liters:
+                    result = result + amount
+                return result
+
+
+            def average(liters):
+                try:
+                    return round(total(liters) / len(liters), 1)
+                except ZeroDivisionError:
+                    return 0
+
+
+            if __name__ == "__main__":
+                import report
+          note: Пустой список через try/except из модуля 7; проверка запускает сам report.py.
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if not liters:
+                    return 0
+                return round(total(liters) / len(liters), 1)
+
+
+            if __name__ == "__main__":
+                week = [310, 285, 402, 0, 260, 515, 330]
+                print(f"За неделю: {total(week)} л")
+                print(f"В среднем за день: {average(week)} л")
+          note: Проверка «истинности» списка (в курсе не вводится, но верна).
+        - code: |
+            def total(liters):
+                result = 0.0
+                for amount in liters:
+                    result += amount
+                return result
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(total(liters) / len(liters), 1)
+          note: Накопитель начинается с 0.0 — сумма дробная, отчёт пишет «2102.0 л».
+      wrongSolutions:
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def avg(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(sum(liters) / len(liters), 1)
+          note: Функция названа не так, как ждёт report.py.
+          expectMistake: wrong-name
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(sum(liters) / len(liters), 1)
+
+
+            print(total([100, 250, 50]))
+            print(average([100, 250, 50]))
+          note: Проверка без if __name__ — печатает при импорте.
+          expectMistake: demo-on-import
+        - code: |
+            def total(liters):
+                print(sum(liters))
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    print(0)
+                else:
+                    print(round(sum(liters) / len(liters), 1))
+          note: Функции печатают вместо return.
+          expectMistake: print-not-return
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                return round(sum(liters) / len(liters), 1)
+          note: Нет проверки пустого списка.
+          expectMistake: empty-list
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return sum(liters) / len(liters)
+          note: Среднее не округлено.
+          expectMistake: no-round
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return
+                return round(sum(liters) / len(liters), 1)
+          note: Для пустого списка возвращается None, а не 0.
+          expectMistake: empty-not-zero
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(total(liters) / len(liters))
+          note: round без числа знаков — целое 133.
+          expectMistake: round-no-digits
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                return round(total(liters) / 7, 1)
+          note: Деление на 7 — число дней недели из report.py, а не длина списка.
+          expectMistake: fixed-seven
+        - code: |
+            # Модуль water: функции для отчёта о расходе воды.
+            from water import total, average
+
+
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(sum(liters) / len(liters), 1)
+          note: Строка import из report.py скопирована в сам water.py — модуль подключает себя.
+          expectMistake: self-import
+        - code: |
+            if __name__ == "__main__":
+                def total(liters):
+                    return sum(liters)
+
+                def average(liters):
+                    if len(liters) == 0:
+                        return 0
+                    return round(total(liters) / len(liters), 1)
+
+                print(total([100, 250, 50]))
+          note: Функции определены внутри if __name__ == "__main__".
+          expectMistake: defs-in-main-block
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(total(liters) / len(liters), 1)
+
+
+            if __name__ == __main__:
+                print(total([100, 250, 50]))
+          note: __main__ без кавычек.
+          expectMistake: main-no-quotes
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(total(liters) / len(liters), 1)
+
+
+            if __name__ == "__main__":
+                week = [310, 285, 402, 0, 260, 515, 330]
+                average = average(week)
+                print("Среднее:", average)
+          note: В проверке результат назван именем функции — функция заменена числом.
+          expectMistake: name-reused
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) > 0:
+                    return round(total(liters) / len(liters), 1)
+          note: Ветки для пустого списка нет — функция доходит до конца без return.
+          expectMistake: empty-not-zero
+        - code: |
+            def total(liters):
+                result = 0
+                for amount in liters:
+                    result += amount
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(sum(liters) / len(liters), 1)
+          note: В total забыли return, print нет — разбор про print не должен сработать.
+          expectMistake: null
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(total(liters) / len(liters), 1)
+
+
+            if __name__ == "__main__":
+                print(total([100, 250, 50]))
+                print(averge([100, 250, 50]))
+          note: Опечатка в проверке под условием — разбор про print вне условия не должен сработать.
+          expectMistake: null
+        - code: |
+            def total(liters):
+                return sum(liters)
+
+
+            def average(liters):
+                if len(liters) == 0:
+                    return 0
+                return round(total(liters) // len(liters), 1)
+          note: Целочисленное деление // — общий разбор покажет «вернул 133».
+          expectMistake: null
+      mistakes:
+        - id: main-no-quotes
+          when:
+            errorIncludes: name '__main__' is not defined
+          why: >-
+            `__main__` без кавычек Python принимает за имя переменной, а такой переменной нет.
+            Подсказка Python «Did you mean: '__name__'?» здесь сбивает: слева `__name__` уже стоит,
+            а справа нужна строка.
+          try: 'Возьми `__main__` в кавычки: `if __name__ == "__main__":`.'
+          verify: Ошибка NameError должна исчезнуть, а тест «report.py работает» — пройти.
+        - id: name-reused
+          when:
+            errorIncludes: object is not callable
+            codeRegex: '^[ \t]+(total|average)[ \t]*=(?!=)'
+          why: >-
+            В проверке результат назван так же, как функция: после `average = average(week)` имя
+            `average` в файле — уже число, а не функция, и вызвать его снова нельзя.
+          try: 'Назови результат иначе, например `avg = average(week)`.'
+          verify: Тесты «Сумма» и «Среднее» должны стать зелёными.
+        - id: self-import
+          when:
+            errorIncludes: cannot import name
+            codeRegex: '^[ \t]*(from[ \t]+water[ \t]+import|import[ \t]+water\b)'
+          why: >-
+            water.py подключает сам себя. Строка `from water import …` нужна в report.py, а в
+            модуле она заставляет Python загружать water.py, пока тот ещё не создал свои функции.
+          try: 'Удали из water.py строку `from water import …` — модулю не нужно подключать себя.'
+          verify: Ошибка ImportError должна исчезнуть, а тест «report.py работает» — пройти.
+        - id: defs-in-main-block
+          when:
+            errorIncludes: cannot import name
+            codeRegex: '^[ \t]+def (total|average)\b'
+          why: >-
+            Функции определены внутри `if __name__ == "__main__":`. При импорте условие ложно,
+            функции не создаются, и report.py нечего подключить.
+          try: >-
+            Верни `def` на верхний уровень, без отступа. Под условием оставь только проверочные
+            `print`.
+          verify: Ошибка ImportError должна исчезнуть, а тест «report.py работает» — пройти.
+        - id: wrong-name
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*^def total\s*\()|(?<![\s\S])(?![\s\S]*^def average\s*\()'
+          why: >-
+            report.py просит у модуля имена `total` и `average`, а в water.py нет функции с одним
+            из этих имён или с обоими.
+            Имена функций — договор между модулями: программа, которая подключает модуль, ищет их
+            буква в букву.
+          try: Назови функции ровно `total` и `average`, как в первой строке report.py.
+          verify: Ошибка ImportError должна исчезнуть, а тест «report.py работает» — пройти.
+        - id: demo-on-import
+          when:
+            failedTest: t7
+            codeRegex: '^[A-Za-z_][\w.]*\('
+          why: >-
+            Проверочные `print` стоят вне условия и выполняются при каждом импорте: report.py
+            печатает чужие строки перед своим отчётом.
+          try: 'Спрячь проверку под `if __name__ == "__main__":` — с отступом.'
+          verify: Тесты «Импорт молчит» и «report.py работает» должны стать зелёными.
+        - id: print-not-return
+          when:
+            failedTest: t8
+            codeRegex: '^def[^\n]*\n(?:[ \t]+[^\n]*\n|[ \t]*\n)*?[ \t]+print\('
+          why: >-
+            Функция печатает результат, но не возвращает его. Без `return` она отдаёт `None`, и
+            report.py подставляет в отчёт `None` (урок 5.3).
+          try: Замени `print(...)` внутри функций на `return ...`.
+          verify: Тест «Функции возвращают результат» должен стать зелёным.
+        - id: empty-list
+          when:
+            errorType: ZeroDivisionError
+          why: >-
+            Для пустого списка `len(liters)` равно 0, а делить на ноль нельзя.
+          try: >-
+            В начале `average` проверь длину списка: если она равна 0, сразу верни 0. Делить
+            только после этой проверки.
+          verify: "Тест «Граничный случай: среднее пустого списка» должен стать зелёным."
+        - id: no-round
+          when:
+            failedTest: t3
+            codeRegex: '(?<![\s\S])(?![\s\S]*round\()'
+          why: >-
+            Среднее не округлено: вместо 133.3 функция возвращает 133.33333333333334.
+          try: Оберни результат деления в `round(…, 1)`.
+          verify: Тест «Среднее» должен стать зелёным.
+        - id: round-no-digits
+          when:
+            failedTest: t3
+            codeRegex: 'round\((?:[^(),]|\([^()]*\))*\)'
+          why: >-
+            `round` без второго числа округляет до целого: вместо 133.3 получается 133. Число знаков
+            после точки передают вторым аргументом.
+          try: 'Добавь второй аргумент: `round(…, 1)`.'
+          verify: Тест «Среднее» должен стать зелёным.
+        - id: fixed-seven
+          when:
+            failedTest: t3
+            codeRegex: '/\s*7\b'
+          why: >-
+            Деление на 7 подходит только для недели из report.py. Функция должна работать с любым
+            списком: для `[100, 250, 50]` делить нужно на 3.
+          try: Дели на количество чисел в списке — `len(liters)`.
+          verify: Тест «Среднее» должен стать зелёным.
+        - id: empty-not-zero
+          when:
+            failedTest: t5
+            codeRegex: '(?<![\s\S])(?![\s\S]*^[ \t]+return[ \t]+0(\.0)?[ \t]*$)'
+          why: >-
+            Для пустого списка `average` должна вернуть 0, а возвращает другое. Частые причины:
+            голый `return` без значения или нет ветки для пустого списка — тогда функция доходит
+            до конца и отдаёт `None`.
+          try: 'Проверь в начале `average`, пуст ли список, и в этой ветке напиши `return 0`.'
+          verify: "Тест «Граничный случай: среднее пустого списка» должен стать зелёным."
+      afterPass: >-
+        Твой модуль подключила чужая программа, и ей не пришлось знать, как он устроен внутри —
+        только имена функций. Улучшение: добавь функцию `peak(liters)` — наибольший расход за
+        день. report.py её пока не знает, и это нормально: новые функции модулю не мешают.
+      skills: [modules-imports, functions, function-design]
+
+  - id: shadowed-random
+    type: quiz
+    title: Чужое имя
+    question: |-
+      В папке `games` лежат игра `game.py` и черновик, который сохранили под именем `random.py`.
+      Игра начинается строками `import random` и `print(random.randint(1, 6))`. Команда
+      `python game.py` выводит (настоящий вывод Python 3.14, путь сокращён):
+
+      ```text
+      Traceback (most recent call last):
+        File "C:\games\game.py", line 2, in <module>
+          print(random.randint(1, 6))
+                ^^^^^^^^^^^^^^
+      AttributeError: module 'random' has no attribute 'randint' (consider renaming 'C:\games\random.py' since it has the same name as the standard library module named 'random' and prevents importing that standard library module)
+      ```
+
+      Что случилось?
+    options:
+      - Сломался стандартный модуль random — нужно переустановить Python.
+      - "`import random` подключил черновик random.py вместо стандартного модуля — черновик нужно переименовать."
+      - Функцию randint убрали из новых версий Python.
+    correct: 1
+    explanation: >-
+      Python ищет модуль сначала в папке программы — и находит там черновик `random.py`. В нём нет
+      `randint`, отсюда `has no attribute`. Python 3.13 и новее прямо подсказывают в скобках:
+      consider renaming — «подумай о переименовании». В старых версиях подсказки нет, и ситуацию
+      узнают по `has no attribute` у стандартного модуля. Лекарство — переименовать черновик,
+      например в `dice_draft.py`.
+    coach: >-
+      Имена `random.py`, `json.py`, `datetime.py`, `csv.py` для своих файлов — табу.
+
+  - id: split-project
+    type: checklist
+    title: Разложи свой список задач по модулям
+    body: >-
+      Дальше — работа на компьютере с проектом «Список задач». Её можно сделать отдельным заходом,
+      в другой день; если под рукой только телефон — вернись к этому блоку позже. Своего проекта
+      нет или он устроен иначе — возьми учебный мини-проект из первого пункта. Раскладка займёт
+      15–25 минут. **Пока не коммить новые файлы** — в уроке 8.4 наведём порядок.
+    items:
+      - id: project
+        text: >-
+          **Открой проект «Список задач».** Это папка с программой из проекта после модуля 7,
+          например `python-practice\todo-json`. Дальше в уроке главный файл называется `main.py`. Своего
+          проекта нет — создай папку `python-practice\todo-json`, а в ней файл `main.py` с
+          учебным мини-проектом из «Если не получается».
+        help: |-
+          Учебный мини-проект «Список задач» одним файлом. Его можно скопировать: кавычки-ёлочки
+          и тире набирать неудобно.
+
+          ```python
+          import json
+          from pathlib import Path
+
+          DATA_FILE = Path("tasks.json")
+
+
+          def load_tasks():
+              try:
+                  with open(DATA_FILE, encoding="utf-8") as file:
+                      return json.load(file)
+              except FileNotFoundError:
+                  return []
+              except json.JSONDecodeError:
+                  print("Файл с задачами повреждён — начинаю с пустого списка.")
+                  return []
+
+
+          def save_tasks(tasks):
+              with open(DATA_FILE, "w", encoding="utf-8") as file:
+                  json.dump(tasks, file, ensure_ascii=False, indent=2)
+
+
+          def add_task(tasks, title):
+              tasks.append({"title": title, "done": False})
+
+
+          def mark_done(tasks, number):
+              if 1 <= number <= len(tasks):
+                  tasks[number - 1]["done"] = True
+                  return True
+              return False
+
+
+          def show_tasks(tasks):
+              if len(tasks) == 0:
+                  print("Задач пока нет.")
+              number = 1
+              for task in tasks:
+                  if task["done"]:
+                      mark = "x"
+                  else:
+                      mark = " "
+                  print(f"{number}. [{mark}] {task['title']}")
+                  number += 1
+
+
+          def main():
+              tasks = load_tasks()
+              while True:
+                  command = input("Команда (добавить, список, готово, выход): ").strip()
+                  if command == "добавить":
+                      title = input("Название: ").strip()
+                      if title != "":
+                          add_task(tasks, title)
+                          save_tasks(tasks)
+                      else:
+                          print("Пустое название — задача не добавлена.")
+                  elif command == "список":
+                      show_tasks(tasks)
+                  elif command == "готово":
+                      try:
+                          number = int(input("Номер: "))
+                      except ValueError:
+                          print("Нужен номер задачи — целое число.")
+                          continue
+                      if mark_done(tasks, number):
+                          save_tasks(tasks)
+                      else:
+                          print("Нет задачи с таким номером.")
+                  elif command == "выход":
+                      break
+                  else:
+                      print("Не знаю такой команды.")
+
+
+          main()
+          ```
+
+          Запусти его из папки проекта: `python main.py` (или `py main.py`), добавь задачу и
+          введи `выход` — рядом появится файл `tasks.json`. Вызов `main()` в последней строке
+          стоит без условия нарочно: его ты поправишь в пункте «Спрячь запуск под условие».
+      - id: safe-point
+        text: >-
+          **Страховка.** Открой терминал в папке проекта и набери `git status`. В ответе не
+          должно быть разделов `Changes not staged for commit` и `Changes to be committed`: все
+          правки кода уже в коммите. Есть изменения — закоммить их, как в уроке 5.6.
+        help: |-
+          Зачем: если при раскладке что-то сломается, `git restore main.py` вернёт главный файл к
+          этому коммиту (урок 5.6), а новые файлы можно просто удалить.
+
+          Раздел `Untracked files` с `tasks.json` не мешает: это данные, а не код, в коммит их не
+          добавляем.
+
+          `fatal: not a git repository` — в папке ещё нет репозитория. Создай его и сделай первый
+          коммит:
+
+          ```text
+          git init
+          git add main.py
+          git commit -m "Список задач одним файлом"
+          ```
+
+          Если Git пишет по-русски — ищи те же разделы по смыслу.
+      - id: package
+        text: >-
+          **Создай пакет.** В папке проекта создай папку `todo`, а в ней — пустой файл
+          `__init__.py` (по два подчёркивания с каждой стороны).
+        help: >-
+          В VS Code: New File и имя `todo/__init__.py` — редактор сам создаст папку. В Проводнике:
+          правый щелчок → «Создать» → «Папку», а файл сохрани в неё из редактора. В Блокноте при
+          сохранении выбери тип файла «Все файлы», иначе получится `__init__.py.txt`. Проверь
+          командой `dir todo` (на macOS и Linux — `ls todo`).
+
+          Главный файл твоего проекта называется `todo.py`? Переименуй его в `main.py`: имя
+          `todo` теперь у папки пакета.
+      - id: storage
+        text: |-
+          **Перенеси работу с файлом в `todo/storage.py`:** константу `DATA_FILE`, функции
+          `load_tasks` и `save_tasks` — вместе с `import json` и `from pathlib import Path`. Из
+          main.py эти строки убери, а первой строкой main.py допиши:
+
+          ```python
+          from todo.storage import load_tasks, save_tasks
+          ```
+
+          Запусти `python main.py` — программа должна работать как раньше.
+        help: |-
+          Импорты переезжают вместе с функциями, которым они нужны: без `import json` в
+          storage.py загрузка упадёт с NameError. В твоём проекте функции могут называться
+          иначе — переноси по смыслу всё, что читает и пишет JSON, и перечисли в строке import
+          свои имена.
+
+          `NameError: name 'load_tasks' is not defined` — в main.py нет строки import или имя в
+          ней написано иначе. `No module named 'storage'` — написано `import storage`: модуль
+          лежит в пакете, поэтому нужно `from todo.storage import …`. Другие ошибки разобраны в
+          пункте «Запусти и повтори ручные проверки».
+      - id: tasks
+        text: |-
+          **Перенеси работу со списком в `todo/tasks.py`:** функции `add_task`, `mark_done`,
+          `show_tasks` (и удаление, если оно у тебя есть). Под первой строкой import в main.py
+          допиши вторую:
+
+          ```python
+          from todo.tasks import add_task, mark_done, show_tasks
+          ```
+
+          И снова запусти `python main.py`.
+        help: >-
+          Если функция списка сама вызывает `save_tasks`, проще перенести вызов сохранения в
+          main.py. Или подключи в tasks.py `from todo.storage import save_tasks`: внутри пакета
+          модули подключают друг друга тоже через имя пакета, а `import storage` даст
+          `No module named 'storage'`. Только не подключай tasks в storage.py: два модуля,
+          которые импортируют друг друга, — это кольцевой импорт.
+      - id: main
+        text: |-
+          **Спрячь запуск под условие.** Последнюю строку main.py `main()` замени на вызов под
+          условием:
+
+          ```python
+          if __name__ == "__main__":
+              main()
+          ```
+        help: |-
+          Остальной код `main()` менять не нужно: имена функций те же, их дали две строки import.
+
+          Можно подключать и модули целиком: `from todo import storage, tasks` и вызовы
+          `storage.load_tasks()`, `tasks.add_task(...)`. Но тогда проверь имена переменных: если
+          список задач в `main()` тоже называется `tasks`, он закроет собой модуль, и программа
+          упадёт с `AttributeError: 'list' object has no attribute 'add_task'`. Переименуй список,
+          например в `task_list`.
+
+          Функции `main()` в твоём проекте нет, и меню написано прямо внизу файла? Сначала заверни
+          этот код в `def main():`, как в уроке 5.5, — тогда под условием останется одна строка.
+      - id: run
+        text: >-
+          **Запусти и повтори ручные проверки.** Из папки проекта: `python main.py`. Покажи
+          список, добавь задачу, отметь её, выйди и запусти снова — задачи на месте.
+        help: |-
+          Что значат частые ошибки:
+
+          - `No module named 'todo'` — Python не нашёл папку todo рядом с main.py. Проверь
+            командой `dir`, что они лежат рядом и что имя папки написано маленькими буквами, как в
+            import.
+          - `No module named 'storage'` — в каком-то модуле написано `import storage`. Внутри
+            проекта пиши `from todo import storage`.
+          - `ImportError: cannot import name …` — такого имени в модуле нет: функция называется
+            иначе или осталась в main.py. Если в конце сообщения сказано
+            `most likely due to a circular import` — два модуля подключают друг друга (кольцевой
+            импорт): убери импорт из одного из них.
+          - `NameError` — функцию вызывают, но не подключили: добавь её имя в строку import.
+          - `AttributeError: module 'json' has no attribute …` с припиской
+            `since it has the same name as the standard library module` — твой файл назван как
+            стандартный модуль (`json.py`, `random.py`): переименуй его.
+          - Задачи пропали — скорее всего, программу запустили из другой папки, и она ищет
+            `tasks.json` там. Открой терминал в папке проекта.
+      - id: pycache
+        text: >-
+          **Загляни в папку `todo`.** Там появилась папка `__pycache__` — кеш Python. Пока ничего
+          не коммить: в уроке 8.4 научим Git не замечать кеш и сохраним раскладку аккуратными
+          коммитами.
+        help: >-
+          Папку `__pycache__` можно удалить — Python создаст её заново при следующем запуске.
+          `git status` сейчас покажет папку `todo/` в разделе `Untracked files` и изменённый
+          main.py — так и должно быть до урока 8.4.
+    coach: >-
+      Переноси по одному модулю и запускай программу после каждого переноса — так сразу видно,
+      какой шаг её сломал.
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Модуль — файл `.py`. `import gear` → `gear.total_weight(...)`; `from gear import total_weight` → `total_weight(...)`. Имя модуля — без `.py`."
+      - "Python ищет модули сначала в папке программы, потом в стандартной библиотеке — не называй свои файлы `random.py` или `json.py`."
+      - "Код модуля выполняется при первом импорте, поэтому код запуска и проверки прячут под `if __name__ == \"__main__\":`."
+      - "Пакет — папка с модулями и файлом `__init__.py`: `from todo import storage`, `from todo.storage import load_tasks`."
+    question: >-
+      Зачем в модуле, который подключают другие программы, прятать код запуска под
+      if __name__ == "__main__"?
+    answer: >-
+      Иначе он выполнится при каждом import: напечатает лишнее, спросит ввод или перезапишет файл
+      в чужой программе. Под условием он работает только при прямом запуске файла. В модуле 9
+      pytest тоже будет импортировать твои модули — и им нужно импортироваться молча.

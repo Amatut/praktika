@@ -29,14 +29,36 @@ export function isStorageError(error: unknown): boolean {
   return name === 'StorageUnavailableError' || name === 'InvalidDataError' || name === 'QuotaExceededError';
 }
 
-function describe(error: unknown): { message: string; reload: boolean } {
-  const name = errorName(error);
-  if (name === 'QuotaExceededError') {
-    return { message: 'На устройстве не хватает места, поэтому последние изменения не сохранились. Освободи немного места.', reload: false };
-  }
-  const message = error instanceof Error && error.message ? error.message : 'Браузер не дал сохранить данные.';
+/**
+ * Хранилище браузера не открылось: причина и что сделать — по строке, без абзаца (полный текст причины из
+ * src/storage — в error.message, для консоли). Не ошибка хранилища — null.
+ */
+export function storageProblem(error: unknown): { cause: string; action: string } | null {
+  if (errorName(error) !== 'StorageUnavailableError') return null;
   const reason = typeof error === 'object' && error !== null && 'reason' in error ? String(error.reason) : '';
-  return { message, reload: name === 'StorageUnavailableError' && reason !== 'unsupported' };
+  switch (reason) {
+    case 'unsupported':
+      return { cause: 'Хранилище браузера (IndexedDB) недоступно', action: 'Открой в обычном окне или разреши сайту хранить данные' };
+    case 'outdated':
+      return { cause: 'Приложение обновилось в другой вкладке', action: 'Перезагрузи страницу: сохранённое на месте' };
+    case 'quota':
+      return { cause: 'На устройстве не хватает места', action: 'Освободи место и перезагрузи страницу' };
+    default:
+      return { cause: 'Хранилище браузера (IndexedDB) не открылось', action: 'Перезагрузи страницу или перезапусти браузер' };
+  }
+}
+
+/** Сообщение об ошибке одной строкой: для баннера и для экрана, который показывает причину сам. */
+export function problemMessage(error: unknown): string {
+  const storage = storageProblem(error);
+  if (storage) return `${storage.cause} — ${storage.action[0].toLowerCase()}${storage.action.slice(1)}`;
+  if (errorName(error) === 'QuotaExceededError') return 'На устройстве не хватает места — освободи немного места';
+  return error instanceof Error && error.message ? error.message : 'Браузер не дал сохранить данные';
+}
+
+function describe(error: unknown): { message: string; reload: boolean } {
+  const reason = typeof error === 'object' && error !== null && 'reason' in error ? String(error.reason) : '';
+  return { message: problemMessage(error), reload: errorName(error) === 'StorageUnavailableError' && reason !== 'unsupported' };
 }
 
 /** Сообщить о сбое сохранения. title — что именно не сохранилось. */

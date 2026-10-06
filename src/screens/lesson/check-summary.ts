@@ -43,3 +43,21 @@ export function checkAnnouncement(outcome: CheckOutcome, results: TestResult[]):
   if (rules.some((rule) => !rule.passed)) return 'Тесты пройдены, но не выполнено требование к коду. Разбор — у наставника.';
   return 'Все проверки пройдены.';
 }
+
+/**
+ * Счёт последней проверки для строки состояния и бейджей: «✕ 3 ✓ 1». Код не запустился — не прошла ни одна
+ * проверка. Тайм-аут — один непройденный тест (тот, что не завершился; остальные не проверены и не считаются).
+ * «Остановить» и сбой Python счёта не дают: это не результат кода.
+ */
+export function testCounts(
+  outcome: CheckOutcome | null,
+  results: TestResult[],
+  total = results.length,
+): { failed: number; passed: number; total: number } | null {
+  if (outcome?.status === 'timeout') return total > 0 ? { failed: 1, passed: 0, total } : null;
+  if (outcome?.status !== 'done') return null;
+  if (outcome.result.compileError) return total > 0 ? { failed: total, passed: 0, total } : null;
+  if (results.length === 0) return null;
+  const passed = results.filter((test) => test.passed).length;
+  return { failed: results.length - passed, passed, total: results.length };
+}

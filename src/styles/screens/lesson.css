@@ -1,0 +1,2492 @@
+/* Владелец: lesson-frame; экран: урок — кадр (шапка с конвейером шагов, панели, «Назад / Далее», док на телефоне)
+   и шаг-задание (условие, редактор, «Проверка / Вывод», наставник) — спецификация редизайна, 4.3–4.4.
+   Раскладка: ≥ 1200 — «Задание | Код | Наставник» с разделителями; 900–1199 — вкладки «Задание | Наставник» слева
+   и код справа; < 900 — вкладки «Задание / Код / Наставник», одна прокрутка и док «Запустить / Проверить» строкой сетки.
+   Внутренности шагов-документов и примера (.doc-col, .step-body, .ex-*) — screens/lesson-steps.css.
+   Только токены. Текст урока — --lesson-size / 1.6; интерфейс ≥ 13 px; код ≥ 14 px; между блоками ≥ 8 px. */
+
+/* ------------------------------------------------------------ кадр */
+.lesson {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-panel);
+}
+
+.lesson-status {
+  display: block;
+  padding: var(--sp-6) var(--gutter);
+}
+
+/* ------------------------------------------------------------ шапка урока (≥ 900) */
+.lesson-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'id nav'
+    'flow flow';
+  align-items: center;
+  gap: var(--sp-2) var(--sp-6);
+  min-width: 0;
+  padding: var(--sp-2) var(--gutter) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.lesson-id {
+  grid-area: id;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-4);
+  min-width: 0;
+}
+
+.lesson-title {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-22) / var(--lh-22) var(--font-sans);
+}
+
+.lesson-num {
+  margin-right: var(--sp-1);
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.lesson-module {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  text-decoration: none;
+}
+
+.lesson-module:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line-control);
+}
+
+.lesson-nav {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.lesson-nav .badge {
+  margin-right: var(--sp-2);
+}
+
+/* Конвейер шагов и список шагов в одну строку; не хватает места — список уходит на следующую. */
+.flow-row {
+  grid-area: flow;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  min-width: 0;
+}
+
+/* Список шагов — у правого края, под «Назад / Далее» (и на своей строке, если конвейер длинный): выпадающий
+   список открывается влево и не уходит за край окна. */
+.flow-row > .flow-pick {
+  margin-left: auto;
+}
+
+.flow-row > .flow-pick .flow-pop {
+  right: 0;
+  left: auto;
+}
+
+/* Подпись узла — под конвейером, а не над ним: над конвейером название урока, подпись его не закрывает. */
+.lesson-head .flow-tip {
+  top: calc(100% + 8px);
+  bottom: auto;
+}
+
+@media (max-width: 1199px) {
+  .lesson-module {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ рабочее место: панели */
+.workspace {
+  --w-task: min(var(--w-task-set, var(--w-side)), calc((100vw - var(--activity) - 400px) / 2));
+  --w-coach: min(var(--w-coach-set, var(--w-side)), calc((100vw - var(--activity) - 400px) / 2));
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+}
+
+.workspace[data-layout='work'] {
+  grid-template-columns: var(--w-task) 1px minmax(0, 1fr) 1px var(--w-coach);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'task s1 code s2 coach';
+}
+
+.workspace[data-layout='work'].is-coach-empty {
+  grid-template-columns: var(--w-task) 1px minmax(0, 1fr);
+  grid-template-areas: 'task s1 code';
+}
+
+.workspace[data-layout='doc'] {
+  grid-template-columns: minmax(0, 1fr) 1px var(--w-coach);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'doc s2 coach';
+}
+
+.workspace[data-layout='doc'].is-coach-empty {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'doc';
+}
+
+.workspace.is-task-collapsed {
+  --w-task: 40px;
+}
+
+.workspace.is-coach-collapsed {
+  --w-coach: 40px;
+}
+
+/* Шаг с кодом: его панели — прямо ячейки сетки. Шаг-документ: .lesson-main — колонка документа со своей прокруткой. */
+.workspace[data-layout='work'] > .lesson-main {
+  display: contents;
+}
+
+.workspace[data-layout='doc'] > .lesson-main {
+  grid-area: doc;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.workspace[data-layout='work'] > .lesson-main > .pane-task {
+  grid-area: task;
+}
+
+.workspace[data-layout='work'] > .lesson-main > .pane-code {
+  grid-area: code;
+}
+
+.lesson-coach {
+  grid-area: coach;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-panel);
+  container: coach / inline-size;
+}
+
+.workspace.is-coach-empty > .lesson-coach {
+  display: none;
+}
+
+.pane {
+  min-width: 0;
+}
+
+/* Боковая панель «Задание» / «Пример»: шапка на месте, тело прокручивается само. */
+.pane-task {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-panel);
+}
+
+.pane-task > .pane-head {
+  flex: none;
+}
+
+/* position: relative — скрытые для глаза подписи (position: absolute) остаются внутри прокрутки и не растягивают панель. */
+.pane-task > .pane-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Активная панель (фокус внутри) — янтарная черта сверху шапки, у кода — у вкладки файла. */
+.lesson[data-layout='wide'] .pane-task:focus-within > .pane-head,
+.lesson[data-layout='wide'] .coach:focus-within > .coach-head {
+  box-shadow: inset 0 2px 0 var(--accent-edge);
+}
+
+/* ------------------------------------------------------------ разделители панелей */
+.vsplit {
+  position: relative;
+  z-index: 5;
+  min-height: 0;
+  background: var(--line);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.vsplit-task {
+  grid-area: s1;
+}
+
+.vsplit-coach {
+  grid-area: s2;
+}
+
+.workspace.is-coach-empty > .vsplit-coach {
+  display: none;
+}
+
+/* Зона захвата шире линии. */
+.vsplit::before {
+  content: '';
+  position: absolute;
+  inset: 0 -3px;
+}
+
+.vsplit:hover,
+.vsplit.is-drag {
+  background: var(--focus);
+}
+
+.vsplit:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  background: var(--focus);
+}
+
+.vsplit.is-off {
+  cursor: default;
+}
+
+.vsplit.is-off::before {
+  content: none;
+}
+
+.vsplit.is-off:hover {
+  background: var(--line);
+}
+
+/* ------------------------------------------------------------ свёрнутые панели: полоса 40 px с кнопкой */
+.is-task-collapsed .pane-task > :not(.pane-head),
+.is-task-collapsed .pane-task > .pane-head > :not(.pane-actions),
+.is-coach-collapsed .coach > :not(.coach-head),
+.is-coach-collapsed .coach-head > :not(.pane-actions) {
+  display: none;
+}
+
+.is-task-collapsed .pane-task > .pane-head,
+.is-coach-collapsed .coach-head {
+  justify-content: center;
+  padding: 0;
+}
+
+.is-task-collapsed .pane-task > .pane-head > .pane-actions,
+.is-coach-collapsed .coach-head > .pane-actions {
+  margin: 0;
+}
+
+.is-task-collapsed .pane-task,
+.is-coach-collapsed .lesson-coach {
+  border-bottom: 0;
+}
+
+.pane-collapse {
+  position: relative;
+}
+
+.pane-collapse .dot-new {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* ------------------------------------------------------------ панель «Задание» */
+/* Метки вида и статус задания — строкой над названием. */
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.task-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--gutter) var(--sp-6);
+}
+
+/* Заголовки панелей растут вместе с текстом урока из настроек: всегда на 2 px крупнее текста под ними. */
+.task-title {
+  margin: 0;
+  color: var(--text);
+  font: 600 max(var(--fs-18), calc(var(--lesson-size) + 2px)) / 1.35 var(--font-sans);
+}
+
+.task-title:focus-visible {
+  outline-offset: 4px;
+}
+
+/* Заголовок подраздела условия: «Ограничения 0/3», «Примеры». Обычный регистр, 14 px. */
+.task-subhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-2);
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+/* «Ограничения» и метка «Отмечаешь сам» — одной строкой, между ними 12 px. */
+.task-subhead-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+/* «Ввод / Результат» — на линиях: метка в колонке 96 px, значение — текстом урока. */
+.task-spec {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--sp-2) var(--sp-3);
+  margin: 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+.task-spec dt {
+  padding-top: calc((var(--lesson-size) * 1.6 - 20px) / 2);
+  color: var(--text-2);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.task-spec dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+/* Ограничения — чек-лист «для себя» на линиях. */
+.task-constraints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.task-checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.task-checks li {
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-checks .check {
+  color: var(--text);
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+.task-checks .check input {
+  margin-top: calc((var(--lesson-size) * 1.6 - 18px) / 2);
+}
+
+/* Примеры — таблица на линиях, без рамки-карточки. */
+.task-examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.task-examples-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.task-examples-head .btn {
+  margin-left: auto;
+}
+
+.task-legend {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.io-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.io-table th,
+.io-table td {
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.io-table th:last-child,
+.io-table td:last-child {
+  padding-right: 0;
+}
+
+.io-table thead th {
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.io-table tbody tr + tr > * {
+  border-top: 1px solid var(--line);
+}
+
+.io-table tbody th {
+  padding-top: calc(var(--sp-2) + 4px);
+  color: var(--text-2);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+  white-space: nowrap;
+}
+
+.io-table .io-block {
+  padding: var(--sp-1) var(--sp-2);
+  border: 0;
+}
+
+.io-text {
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.example-env {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+}
+
+.task-criteria {
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+/* «Наглядный заказ» (урок 1.1): раскрывающийся блок с превью картинки 96 × 54. */
+.order-explorer {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.order-explorer > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 44px;
+  padding: var(--sp-2) 0;
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+  list-style: none;
+  cursor: pointer;
+}
+
+.order-explorer > summary::-webkit-details-marker {
+  display: none;
+}
+
+.order-explorer > summary img {
+  width: 96px;
+  height: 54px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  object-fit: cover;
+}
+
+.order-explorer[open] > summary .disclosure-chevron {
+  transform: rotate(90deg);
+}
+
+.oe-body {
+  padding: 0 0 var(--sp-3);
+}
+
+/* ------------------------------------------------------------ учебное окружение: сеть, файлы, базы */
+.env-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.env-info > .notice {
+  margin-bottom: var(--sp-3);
+}
+
+.env-info > .notice:last-child {
+  margin-bottom: 0;
+}
+
+.env-http {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.env-http li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.env-http svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 4px;
+  color: var(--warn);
+}
+
+.env-http .mono {
+  color: var(--text);
+  font-size: var(--fs-14);
+  overflow-wrap: anywhere;
+}
+
+.env-http-status {
+  color: var(--text-2);
+}
+
+.env-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.env-summary svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.env-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.env-body > .tag {
+  align-self: flex-start;
+}
+
+.env-missing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.env-missing svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.env-missing .mono {
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ панель «Код»: полоса main.py, редактор, ввод */
+.pane-code {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-editor);
+}
+
+.editor-bar {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  min-width: 0;
+  min-height: var(--head);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+/* Вкладка файла сливается с редактором под ней; черта сверху — янтарная, когда панель активна. */
+.etab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 48px;
+  margin-bottom: -1px;
+  padding: 0 var(--sp-4);
+  border-right: 1px solid var(--line);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-code);
+}
+
+.etab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--text-2);
+}
+
+.pane-code:focus-within .etab::before {
+  background: var(--accent-edge);
+}
+
+.etab svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.etab-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Меню «⋯» файла: «Начать заново». */
+.more {
+  position: relative;
+  align-self: center;
+  flex: none;
+  margin-left: var(--sp-1);
+}
+
+.more > summary {
+  list-style: none;
+}
+
+.more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.more[open] > summary {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.more-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  min-width: 200px;
+  padding: var(--sp-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+}
+
+.more-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--control);
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-radius: var(--r-1);
+  background: none;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  text-align: left;
+}
+
+.more-item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.more-item:hover:not(:disabled) {
+  background: var(--bg-raised);
+}
+
+.more-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.more-item:disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.more-item:disabled svg {
+  color: var(--text-3);
+}
+
+/* «Запустить | Проверить» не сжимаются: при нехватке места ужимается вкладка файла. */
+.wb-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+  padding: 0 var(--gutter) 0 var(--sp-3);
+}
+
+/* Редактор — по высоте кода (--editor-lines строк, не больше 60 % панели; дальше CodeMirror прокручивается сам),
+   остальное место — «Проверке»: после «Проверить» раскрытый тест виден без поиска. Высота «Проверки», выставленная
+   рукой (data-results='manual'), главнее. */
+.editor-wrap {
+  display: flex;
+  flex: 0 1 min(60%, calc(var(--editor-lines, 6) * var(--code-size) * 1.6 + 24px));
+  flex-direction: column;
+  min-height: 96px;
+  overflow: hidden;
+}
+
+.pane-code[data-results='manual'] .editor-wrap {
+  flex: 1 1 auto;
+}
+
+.editor-wrap > .code-editor {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.code-editor {
+  min-width: 0;
+}
+
+.editor-wrap .cm-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Разбор под редактором — только когда наставник не виден рядом: своим блоком, со своим фоном. */
+.error-strip {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-1) var(--gutter) var(--sp-1) calc(var(--gut) - 16px - var(--sp-3));
+  border-top: 1px solid var(--err-line);
+  border-left: 3px solid var(--err);
+  background: var(--err-soft);
+}
+
+.error-strip > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 10px;
+  color: var(--err);
+}
+
+.error-strip-btn {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  min-height: var(--control);
+  padding: var(--sp-1) 0;
+  border: 0;
+  border-radius: var(--r-1);
+  background: none;
+  color: var(--text);
+  font: 500 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+  text-align: left;
+}
+
+.error-strip-btn > span {
+  min-width: 0;
+}
+
+.error-strip-btn > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-left: auto;
+  color: var(--text-2);
+}
+
+.error-strip-btn:hover > span {
+  text-decoration: underline;
+  text-decoration-color: var(--err-line);
+  text-underline-offset: 4px;
+}
+
+/* «Ввод для „Запустить“»: шеврон и значок — в колонке полей редактора, подпись — на линии кода. */
+.stdin {
+  flex: none;
+  border-top: 1px solid var(--line);
+  background: var(--bg-editor);
+}
+
+.stdin > summary {
+  display: grid;
+  grid-template-columns: var(--gut) minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: var(--control);
+  padding-right: var(--gutter);
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+  list-style: none;
+  cursor: pointer;
+}
+
+.stdin > summary::-webkit-details-marker {
+  display: none;
+}
+
+.stdin > summary:hover {
+  color: var(--text);
+}
+
+.stdin > summary:focus-visible {
+  outline-offset: -2px;
+}
+
+.stdin-gut {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-1);
+  padding-right: var(--sp-2);
+}
+
+.stdin-gut svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.stdin-gut .stdin-chev {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s;
+}
+
+.stdin[open] .stdin-chev {
+  transform: rotate(90deg);
+}
+
+.stdin-label {
+  padding-left: 4px;
+}
+
+.stdin-meta {
+  margin-left: var(--sp-3);
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+  white-space: nowrap;
+}
+
+.stdin-body {
+  padding: 0 var(--gutter) var(--sp-3) calc(var(--gut) + 4px);
+}
+
+.stdin-body .textarea {
+  min-height: calc(3 * var(--code-size) * 1.6 + 16px);
+  background: var(--bg-sunken);
+  line-height: 1.6;
+}
+
+/* Граница «Проверки»: линия 1 px с зоной захвата. */
+.hsplit {
+  position: relative;
+  z-index: 5;
+  flex: none;
+  height: 1px;
+  background: var(--line);
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.hsplit::before {
+  content: '';
+  position: absolute;
+  inset: -3px 0;
+}
+
+.hsplit:hover,
+.hsplit.is-drag {
+  background: var(--focus);
+}
+
+.hsplit:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  background: var(--focus);
+}
+
+/* ------------------------------------------------------------ «Проверка / Вывод» — тест-раннер */
+.results {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 160px;
+  background: var(--bg-sunken);
+}
+
+.pane-code[data-results='manual'] .results {
+  flex: 0 0 var(--results-h);
+  max-height: 70%;
+}
+
+.results-tabs {
+  flex: none;
+  padding: 0 var(--sp-2);
+  background: var(--bg-panel);
+}
+
+/* На ПК вкладки «Проверка / Вывод» — метками панели (одно слово капсом), на телефоне — обычным регистром. */
+.lesson:not([data-layout='narrow']) .results-tabs .tab > span:first-child {
+  font-size: var(--fs-13);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.results-body {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 0;
+  padding: var(--sp-3) 0 var(--sp-6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.results-body:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Одна направляющая с кодом: значки — в колонке --gut, текст — на линии кода. */
+.results-body > * {
+  margin: 0 var(--gutter) 0 var(--gut);
+}
+
+.results-body > .results-run,
+.results-body > .results-wait,
+.results-body > .status-line,
+.results-body > .results-summary,
+.results-body > .test-list {
+  margin-left: 0;
+}
+
+/* column-gap: 0 — промежуток .status-line (8 px) здесь не нужен: отступ задаёт колонка --gut. */
+.results-run,
+.results-wait,
+.results-body > .status-line,
+.results-summary > .status-line {
+  display: grid;
+  grid-template-columns: var(--gut) minmax(0, 1fr);
+  column-gap: 0;
+  align-items: start;
+  margin-right: var(--gutter);
+}
+
+.results-run > svg,
+.results-wait > .spinner,
+.results-body > .status-line > svg,
+.results-summary > .status-line > svg {
+  justify-self: end;
+  margin: 2px var(--sp-3) 0 0;
+}
+
+.results-run {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.results-run > svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.results-run .file {
+  color: var(--text);
+  font-family: var(--font-code);
+}
+
+.results-wait {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.results-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.results-summary .status-line {
+  font-weight: 600;
+}
+
+.results-empty {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Тесты — строки лога на линиях. */
+.test-list {
+  margin: var(--sp-1) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.test-item + .test-item {
+  border-top: 1px solid var(--line);
+}
+
+.test-row {
+  display: grid;
+  grid-template-columns: var(--gut) minmax(0, 1fr);
+  align-items: start;
+  width: 100%;
+  min-height: 36px;
+  padding: var(--sp-2) var(--gutter) var(--sp-2) 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+  text-align: left;
+}
+
+.test-row:hover {
+  background: var(--bg-panel);
+}
+
+.test-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.test-gut {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-3) 0 0;
+}
+
+.test-chev {
+  width: 14px;
+  height: 14px;
+  color: var(--text-3);
+  transition: transform 0.15s;
+}
+
+.test-row[aria-expanded='true'] .test-chev {
+  transform: rotate(90deg);
+}
+
+.test-ic {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.test-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--sp-3);
+  min-width: 0;
+}
+
+.test-name {
+  font-weight: 600;
+}
+
+.test-state {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.test-reason {
+  min-width: 0;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+/* Значения в причине («ожидалось 3800 · получилось 15002300») — кодом и основным цветом. */
+.reason-val {
+  color: var(--text);
+  font-family: var(--font-code);
+  white-space: pre-wrap;
+}
+
+.test-item[data-state='pass'] .test-ic,
+.test-item[data-state='pass'] .test-state {
+  color: var(--ok);
+}
+
+.test-item[data-state='fail'] .test-ic,
+.test-item[data-state='fail'] .test-state {
+  color: var(--err);
+}
+
+.test-item[data-state='skip'] .test-ic,
+.test-item[data-state='skip'] .test-state {
+  color: var(--text-2);
+}
+
+/* Раскрытый тест — «ввод / ожидалось / получилось»: метки слева, значения кодом. */
+.test-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 0 var(--gutter) var(--sp-3) var(--gut);
+}
+
+.test-io {
+  display: grid;
+  grid-template-columns: minmax(96px, max-content) minmax(0, 1fr);
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0;
+}
+
+.test-io dt {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: var(--sp-2);
+  color: var(--text-2);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.test-io dt svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 3px;
+}
+
+.test-io dt.is-got {
+  color: var(--err);
+  font-weight: 600;
+}
+
+.test-io dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.test-message {
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Значения ввода и вывода — моноширинным блоком со своим фоном. */
+.io-block {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 400 var(--code-size) / 1.6 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.io-block .ws {
+  color: var(--text-3);
+}
+
+.io-block .empty-mark {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Консоль программы. В панели «Вывод» — без рамки, на фоне терминала. */
+.console {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--bg-sunken);
+  color: var(--text);
+  font: 400 var(--code-size) / 1.6 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.results .console {
+  margin: 0 var(--gutter) 0 var(--gut);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.console:focus-visible {
+  outline-offset: 2px;
+}
+
+.console .t-prompt {
+  color: var(--text-2);
+}
+
+.console .t-input {
+  color: var(--accent-text);
+}
+
+.console .t-err {
+  color: var(--err);
+}
+
+.console-empty {
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* «Файлы после запуска». */
+.run-files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+
+.run-files-title {
+  margin: 0;
+  color: var(--text-2);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.run-files-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-files-list > li:last-child > .disclosure {
+  border-bottom: 1px solid var(--line);
+}
+
+.run-file {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+}
+
+.run-file svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.run-file-name {
+  color: var(--text);
+  font-size: var(--fs-14);
+  overflow-wrap: anywhere;
+}
+
+.run-file-meta {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.run-files .disclosure-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.run-file-note {
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ панель «Наставник» */
+.coach {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.coach-head {
+  background: var(--bg-panel);
+}
+
+.coach-head .pane-aside {
+  min-width: 0;
+}
+
+/* Метка источника: «Подсказки курса · не ИИ». */
+.src-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-1);
+  background: var(--bg-raised);
+  color: var(--text-2);
+  font: 500 var(--fs-13) / var(--lh-13) var(--font-sans);
+  text-align: left;
+}
+
+.src-tag svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  align-self: flex-start;
+  margin-top: 3px;
+}
+
+.src-text {
+  min-width: 0;
+}
+
+/* Части метки не рвутся посередине: перенос — только между «Подсказки курса» и «· не ИИ». */
+.src-text > span {
+  white-space: nowrap;
+}
+
+/* Узкая колонка (1280, суженная панель): метка источника остаётся в одну строку — без значка, промежутки меньше. */
+@container coach (max-width: 368px) {
+  .coach-head {
+    gap: var(--sp-2);
+  }
+
+  .src-tag > svg {
+    display: none;
+  }
+}
+
+/* Короткая метка источника («Курс») — только в узкой колонке шага-документа. */
+.src-short {
+  display: none;
+}
+
+/* Совсем узкая. Рядом с редактором: название панели остаётся для скринридера, видна метка источника.
+   В шаге-документе название «Наставник» остаётся, метка источника сжимается до «Курс · не ИИ». */
+@container coach (max-width: 339px) {
+  .workspace[data-layout='work'] .coach-head > .plabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .workspace[data-layout='work'] .coach-head > .pane-aside {
+    margin-left: 0;
+  }
+
+  .workspace[data-layout='doc'] .src-text > .coach-mode {
+    display: none;
+  }
+
+  .workspace[data-layout='doc'] .src-text > .src-short {
+    display: inline;
+  }
+}
+
+.coach-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  min-height: 0;
+  padding: var(--sp-4) var(--gutter) var(--sp-6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Длинные строки (исходное сообщение Python, код) прокручиваются внутри своих блоков, а не раздвигают панель. */
+.coach-body,
+.coach-body > *,
+.feedback > * {
+  min-width: 0;
+}
+
+/* Подвал — строка сетки панели, без затемнения над ним. На телефоне (.coach-tail) — конец содержимого наставника. */
+.coach-foot,
+.coach-tail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--gutter);
+  border-top: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.coach-note {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.coach-note svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.coach-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.coach-actions .btn {
+  padding: 0 var(--sp-2);
+}
+
+.coach-actions .coach-hint {
+  flex: 1 1 auto;
+}
+
+/* У кнопки без рамки поля не видны: «Показать решение» встаёт в строку с подсказкой и в колонке 330–370 px. */
+.coach-actions .coach-solution {
+  padding: 0 var(--sp-1);
+}
+
+.coach-actions .btn-block {
+  flex: 1 1 100%;
+}
+
+.lbl-short {
+  display: none;
+}
+
+/* Узкая панель: «Показать решение» становится «Решение», подвал остаётся в одну строку. */
+@container coach (max-width: 359px) {
+  .coach-solution .lbl-long {
+    display: none;
+  }
+
+  .coach-solution .lbl-short {
+    display: inline;
+  }
+}
+
+/* Широкая панель (вкладка на планшете): кнопки по ширине слов. */
+@container coach (min-width: 480px) {
+  .coach-actions .coach-hint {
+    flex: 0 1 auto;
+  }
+}
+
+.coach-empty {
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.coach-text {
+  font-size: var(--lesson-size);
+}
+
+/* Разбор: где → почему → попробуй → проверь. Значки — в колонке 16 px, текст — на одной направляющей. */
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.feedback:focus-visible {
+  outline-offset: 4px;
+}
+
+/* Как у названия задания: на 2 px крупнее текста урока, значок — по центру первой строки. */
+.feedback-title {
+  --title-size: max(var(--fs-18), calc(var(--lesson-size) + 2px));
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: 10px;
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--title-size) / 1.35 var(--font-sans);
+}
+
+.feedback-title > svg {
+  width: 18px;
+  height: 18px;
+  margin-top: calc((var(--title-size) * 1.35 - 18px) / 2);
+  color: var(--err);
+}
+
+.feedback[data-tone='env'] .feedback-title > svg {
+  color: var(--warn);
+}
+
+.feedback-parts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: 0;
+}
+
+.feedback-part {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: var(--sp-3);
+  row-gap: var(--sp-1);
+}
+
+.feedback-part dt {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  color: var(--text-2);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.feedback-part dt svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Метка и адрес строки («Где  main.py:3») — в одну строку, между ними 8 px. */
+.feedback-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+  min-width: 0;
+}
+
+.feedback-part dd {
+  grid-column: 2;
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+  overflow-wrap: break-word;
+}
+
+/* «Попробуй» — главный совет: полоса во всю ширину панели, со своим фоном и линиями. */
+.feedback-part.is-try {
+  margin: 0 calc(-1 * var(--gutter));
+  padding: var(--sp-3) var(--gutter);
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--bg-editor);
+}
+
+.feedback-part.is-try dt {
+  color: var(--text);
+}
+
+.feedback-part.is-try dd {
+  font-weight: 500;
+}
+
+.feedback-raw .disclosure-body {
+  padding-left: 0;
+}
+
+.feedback .raw {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--bg-sunken);
+  color: var(--text);
+  font: 400 var(--fs-14) / 1.6 var(--font-code);
+  white-space: pre;
+}
+
+/* Итоговая строка («NameError: …») — фраза: переносится у края панели, а не обрывается. */
+.feedback .raw .raw-last {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.feedback-note {
+  color: var(--text);
+  font-size: var(--lesson-size);
+  line-height: var(--lh-prose);
+}
+
+/* Подсказки: открытая — на сетке разбора (лампочка в колонке значков), прежние свёрнуты. */
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+
+.coach-body > .hints:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.hints-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-2);
+}
+
+.hints-head h3 {
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.hints-count {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* Открытая подсказка: лампочка в колонке значков, метка строкой интерфейса, текст (.hint-card) — на направляющей. */
+.hint {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: var(--sp-3);
+  row-gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+}
+
+.hint:focus-visible {
+  outline-offset: 4px;
+}
+
+.hint-icon {
+  grid-row: 1;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--accent-text);
+}
+
+.hint-label {
+  grid-column: 2;
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.hint-text {
+  grid-column: 2;
+  min-width: 0;
+}
+
+
+.solution-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.success-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.success-card .status-line {
+  font-weight: 600;
+}
+
+.success-text {
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ ИИ-наставник: отдельный блок после подсказок курса */
+.ai-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+}
+
+.ai-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.ai-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.ai-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-text);
+}
+
+.ai-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.ai-status svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.ai-status.tone-good {
+  color: var(--ok);
+}
+
+.ai-status.tone-warn {
+  color: var(--warn);
+}
+
+.ai-status.tone-muted {
+  color: var(--text-2);
+}
+
+.ai-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.ai-problem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.ai-problem .disclosure {
+  border-top: 0;
+}
+
+.ai-problem-text {
+  margin: 0;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.ai-question .textarea {
+  font-size: var(--lesson-size);
+  line-height: 1.5;
+}
+
+.ai-drafts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.ai-subhead {
+  margin: 0;
+  color: var(--text-2);
+  font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+.ai-draft-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-draft-list > li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.ai-draft-text {
+  margin: 0;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+  overflow-wrap: anywhere;
+}
+
+.ai-answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+.ai-answer-label {
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ «Назад / Далее» на телефоне и док */
+.step-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--gutter) var(--sp-6);
+  border-top: 1px solid var(--line);
+}
+
+.step-nav .btn {
+  flex: 1 1 0;
+}
+
+.step-done {
+  margin: 0;
+  padding: var(--sp-4) var(--gutter) 0;
+  border-top: 1px solid var(--line);
+}
+
+.step-done + .step-nav {
+  border-top: 0;
+}
+
+.lesson-dock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--gutter) calc(var(--sp-2) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.lesson-dock:empty {
+  display: none;
+}
+
+.dock-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-4);
+  margin: 0;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.dock-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dock-item svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.dock-item.tone-ok svg {
+  color: var(--ok);
+}
+
+.dock-item.tone-err {
+  color: var(--err);
+}
+
+.lesson-dock .wb-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+}
+
+.lesson-dock .wb-actions .btn {
+  width: 100%;
+}
+
+/* ------------------------------------------------------------ 900–1199: вкладки «Задание | Наставник» слева, код справа */
+@media (max-width: 1199px) {
+  .workspace {
+    --w-mid: clamp(320px, 37vw, 400px);
+  }
+
+  .workspace[data-layout='work'],
+  .workspace[data-layout='work'].is-coach-empty {
+    grid-template-columns: var(--w-mid) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: 'side code';
+  }
+
+  .workspace[data-layout='work'].has-tabs {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'tabs code'
+      'side code';
+  }
+
+  .workspace[data-layout='work'] > .lesson-main > .pane-task,
+  .workspace[data-layout='work'] > .lesson-coach {
+    grid-area: side;
+    border-right: 1px solid var(--line);
+  }
+
+  .workspace[data-layout='work'] > .pane-tabs {
+    grid-area: tabs;
+    padding: 0 var(--sp-2);
+    border-right: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+
+  .workspace[data-layout='doc'] {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-areas: 'doc coach';
+  }
+
+  .workspace[data-layout='doc'] > .lesson-coach {
+    border-left: 1px solid var(--line);
+  }
+
+  .workspace.has-tabs [data-pane-active='false'] {
+    display: none;
+  }
+
+  /* Название панели уже на вкладке: шапки «Задание» нет, у наставника остаётся метка источника. */
+  .workspace.has-tabs .pane-task > .task-head {
+    display: none;
+  }
+
+  .workspace.has-tabs .coach-head > .plabel {
+    display: none;
+  }
+
+  .workspace.has-tabs .coach-head > .pane-aside {
+    margin-left: 0;
+  }
+}
+
+/* ------------------------------------------------------------ < 900: телефон и планшет в портрете */
+@media (max-width: 899px) {
+  .lesson-head {
+    display: block;
+    padding: 0;
+  }
+
+  .lh-top {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-1);
+    min-height: 48px;
+    padding: 2px var(--sp-1) 0 var(--gutter);
+  }
+
+  .lh-top .lesson-title {
+    flex: 1 1 auto;
+    padding: 9px 0 var(--sp-1);
+    font-size: var(--fs-18);
+    line-height: var(--lh-18);
+  }
+
+  .lh-menu {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .lh-menu:empty {
+    display: none;
+  }
+
+  .lh-menu .more {
+    margin: 0;
+  }
+
+  .lh-menu .more-pop {
+    right: 0;
+    left: auto;
+  }
+
+  .lh-close {
+    flex: none;
+  }
+
+  .lh-steps {
+    display: grid;
+    grid-template-columns: var(--touch) minmax(0, 1fr) var(--touch);
+    align-items: center;
+    gap: var(--sp-1);
+    padding: 0 var(--sp-1) var(--sp-1);
+  }
+
+  .lh-picker {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 48px;
+    padding: var(--sp-1) var(--sp-2);
+    border: 0;
+    border-radius: var(--r-1);
+    background: none;
+    color: var(--text);
+    text-align: left;
+  }
+
+  .lh-picker:hover {
+    background: var(--bg-raised);
+  }
+
+  .lh-picker:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .lh-picker-title {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    font: 600 var(--fs-14) / var(--lh-14) var(--font-sans);
+  }
+
+  .lh-picker-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lh-picker-title svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--text-2);
+  }
+
+  .lh-picker .mbar-wrap {
+    width: 100%;
+  }
+
+  /* Кадр: шапка | вкладки частей шага | содержимое (одна прокрутка) | док. Вкладки и док — строки сетки, не поверх
+     прокрутки. «Назад / Далее» — в конце содержимого. */
+  .lesson {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+
+  .lesson > .lesson-head {
+    grid-row: 1;
+  }
+
+  .lesson > .pane-tabs {
+    grid-row: 2;
+    border-top: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+
+  .lesson > .workspace {
+    grid-row: 3;
+  }
+
+  .lesson > .lesson-dock {
+    grid-row: 4;
+  }
+
+  .workspace,
+  .workspace[data-layout='work'],
+  .workspace[data-layout='doc'] {
+    display: block;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid var(--line);
+  }
+
+  .lesson > .pane-tabs + .visually-hidden + .workspace {
+    border-top: 0;
+  }
+
+  .lesson > .pane-tabs .tab {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0 var(--sp-3);
+  }
+
+  /* Планшет в портрете: вкладки по ширине слов, на телефоне — равными долями. */
+  @media (min-width: 600px) {
+    .lesson > .pane-tabs .tab {
+      flex: 0 0 auto;
+      padding: 0 var(--sp-4);
+    }
+  }
+
+  .workspace[data-layout='doc'] > .lesson-main {
+    overflow: visible;
+  }
+
+  .workspace.has-tabs [data-pane-active='false'] {
+    display: none;
+  }
+
+  /* Одна колонка: линий-разделителей колонок (900–1199) нет. */
+  .workspace[data-layout='work'] > .lesson-main > .pane-task,
+  .workspace[data-layout='work'] > .lesson-coach {
+    border-right: 0;
+  }
+
+  .workspace.has-tabs .pane-task > .task-head,
+  .workspace.has-tabs .coach-head > .plabel {
+    display: none;
+  }
+
+  .workspace.has-tabs .coach-head > .pane-aside {
+    margin-left: 0;
+  }
+
+  .pane-task,
+  .pane-code {
+    overflow: visible;
+  }
+
+  .pane-task > .pane-body {
+    overflow: visible;
+  }
+
+  .task-body {
+    padding: var(--sp-4) var(--gutter) var(--sp-5);
+  }
+
+  .task-checks li {
+    padding: var(--sp-3) 0;
+  }
+
+  .editor-wrap,
+  .pane-code[data-results] .editor-wrap {
+    flex: none;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .code-editor .cm-scroller {
+    min-height: calc(var(--editor-min-lines, 6) * 1.6em + 24px);
+  }
+
+  .editor-wrap .cm-editor {
+    height: auto;
+  }
+
+  .error-strip {
+    padding-left: calc(var(--gut) - 16px - var(--sp-2));
+  }
+
+  .error-strip > svg {
+    margin-top: 14px;
+  }
+
+  .error-strip-btn {
+    min-height: var(--touch);
+  }
+
+  .stdin > summary {
+    min-height: var(--touch);
+  }
+
+  .results,
+  .pane-code[data-results] .results {
+    flex: none;
+    min-height: 0;
+    max-height: none;
+    border-top: 1px solid var(--line);
+  }
+
+  .results-tabs {
+    background: var(--bg-sunken);
+  }
+
+  /* В колонку --gut (44 px) шеврон, значок и отступ не помещаются: раскрытость видна по содержимому
+     и передаётся aria-expanded. */
+  .test-chev {
+    display: none;
+  }
+
+  .results-body {
+    overflow: visible;
+  }
+
+  .lesson-coach {
+    border-top: 1px solid var(--line);
+  }
+
+  .coach {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .coach-body {
+    overflow: visible;
+  }
+
+  .coach-tail {
+    padding-block: var(--sp-3);
+  }
+}
+
+/* Касание (телефон, планшет, сенсорный ноутбук): строки тестов и ссылка на модуль — цели не меньше 44 px. */
+@media (max-width: 899px), (pointer: coarse) {
+  .test-row {
+    min-height: var(--touch);
+    padding-block: 10px;
+  }
+
+  .feedback .addr {
+    min-height: var(--touch);
+    padding: 0 var(--sp-3);
+  }
+
+  .task-checks .check {
+    min-height: var(--touch);
+    padding-block: max(var(--sp-2), calc((var(--touch) - var(--lesson-size) * 1.6) / 2));
+  }
+
+  .task-checks li {
+    padding: 0;
+  }
+
+  .lesson-module {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch);
+  }
+}
+
+@media (max-width: 599px) {
+  .task-spec {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .task-spec dt {
+    padding-top: 0;
+  }
+
+  .task-spec dd + dt {
+    margin-top: var(--sp-2);
+  }
+
+  .test-io {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-1);
+  }
+
+  .test-io dt {
+    padding-top: 0;
+  }
+
+  .test-io dd + dt {
+    margin-top: var(--sp-2);
+  }
+
+  .io-table tbody th {
+    white-space: normal;
+  }
+}
+
+/* Шторка со списком шагов (телефон): снизу, над затемнением. */
+.step-sheet {
+  inset: auto 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 80dvh;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-2) calc(var(--sp-4) + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  border: 0;
+  border-top: 1px solid var(--line-strong);
+  border-radius: var(--r-2) var(--r-2) 0 0;
+  background: var(--bg-editor);
+  color: var(--text);
+}
+
+.step-sheet::backdrop {
+  background: var(--scrim);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  padding: 0 0 0 var(--sp-2);
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font: 600 var(--fs-16) / var(--lh-16) var(--font-sans);
+}
+
+.sheet-group > .plabel {
+  display: flex;
+  padding: var(--sp-3) var(--sp-2) var(--sp-1);
+}
+
+.sheet-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-sheet .flow-pop-item {
+  min-height: var(--touch);
+}
+
+.step-sheet .flow-pop-title {
+  font-size: var(--fs-14);
+}
+
+/* ------------------------------------------------------------ режим «страницей»: низкое окно и полные снимки */
+@media (max-height: 559px) {
+  .lesson {
+    display: block;
+  }
+
+  .workspace,
+  .workspace[data-layout='work'],
+  .workspace[data-layout='doc'] {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .workspace[data-layout='doc'] > .lesson-main,
+  .pane-task,
+  .pane-task > .pane-body,
+  .pane-code,
+  .results-body,
+  .coach-body {
+    overflow: visible;
+  }
+
+  .editor-wrap,
+  .pane-code[data-results] .editor-wrap {
+    flex: none;
+    overflow: visible;
+  }
+
+  .editor-wrap .cm-editor {
+    height: auto;
+  }
+
+  .code-editor .cm-scroller {
+    min-height: calc(var(--editor-min-lines, 6) * 1.6em + 24px);
+  }
+
+  .results,
+  .pane-code[data-results] .results {
+    flex: none;
+    max-height: none;
+  }
+
+  .hsplit {
+    display: none;
+  }
+}
+
+:root[data-scroll='page'] .lesson {
+  display: block;
+}
+
+:root[data-scroll='page'] .workspace,
+:root[data-scroll='page'] .workspace[data-layout='work'],
+:root[data-scroll='page'] .workspace[data-layout='doc'] {
+  min-height: 0;
+  overflow: visible;
+}
+
+:root[data-scroll='page'] .workspace[data-layout='doc'] > .lesson-main,
+:root[data-scroll='page'] .pane-task,
+:root[data-scroll='page'] .pane-task > .pane-body,
+:root[data-scroll='page'] .pane-code,
+:root[data-scroll='page'] .results-body,
+:root[data-scroll='page'] .coach-body {
+  overflow: visible;
+}
+
+:root[data-scroll='page'] .editor-wrap,
+:root[data-scroll='page'] .pane-code[data-results] .editor-wrap {
+  flex: none;
+  overflow: visible;
+}
+
+:root[data-scroll='page'] .editor-wrap .cm-editor {
+  height: auto;
+}
+
+:root[data-scroll='page'] .code-editor .cm-scroller {
+  min-height: calc(var(--editor-min-lines, 6) * 1.6em + 24px);
+}
+
+:root[data-scroll='page'] .results,
+:root[data-scroll='page'] .pane-code[data-results] .results {
+  flex: none;
+  max-height: none;
+}
+
+:root[data-scroll='page'] .hsplit {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .test-chev,
+  .stdin-chev {
+    transition: none;
+  }
+}

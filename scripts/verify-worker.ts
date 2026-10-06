@@ -80,7 +80,9 @@ process.on('message', async (request: WorkerRequest) => {
   const fn = pyodide.globals.get(name) as PyCallable;
   try {
     if (request.type === 'run') {
-      const json = fn(request.code, request.stdin, request.limit) as string;
+      // Окружение (учебные файлы, базы, seed, ответы сети) — строкой JSON, как в python.worker.ts.
+      const environment = request.environment ? JSON.stringify(request.environment) : null;
+      const json = fn(request.code, request.stdin, request.limit, environment) as string;
       post({ type: 'run-result', id: request.id, result: JSON.parse(json) });
     } else {
       const json = fn(request.payload) as string;

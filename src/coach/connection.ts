@@ -1,4 +1,4 @@
-// Состояние связи с ИИ-наставником для интерфейса: подключён, ИИ не настроен, адаптер недоступен
+// Состояние связи с ИИ-наставником для интерфейса: подключён, не настроен (нет ключа), нет связи с адаптером
 // или ещё не проверено. Проверка /health бесплатная; запросы к ИИ по-прежнему только по кнопке ученика.
 // Последний запрос к наставнику тоже обновляет состояние: если адаптер перестал отвечать, это видно сразу.
 
@@ -99,18 +99,18 @@ export function reportCoachResult(endpoint: string, token: string, result: { ok:
   if (value) publish(key, value);
 }
 
-/** Коротко для строки статуса. */
-export function connectionLabel(connection: CoachConnection, online: boolean): { text: string; tone: 'good' | 'warn' | 'muted' } {
+/** Коротко (1–2 слова) для строки состояния и метки наставника: «ИИ: нет связи». Подробности — в title. */
+export function connectionLabel(connection: CoachConnection | { state: CoachConnection['state'] }, online: boolean): { text: string; tone: 'good' | 'warn' | 'muted' } {
   if (!online) return { text: 'нет сети', tone: 'warn' };
   switch (connection.state) {
     case 'ready':
       return { text: 'подключён', tone: 'good' };
     case 'not-configured':
-      return { text: 'ИИ не настроен', tone: 'warn' };
+      return { text: 'не настроен', tone: 'warn' };
     case 'unavailable':
-      return { text: 'адаптер недоступен', tone: 'warn' };
+      return { text: 'нет связи', tone: 'warn' };
     default:
-      return { text: 'проверяю связь…', tone: 'muted' };
+      return { text: 'проверяю…', tone: 'muted' };
   }
 }
 

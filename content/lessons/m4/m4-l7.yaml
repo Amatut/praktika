@@ -1,0 +1,1738 @@
+id: m4-l7
+module: m4
+number: "4.7"
+title: "Самостоятельная работа: частотный словарь"
+objective: >-
+  Самостоятельно обработать текст: привести слова к одному виду, посчитать в словаре, сколько раз
+  встретилось каждое, убрать повторы с сохранением порядка и вывести результат в заданном формате.
+minutes: [25, 30]
+prerequisites: [m4-l6]
+skills: [dicts, string-methods, lists, sets-tuples, choose-structure]
+environment: python
+
+story:
+  title: Шесть раз «очень»
+  fictional: true
+  text: >-
+    Ника пишет заметки для районной газеты. Однажды редактор вернул ей текст с пометкой на полях:
+    «„очень“ — шесть раз на один абзац». С тех пор перед отправкой Ника ищет повторы: подчёркивает
+    одинаковые слова карандашом и считает их вручную, а на длинной заметке сбивается со счёта.
+    Частотный словарь делает это сам: разбивает текст на слова и считает, сколько раз встретилось
+    каждое. Сегодня ты напишешь такую программу — без разобранного примера.
+
+why: >-
+  Самостоятельная работа показывает, что уже получается без подсказок: разобрать текст, выбрать
+  подходящую структуру и аккуратно вывести результат. Например, в заметке «Очень тихий вечер.
+  Вечер очень тёплый!» программа сама найдёт, что «очень» и «вечер» встречаются по два раза.
+
+usedIn: >-
+  Проверка текстов на повторы в редакторах, облака тегов на сайтах, поисковые системы (какие слова
+  важны в документе), разбор отзывов покупателей, списки самых частых слов для изучения языка.
+
+steps:
+  - id: reminder
+    type: theory
+    title: Перед стартом
+    body: |-
+      Сегодня самостоятельная работа: две задачи на весь модуль. Подсказки и решение в них
+      откроются только после первой проверки. Это не запрет на помощь — просто сначала попробуй
+      сам.
+
+      Всё нужное ты уже знаешь. Короткая памятка:
+
+      ```text
+      # привести текст к одному виду — и сохранить результат
+      text = text.lower()
+      text = text.replace("!", "")      # убрать знак
+      words = text.split()              # слова, без пустых кусков
+
+      # первый символ и всё остальное
+      word[0]      word[1:]
+
+      # подсчёт в словаре и вывод пар по порядку добавления
+      counts[w] = counts.get(w, 0) + 1
+      for w, n in counts.items():
+
+      # без повторов, но в порядке появления
+      if w not in seen:
+          seen.append(w)
+
+      # список — в одну строку
+      ", ".join(список)
+      ```
+
+      Три вещи, о которых легко забыть:
+
+      - Метод строки не меняет её, а возвращает новую строку. Результат нужно присвоить.
+      - Множество убирает повторы, но не помнит порядок. Если порядок важен, храни значения в
+        списке и проверяй `not in` (или держи рядом множество «уже видели»).
+      - `print(список)` и `print(словарь)` показывают скобки и кавычки. Для красивого вывода
+        нужен `join` или цикл.
+
+      Как работать над заданием:
+
+      1. Прочитай условие и все примеры: что приходит на вход, что должно получиться, какие
+         есть особые случаи.
+      2. Разложи решение на шаги, как в плане ниже.
+      3. Нажми «Запустить»: поле «Ввод для „Запустить“» под редактором кода уже заполнено
+         вводом из первого примера. Сравни вывод с ожидаемым посимвольно.
+      4. Если вывод не тот, временно напечатай промежуточное значение — `print(words)` или
+         `print(counts)` — и найди шаг, где всё пошло не так. Перед проверкой убери этот `print`.
+
+      Вторую задачу можно оставить на следующую сессию — между задачами хорошее место для
+      остановки.
+    simpler: >-
+      Сегодня две задачи без подсказок до первой проверки. Главное: приведи текст к одному виду и
+      сохрани результат, считай в словаре через `get`, а для «без повторов, но по порядку» возьми
+      список и `not in`.
+    coach: >-
+      Ошибиться на первой попытке нормально: самостоятельная работа показывает, что уже получается
+      само, а что стоит повторить.
+
+  - id: warmup
+    type: predict
+    title: Разминка
+    prompt: >-
+      Разминка на весь модуль: методы строк, список и множество в трёх строках. Как думаешь, что
+      выведет программа?
+    code: |-
+      text = "Кот и кот, и КОТ"
+      words = text.lower().replace(",", "").split()
+      print(len(words), len(set(words)))
+    options:
+      - "5 2"
+      - "5 3"
+      - "5 4"
+      - "3 2"
+    answer: "5 2"
+    explanation: >-
+      Сначала `lower()` делает все буквы маленькими — `кот и кот, и кот`, потом `replace` убирает
+      запятую, и `split()` даёт пять слов: `['кот', 'и', 'кот', 'и', 'кот']`. `len(words)` считает
+      все слова вместе с повторами — их 5. Множество оставляет только разные — `кот` и `и`, их 2.
+      Без `lower()` вышло бы `5 4`: для Python `Кот`, `кот` и `КОТ` — разные слова. Без `replace` —
+      `5 3`: `кот,` с запятой — ещё одно отдельное слово.
+    coach: >-
+      Запомни эти две ловушки — регистр и прилипший знак. В главной задаче они встретятся снова.
+
+  - id: plan
+    type: order
+    title: "План: сколько каких оценок"
+    prompt: >-
+      Прежде чем писать код, разложи задачу на шаги. Потренируйся на другой задаче: в строке через
+      пробел записаны оценки за четверть, например `5 4 5 3 5 4`. Программа должна вывести, сколько
+      раз встретилась каждая оценка. Расставь действия по порядку.
+    items:
+      - id: read
+        text: Прочитать строку с оценками
+      - id: split
+        text: Разрезать строку на отдельные оценки через `split()`
+      - id: dict
+        text: Создать пустой словарь для счётчиков
+      - id: count
+        text: "Для каждой оценки увеличить её счётчик: `counts[mark] = counts.get(mark, 0) + 1`"
+      - id: show
+        text: Перебрать пары через `items()` и вывести каждую оценку с её числом
+    before:
+      - [read, split]
+      - [split, count]
+      - [dict, count]
+      - [count, show]
+    explanation: >-
+      Разрезать можно только прочитанную строку. Словарь создаётся до цикла подсчёта — можно и в
+      самом начале программы. Если создать его внутри цикла, он будет обнуляться на каждом шаге.
+      Выводить результат можно, только когда подсчёт закончен, — иначе числа ещё не окончательные.
+    coach: >-
+      Главную задачу разложи так же: привести текст к одному виду, разрезать на слова, посчитать,
+      вывести только повторы.
+
+  - id: main-task
+    type: exercise
+    title: Самостоятельная работа 1
+    exercise:
+      id: m4-l7-e1
+      kind: write
+      title: Повторы в заметке
+      statement: |-
+        Ника хочет перед отправкой видеть, какие слова повторяются в заметке. Напиши программу: она
+        читает одну строку текста и выводит слова, которые встретились **больше одного раза**, —
+        каждое в своей строке, в формате `слово: число`.
+
+        Правила:
+
+        - регистр не важен: «Вечер» и «вечер» — одно слово; в выводе слово пишется маленькими
+          буквами;
+        - к словам могут прилипать знаки `.` `,` `!` `?` — их нужно убрать: «вечер.» и «вечер» —
+          тоже одно слово;
+        - между словами бывает несколько пробелов;
+        - слова выводятся в том порядке, в каком впервые встретились в тексте;
+        - если повторов нет, программа выводит `Повторов нет`.
+
+        Например, для текста `Очень тихий вечер. Вечер очень тёплый!` вывод такой:
+
+        ```text
+        очень: 2
+        вечер: 2
+        ```
+      input: >-
+        Одна строка — текст заметки. Слова разделены пробелами, иногда несколькими; к словам могут
+        прилипать знаки `. , ! ?`. Строка может быть пустой.
+      output: >-
+        Повторяющиеся слова в порядке первого появления, по одному в строке: `слово: число`. Если
+        повторов нет — `Повторов нет`.
+      constraints:
+        - Подсказки и решение откроются после первой проверки — сначала попробуй сам.
+        - Других знаков, кроме `. , ! ?`, в тексте нет, и стоят они вплотную к словам.
+        - Буквы «ё» и «е» считаются разными, заменять «ё» не нужно.
+      starterCode: |
+        # Повторы в заметке
+        # Ввод: одна строка текста
+
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "Очень тихий вечер. Вечер очень тёплый!\n"
+          compare:
+            ignoreSpaces: true
+          expected: |-
+            очень: 2
+            вечер: 2
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "Дождь, дождь, снова дождь. А мы гуляем!\n"
+          compare:
+            ignoreSpaces: true
+          expected: "дождь: 3"
+        - id: t3
+          kind: io
+          title: Пример 3
+          example: true
+          stdin: "Каждое слово здесь одно\n"
+          compare:
+            ignoreSpaces: true
+          expected: Повторов нет
+        - id: t4
+          kind: io
+          title: "Граничный случай: одно слово с разными знаками"
+          edge: true
+          stdin: "Да? Да! Да, ДА.\n"
+          compare:
+            ignoreSpaces: true
+          expected: "да: 4"
+        - id: t5
+          kind: io
+          title: "Граничный случай: лишние пробелы"
+          edge: true
+          stdin: "  много   пробелов  между   словами   много \n"
+          compare:
+            ignoreSpaces: true
+          expected: "много: 2"
+        - id: t6
+          kind: io
+          title: "Граничный случай: одно слово"
+          edge: true
+          stdin: "Привет\n"
+          compare:
+            ignoreSpaces: true
+          expected: Повторов нет
+        - id: t7
+          kind: io
+          title: "Граничный случай: пустая строка"
+          edge: true
+          stdin: "\n"
+          compare:
+            ignoreSpaces: true
+          expected: Повторов нет
+        - id: t8
+          kind: io
+          title: "Граничный случай: многоточие и запятые"
+          edge: true
+          stdin: "мы шли, шли и шли, а они... они стояли\n"
+          compare:
+            ignoreSpaces: true
+          expected: |-
+            шли: 3
+            они: 2
+        - id: t9
+          kind: io
+          title: "Граничный случай: много повторов"
+          edge: true
+          stdin: "Снег, лёд, ветер, иней, холод и мороз. Мороз и холод, иней, ветер, лёд и снег!\n"
+          compare:
+            ignoreSpaces: true
+          expected: |-
+            снег: 2
+            лёд: 2
+            ветер: 2
+            иней: 2
+            холод: 2
+            и: 3
+            мороз: 2
+      criteria:
+        - Текст приведён к маленьким буквам, знаки `. , ! ?` убраны, результат каждого метода сохранён.
+        - Слова посчитаны в словаре, лишние пробелы не дают пустых «слов».
+        - "Выводятся только слова, которые встретились больше одного раза, в порядке первого появления, в формате `слово: число`."
+        - Если повторов нет — одна строка `Повторов нет`, в том числе для пустого текста.
+      hints:
+        - >-
+          Шаги такие: привести текст к одному виду → разрезать на слова → посчитать каждое слово →
+          вывести только повторы. Чаще всего ошибаются в первом шаге (все ли знаки убраны и
+          сохранён ли результат) и в последнем: «Повторов нет» зависит не от того, есть ли в тексте
+          слова, а от того, нашёлся ли хоть один повтор. Нажми «Запустить» и временно напечатай
+          список слов или словарь — так видно, на каком шаге всё расходится с примером.
+        - |-
+          По сравнению с подсчётом из урока 4.4 здесь новое — вывести только часть значений и один
+          раз сообщить, что подходящих нет. Этот приём на другом примере — морозные дни:
+          ```python
+          found = False
+          for t in [3, -2, 5, -1]:
+              if t < 0:
+                  print("Мороз:", t)
+                  found = True
+          if not found:
+              print("Морозов нет")
+          ```
+          Здесь напечатается `Мороз: -2` и `Мороз: -1`, а для `[3, 5]` — одна строка
+          `Морозов нет`. Подсчёт и очистка текста — как в памятке «Перед стартом».
+        - |-
+          Каркас:
+          ```text
+          text = input().lower()
+          для каждого знака из ".,!?": text = text.replace(знак, "")
+          counts = {}
+          для каждого word из text.split(): увеличить счётчик counts[word] через get
+          found = False
+          для каждой пары word, count из counts.items():
+              если count > 1: вывести f"{word}: {count}" и поставить found = True
+          если found так и остался False — вывести «Повторов нет»
+          ```
+      solution:
+        code: |
+          text = input().lower()
+          for mark in ".,!?":
+              text = text.replace(mark, "")
+          counts = {}
+          for word in text.split():
+              counts[word] = counts.get(word, 0) + 1
+          found = False
+          for word, count in counts.items():
+              if count > 1:
+                  print(f"{word}: {count}")
+                  found = True
+          if not found:
+              print("Повторов нет")
+        explanation: >-
+          Сначала текст приводится к одному виду: `lower()` делает буквы маленькими, а цикл по
+          строке `".,!?"` убирает каждый знак — это перебор символов из урока 4.1. Вместо цикла
+          подойдут и четыре `replace` подряд. `split()` с пустыми скобками режет по любым пробелам,
+          поэтому лишние пробелы не мешают. Словарь считает слова через `get` и помнит порядок
+          добавления, поэтому повторы выводятся в порядке первого появления. Флаг `found`
+          запоминает, был ли хоть один повтор, а `Повторов нет` печатается один раз, после цикла.
+      altSolutions:
+        - code: |
+            text = input().lower()
+            text = text.replace(".", " ").replace(",", " ").replace("!", " ").replace("?", " ")
+            counts = {}
+            order = []
+            for word in text.split():
+                if word in counts:
+                    counts[word] += 1
+                else:
+                    counts[word] = 1
+                    order.append(word)
+            repeats = 0
+            for word in order:
+                if counts[word] >= 2:
+                    print(word + ": " + str(counts[word]))
+                    repeats += 1
+            if repeats == 0:
+                print("Повторов нет")
+          note: Знаки заменены на пробелы, счёт через in, порядок — отдельным списком.
+        - code: |
+            counts = {}
+            for word in input().split():
+                word = word.lower().replace(".", "").replace(",", "").replace("!", "").replace("?", "")
+                counts[word] = counts.get(word, 0) + 1
+            result = []
+            for word in counts:
+                if counts[word] > 1:
+                    result.append(f"{word}: {counts[word]}")
+            if len(result) == 0:
+                print("Повторов нет")
+            for line in result:
+                print(line)
+          note: Каждое слово чистится отдельно, строки вывода копятся в списке.
+        - code: |
+            text = input().lower()
+            for mark in [".", ",", "!", "?"]:
+                text = text.replace(mark, "")
+            words = text.split()
+            seen = []
+            for word in words:
+                if word not in seen:
+                    seen.append(word)
+            found = False
+            for word in seen:
+                if words.count(word) > 1:
+                    print(f"{word}: {words.count(word)}")
+                    found = True
+            if found == False:
+                print("Повторов нет")
+          note: Без словаря — список разных слов и words.count (метод из документации).
+        - code: |
+            words = []
+            for raw in input().split():
+                words.append(raw.strip(".,!?").lower())
+            if len(set(words)) == len(words):
+                print("Повторов нет")
+            else:
+                counts = {}
+                for word in words:
+                    counts[word] = counts.get(word, 0) + 1
+                for word, count in counts.items():
+                    if count > 1:
+                        print(f"{word}: {count}")
+          note: >-
+            Рецензия: strip(".,!?") у каждого слова, а «есть ли повторы» — заранее, сравнением длины
+            списка и множества.
+        - code: |
+            text = input().lower()
+            text = text.replace(".", "").replace(",", "").replace("!", "").replace("?", "")
+            counts = {}
+            for word in text.split(" "):
+                if word == "":
+                    continue
+                if word in counts:
+                    counts[word] += 1
+                else:
+                    counts[word] = 1
+            lines = []
+            for word in counts:
+                if counts[word] > 1:
+                    lines.append(f"{word}: {counts[word]}")
+            if lines == []:
+                print("Повторов нет")
+            else:
+                print("\n".join(lines))
+          note: Рецензия — split(" ") с пропуском пустых кусков, счёт через in/else, вывод одним join.
+        - code: |
+            counts = {}
+            order = []
+            seen = set()
+            for word in input().lower().split():
+                while len(word) > 0 and word[-1] in ".,!?":
+                    word = word[:-1]
+                if word not in seen:
+                    seen.add(word)
+                    order.append(word)
+                counts[word] = counts.get(word, 0) + 1
+            any_repeat = False
+            for word in order:
+                if counts[word] > 1:
+                    any_repeat = True
+                    print(f"{word}: {counts[word]}")
+            if not any_repeat:
+                print("Повторов нет")
+          note: >-
+            Рецензия: знаки снимаются с конца слова в while (многоточие тоже), множество «уже
+            видели» и отдельный список для порядка.
+      wrongSolutions:
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] += 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Прибавление к ключу, которого ещё нет.
+          expectMistake: key-error
+        - code: |
+            text = input()
+            text.lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Результат lower() не сохранён.
+          expectMistake: not-saved
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Результат replace() не сохранён — знаки остались.
+          expectMistake: not-saved
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split(" "):
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: split(" ") — при лишних пробелах считается пустое «слово».
+          expectMistake: split-space
+        - code: |
+            text = input()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Регистр не приведён к одному виду.
+          expectMistake: no-lower
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Счётчик каждый раз ставится в 1, а не увеличивается.
+          expectMistake: no-repeats-found
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                else:
+                    print("Повторов нет")
+          note: «Повторов нет» печатается внутри цикла для каждого неповторяющегося слова.
+          expectMistake: message-when-found
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            print(counts)
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Остался отладочный print(counts).
+          expectMistake: print-dict
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(word, ":", count)
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: >-
+            print через запятую ставит пробел перед двоеточием. Своего разбора нет: общий разбор
+            показывает расхождение в первой строке.
+          expectMistake: null
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                print(f"{word}: {count}")
+                if count > 1:
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Выводятся все слова, а не только повторы.
+          expectMistake: all-words
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            found = False
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+                if counts[word] > 1:
+                    print(f"{word}: {counts[word]}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Вывод прямо во время подсчёта — неокончательные числа и не тот порядок.
+          expectMistake: print-while-counting
+        - code: |
+            text = input().lower()
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Знаки препинания не убраны совсем.
+          expectMistake: marks-dot
+        - code: |
+            text = input().lower()
+            for mark in ".!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Забыта запятая.
+          expectMistake: marks-comma
+        - code: |
+            text = input().lower()
+            text = text.replace(".", "").replace(",", "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Убраны только точка и запятая, а «!» и «?» остались.
+          expectMistake: marks-other
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count == 2:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Выводятся только слова, которые встретились ровно два раза.
+          expectMistake: count-condition
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+          note: Нет сообщения «Повторов нет».
+          expectMistake: no-message
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: get без запасного нуля — None + 1 даёт TypeError.
+          expectMistake: get-no-default
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            words = text.split()
+            counts = {}
+            for word in words:
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word in set(words):
+                if counts[word] > 1:
+                    print(f"{word}: {counts[word]}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: >-
+            Вывод перебором множества — порядок случайный. Порядок проверяют t1, t8 и t9 (семь
+            повторов); все три сразу случайно проходят примерно в 1 случае из 14 000 (модель
+            множества со случайными хешами, 200 000 прогонов).
+          expectMistake: set-order
+        - code: |
+            text = input()
+            text = text.lower()
+            text = text.replace(".", "")
+            text = text.replace(",", "")
+            text = text.replace("!", "")
+            text = text.replace("?", "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            if len(counts) == 0:
+                print("Повторов нет")
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+          note: >-
+            Сообщение печатается, только если словарь пуст (как «Голосов нет» в уроке 4.4), а в
+            «Примере 3» слова есть, просто без повторов.
+          expectMistake: message-condition
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                found = True
+            if not found:
+                print("Повторов нет")
+          note: Флаг ставится вне if — для любого слова, поэтому сообщение не печатается.
+          expectMistake: message-condition
+        - code: |
+            counts = {}
+            for word in input().lower().split():
+                if word[-1] in ".,!?":
+                    word = word[:-1]
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Со слова снимается только последний знак — от «они...» остаётся «они..».
+          expectMistake: ellipsis
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            repeats = []
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+                if counts[word] == 2:
+                    repeats.append(word)
+            if len(repeats) == 0:
+                print("Повторов нет")
+            for word in repeats:
+                print(f"{word}: {counts[word]}")
+          note: >-
+            Повторы складываются в список при второй встрече слова — порядок по второй встрече,
+            хотя печать уже после цикла.
+          expectMistake: print-while-counting
+        - code: |
+            text = input()
+            text.strip()
+            text = text.lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count == 2:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: >-
+            Лишний text.strip() без присваивания ничего не ломает; настоящая ошибка — count == 2.
+            Разбор not-saved на него срабатывать не должен.
+          expectMistake: count-condition
+        - code: |
+            text = input()
+
+            text.lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Результат lower() не сохранён, перед этой строкой — пустая строка.
+          expectMistake: not-saved
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split(' '):
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: split(' ') в одинарных кавычках.
+          expectMistake: split-space
+        - code: |
+            text = input().lower().replace("ё", "е")
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: >-
+            «ё» заменена на «е», хотя по условию это разные буквы. Своего разбора нет: общий разбор
+            показывает «лед: 2» вместо «лёд: 2».
+          expectMistake: null
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            counts = {}
+            for word in text.split():
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word in counts:
+                if counts[word] > 1:
+                    print(word + ": " + counts[word])
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Склейка строки и числа через +. Своего разбора нет — общий разбор про str + int точен.
+          expectMistake: null
+        - code: |
+            text = input().lower()
+            for mark in ".,!?":
+                text = text.replace(mark, "")
+            words = text.split()
+            print(words)
+            counts = {}
+            for word in words:
+                counts[word] = counts.get(word, 0) + 1
+            found = False
+            for word, count in counts.items():
+                if count > 1:
+                    print(f"{word}: {count}")
+                    found = True
+            if not found:
+                print("Повторов нет")
+          note: Остался отладочный print(words).
+          expectMistake: print-words
+      mistakes:
+        - id: key-error
+          when:
+            errorType: KeyError
+          why: >-
+            При первой встрече слова его ещё нет в словаре. Прочитать `counts[word]`, чтобы
+            прибавить к нему 1, нельзя — отсюда KeyError.
+          try: >-
+            Начинай счёт с запасного значения: `counts[word] = counts.get(word, 0) + 1`. Или сначала
+            проверь `if word in counts:` и для нового слова запиши 1.
+          verify: В «Примере 1» программа не должна падать.
+        - id: get-no-default
+          when:
+            errorIncludes: NoneType
+          why: >-
+            При первой встрече слова его ещё нет в словаре, и `counts.get(word)` без второго значения
+            в скобках возвращает `None` — «ничего». Прибавить 1 к «ничего» нельзя, отсюда TypeError.
+          try: 'Укажи в `get` запасное значение — ноль: `counts.get(word, 0) + 1`.'
+          verify: В «Примере 1» программа не должна падать.
+        - id: not-saved
+          when:
+            codeRegex: '^[ \t]*[A-Za-z_]\w*(?=[^\n]*\.(?:lower|replace)\()(?:\.(?:lower|upper|strip|replace)\([^)]*\))+[ \t]*$'
+          where: Строка, где метод вызван, но результат никуда не сохранён
+          why: >-
+            Метод не меняет строку, а возвращает новую. Её никуда не сохранили, и она пропала, а
+            переменная осталась прежней — с большими буквами или со знаками.
+          try: 'Присвой результат той же переменной: `text = text.lower()`, `text = text.replace(mark, "")`.'
+          verify: "В «Примере 1» должны получиться строки `очень: 2` и `вечер: 2`."
+        - id: split-space
+          when:
+            failedTest: t5
+            codeRegex: 'split\(\s*["''] ["'']\s*\)'
+          why: >-
+            `split(" ")` режет по каждому пробелу, и там, где пробелов несколько подряд, появляются
+            пустые «слова» — строки `''`. Словарь считает их как обычное слово.
+          try: Вызови `split()` с пустыми скобками — он режет по любому числу пробелов.
+          verify: "Тест «Граничный случай: лишние пробелы» должен дать `много: 2`."
+        - id: no-lower
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*\.lower\()'
+            codeIncludes: print(
+          where: Подготовка текста — до подсчёта
+          why: >-
+            Регистр не приведён к одному виду. Для словаря «Вечер» и «вечер» — разные слова, поэтому
+            повторы теряются. К тому же в выводе слова нужны маленькими буквами.
+          try: 'Приведи текст к маленьким буквам до подсчёта и сохрани результат: `text = text.lower()`.'
+          verify: "В «Примере 1» должны получиться строки `очень: 2` и `вечер: 2`."
+        - id: no-repeats-found
+          when:
+            failedTest: t1
+            outputEquals: Повторов нет
+          why: >-
+            В «Примере 1» повторы есть — «очень» и «вечер» встречаются по два раза, — а программа их
+            не нашла. Причин может быть несколько: счётчики не растут, словарь создаётся заново
+            внутри цикла, одно слово попадает в словарь в разном виде или условие вывода не
+            пропускает повторы.
+          try: >-
+            Временно допиши `print(counts)` после цикла подсчёта и нажми «Запустить». Если у всех
+            слов 1 или в словаре одно слово — проверь строку подсчёта
+            (`counts[word] = counts.get(word, 0) + 1`) и что `counts = {}` стоит до цикла. Если
+            числа верные — проверь условие вывода: нужны слова, которые встретились больше одного
+            раза.
+          verify: >-
+            Убери отладочный `print`. В «Примере 1» должны получиться строки `очень: 2` и
+            `вечер: 2`.
+        - id: message-when-found
+          when:
+            failedTest: t1
+            outputIncludes: Повторов нет
+          why: >-
+            `Повторов нет` напечатано, хотя повторы нашлись. Это сообщение нужно один раз — после
+            цикла и только если ни одного повтора не было.
+          try: >-
+            Заведи до цикла флаг `found = False`. Когда выводишь повтор, ставь `found = True`. После
+            цикла проверь флаг и только тогда печатай `Повторов нет`.
+          verify: "В «Примере 1» должно быть ровно две строки: `очень: 2` и `вечер: 2`."
+        - id: count-condition
+          when:
+            failedTest: t2
+            outputEquals: Повторов нет
+          why: >-
+            В «Примере 2» «дождь» встречается три раза, а программа его не вывела. Похоже, условие
+            вывода пропускает только слова, которые встретились ровно два раза.
+          try: >-
+            Нужны все слова, которые встретились больше одного раза: два, три и больше. Проверь знак
+            сравнения в условии вывода.
+          verify: "«Пример 2» должен дать `дождь: 3`."
+        - id: all-words
+          when:
+            outputIncludes: "тихий: 1"
+          why: >-
+            В выводе есть слова с числом 1. Они встретились один раз, а нужны только повторы.
+          try: Перед выводом проверь число и печатай слово, только если оно встретилось больше одного раза.
+          verify: "В «Примере 1» не должно быть строк `тихий: 1` и `тёплый: 1`."
+        - id: set-order
+          when:
+            codeRegex: 'for\s+\w+\s+in\s+(?:list\(\s*)?set\(|(\b[A-Za-z_]\w*)\s*=\s*(?:list\(\s*)?set\([^\n]*\n[\s\S]*for\s+\w+\s+in\s+\1\s*:'
+          where: Цикл вывода — перебор множества
+          why: >-
+            Цикл перебирает множество, а множество не помнит порядок: слова выходят в своём
+            порядке, и от запуска к запуску он может меняться. Поэтому вывод то совпадает с
+            примером, то нет. А нужен порядок первого появления в тексте.
+          try: >-
+            Выводи повторы циклом по словарю — `counts.items()`: словарь помнит порядок добавления.
+            Если нужен список разных слов, собирай его через `not in`.
+          verify: "Все тесты должны пройти, в том числе «Граничный случай: много повторов»."
+        - id: print-while-counting
+          when:
+            outputEquals: |-
+              вечер: 2
+              очень: 2
+          why: >-
+            Повторы попадают в вывод — печатаются или складываются в список — в тот момент, когда
+            слово встретилось второй раз. Поэтому порядок получается по второй встрече: «вечер»
+            оказался раньше «очень». А если печатать прямо во время подсчёта, число ещё не
+            окончательное, и слово, которое встретится трижды, напечатается два раза.
+          try: >-
+            Сначала досчитай всё в одном цикле. Выводи вторым циклом, после первого — по
+            `counts.items()`: словарь помнит порядок первого появления.
+          verify: "В «Примере 1» сначала `очень: 2`, потом `вечер: 2`; в «Примере 2» — одна строка `дождь: 3`."
+        - id: marks-dot
+          when:
+            outputEquals: "очень: 2"
+          why: >-
+            К словам прилипли знаки препинания. В «Примере 1» для словаря «вечер.» с точкой и
+            «вечер» без неё — разные слова, поэтому «вечер» не попал в повторы. Если в коде есть
+            `replace(".,!?", "")`, он ищет эти четыре знака подряд, одним куском, а такого куска в
+            тексте нет.
+          try: >-
+            Убери все четыре знака — точку, запятую, `!` и `?` — до разбиения на слова и сохрани
+            результат каждой замены: `text = text.replace(...)`. Можно пройти по знакам циклом или
+            написать четыре `replace`.
+          verify: "В «Примере 1» должны получиться строки `очень: 2` и `вечер: 2`."
+        - id: marks-comma
+          when:
+            outputIncludes: ",:"
+          why: >-
+            В выводе слово с запятой: для словаря «дождь,» и «дождь» — разные слова. Запятая
+            прилипла к слову и не убрана.
+          try: >-
+            Убери все четыре знака — точку, запятую, `!` и `?` — до разбиения на слова и сохрани
+            результат каждой замены: `text = text.replace(...)`. Можно пройти по знакам циклом или
+            написать четыре `replace`.
+          verify: "«Пример 2» должен дать `дождь: 3`."
+        - id: marks-other
+          when:
+            failedTest: t4
+            outputIncludes: "да: "
+          why: >-
+            К словам прилипли знаки: для словаря «да?», «да!» и «да» — разные слова, поэтому «да»
+            насчитано меньше четырёх раз. Скорее всего, убраны не все знаки — проверь `!` и `?`.
+          try: >-
+            Убери все четыре знака — точку, запятую, `!` и `?` — до разбиения на слова и сохрани
+            результат каждой замены. Можно пройти по знакам циклом или написать четыре `replace`.
+          verify: "Тест «Граничный случай: одно слово с разными знаками» должен дать `да: 4`."
+        - id: ellipsis
+          when:
+            failedTest: t8
+            outputEquals: "шли: 3"
+          why: >-
+            «они...» не совпало с «они»: многоточие — это три точки подряд, а со слова снята только
+            одна. Для словаря «они..» и «они» — разные слова.
+          try: >-
+            Убирай знаки заменой во всём тексте: `text = text.replace(".", "")` удаляет все точки
+            сразу, сколько бы их ни было.
+          verify: "Тест «Граничный случай: многоточие и запятые» должен дать `шли: 3` и `они: 2`."
+        - id: message-condition
+          when:
+            failedTest: t3
+            outputEquals: ""
+            codeIncludes: Повторов нет
+          where: Условие перед `print("Повторов нет")`
+          why: >-
+            Сообщение в коде есть, но в «Примере 3» оно не напечаталось: условие перед ним не
+            сработало. В «Примере 3» слова есть — четыре, просто каждое встретилось один раз. «Нет
+            повторов» и «нет слов» — разные вещи, поэтому пустой словарь или пустой текст тут не
+            подходят.
+          try: >-
+            Нужен признак «напечатан хотя бы один повтор»: `found = False` до цикла вывода,
+            `found = True` — внутри `if`, рядом с печатью повтора, а после цикла — `if not found:`.
+          verify: "«Пример 3» должен дать `Повторов нет`, а «Пример 1» — по-прежнему две строки."
+        - id: no-message
+          when:
+            failedTest: t3
+            outputEquals: ""
+            codeIncludes: print(
+          why: Когда повторов нет, программа ничего не выводит, а нужно сообщение `Повторов нет`.
+          try: >-
+            Заведи флаг `found = False` до цикла вывода и ставь `found = True`, когда печатаешь
+            повтор. После цикла, если флаг остался `False`, выведи `Повторов нет`.
+          verify: "«Пример 3» должен дать `Повторов нет`."
+        - id: print-dict
+          when:
+            outputIncludes: "{'"
+          why: >-
+            На экране словарь целиком, в фигурных скобках: так его печатает `print(counts)`. Если
+            это отладочный вывод, его пора убрать.
+          try: >-
+            Удали `print(counts)` и выводи пары по одной: `for word, count in counts.items():` и
+            f-строка.
+          verify: "В «Примере 1» должны остаться только строки `очень: 2` и `вечер: 2`."
+        - id: print-words
+          when:
+            outputIncludes: "['"
+          why: >-
+            На экране список в квадратных скобках — так печатает `print(words)`. Похоже, остался
+            отладочный вывод.
+          try: "Удали отладочный `print` — в ответе нужны только строки `слово: число`."
+          verify: "В «Примере 1» должны остаться только строки `очень: 2` и `вечер: 2`."
+      afterPass: >-
+        Это настоящий частотный словарь: текст приведён к одному виду, словарь считает, а программа
+        помнит, нашёлся ли хоть один повтор. Улучшение на будущее — выводить слова от частых к
+        редким: для этого нужна сортировка по числу, она будет в модуле 10.
+      skills: [dicts, string-methods, choose-structure]
+      noHintsBeforeAttempt: true
+
+  - id: tags-task
+    type: exercise
+    title: Самостоятельная работа 2
+    exercise:
+      id: m4-l7-e2
+      kind: write
+      title: Теги поста
+      statement: |-
+        Заметки Ники выходят и в группе газеты в соцсети, а к постам она добавляет теги. Редактору
+        нужен список тегов каждого поста — без повторов.
+
+        **Тег** — это слово, которое **начинается** с `#`, и после `#` в нём есть хотя бы один
+        символ. Слова разделены пробелами.
+
+        Напиши программу: она читает текст поста и выводит его теги в одну строку через запятую с
+        пробелом:
+
+        ```text
+        Теги: лето, огород
+        ```
+
+        - тег пишется без `#` и маленькими буквами;
+        - `#Лето` и `#лето` — один и тот же тег, он выводится один раз;
+        - теги идут в том порядке, в каком впервые встретились в тексте;
+        - `#` в середине или в конце слова (`100#`) и одиночный `#` — не теги;
+        - если тегов нет, программа выводит `Тегов нет`.
+      input: >-
+        Одна строка — текст поста. Слова разделены пробелами, иногда несколькими. Строка может быть
+        пустой.
+      output: "`Теги: <теги через «, »>` или `Тегов нет`."
+      constraints:
+        - Подсказки и решение откроются после первой проверки — сначала попробуй сам.
+        - Знаки препинания к тегам не прилипают; после `#` в теге идут буквы или цифры.
+      starterCode: |
+        # Теги поста
+        # Ввод: одна строка текста
+
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "Выходные на даче #Лето #огород #лето\n"
+          compare:
+            ignoreSpaces: true
+          expected: "Теги: лето, огород"
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "Просто текст без тегов\n"
+          compare:
+            ignoreSpaces: true
+          expected: Тегов нет
+        - id: t3
+          kind: io
+          title: "Граничный случай: решётка не в начале и одиночная"
+          edge: true
+          stdin: "Цена 100# и # отдельно\n"
+          compare:
+            ignoreSpaces: true
+          expected: Тегов нет
+        - id: t4
+          kind: io
+          title: "Граничный случай: регистр"
+          edge: true
+          stdin: "#А #а #Б #б #А\n"
+          compare:
+            ignoreSpaces: true
+          expected: "Теги: а, б"
+        - id: t5
+          kind: io
+          title: "Граничный случай: цифры и повторы"
+          edge: true
+          stdin: "Ура #2026 и снова #море #МОРЕ #Закат\n"
+          compare:
+            ignoreSpaces: true
+          expected: "Теги: 2026, море, закат"
+        - id: t6
+          kind: io
+          title: "Граничный случай: пустая строка"
+          edge: true
+          stdin: "\n"
+          compare:
+            ignoreSpaces: true
+          expected: Тегов нет
+        - id: t7
+          kind: io
+          title: "Граничный случай: лишние пробелы"
+          edge: true
+          stdin: "  #утро   #Утро  \n"
+          compare:
+            ignoreSpaces: true
+          expected: "Теги: утро"
+        - id: t8
+          kind: io
+          title: "Граничный случай: много тегов"
+          edge: true
+          stdin: "Поход #Горы #река #Костёр #палатка #горы #звёзды #утро\n"
+          compare:
+            ignoreSpaces: true
+          expected: "Теги: горы, река, костёр, палатка, звёзды, утро"
+      criteria:
+        - Тегом считается только слово, которое начинается с `#` и длиннее одного символа.
+        - Теги выводятся без `#`, маленькими буквами, без повторов, в порядке первого появления.
+        - "Формат: `Теги: ` и теги через запятую с пробелом; если тегов нет — `Тегов нет`."
+        - Пустой текст и лишние пробелы не ломают программу.
+      hints:
+        - >-
+          Для каждого слова задай два вопроса: тег ли это (посмотри на первый символ и на длину
+          слова) и не встречался ли этот тег раньше. В каком виде сравнивать теги, чтобы `#Лето` и
+          `#лето` совпали?
+        - |-
+          На другом примере: `w = "@кот"` — `w[0]` даёт `@`, `w[1:]` даёт `кот`, а `len("@")`
+          равно 1. Без повторов, но по порядку:
+          ```python
+          seen = []
+          for x in ["а", "б", "а"]:
+              if x not in seen:
+                  seen.append(x)
+          print(seen)   # ['а', 'б']
+          ```
+        - |-
+          Каркас:
+          ```text
+          words = input().split()
+          tags = []
+          для каждого word из words:
+              если в word больше одного символа и первый символ — "#":
+                  tag = word без первого символа, маленькими буквами
+                  если tag ещё нет в tags — добавить его
+          если tags пустой — вывести «Тегов нет»
+          иначе — вывести "Теги: " и теги через ", "
+          ```
+      solution:
+        code: |
+          words = input().split()
+          tags = []
+          for word in words:
+              if len(word) > 1 and word[0] == "#":
+                  tag = word[1:].lower()
+                  if tag not in tags:
+                      tags.append(tag)
+          if len(tags) == 0:
+              print("Тегов нет")
+          else:
+              print("Теги: " + ", ".join(tags))
+        explanation: >-
+          `split()` с пустыми скобками даёт слова без пустых кусков. Условие
+          `len(word) > 1 and word[0] == "#"` отбирает слова, которые начинаются с решётки и не
+          состоят из неё одной. Длина проверяется первой: Python проверяет части `and` слева
+          направо и, если первая ложна, вторую уже не смотрит — так у пустого или короткого слова
+          до `word[0]` дело не дойдёт. Срез `word[1:]` убирает `#`, `lower()` приводит тег к одному виду — и
+          только потом список проверяется через `not in`, иначе `#А` и `#а` разошлись бы. Список, а
+          не множество, нужен потому, что важен порядок. `join` склеивает теги через `", "`.
+      altSolutions:
+        - code: |
+            seen = set()
+            tags = []
+            for word in input().split():
+                if word[:1] == "#" and len(word) >= 2:
+                    tag = word[1:].lower()
+                    if tag not in seen:
+                        seen.add(tag)
+                        tags.append(tag)
+            if len(tags) > 0:
+                print("Теги: " + ", ".join(tags))
+            else:
+                print("Тегов нет")
+          note: Множество «уже видели» и список для порядка; срез word[:1] вместо word[0].
+        - code: |
+            text = input()
+            tags = []
+            for word in text.split():
+                if word.startswith("#") and word != "#":
+                    tag = word.lower()[1:]
+                    if tag not in tags:
+                        tags.append(tag)
+            if tags == []:
+                print("Тегов нет")
+            else:
+                print("Теги:", ", ".join(tags))
+          note: startswith (его не проходили, но это верный код) и print через запятую.
+        - code: |
+            tags = {}
+            for word in input().split():
+                if word[0] == "#" and len(word) > 1:
+                    tags[word[1:].lower()] = True
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                line = ""
+                for tag in tags:
+                    if line != "":
+                        line = line + ", "
+                    line = line + tag
+                print("Теги: " + line)
+          note: Словарь как «список без повторов» — он помнит порядок добавления; склейка накопителем.
+        - code: |
+            tags = []
+            for word in input().split():
+                if word[0] == "#" and word[1:] != "":
+                    tag = word.replace("#", "").lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) > 0:
+                print(f"Теги: {', '.join(tags)}")
+            else:
+                print("Тегов нет")
+          note: Рецензия — «после решётки что-то есть» как word[1:] != "", решётка убрана через replace.
+        - code: |
+            tags = []
+            known = set()
+            for word in input().split():
+                if len(word) < 2:
+                    continue
+                if word[0] != "#":
+                    continue
+                tag = word[1:].lower()
+                if tag in known:
+                    continue
+                known.add(tag)
+                tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: Рецензия — отсев через continue, множество «уже видели» и список для порядка.
+      wrongSolutions:
+        - code: |
+            words = input().split(" ")
+            tags = []
+            for word in words:
+                if word[0] == "#" and len(word) > 1:
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: split(" ") даёт пустые слова, и word[0] у пустой строки падает.
+          expectMistake: index-empty
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if "#" in word:
+                    tag = word.replace("#", "").lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: Решётка ищется в любом месте слова.
+          expectMistake: hash-anywhere
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if word[0] == "#":
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: Одиночный «#» считается тегом.
+          expectMistake: lone-hash
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            print("Теги: " + ", ".join(tags))
+          note: Нет сообщения «Тегов нет».
+          expectMistake: no-message
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print(", ".join(tags))
+          note: >-
+            Нет подписи «Теги:». Своего разбора нет: общий разбор показывает расхождение в первой
+            строке.
+          expectMistake: null
+        - code: |
+            words = input().split()
+            tags = set()
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    tags.add(word[1:].lower())
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги:", tags)
+          note: Печать множества целиком.
+          expectMistake: print-set
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги:", tags)
+          note: Печать списка целиком, без join.
+          expectMistake: print-list
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    tag = word.lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: Решётка осталась в теге.
+          expectMistake: hash-kept
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    tag = word[1:]
+                    tag.lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: Результат lower() не сохранён — регистр не приведён.
+          expectMistake: case
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    tags.append(word[1:].lower())
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: Повторы не убраны.
+          expectMistake: duplicates
+        - code: |
+            words = input().split()
+            tags = []
+            for word in words:
+                if len(word) > 1 and word[0] == "#":
+                    if word[1:] not in tags:
+                        tags.append(word[1:].lower())
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: Повтор проверяется до lower(), а в список кладётся уже приведённый тег.
+          expectMistake: lower-after-check
+        - code: |
+            tags = []
+            for word in input().split():
+                if word[0] == "#" and word[1] != "":
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: «После решётки есть символ» записано как word[1] — у одиночного «#» его нет, IndexError.
+          expectMistake: index-short
+        - code: |
+            tags = []
+            for word in input().split():
+                if len(word) > 1 and word[0] == "#":
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+                else:
+                    print("Тегов нет")
+            if len(tags) > 0:
+                print("Теги: " + ", ".join(tags))
+          note: «Тегов нет» в else внутри цикла — печатается для каждого слова, которое не тег.
+          expectMistake: output-in-loop
+        - code: |
+            tags = []
+            for word in input().split():
+                if len(word) > 1 and word[0] == "#":
+                    tag = word[1:].lower()
+                    if tag not in tags:
+                        tags.append(tag)
+                if len(tags) == 0:
+                    print("Тегов нет")
+                else:
+                    print("Теги: " + ", ".join(tags))
+          note: Весь вывод с отступом внутри for — печатается на каждом слове.
+          expectMistake: output-in-loop
+        - code: |
+            tags = set()
+            for word in input().split():
+                if len(word) > 1 and word[0] == "#":
+                    tags.add(word[1:].lower())
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: >-
+            Теги во множестве, склейка множества — порядок случайный. Тест «много тегов» с шестью
+            тегами вместе с t1, t4 и t5 случайно проходит примерно в 1 случае из 17 000.
+          expectMistake: set-order
+        - code: |
+            tags = []
+            for word in input().split():
+                if len(word) > 1 and word[0] == "#":
+                    tag = word[1:]
+                    if tag not in tags:
+                        tags.append(tag)
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags).lower())
+          note: lower() только при выводе — «Лето» и «лето» оба прошли проверку not in.
+          expectMistake: not-in-misses
+        - code: |
+            tags = []
+            for word in input().split():
+                if len(word) > 1 and word[0] == "#":
+                    if word.lower() not in tags:
+                        tags.append(word[1:].lower())
+            if len(tags) == 0:
+                print("Тегов нет")
+            else:
+                print("Теги: " + ", ".join(tags))
+          note: not in проверяет слово с «#», а в список кладётся тег без «#» — повторы проходят.
+          expectMistake: not-in-misses
+      mistakes:
+        - id: index-empty
+          when:
+            errorType: IndexError
+            codeRegex: 'split\(\s*["''] ["'']\s*\)'
+          why: >-
+            У пустой строки нет символа с номером 0, поэтому `word[0]` остановил программу с
+            IndexError. Пустые «слова» появляются от `split(" ")` — при пустом тексте и там, где
+            пробелов несколько подряд.
+          try: >-
+            Режь текст через `split()` с пустыми скобками — он не оставляет пустых кусков. Или
+            поставь в условии проверку длины первой: части `and` Python проверяет слева направо и,
+            если первая ложна, до `word[0]` уже не доходит.
+          verify: "Тест «Граничный случай: пустая строка» должен дать `Тегов нет`."
+        - id: index-short
+          when:
+            errorType: IndexError
+          why: >-
+            Программа обратилась к символу, которого в слове нет. Одиночный `#` — строка из одного
+            символа: у неё есть `word[0]`, но нет `word[1]`, отсюда IndexError.
+          try: >-
+            Вместо символа проверяй длину: в теге больше одного символа, `len(word) > 1`. Ставь эту
+            проверку в условии первой: части `and` Python проверяет слева направо и, если первая
+            ложна, вторую уже не смотрит.
+          verify: "Тест «Граничный случай: решётка не в начале и одиночная» должен дать `Тегов нет`."
+        - id: hash-anywhere
+          when:
+            failedTest: t3
+            codeRegex: '["'']#["'']\s+in\s'
+          where: Условие, по которому слово считается тегом
+          why: >-
+            `"#" in word` находит решётку в любом месте слова — и в `100#` тоже. А тег — это слово,
+            которое **начинается** с `#`.
+          try: >-
+            Смотри на первый символ слова: `word[0]`. И не забудь, что одиночный `#` — тоже не тег.
+          verify: "Тест «Граничный случай: решётка не в начале и одиночная» должен дать `Тегов нет`."
+        - id: no-message
+          when:
+            failedTest: t2
+            outputEquals: "Теги:"
+          why: >-
+            Когда тегов нет, программа печатает `Теги:` с пустым списком, а нужно сообщение
+            `Тегов нет`.
+          try: >-
+            Перед выводом проверь, пуст ли список тегов: `len(tags) == 0`. Если пуст — выведи
+            `Тегов нет`, иначе — строку с тегами.
+          verify: "«Пример 2» должен дать `Тегов нет`."
+        - id: lone-hash
+          when:
+            failedTest: t3
+            outputEquals: "Теги:"
+          why: >-
+            Одиночный `#` попал в теги: после среза от него осталась пустая строка, и в выводе
+            `Теги:` без тега. Но в теге после `#` должен быть хотя бы один символ.
+          try: Добавь в условие проверку длины — слово должно быть длиннее одного символа.
+          verify: "Тест «Граничный случай: решётка не в начале и одиночная» должен дать `Тегов нет`."
+        - id: output-in-loop
+          when:
+            failedTest: t1
+            outputIncludes: Тегов нет
+          why: >-
+            `Тегов нет` напечатано, хотя теги нашлись: вывод стоит внутри цикла и срабатывает на
+            каждом слове. Есть ли теги, известно только после цикла.
+          try: >-
+            Сдвинь вывод — и `Тегов нет`, и строку с тегами — влево, на уровень `for`, чтобы он
+            выполнился один раз, после цикла.
+          verify: "«Пример 1» должен дать одну строку `Теги: лето, огород`."
+        - id: set-order
+          when:
+            codeRegex: '(?:join|list)\(\s*set\(|for\s+\w+\s+in\s+set\(|(\b[A-Za-z_]\w*)\s*=\s*set\([^\n]*\n[\s\S]*(?:join\(\s*\1\s*\)|for\s+\w+\s+in\s+\1\s*:)'
+          where: Теги во множестве и склейка через `join`
+          why: >-
+            Теги склеиваются из множества, а множество не помнит порядок: теги выходят в своём
+            порядке, и от запуска к запуску он может меняться. Поэтому вывод то совпадает с
+            примером, то нет.
+          try: >-
+            Храни теги в списке и добавляй тег, только если его там ещё нет (`not in`). Множество
+            можно оставить для проверки «уже было», но склеивать нужно список.
+          verify: "Все тесты должны пройти, в том числе «Граничный случай: много тегов»."
+        - id: print-set
+          when:
+            outputIncludes: "{"
+          why: >-
+            На экране фигурные скобки: так `print` показывает множество. К тому же порядок
+            элементов множества не гарантирован, а теги нужны в порядке появления.
+          try: >-
+            Храни теги в списке и добавляй тег, только если его там ещё нет (`not in`). Выводи через
+            `", ".join(...)`.
+          verify: "«Пример 1» должен дать `Теги: лето, огород`."
+        - id: print-list
+          when:
+            outputIncludes: "['"
+          why: На экране квадратные скобки и кавычки — так `print` показывает список целиком.
+          try: 'Склей список в одну строку: `", ".join(tags)`.'
+          verify: "«Пример 1» должен дать `Теги: лето, огород`."
+        - id: hash-kept
+          when:
+            outputIncludes: "#"
+          why: Теги выводятся вместе с `#`, а нужно без неё.
+          try: Возьми слово без первого символа — срезом с индекса 1.
+          verify: "«Пример 1» должен дать `Теги: лето, огород`."
+        - id: case
+          when:
+            outputIncludes: Лето
+          why: >-
+            Регистр не приведён к одному виду: `Лето` и `лето` — один тег, а в выводе теги нужны
+            маленькими буквами. Если `lower()` в коде есть, проверь, сохранён ли его результат.
+          try: >-
+            Приведи тег к маленьким буквам через `lower()` **до** проверки на повтор и сохрани
+            результат в переменную.
+          verify: "«Пример 1» должен дать `Теги: лето, огород`."
+        - id: not-in-misses
+          when:
+            failedTest: t1
+            outputIncludes: лето, огород, лето
+            codeRegex: '\bnot\b.*\bin\b'
+          where: Проверка `not in` и строка с `append`
+          why: >-
+            Проверка `not in` в коде есть, но повтор она пропускает: для Python `Лето` и `лето`,
+            `#лето` и `лето` — разные строки. Проверять и добавлять нужно один и тот же готовый
+            тег — без `#` и маленькими буквами.
+          try: >-
+            Сначала приготовь тег целиком — срез без `#` и `lower()` — и сохрани его в переменную.
+            Потом спрашивай список через `not in` и добавляй именно эту переменную.
+          verify: "«Пример 1» должен дать `Теги: лето, огород`."
+        - id: duplicates
+          when:
+            outputIncludes: лето, огород, лето
+          why: Один и тот же тег выведен дважды, а теги нужны без повторов.
+          try: >-
+            Перед добавлением спроси список, есть ли в нём уже этот тег (`not in`), и добавляй только
+            новые.
+          verify: "«Пример 1» должен дать `Теги: лето, огород`."
+        - id: lower-after-check
+          when:
+            failedTest: t4
+            outputEquals: "Теги: а, б, а"
+          why: >-
+            Повтор проверяется до приведения к маленьким буквам. Тега `А` ещё нет в списке, где уже
+            лежит `а`, — и в список второй раз попадает `а`.
+          try: >-
+            Сначала приведи тег к одному виду и сохрани в переменную, а потом проверяй `not in` и
+            добавляй именно её.
+          verify: "Тест «Граничный случай: регистр» должен дать `Теги: а, б`."
+      afterPass: >-
+        Срез, метод строки, проверка «уже было» и `join` — почти весь модуль в одной небольшой
+        программе. Если захочешь, выведи ещё и сколько раз встретился каждый тег: для этого список
+        заменяется словарём, как в «Повторах в заметке».
+      skills: [string-methods, lists, sets-tuples]
+      noHintsBeforeAttempt: true
+
+  - id: recap
+    type: recap
+    title: Итоги и что повторить
+    points:
+      - "Схема обработки текста: привести к одному виду (`lower`, `replace` — с сохранением результата) → разрезать через `split()` → посчитать в словаре `d[x] = d.get(x, 0) + 1` → вывести через `items()`. Если обе задачи получились без подсказок — модуль 4 у тебя в руках, впереди первый проект: калькулятор или викторина. Если подсказки понадобились, повтори уроки из пунктов ниже и иди дальше — это нормально."
+      - "Метод «не сработал», прилип знак или `split(\" \")` дал пустые слова — повтори урок 4.3 «Методы строк». Ошибки с `word[0]` и `word[1:]` — урок 4.1 «Индексы и срезы строк»."
+      - "Был KeyError, `None` в сложении или счётчики не росли — повтори подсчёт в уроке 4.4 «Словари». «Повторов нет» печаталось лишний раз или не печаталось вовсе — флаг из урока 3.4 и задача «Быстрее среднего» из 4.2."
+      - "Слова или теги шли не по порядку либо повторялись — уроки 4.2, 4.5 и 4.6: множество порядок не помнит, для порядка нужен список и `not in` (или словарь — он помнит порядок добавления)."
+    question: Почему для подсчёта слов взят словарь, а не множество?
+    answer: >-
+      Множество помнит только, какие слова были, но не сколько раз каждое встретилось. Словарь
+      хранит у каждого слова его число: ключ — слово, значение — счётчик. К тому же словарь помнит
+      порядок добавления, поэтому повторы легко вывести в порядке первого появления.

@@ -28,9 +28,9 @@ describe('состояние связи с ИИ-наставником', () => {
 
   it('подпись честно называет состояние, без сети — «нет сети»', () => {
     expect(connectionLabel({ state: 'ready', model: 'm' }, true)).toEqual({ text: 'подключён', tone: 'good' });
-    expect(connectionLabel({ state: 'unavailable', message: '' }, true).text).toBe('адаптер недоступен');
-    expect(connectionLabel({ state: 'not-configured', message: '' }, true).text).toBe('ИИ не настроен');
-    expect(connectionLabel({ state: 'unknown' }, true).text).toBe('проверяю связь…');
+    expect(connectionLabel({ state: 'unavailable', message: '' }, true).text).toBe('нет связи');
+    expect(connectionLabel({ state: 'not-configured', message: '' }, true).text).toBe('не настроен');
+    expect(connectionLabel({ state: 'unknown' }, true).text).toBe('проверяю…');
     expect(connectionLabel({ state: 'ready', model: 'm' }, false).text).toBe('нет сети');
   });
 

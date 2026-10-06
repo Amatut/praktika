@@ -1,0 +1,1996 @@
+id: m8-l1
+module: m8
+number: "8.1"
+title: "Стандартная библиотека: даты и datetime"
+objective: >-
+  Превращать строку с датой в значение date, сдвигать дату на нужное число дней, считать разницу
+  в днях и выводить дату в виде ДД.ММ.ГГГГ с помощью модуля datetime из стандартной библиотеки.
+minutes: [25, 30]
+prerequisites: [m7-l7]
+skills: [dates-datetime, modules-imports]
+environment: python
+
+story:
+  title: 31 ноября
+  fictional: true
+  text: >-
+    В школьной библиотеке Вера Павловна выдаёт книги на две недели и считает дату возврата по
+    настенному календарю. На стыке месяцев счёт сбивается: однажды в формуляре появилось
+    «31 ноября», которого не бывает. Девятиклассник Дима, который помогает в библиотеке, написал
+    программу из пяти строк: вводишь дату выдачи — получаешь дату возврата. Сколько дней в каждом
+    месяце и какой год високосный, знает модуль datetime из стандартной библиотеки, поэтому
+    считать самому ничего не пришлось.
+
+why: >-
+  Даты есть почти в каждой полезной программе: сроки задач, напоминания, дни до события. Считать
+  их вручную опасно — месяцы разной длины, бывают високосные годы. Например,
+  `date(2026, 10, 25) + timedelta(days=14)` сразу даёт 8 ноября.
+
+usedIn: >-
+  Трекеры задач и привычек, календари и сервисы бронирования, напоминания об оплате, отчёты за
+  неделю или месяц. В анализе данных записи группируют по дням и неделям — тоже через даты.
+
+steps:
+  - id: stdlib-dates
+    type: theory
+    title: "Готовые инструменты: модуль datetime"
+    body: |-
+      Прежде чем писать своё, стоит поискать готовое. Вместе с Python приходит **стандартная
+      библиотека** — сотни модулей на разные случаи. Ты уже подключал `random` (урок 3.5),
+      `pathlib`, `csv` и `json` (модуль 7). Для дат есть модуль `datetime`.
+
+      Как пользоваться модулем, написано в **документации**: сайт docs.python.org, раздел Library
+      reference, например [модуль datetime](https://docs.python.org/3/library/datetime.html).
+      Документация на английском, но примеры кода в ней понятны и без перевода. Без интернета
+      поможет команда `python -m pydoc datetime` в терминале на компьютере (если работает только
+      `py` — `py -m pydoc datetime`; на macOS и Linux — `python3`). Текст длинный: листай
+      пробелом, выход — клавиша q.
+
+      ```python
+      from datetime import date, timedelta
+      ```
+
+      Эта строка берёт из модуля два имени — как `from pathlib import Path` в уроке 7.2. Дальше
+      пишем просто `date`, без приставки. Можно и `import datetime`, но тогда нужна приставка:
+      `datetime.date(...)`. Легко запутаться: в модуле `datetime` есть ещё и тип `datetime` —
+      дата вместе со временем.
+
+      **Дата — отдельное значение**, не строка и не число:
+
+      ```python
+      d = date(2026, 10, 20)                # год, месяц, день
+      d = date.fromisoformat("2026-10-20")  # из строки ГГГГ-ММ-ДД
+      print(d)        # 2026-10-20
+      print(d.month)  # 10
+      ```
+
+      Запись ГГГГ-ММ-ДД — международный стандарт ISO, отсюда имя `fromisoformat`: «из формата
+      ISO». `.year`, `.month`, `.day` — части даты. Их пишут через точку и **без скобок**: это не
+      действие, а значение внутри даты.
+
+      Привычный вид дате даёт метод `strftime` (от string format time — «время в строку по
+      формату»). Он собирает строку по шаблону: `d.strftime("%d.%m.%Y")` даёт `20.10.2026`. Коды
+      шаблона:
+
+      ```text
+      %d   день, две цифры      20
+      %m   месяц, две цифры     10
+      %Y   год, четыре цифры    2026
+      %y   год, две цифры       26
+      %M   минуты (не месяц!)   00
+      ```
+
+      **Промежуток времени** — `timedelta`: `timedelta(days=14)` — две недели. `days=` —
+      именованный аргумент, как в уроке 5.2.
+
+      - Дата + промежуток = новая дата. Python сам переходит через конец месяца и года и помнит
+        про 29 февраля.
+      - Дата − дата = промежуток. Число дней в нём — `.days`. Не путай: `.day` — номер дня в
+        дате (`20`), `.days` — сколько дней в промежутке.
+      - Даты можно сравнивать: более ранняя — меньше. `date(2026, 1, 1) < date(2026, 2, 1)`
+        даёт `True`.
+
+      `date.today()` — сегодняшняя дата по часам устройства. В заданиях тренажёра «сегодня»
+      приходит во вводе: так проверка даёт один и тот же результат в любой день. Дату и время
+      сейчас даёт `datetime.now()`, но в этом уроке хватит `date`.
+    simpler: >-
+      Представь настенный календарь Веры Павловны. Дата — одна клеточка в нём, а
+      `date.fromisoformat("2026-10-20")` находит клеточку по записи. `timedelta(days=14)` —
+      «отсчитай 14 клеточек вперёд»; сколько клеточек в каждом месяце, календарь знает сам.
+      Разность двух дат — сколько клеточек между ними, само число даёт `.days`. А `strftime`
+      переписывает дату в формуляр в привычном виде: 03.11.2026.
+    coach: >-
+      Не считай даты вручную — ошибаются даже опытные. Календарь пусть помнит datetime.
+
+  - id: library-card
+    type: example
+    title: Формуляр библиотеки
+    body: >-
+      Черновик программы Димы: дата выдачи пока записана прямо в коде. Нажми «Запустить» и
+      посмотри, как срок возврата перешёл в ноябрь.
+    code: |-
+      from datetime import date, timedelta
+
+      taken = date.fromisoformat("2026-10-20")
+      due = taken + timedelta(days=14)
+      print("Выдана:", taken.strftime("%d.%m.%Y"))
+      print("Вернуть до:", due.strftime("%d.%m.%Y"))
+      left = due - date.fromisoformat("2026-10-25")
+      print("Осталось дней:", left.days)
+    notes:
+      - line: 1
+        text: >-
+          Из модуля `datetime` берём два имени: `date` — дата, `timedelta` — промежуток времени.
+      - line: 3
+        text: >-
+          Строка `"2026-10-20"` превращается в дату. Формат — ГГГГ-ММ-ДД, стандарт ISO, отсюда
+          имя метода. Привычную запись `20.10.2026` `fromisoformat` не поймёт — будет ValueError.
+      - line: 4
+        text: >-
+          К дате прибавляем промежуток в 14 дней. Получается новая дата — 3 ноября: сколько дней
+          в октябре, Python знает сам.
+      - line: 5
+        text: >-
+          `strftime` собирает из даты строку по шаблону: `%d` — день, `%m` — месяц, `%Y` — год.
+      - line: 7
+        text: >-
+          Из даты вычитаем дату — получается промежуток. Здесь считаем, сколько дней останется
+          читателю, если сегодня 25 октября.
+      - line: 8
+        text: "`.days` — число дней в промежутке, обычное целое число: 9."
+    tryIt: >-
+      Поставь в строке 3 дату `"2026-02-20"` и запусти: срок перейдёт в март, ведь в феврале
+      2026 года 28 дней. «Осталось дней» станет отрицательным — к 25 октября этот срок давно
+      прошёл. Потом допиши в конец `print(date.today())` — это сегодняшняя дата на твоём
+      устройстве.
+    coach: >-
+      Обрати внимание: нигде в коде не написано, сколько дней в октябре. Это знание лежит в модуле.
+
+  - id: date-minus-date
+    type: predict
+    title: Разность дат
+    prompt: >-
+      От 20 октября до 3 ноября — ровно две недели. Как думаешь, что напечатает программа?
+    code: |-
+      from datetime import date
+
+      start = date(2026, 10, 20)
+      finish = date(2026, 11, 3)
+      print(finish - start)
+    options:
+      - "14"
+      - "14 days, 0:00:00"
+      - Ошибка TypeError
+    answer: "14 days, 0:00:00"
+    explanation: >-
+      Разность дат — не число, а промежуток `timedelta`. `print` показывает его целиком: дни, а
+      за ними часы, минуты и секунды — у дат их нет, поэтому там нули. Чтобы получить просто 14,
+      возьми `.days`: `(finish - start).days`. Ошибки нет: вычитать даты можно, нельзя
+      прибавлять к дате обычное число.
+    coach: >-
+      Запомни вид `14 days, 0:00:00`: если увидишь его в выводе, значит, забыл `.days`.
+
+  - id: practice-due
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m8-l1-e1
+      kind: repeat
+      title: Срок возврата книги
+      statement: |-
+        Сделай для Веры Павловны программу, которая работает с любой датой: читает дату выдачи
+        книги и печатает, до какого числа книгу нужно вернуть. Книгу выдают на 14 дней.
+
+        Дата выдачи приходит строкой в виде ГГГГ-ММ-ДД. Например, для `2026-10-20` вывод такой:
+
+        ```text
+        Вернуть до: 03.11.2026
+        ```
+      input: Одна строка — дата выдачи в виде ГГГГ-ММ-ДД, например `2026-10-20`.
+      output: "Одна строка: `Вернуть до: ДД.ММ.ГГГГ` — день и месяц двумя цифрами, год четырьмя."
+      constraints:
+        - Срок — ровно 14 дней после даты выдачи.
+        - Дата во вводе всегда записана верно, проверять её не нужно.
+      starterCode: |
+        from datetime import date, timedelta
+
+        # 1. Прочитай дату выдачи и преврати строку в дату
+        # 2. Прибавь к ней 14 дней
+        # 3. Выведи «Вернуть до: ДД.ММ.ГГГГ»
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "2026-10-20\n"
+          expected: "Вернуть до: 03.11.2026"
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: Пример 2
+          example: true
+          stdin: "2026-03-05\n"
+          expected: "Вернуть до: 19.03.2026"
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: через Новый год"
+          edge: true
+          stdin: "2026-12-25\n"
+          expected: "Вернуть до: 08.01.2027"
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: февраль високосного года"
+          edge: true
+          stdin: "2028-02-20\n"
+          expected: "Вернуть до: 05.03.2028"
+          compare:
+            ignoreSpaces: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: февраль обычного года"
+          edge: true
+          stdin: "2026-02-20\n"
+          expected: "Вернуть до: 06.03.2026"
+          compare:
+            ignoreSpaces: true
+        - id: t6
+          kind: io
+          title: "Граничный случай: конец ноября"
+          edge: true
+          stdin: "2026-11-20\n"
+          expected: "Вернуть до: 04.12.2026"
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - Дата выдачи берётся из ввода и превращается в значение `date`.
+        - Срок считается через `timedelta`, поэтому переходы через конец месяца, года и февраль верные.
+        - "Дата выводится в виде ДД.ММ.ГГГГ после подписи «Вернуть до:»."
+      hints:
+        - >-
+          Задача в три действия: превратить строку из ввода в дату, сдвинуть дату на 14 дней и
+          вывести её в нужном виде. Найди в примере «Формуляр библиотеки» строку для каждого
+          действия. Что в первой из них поменять, чтобы дата бралась из ввода?
+        - >-
+          На другом примере: `date.fromisoformat("2026-01-30") + timedelta(days=3)` даёт 2 февраля
+          2026 года, а `.strftime("%d.%m.%Y")` превращает эту дату в строку `02.02.2026`.
+        - |-
+          Каркас:
+          ```text
+          taken = date.fromisoformat(…)          # строка из ввода → дата
+          due = taken + timedelta(…)             # плюс 14 дней
+          print("Вернуть до:", due.strftime(…))  # дата → строка ДД.ММ.ГГГГ
+          ```
+      solution:
+        code: |
+          from datetime import date, timedelta
+
+          taken = date.fromisoformat(input())
+          due = taken + timedelta(days=14)
+          print("Вернуть до:", due.strftime("%d.%m.%Y"))
+        explanation: >-
+          `date.fromisoformat(input())` превращает строку из ввода в дату. `timedelta(days=14)`
+          сдвигает её на две недели — через конец месяца, года и февраль Python переходит сам.
+          `strftime("%d.%m.%Y")` собирает строку с днём и месяцем из двух цифр и годом из
+          четырёх. Подойдёт и `timedelta(weeks=2)` — это тот же промежуток.
+      altSolutions:
+        - code: |
+            import datetime
+
+            taken = datetime.date.fromisoformat(input())
+            due = taken + datetime.timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: import datetime и полные имена datetime.date, datetime.timedelta.
+        - code: |
+            from datetime import date, timedelta
+
+            due = date.fromisoformat(input()) + timedelta(weeks=2)
+            print(f"Вернуть до: {due.strftime('%d.%m.%Y')}")
+          note: Две недели через weeks=2, вывод f-строкой.
+        - code: |
+            from datetime import date, timedelta
+
+            due = date.fromisoformat(input()) + timedelta(days=14)
+            print(f"Вернуть до: {due:%d.%m.%Y}")
+          note: Шаблон даты прямо в f-строке (в курсе не вводится, но это верно).
+        - code: |
+            from datetime import datetime, timedelta
+
+            taken = datetime.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: Тип datetime (дата со временем 00:00) — strftime тот же.
+        - code: |
+            from datetime import date, timedelta
+
+            due = date.fromisoformat(input()) + timedelta(days=14)
+            year, month, day = str(due).split("-")
+            print("Вернуть до:", day + "." + month + "." + year)
+          note: Строка ГГГГ-ММ-ДД разобрана через split и собрана в обратном порядке.
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до: ", due.strftime("%d.%m.%Y"))
+          note: Лишний пробел после двоеточия — проверка его прощает.
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input("Дата выдачи (ГГГГ-ММ-ДД): "))
+            due = taken + timedelta(days=14)
+            day = str(due.day)
+            month = str(due.month)
+            if due.day < 10:
+                day = "0" + day
+            if due.month < 10:
+                month = "0" + month
+            print("Вернуть до: " + day + "." + month + "." + str(due.year))
+          note: Подсказка в input() и ручная сборка строки из .day, .month, .year с нулями.
+        - code: |
+            from datetime import date, timedelta
+
+            LOAN_DAYS = 14
+            year, month, day = input().split("-")
+            taken = date(int(year), int(month), int(day))
+            due = taken + timedelta(days=LOAN_DAYS)
+            print("Вернуть до:", due.strftime("%d") + "." + due.strftime("%m") + "." + due.strftime("%Y"))
+          note: Дата собрана через split и date(год, месяц, день), срок в переменной, три strftime.
+        - code: |
+            from datetime import date, timedelta
+
+            d = date.fromisoformat(input())
+            for i in range(14):
+                d = d + timedelta(days=1)
+            print("Вернуть до:", d.strftime("%d.%m.%Y"))
+            print()
+          note: 14 шагов по одному дню в цикле, пустая строка в конце вывода.
+      wrongSolutions:
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due)
+          note: Дата напечатана как есть, в виде ГГГГ-ММ-ДД.
+          expectMistake: iso-output
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%M.%Y"))
+          note: "%M — минуты, а не месяц."
+          expectMistake: minutes-code
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%y"))
+          note: "%y — год двумя цифрами."
+          expectMistake: short-year
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = date(taken.year, taken.month, taken.day + 14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: 14 прибавлено к номеру дня вручную — 34 октября.
+          expectMistake: manual-day
+        - code: |
+            from datetime import date
+
+            parts = input().split("-")
+            due = date(int(parts[0]), int(parts[1]), int(parts[2]) + 14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: Ручной счёт через split — та же ошибка.
+          expectMistake: manual-day
+        - code: |
+            import datetime
+
+            taken = datetime.fromisoformat(input())
+            due = taken + datetime.timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: У самого модуля datetime нет fromisoformat — нужен datetime.date.
+          expectMistake: module-attr
+        - code: |
+            import datetime
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: После import datetime имён date и timedelta в программе нет.
+          expectMistake: name-not-imported
+        - code: |
+            from datetime import date, timedelta
+
+            taken = input()
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: Строка из ввода не превращена в дату.
+          expectMistake: str-plus-delta
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + 14
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: К дате прибавлено обычное число.
+          expectMistake: plus-number
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", taken.strftime("%d.%m.%Y"))
+          note: Напечатана дата выдачи вместо даты возврата.
+          expectMistake: taken-printed
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до", due.strftime("%d.%m.%Y"))
+          note: Нет двоеточия в подписи — хватает общего разбора с разницей строк.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Выдана:", taken.strftime("%d.%m.%Y"))
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: Скопированы обе строки вывода из примера — лишняя строка «Выдана».
+          expectMistake: extra-line
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до: " + due)
+          note: Подпись склеена с датой через + — TypeError про datetime.date.
+          expectMistake: str-plus-date
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", str(due.day) + "." + str(due.month) + "." + str(due.year))
+          note: День и месяц без ведущего нуля — 3.11.2026.
+          expectMistake: no-leading-zero
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d") + "." + str(due.month) + "." + str(due.year))
+          note: Ноль потерян только у месяца — «Пример 1» проходит, «Пример 2» даёт 19.3.2026.
+          expectMistake: no-leading-zero
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", str(due.day) + "." + due.month + "." + str(due.year))
+          note: Забыт str() у месяца — TypeError про int, хватает общего разбора.
+          expectMistake: null
+        - code: |
+            from datetime import date
+
+            taken = date.fromisoformat(input())
+            day = taken.day + 14
+            month = taken.month
+            year = taken.year
+            if month == 2:
+                if year % 4 == 0:
+                    days_in_month = 29
+                else:
+                    days_in_month = 28
+            else:
+                days_in_month = 31
+            if day > days_in_month:
+                day = day - days_in_month
+                month = month + 1
+            if month > 12:
+                month = 1
+                year = year + 1
+            print("Вернуть до:", date(year, month, day).strftime("%d.%m.%Y"))
+          note: Ручной календарь — февраль учтён, остальным месяцам по 31 дню («31 ноября»).
+          expectMistake: manual-calendar
+        - code: |
+            from datetime import date
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: timedelta не взят из модуля.
+          expectMistake: timedelta-not-imported
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            return_date = taken + timedelta(days=14)
+            print("Вернуть до:", retrun_date.strftime("%d.%m.%Y"))
+          note: Опечатка в своей переменной — NameError не про импорт, хватает общего разбора.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+            taken = datetime.date.fromisoformat(input())
+            due = taken + timedelta(days=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: Импорт через from, но написано datetime.date — общий разбор NameError точнее.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+            taken = date.fromisoformat(input())
+            due = taken + timedelta(day=14)
+            print("Вернуть до:", due.strftime("%d.%m.%Y"))
+          note: day= вместо days= — Python сам подсказывает 'days', хватает общего разбора.
+          expectMistake: null
+      mistakes:
+        - id: module-attr
+          when:
+            errorType: AttributeError
+            errorIncludes: module 'datetime'
+          why: >-
+            После `import datetime` имя `datetime` означает весь модуль. Метод `fromisoformat` есть
+            у типа `datetime.date`, а у самого модуля его нет — отсюда AttributeError.
+          try: >-
+            Вернись к строке `from datetime import date, timedelta` и пиши `date.fromisoformat(...)`.
+            Если хочешь оставить `import datetime`, пиши полностью: `datetime.date.fromisoformat(...)`.
+          verify: 'AttributeError должна исчезнуть, а «Пример 1» — дать «Вернуть до: 03.11.2026».'
+        - id: name-not-imported
+          when:
+            errorType: NameError
+            errorIncludes: "name 'date' is not defined"
+          why: >-
+            Python не знает имя `date`: само по себе его в программе нет, его берут из модуля
+            строкой `from datetime import …`. После одного `import datetime` в программе есть только
+            имя модуля, а дата лежит внутри него — `datetime.date`.
+          try: >-
+            Поставь первой строкой `from datetime import date, timedelta` — тогда `date` и
+            `timedelta` можно писать без приставки.
+          verify: NameError должна исчезнуть.
+        - id: timedelta-not-imported
+          when:
+            errorType: NameError
+            errorIncludes: "name 'timedelta' is not defined"
+          why: >-
+            Python не знает имя `timedelta`: его не взяли из модуля. Его берут так же, как `date`, —
+            в строке `from datetime import …` должны стоять оба имени.
+          try: 'Допиши его в строку импорта: `from datetime import date, timedelta`.'
+          verify: NameError должна исчезнуть.
+        - id: str-plus-delta
+          when:
+            errorType: TypeError
+            errorIncludes: 'not "datetime.timedelta"'
+          why: >-
+            `input()` возвращает строку, а к строке нельзя прибавить промежуток: сдвигать на
+            `timedelta` Python умеет только дату.
+          try: 'Сначала преврати строку в дату — `date.fromisoformat(input())`, — а потом прибавляй `timedelta`.'
+          verify: 'В «Примере 1» должно получиться «Вернуть до: 03.11.2026».'
+        - id: str-plus-date
+          when:
+            errorType: TypeError
+            errorIncludes: 'not "datetime.date"'
+          why: >-
+            Через `+` строку можно склеить только со строкой, а к подписи прибавлена дата. Сама в
+            текст она не превращается.
+          try: >-
+            Сначала сделай из даты строку нужного вида — `.strftime("%d.%m.%Y")`, — а потом
+            склеивай её с подписью.
+          verify: 'В «Примере 1» должно получиться «Вернуть до: 03.11.2026».'
+        - id: plus-number
+          when:
+            errorType: TypeError
+            errorIncludes: "'datetime.date' and 'int'"
+          why: >-
+            К дате прибавили обычное число. Python не знает, что это — дни, недели или годы, —
+            и останавливается с TypeError. Промежуток задают явно через `timedelta`.
+          try: Замени `+ 14` на `+ timedelta(days=14)`.
+          verify: 'В «Примере 1» должно получиться «Вернуть до: 03.11.2026».'
+        - id: manual-day
+          when:
+            errorType: ValueError
+            codeRegex: '\+\s*14\b'
+          where: Строка, где к номеру дня прибавляется 14
+          why: >-
+            Число 14 прибавлено к номеру дня вручную: 20 + 14 = 34, а 34-го октября не бывает,
+            поэтому `date()` остановилась с ValueError. Даже когда число помещается в месяц,
+            ручной счёт ломается на стыке месяцев и в феврале.
+          try: >-
+            Сдвигай саму дату: `taken + timedelta(days=14)`. В следующий месяц и год datetime
+            перейдёт сам.
+          verify: "«Пример 1» должен дать 03.11.2026, а «Через Новый год» — 08.01.2027."
+        - id: manual-calendar
+          when:
+            failedTest: t6
+            codeRegex: '\+\s*14\b'
+          where: Строка, где к номеру дня прибавляется 14
+          why: >-
+            Похоже, длина месяцев посчитана вручную, и ноябрю досталось не 30 дней. Так и
+            появляется «31 ноября» из истории. В ноябре 30 дней, поэтому 20 ноября + 14 дней — это
+            4 декабря.
+          try: 'Не считай дни в месяцах сам: сдвигай дату — `taken + timedelta(days=14)`.'
+          verify: '«Граничный случай: конец ноября» должен дать 04.12.2026.'
+        - id: extra-line
+          when:
+            outputIncludes: Выдана
+          why: >-
+            Программа печатает лишнюю строку «Выдана: …», как в примере «Формуляр библиотеки». По
+            условию вывод — одна строка «Вернуть до: ДД.ММ.ГГГГ».
+          try: 'Убери `print` с датой выдачи — оставь только строку «Вернуть до: …».'
+          verify: 'В «Примере 1» должна остаться одна строка — «Вернуть до: 03.11.2026».'
+        - id: no-leading-zero
+          when:
+            outputIncludes: Вернуть до
+            codeRegex: '(?<![\s\S])(?![\s\S]*(?:zfill|:02|["'']0["'']\s*\+))[\s\S]*(?:str\(\s*\w+\.(?:day|month)\s*\)|\{\s*\w+\.(?:day|month)\s*\})'
+          why: >-
+            День или месяц напечатан без нуля спереди: например, `3.11.2026` вместо `03.11.2026`.
+            `str(due.day)` и `{due.day}` дают число как есть, а по условию день и месяц — всегда
+            две цифры.
+          try: 'Собери строку по шаблону: `due.strftime("%d.%m.%Y")` — `%d` и `%m` всегда дают две цифры.'
+          verify: 'В «Примере 1» должно получиться «Вернуть до: 03.11.2026», а в «Примере 2» — «Вернуть до: 19.03.2026».'
+        - id: iso-output
+          when:
+            outputIncludes: "2026-11-03"
+          why: >-
+            `print` показывает дату в стандартном виде ГГГГ-ММ-ДД — `2026-11-03`. Дата посчитана
+            верно, не хватает только нужного вида.
+          try: Преврати дату в строку по шаблону — `due.strftime("%d.%m.%Y")`.
+          verify: 'В «Примере 1» должно получиться «Вернуть до: 03.11.2026».'
+        - id: minutes-code
+          when:
+            outputIncludes: ".00."
+          why: >-
+            Вместо месяца напечаталось `00`. В шаблоне стоит большая `%M` — это минуты, а у даты
+            без времени их ноль. Месяц — маленькая `%m`.
+          try: Замени в шаблоне `%M` на `%m`.
+          verify: 'В «Примере 1» должно получиться «Вернуть до: 03.11.2026».'
+        - id: short-year
+          when:
+            codeIncludes: "%y"
+          why: Маленькая `%y` — год двумя цифрами, `26` вместо `2026`. Год из четырёх цифр — большая `%Y`.
+          try: Замени в шаблоне `%y` на `%Y`.
+          verify: В «Примере 1» год должен быть 2026.
+        - id: taken-printed
+          when:
+            outputEquals: "Вернуть до: 20.10.2026"
+          why: >-
+            Напечатана дата выдачи, а не дата возврата: в `strftime` попала переменная с датой из
+            ввода, к которой ещё не прибавили 14 дней.
+          try: Выводи ту переменную, в которой лежит дата после сдвига.
+          verify: В «Примере 1» должно получиться 03.11.2026, а не 20.10.2026.
+      afterPass: >-
+        Февраль и Новый год программе не страшны: календарь знает datetime. Улучшение: срок
+        выдачи тоже можно читать из ввода — второй строкой, через `int(input())` — и передавать
+        в `timedelta(days=…)`.
+      skills: [dates-datetime, modules-imports]
+
+  - id: practice-countdown
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m8-l1-e2
+      kind: modify
+      title: Обратный отсчёт до старта
+      statement: |-
+        Организаторы городского забега рассылают участникам напоминания. Программа читает две
+        даты — сегодняшнюю и дату старта — и пока просто печатает дату старта. Измени её: вместо
+        даты программа должна печатать одну строку:
+
+        - `До старта 17 дн.` — если старт позже сегодняшнего дня (вместо 17 — сколько дней
+          осталось);
+        - `Старт сегодня!` — если даты совпадают;
+        - `Старт уже прошёл` — если старт раньше сегодняшнего дня.
+
+        Например, если сегодня `2026-10-01`, а старт `2026-10-18`, вывод такой:
+
+        ```text
+        До старта 17 дн.
+        ```
+      input: Две строки в виде ГГГГ-ММ-ДД — сегодняшняя дата и дата старта.
+      output: Одна строка — один из трёх вариантов из условия.
+      constraints:
+        - Даты во вводе всегда записаны верно.
+        - Число дней считает программа — не записывай его в код.
+      starterCode: |
+        from datetime import date
+
+        today = date.fromisoformat(input())
+        race = date.fromisoformat(input())
+        print("Старт забега:", race.strftime("%d.%m.%Y"))
+      tests:
+        - id: t1
+          kind: io
+          title: Пример 1
+          example: true
+          stdin: "2026-10-01\n2026-10-18\n"
+          expected: До старта 17 дн.
+          compare:
+            ignoreSpaces: true
+        - id: t2
+          kind: io
+          title: "Пример 2: через Новый год"
+          example: true
+          stdin: "2026-12-20\n2027-01-10\n"
+          expected: До старта 21 дн.
+          compare:
+            ignoreSpaces: true
+        - id: t3
+          kind: io
+          title: "Граничный случай: старт сегодня"
+          edge: true
+          stdin: "2026-10-18\n2026-10-18\n"
+          expected: Старт сегодня!
+          compare:
+            ignoreSpaces: true
+        - id: t4
+          kind: io
+          title: "Граничный случай: старт был вчера"
+          edge: true
+          stdin: "2026-10-19\n2026-10-18\n"
+          expected: Старт уже прошёл
+          compare:
+            ignoreSpaces: true
+        - id: t5
+          kind: io
+          title: "Граничный случай: старт завтра"
+          edge: true
+          stdin: "2026-10-17\n2026-10-18\n"
+          expected: До старта 1 дн.
+          compare:
+            ignoreSpaces: true
+        - id: t6
+          kind: io
+          title: Старт давно прошёл
+          stdin: "2027-03-01\n2026-10-18\n"
+          expected: Старт уже прошёл
+          compare:
+            ignoreSpaces: true
+      criteria:
+        - Число дней — это `.days` разности «дата старта минус сегодня».
+        - Программа выбирает одну из трёх фраз и печатает ровно одну строку.
+        - Граница «старт сегодня» (0 дней) обрабатывается отдельно от «до старта» и «прошёл».
+      hints:
+        - >-
+          Сначала посчитай, сколько дней осталось до старта, и сохрани это число в переменную, а
+          уже потом выбирай одну из трёх фраз, как в уроках про if / elif / else. Подумай, какая
+          дата позже и из какой даты какую вычитать.
+        - >-
+          На другом примере: `(date(2026, 5, 9) - date(2026, 5, 1)).days` даёт `8`, а в обратном
+          порядке — `-8`. Скобки нужны, чтобы `.days` относилось к разности, а не ко второй дате.
+        - |-
+          Каркас вместо последней строки:
+          ```text
+          left = (… - …).days
+          if left > 0:
+              print(… До старта … дн. …)
+          elif left == 0:
+              print(…)
+          else:
+              print(…)
+          ```
+      solution:
+        code: |
+          from datetime import date
+
+          today = date.fromisoformat(input())
+          race = date.fromisoformat(input())
+          left = (race - today).days
+          if left > 0:
+              print(f"До старта {left} дн.")
+          elif left == 0:
+              print("Старт сегодня!")
+          else:
+              print("Старт уже прошёл")
+        explanation: >-
+          `race - today` — промежуток от сегодня до старта, `.days` превращает его в целое число:
+          положительное, если старт впереди, ноль в день старта и отрицательное, если старт позади.
+          Дальше обычный выбор из трёх веток. Можно сравнивать и сами даты: `race > today`,
+          `race == today`.
+      altSolutions:
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            if race > today:
+                print("До старта", (race - today).days, "дн.")
+            elif race == today:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Сравниваются сами даты, дни считаются только в первой ветке.
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left < 0:
+                print("Старт уже прошёл")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("До старта " + str(left) + " дн.")
+          note: Ветки в другом порядке, строка собрана склейкой.
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            delta = race - today
+            if delta.days == 0:
+                print("Старт сегодня!")
+            elif delta.days > 0:
+                print(f"До старта {delta.days} дн.")
+            else:
+                print("Старт уже прошёл")
+          note: Промежуток сохранён в переменную, .days берётся в условиях.
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            days_left = (race - today).days
+            if days_left > 0:
+                print("До старта", days_left, "дн.")
+            if days_left == 0:
+                print("Старт сегодня!")
+            if days_left < 0:
+                print("Старт уже прошёл")
+          note: Три отдельных if — условия не пересекаются, поэтому печатается одна строка.
+        - code: |
+            from datetime import date
+
+            now = date.fromisoformat(input())
+            start = date.fromisoformat(input())
+
+            if start >= now:
+                if start == now:
+                    print("Старт сегодня!")
+                else:
+                    print("До старта " + str((start - now).days) + " дн.")
+            else:
+                print("Старт уже прошёл")
+          note: Вложенный if по датам, другие имена, склейка со str().
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left > 0:
+                print("До старта ", left, " дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Лишние пробелы при выводе через запятые — проверка их прощает.
+      wrongSolutions:
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            print("Старт забега:", race.strftime("%d.%m.%Y"))
+          note: Программа не изменена.
+          expectMistake: still-date
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            if race > today:
+                print("До старта", race - today, "дн.")
+            elif race == today:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Напечатан весь промежуток, без .days.
+          expectMistake: delta-printed
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (today - race).days
+            if race > today:
+                print(f"До старта {left} дн.")
+            elif race == today:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Даты вычитаются в обратном порядке — число отрицательное.
+          expectMistake: negative-days
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (today - race).days
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Обратный порядок вычитания — будущий старт считается прошедшим.
+          expectMistake: wrong-direction
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left >= 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Ветка >= 0 перехватывает ноль.
+          expectMistake: zero-boundary
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left > 0:
+                print(f"До старта {left} дн.")
+            else:
+                print("Старт уже прошёл")
+          note: Нет ветки «Старт сегодня!».
+          expectMistake: no-today-branch
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            if race - today > 0:
+                print(f"До старта {(race - today).days} дн.")
+            elif race == today:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Промежуток сравнивается с числом.
+          expectMistake: delta-vs-int
+        - code: |
+            from datetime import date
+
+            today = input()
+            race = input()
+            left = (race - today).days
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Строки не превращены в даты.
+          expectMistake: str-minus-str
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = race - today.days
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: .days прилипло к today, а не к разности.
+          expectMistake: days-on-date
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left > 0:
+                print(f"До старта {left} дн.")
+            if left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Вторая проверка начинается с if — у неё свой else.
+          expectMistake: two-ifs
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left > 0:
+                print(f"До старта {left} дней")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Другая подпись вместо «дн.» — хватает общего разбора.
+          expectMistake: null
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = race.day - today.day
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Вычтены номера дней — «Пример 1» проходит, через Новый год получается −10.
+          expectMistake: day-numbers
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).day
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: .day вместо .days у разности (скобки на месте).
+          expectMistake: day-not-days
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left < 0:
+                print("Старт уже прошёл")
+            if left == 0:
+                print("Старт сегодня!")
+            else:
+                print(f"До старта {left} дн.")
+          note: Два if в другом порядке — для прошедшего старта две строки.
+          expectMistake: two-ifs-late
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left < 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Фразы «сегодня» и «прошёл» перепутаны — хватает общего разбора с разницей строк.
+          expectMistake: null
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days + 1
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: +1 «за сегодняшний день».
+          expectMistake: plus-one
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left > 0:
+                print("До старта " + left + " дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошёл")
+          note: Число склеено со строкой без str() — хватает общего разбора TypeError.
+          expectMistake: null
+        - code: |
+            from datetime import date
+
+            today = date.fromisoformat(input())
+            race = date.fromisoformat(input())
+            left = (race - today).days
+            if left > 0:
+                print(f"До старта {left} дн.")
+            elif left == 0:
+                print("Старт сегодня!")
+            else:
+                print("Старт уже прошел")
+          note: «прошел» через е.
+          expectMistake: yo-letter
+      mistakes:
+        - id: str-minus-str
+          when:
+            errorType: TypeError
+            errorIncludes: "'str' and 'str'"
+          why: >-
+            Из строки строку не вычесть: `input()` возвращает текст, а считать дни Python умеет
+            только между датами.
+          try: 'Оставь `date.fromisoformat(...)` вокруг обоих `input()` — как было в заготовке.'
+          verify: TypeError должна исчезнуть.
+        - id: delta-vs-int
+          when:
+            errorType: TypeError
+            errorIncludes: not supported between
+          why: >-
+            Разность дат — промежуток `timedelta`, а не число, и сравнить его с `0` нельзя.
+            Сравнивать можно число дней или сами даты.
+          try: 'Возьми число дней — `(race - today).days > 0` — или сравни даты: `race > today`.'
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+        - id: day-not-days
+          when:
+            errorType: AttributeError
+            errorIncludes: "'datetime.timedelta' object has no attribute 'day'"
+          why: >-
+            У промежутка число дней называется `.days` — с буквой s на конце. `.day` — номер дня
+            внутри даты, у промежутка его нет.
+          try: Допиши s — `(race - today).days`.
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+        - id: days-on-date
+          when:
+            errorType: AttributeError
+            errorIncludes: "'datetime.date' object has no attribute 'days'"
+          why: >-
+            `.days` есть только у промежутка, у даты его нет. В записи `race - today.days` точка
+            срабатывает раньше минуса: Python ищет `.days` у `today`, а это дата.
+          try: Возьми разность в скобки — `(race - today).days`.
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+        - id: still-date
+          when:
+            outputIncludes: Старт забега
+          why: >-
+            Программа всё ещё печатает дату старта. По новому требованию вместо неё нужна одна из
+            трёх фраз.
+          try: >-
+            Замени последнюю строку: посчитай, сколько дней осталось, и выбери фразу через
+            if / elif / else.
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+        - id: delta-printed
+          when:
+            outputIncludes: days
+          why: >-
+            В строку попал весь промежуток — `17 days, 0:00:00`. Так `print` показывает разность
+            дат. Нужно только число дней.
+          try: Возьми от разности `.days` — `(race - today).days`.
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+        - id: day-numbers
+          when:
+            failedTest: t2
+            codeRegex: '\.day\b\s*-|-\s*\w+\.day\b'
+          why: >-
+            Дни посчитаны вычитанием номеров дней, а `.day` — это номер дня в месяце. Внутри одного
+            месяца так выходит верно, а через границу месяца — нет: для 20 декабря и 10 января
+            получается 10 − 20 = −10, хотя до старта 21 день.
+          try: 'Вычитай сами даты и бери число дней у разности — `(race - today).days`.'
+          verify: '«Пример 2: через Новый год» должен дать «До старта 21 дн.».'
+        - id: two-ifs
+          when:
+            outputIncludes: "дн.\nСтарт уже прошёл"
+          why: >-
+            Напечатались две строки: после «До старта…» сработал ещё и `else`. Так бывает, когда
+            вторая проверка начинается с `if`, а не с `elif`: тогда это отдельный вопрос, и его
+            `else` срабатывает для любого числа дней, кроме нуля.
+          try: Начни вторую проверку с `elif` — тогда из трёх веток выполнится ровно одна.
+          verify: В «Примере 1» должна остаться одна строка — «До старта 17 дн.».
+        - id: two-ifs-late
+          when:
+            outputIncludes: "прошёл\nДо старта"
+          why: >-
+            Напечатались две строки: после «Старт уже прошёл» сработал ещё и `else` второй
+            проверки. Так бывает, когда вторая проверка начинается с `if`, а не с `elif`: тогда это
+            отдельный вопрос со своим `else`.
+          try: Начни вторую проверку с `elif` — тогда из трёх веток выполнится ровно одна.
+          verify: '«Граничный случай: старт был вчера» должен дать одну строку — «Старт уже прошёл».'
+        - id: yo-letter
+          when:
+            outputIncludes: прошел
+          why: >-
+            В слове «прошёл» нужна буква ё, а напечатано «прошел». Проверка сравнивает текст точно,
+            и для неё это разные слова.
+          try: Замени в этой строке `е` на `ё` — «Старт уже прошёл».
+          verify: '«Граничный случай: старт был вчера» должен дать «Старт уже прошёл».'
+        - id: negative-days
+          when:
+            outputIncludes: До старта -
+          why: >-
+            Дней получилось отрицательное число: из более ранней даты вычтена более поздняя.
+            Разность «поздняя дата минус ранняя» положительна.
+          try: Вычитай из даты старта сегодняшнюю — `race - today`.
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+        - id: plus-one
+          when:
+            outputEquals: До старта 18 дн.
+          why: >-
+            Дней на один больше: вместо 17 получилось 18. `(race - today).days` — это уже ровно
+            столько дней, сколько осталось, прибавлять 1 «за сегодня» не нужно.
+          try: 'Убери `+ 1` и выводи `(race - today).days` как есть.'
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+        - id: zero-boundary
+          when:
+            outputEquals: До старта 0 дн.
+          why: >-
+            В день старта напечаталось «До старта 0 дн.»: ноль перехватила первая ветка с `>=`, и
+            до проверки `== 0` дело не дошло. Выполняется первая подходящая ветка.
+          try: В первой ветке оставь строгое `> 0` — тогда ноль дойдёт до ветки «Старт сегодня!».
+          verify: В случае «Старт сегодня» должно получиться «Старт сегодня!».
+        - id: no-today-branch
+          when:
+            failedTest: t3
+            outputEquals: Старт уже прошёл
+            codeRegex: '(?<![\s\S])(?![\s\S]*Старт сегодня)'
+          why: >-
+            В день старта программа пишет «Старт уже прошёл»: для нуля дней отдельной ветки нет, и
+            ноль попадает в `else`.
+          try: Добавь между ветками `elif` для случая, когда дней ровно 0, с фразой «Старт сегодня!».
+          verify: В случае «Старт сегодня» должно получиться «Старт сегодня!».
+        - id: wrong-direction
+          when:
+            failedTest: t1
+            outputEquals: Старт уже прошёл
+          why: >-
+            В «Примере 1» до старта ещё 17 дней, а программа решила, что он прошёл. Значит, число
+            дней вышло отрицательным — даты вычитаются в обратном порядке — или перепутан знак в
+            условии.
+          try: Считай `(race - today).days` — это положительное число, пока старт впереди.
+          verify: В «Примере 1» должно получиться «До старта 17 дн.».
+      afterPass: >-
+        Программа не путается ни в Новом годе, ни в старте «сегодня»: дни считает datetime, а
+        фразу выбирает обычный if / elif / else. Улучшение: вместо «дн.» можно подбирать слово —
+        «день», «дня» или «дней» — по остатку от деления числа на 10 и на 100.
+      skills: [dates-datetime, conditions, boundary-checks]
+
+  - id: practice-pickup
+    type: exercise
+    title: Практика 3
+    exercise:
+      id: m8-l1-e3
+      kind: write
+      title: Последний день в пункте выдачи
+      statement: |-
+        Пункт выдачи хранит посылку несколько дней после прибытия. Последний день хранения — это
+        дата прибытия плюс срок хранения. Но по воскресеньям пункт закрыт: если последний день
+        выпал на воскресенье, он переносится на понедельник.
+
+        Напиши функцию `pickup_deadline(arrival, days)`:
+
+        - `arrival` — дата прибытия, строка ГГГГ-ММ-ДД;
+        - `days` — срок хранения, целое число дней;
+        - функция **возвращает** последний день хранения строкой ДД.ММ.ГГГГ.
+
+        Как узнать день недели, в теории не рассказано: это тренировка работы с документацией.
+        Вот выдержка из документации модуля datetime (в переводе):
+
+        > `date.weekday()` — возвращает день недели целым числом, где понедельник — 0, а
+        > воскресенье — 6. Например, `date(2002, 12, 4).weekday()` равно 2 — это среда.
+
+        > `date.isoweekday()` — возвращает день недели целым числом, где понедельник — 1, а
+        > воскресенье — 7. Например, `date(2002, 12, 4).isoweekday()` равно 3 — это среда.
+
+        Запись `date.weekday()` в документации значит «метод любой даты»: вызывают его у своей
+        даты, как `strftime`.
+
+        Примеры:
+
+        ```text
+        pickup_deadline("2026-10-01", 7)  →  '08.10.2026'
+        pickup_deadline("2026-10-20", 5)  →  '26.10.2026'   (25.10 — воскресенье)
+        ```
+
+        Строка `print` внизу заготовки — для тебя: нажми «Запустить» и посмотри, что возвращает
+        функция. Проверка вызывает функцию сама.
+      input: Параметры функции — строка `arrival` в виде ГГГГ-ММ-ДД и целое число `days` (от 1 и больше).
+      output: Функция возвращает строку ДД.ММ.ГГГГ — последний день хранения с учётом переноса с воскресенья.
+      constraints:
+        - Функция возвращает результат через `return`, а не печатает его.
+        - Переносится только воскресенье; суббота — обычный рабочий день.
+      starterCode: |
+        from datetime import date, timedelta
+
+
+        def pickup_deadline(arrival, days):
+            pass  # верни последний день хранения строкой ДД.ММ.ГГГГ
+
+
+        print(pickup_deadline("2026-10-20", 5))  # ожидаю 26.10.2026
+      tests:
+        - id: t1
+          kind: call
+          title: Пример 1
+          example: true
+          call: pickup_deadline("2026-10-01", 7)
+          expected: "'08.10.2026'"
+        - id: t2
+          kind: call
+          title: "Пример 2: срок выпал на воскресенье"
+          example: true
+          call: pickup_deadline("2026-10-20", 5)
+          expected: "'26.10.2026'"
+        - id: t3
+          kind: call
+          title: "Граничный случай: суббота не переносится"
+          edge: true
+          call: pickup_deadline("2026-10-24", 7)
+          expected: "'31.10.2026'"
+        - id: t4
+          kind: call
+          title: "Граничный случай: воскресенье в конце месяца"
+          edge: true
+          call: pickup_deadline("2026-05-24", 7)
+          expected: "'01.06.2026'"
+        - id: t5
+          kind: call
+          title: "Граничный случай: через Новый год"
+          edge: true
+          call: pickup_deadline("2026-12-27", 5)
+          expected: "'01.01.2027'"
+        - id: t6
+          kind: call
+          title: "Граничный случай: срок один день"
+          edge: true
+          call: pickup_deadline("2026-10-03", 1)
+          expected: "'05.10.2026'"
+      criteria:
+        - Функция превращает строку в дату и прибавляет срок через `timedelta`.
+        - День недели проверяется у последнего дня хранения, а не у даты прибытия.
+        - С воскресенья срок переносится ровно на один день вперёд; другие дни не меняются.
+        - Функция возвращает строку ДД.ММ.ГГГГ через `return`.
+      hints:
+        - >-
+          Раздели работу на два шага. Сначала посчитай последний день так же, как срок возврата
+          книги в первой практике. Потом отдельно проверь, не воскресенье ли он, — подходящий
+          метод есть в выдержке из документации.
+        - >-
+          На другом примере: `date(2026, 10, 9).isoweekday()` даёт `5` — значит, 9 октября 2026
+          года — пятница. Для того же дня `date(2026, 10, 9).weekday()` даёт `4`: там счёт идёт
+          с нуля. Метод пишется со скобками, как `strftime(...)`.
+        - |-
+          Каркас функции:
+          ```text
+          def pickup_deadline(arrival, days):
+              d = … дата прибытия + срок …
+              if … d — воскресенье …:
+                  d = d + timedelta(…)
+              return d.strftime(…)
+          ```
+      solution:
+        code: |
+          from datetime import date, timedelta
+
+
+          def pickup_deadline(arrival, days):
+              last_day = date.fromisoformat(arrival) + timedelta(days=days)
+              if last_day.weekday() == 6:
+                  last_day = last_day + timedelta(days=1)
+              return last_day.strftime("%d.%m.%Y")
+
+
+          print(pickup_deadline("2026-10-20", 5))  # ожидаю 26.10.2026
+        explanation: >-
+          Сначала дата прибытия превращается в дату и сдвигается на срок хранения. Потом
+          `weekday()` сообщает день недели последнего дня: 6 — воскресенье, и тогда срок
+          сдвигается ещё на день. Переход через конец месяца или года снова делает `timedelta`.
+          В конце дата превращается в строку ДД.ММ.ГГГГ. То же условие можно записать как
+          `last_day.isoweekday() == 7`. В `timedelta(days=days)` слева от `=` — имя аргумента
+          `timedelta` (именованный аргумент, урок 5.2), справа — параметр функции со сроком.
+      altSolutions:
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days)
+                if d.isoweekday() == 7:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: isoweekday() == 7; timedelta(days) без имени параметра.
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                while d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+
+
+            print(pickup_deadline("2026-10-20", 5))
+          note: Цикл «пока воскресенье — прибавить день».
+        - code: |
+            import datetime
+
+
+            def pickup_deadline(arrival, days):
+                arrived = datetime.date.fromisoformat(arrival)
+                last_day = arrived + datetime.timedelta(days=days)
+                if last_day.weekday() == 6:
+                    last_day += datetime.timedelta(days=1)
+                result = last_day.strftime("%d.%m.%Y")
+                return result
+          note: import datetime и полные имена, результат через переменную.
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                year, month, day = str(d).split("-")
+                return day + "." + month + "." + year
+          note: Строка собрана через split без strftime.
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() != 6:
+                    return d.strftime("%d.%m.%Y")
+                monday = d + timedelta(days=1)
+                return monday.strftime("%d.%m.%Y")
+          note: Два return — для обычного дня и для воскресенья.
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                last = date.fromisoformat(arrival)
+                last += timedelta(days=days)
+                if last.strftime("%A") == "Sunday":
+                    last += timedelta(days=1)
+                return last.strftime("%d.%m.%Y")
+
+
+            print(pickup_deadline("2026-10-20", 5))
+          note: День недели по английскому названию через %A и запись +=.
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                start = date.fromisoformat(arrival)
+                if (start.weekday() + days) % 7 == 6:
+                    days = days + 1
+                return (start + timedelta(days=days)).strftime("%d.%m.%Y")
+          note: День недели последнего дня посчитан остатком от деления, срок увеличен на 1.
+        - code: |
+            from datetime import date, timedelta
+
+            SUNDAY = 6
+
+
+            def pickup_deadline(arrival, days):
+                last_day = date.fromisoformat(arrival) + timedelta(days=days)
+                weekday = last_day.weekday()
+                if weekday == SUNDAY:
+                    last_day = last_day + timedelta(days=1)
+                print("ОТЛАДКА:", last_day, weekday)
+                return last_day.strftime("%d.%m.%Y")
+
+
+            print(pickup_deadline("2026-10-20", 5))
+            print(pickup_deadline("2026-10-01", 7))
+          note: День недели в переменной weekday, отладочный print в функции и два вызова внизу.
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival)
+                for i in range(days):
+                    d = d + timedelta(days=1)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return str(d.day).zfill(2) + "." + str(d.month).zfill(2) + "." + str(d.year)
+          note: Срок прибавляется по дню в цикле, строка собрана через zfill.
+      wrongSolutions:
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                print(d.strftime("%d.%m.%Y"))
+
+
+            print(pickup_deadline("2026-10-20", 5))  # ожидаю 26.10.2026
+          note: Функция печатает результат вместо return.
+          expectMistake: print-not-return
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                result = d.strftime("%d.%m.%Y")
+
+
+            print(pickup_deadline("2026-10-20", 5))  # ожидаю 26.10.2026
+          note: Результат посчитан, но не возвращён.
+          expectMistake: no-return
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d
+          note: Возвращается дата, а не строка ДД.ММ.ГГГГ.
+          expectMistake: returns-date
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return str(d)
+          note: Возвращается строка ГГГГ-ММ-ДД.
+          expectMistake: returns-date
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: weekday без скобок — сравнивается сам метод, условие всегда ложно.
+          expectMistake: no-parens
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 7:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: weekday() никогда не бывает 7.
+          expectMistake: weekday-seven
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.isoweekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: isoweekday() == 6 — это суббота.
+          expectMistake: wrong-day-number
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 0:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Воскресенье принято за 0 — на самом деле 0 — понедельник.
+          expectMistake: wrong-day-number
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                d = d + timedelta(days=days)
+                return d.strftime("%d.%m.%Y")
+          note: День недели проверяется у даты прибытия, а не у последнего дня.
+          expectMistake: arrival-checked
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                return d.strftime("%d.%m.%Y")
+          note: Перенос с воскресенья забыт.
+          expectMistake: no-sunday-check
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Сдвиг посчитан, но не сохранён в d.
+          expectMistake: shift-not-saved
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                    return d.strftime("%d.%m.%Y")
+          note: return только внутри if — для обычного дня функция возвращает None.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = arrival + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Строка arrival не превращена в дату.
+          expectMistake: str-plus-delta
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + days
+                if d.weekday() == 6:
+                    d = d + 1
+                return d.strftime("%d.%m.%Y")
+          note: К дате прибавляется обычное число.
+          expectMistake: plus-number
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%M.%Y")
+          note: "%M — минуты вместо месяца."
+          expectMistake: format-codes
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d-%m-%Y")
+          note: Перенос верный, но шаблон через дефис.
+          expectMistake: format-codes
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                weekday = d.weekday()
+                if weekday == 6:
+                    d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: День недели в переменной weekday (скобки на месте), сдвиг не сохранён.
+          expectMistake: shift-not-saved
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if date.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Запись date.weekday() из документации взята буквально.
+          expectMistake: unbound-method
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if arrival.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: День недели спрошен у строки arrival.
+          expectMistake: str-not-date
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return str(d.day) + "." + str(d.month) + "." + str(d.year)
+          note: Строка собрана вручную без ведущих нулей — '8.10.2026'.
+          expectMistake: no-leading-zero
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d") + "." + str(d.month) + "." + str(d.year)
+          note: Ноль потерян только у месяца — «Пример 1» проходит, падает '01.6.2026'.
+          expectMistake: no-leading-zero
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=14)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Срок 14 скопирован из первой практики — хватает общего разбора с разницей значений.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days - 1)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Ошибка на единицу — «день прибытия тоже считается».
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d - timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Воскресенье сдвинуто назад, на субботу.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.") + d.year
+          note: Год приклеен без str() — TypeError про int, хватает общего разбора.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                arrival = input()
+                days = int(input())
+                d = date.fromisoformat(arrival) + timedelta(days=days)
+                if d.weekday() == 6:
+                    d = d + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: input() внутри функции вместо параметров — у движка есть точный общий разбор.
+          expectMistake: null
+        - code: |
+            from datetime import date, timedelta
+
+
+            def pickup_deadline(arrival, days):
+                last_day = date.fromisoformat(arrival) + timedelta(days=days)
+                if last_day.weekday() == 6:
+                    last_day = last_day + timedelta(days=1)
+                return d.strftime("%d.%m.%Y")
+          note: Дата сохранена в last_day, а в return взято d из каркаса — NameError.
+          expectMistake: name-d
+      mistakes:
+        - id: str-plus-delta
+          when:
+            errorType: TypeError
+            errorIncludes: 'not "datetime.timedelta"'
+          why: >-
+            `arrival` — строка, а к строке нельзя прибавить промежуток: сдвигать на `timedelta`
+            Python умеет только дату.
+          try: 'Сначала преврати строку в дату — `date.fromisoformat(arrival)`, — а потом прибавляй срок.'
+          verify: "`pickup_deadline(\"2026-10-01\", 7)` должен вернуть '08.10.2026'."
+        - id: plus-number
+          when:
+            errorType: TypeError
+            errorIncludes: "'datetime.date' and 'int'"
+          why: >-
+            К дате прибавили обычное число. Python не знает, что это — дни, недели или годы, —
+            и останавливается с TypeError.
+          try: 'Прибавляй промежуток: `timedelta(days=days)`, а для переноса — `timedelta(days=1)`.'
+          verify: "`pickup_deadline(\"2026-10-01\", 7)` должен вернуть '08.10.2026'."
+        - id: unbound-method
+          when:
+            errorType: TypeError
+            errorIncludes: unbound method
+          why: >-
+            В документации `date.weekday()` значит «метод любой даты». Если вызвать его прямо у
+            `date`, Python не знает, у какой даты спрашивать день недели, — отсюда TypeError.
+          try: Вызови метод у своей даты — у переменной с последним днём хранения, например `d.weekday()`.
+          verify: "`pickup_deadline(\"2026-10-20\", 5)` должен вернуть '26.10.2026'."
+        - id: str-not-date
+          when:
+            errorType: AttributeError
+            errorIncludes: "'str' object has no attribute"
+          why: >-
+            Метод даты вызван у строки — например, у `arrival`: это строка ГГГГ-ММ-ДД, а не дата.
+            Методов даты вроде `weekday()` и `strftime()` у строки нет.
+          try: Вызывай метод у даты — у той, что получилась из `date.fromisoformat(arrival)` после прибавления срока.
+          verify: "`pickup_deadline(\"2026-10-20\", 5)` должен вернуть '26.10.2026'."
+        - id: name-d
+          when:
+            errorType: NameError
+            errorIncludes: "name 'd' is not defined"
+          why: >-
+            Python не знает имя `d`: в функции такой переменной нет. Похоже, дата сохранена под
+            другим именем, а `d` в подсказках и разборах — просто пример имени.
+          try: Пиши везде одно имя — то, под которым сохранил последний день хранения.
+          verify: "`pickup_deadline(\"2026-10-01\", 7)` должен вернуть '08.10.2026'."
+        - id: print-not-return
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*\breturn\b)[\s\S]*^[ \t]+print\('
+          where: Тело функции pickup_deadline
+          why: >-
+            Функция печатает дату, но ничего не возвращает. Проверка получает то, что вернула
+            функция, — `None`. Его же печатает строка `print` внизу, сразу после даты.
+          try: Замени `print(...)` в теле функции на `return` с тем же выражением.
+          verify: "Нажми «Запустить»: внизу должно остаться одно `26.10.2026`, без `None`."
+        - id: no-return
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*\breturn\b)'
+          where: Тело функции pickup_deadline
+          why: >-
+            В функции нет `return`, поэтому её вызов равен `None` — его и печатает строка внизу.
+            Если результат сохранён в переменную внутри функции, наружу он сам не попадает.
+          try: Отдай готовую строку через `return`.
+          verify: "Нажми «Запустить»: внизу должно появиться `26.10.2026`, а не `None`."
+        - id: no-leading-zero
+          when:
+            failedTest: t4
+            codeRegex: '(?<![\s\S])(?![\s\S]*(?:zfill|:02|["'']0["'']\s*\+))[\s\S]*(?:str\(\s*\w+\.(?:day|month)\s*\)|\{\s*\w+\.(?:day|month)\s*\})'
+          why: >-
+            `str(d.day)` и `{d.day}` дают число без нуля спереди: `1` вместо `01`. А по условию день
+            и месяц — всегда две цифры, как в `'01.06.2026'`.
+          try: 'Собери строку по шаблону: `d.strftime("%d.%m.%Y")` — `%d` и `%m` всегда дают две цифры.'
+          verify: >-
+            `pickup_deadline("2026-05-24", 7)` должен вернуть '01.06.2026', а
+            `pickup_deadline("2026-10-01", 7)` — '08.10.2026'.
+        - id: returns-date
+          when:
+            failedTest: t1
+            codeRegex: '(?<![\s\S])(?![\s\S]*strftime)[\s\S]*^[ \t]+return\s+(?:str\(\s*\w+\s*\)|\w+)\s*(?:#.*)?$'
+          why: >-
+            Функция возвращает саму дату или строку ГГГГ-ММ-ДД, а по условию нужна строка вида
+            ДД.ММ.ГГГГ — `'08.10.2026'`. Внешне дата и строка похожи, но для проверки это разные
+            значения.
+          try: Перед `return` преврати дату в строку — `.strftime("%d.%m.%Y")`.
+          verify: "`pickup_deadline(\"2026-10-01\", 7)` должен вернуть '08.10.2026'."
+        - id: format-codes
+          when:
+            failedTest: t1
+            codeRegex: '%M|%y|%d[-/ ,:%]|%m\.%d|%Y[-./ ]'
+          why: >-
+            Шаблон `strftime` не тот: нужна строка ровно `"%d.%m.%Y"` — день, месяц и год через
+            точки. Большая `%M` — минуты (у даты их ноль), маленькая `%y` — год двумя цифрами.
+          try: Проверь шаблон — должно быть `"%d.%m.%Y"`.
+          verify: "`pickup_deadline(\"2026-10-01\", 7)` должен вернуть '08.10.2026'."
+        - id: no-parens
+          when:
+            codeRegex: '\.(?:iso)?weekday\s*(?:==|!=|<|>)'
+          why: >-
+            `weekday` — метод, его нужно вызвать со скобками. Без скобок `d.weekday` — сам метод,
+            а не число, и с номером дня он не совпадёт никогда. Поэтому воскресенье не переносится.
+          try: Допиши скобки — `d.weekday()` (или `d.isoweekday()`).
+          verify: "`pickup_deadline(\"2026-10-20\", 5)` должен вернуть '26.10.2026'."
+        - id: weekday-seven
+          when:
+            codeRegex: '(?<!iso)weekday\(\)\s*==\s*7'
+          why: >-
+            `weekday()` считает с нуля: понедельник — 0, воскресенье — 6. Числа 7 он не
+            возвращает никогда, поэтому перенос не срабатывает. 7 — это воскресенье у
+            `isoweekday()`.
+          try: Напиши `weekday() == 6` или `isoweekday() == 7`.
+          verify: "`pickup_deadline(\"2026-10-20\", 5)` должен вернуть '26.10.2026'."
+        - id: wrong-day-number
+          when:
+            codeRegex: '(?<!iso)weekday\(\)\s*==\s*[0-5]\b|isoweekday\(\)\s*==\s*[0-6]\b'
+          why: >-
+            Переносится не тот день недели. По документации воскресенье — это `weekday() == 6`
+            или `isoweekday() == 7`; 0 у `weekday()` — понедельник, 6 у `isoweekday()` — суббота.
+          try: Сверься с выдержкой из документации и поставь номер воскресенья для своего метода.
+          verify: >-
+            `pickup_deadline("2026-10-20", 5)` должен вернуть '26.10.2026', а
+            `pickup_deadline("2026-10-24", 7)` — '31.10.2026'.
+        - id: shift-not-saved
+          when:
+            failedTest: t2
+            codeRegex: '^[ \t]+\w+\s*[-+](?!=)\s*timedelta\('
+          why: >-
+            Сдвиг на день посчитан, но никуда не сохранён. Строка `d + timedelta(days=1)` без
+            `d =` создаёт новую дату и сразу её теряет, а в `d` остаётся воскресенье.
+          try: Сохрани результат в ту же переменную — `d = d + timedelta(days=1)` (со своим именем переменной).
+          verify: "`pickup_deadline(\"2026-10-20\", 5)` должен вернуть '26.10.2026'."
+        - id: no-sunday-check
+          when:
+            failedTest: t2
+            codeRegex: '(?<![\s\S])(?![\s\S]*(?:weekday|%[aAw]))'
+          why: >-
+            В «Примере 2» последний день хранения — 25.10.2026, воскресенье, а в функции нет проверки
+            дня недели. Без неё воскресенье не переносится.
+          try: >-
+            После прибавления срока проверь день недели методом из выдержки документации; если это
+            воскресенье — прибавь ещё один день.
+          verify: "`pickup_deadline(\"2026-10-20\", 5)` должен вернуть '26.10.2026'."
+        - id: arrival-checked
+          when:
+            failedTest: t2
+            codeRegex: '(?:iso)?weekday\(\)[\s\S]*timedelta\(\s*(?:days\s*=\s*)?days\s*\)'
+          why: >-
+            День недели проверяется у даты прибытия, до того как прибавлен срок. А переносить нужно
+            последний день хранения: в «Примере 2» посылка пришла во вторник, а срок кончается в
+            воскресенье, 25.10.2026.
+          try: >-
+            Сначала прибавь срок, а потом проверь день недели у получившейся даты; если это
+            воскресенье — прибавь ещё один день.
+          verify: "`pickup_deadline(\"2026-10-20\", 5)` должен вернуть '26.10.2026'."
+      afterPass: >-
+        Метод для дня недели ты взял из документации, а не из урока, — так и работают со
+        стандартной библиотекой. Улучшение: праздничные дни, когда пункт тоже закрыт, можно
+        хранить во множестве дат и проверять через `in`.
+      skills: [dates-datetime, modules-imports, functions]
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - >-
+        Стандартная библиотека — модули, которые приходят вместе с Python. Прежде чем писать своё,
+        поищи готовое; как им пользоваться, написано в документации на docs.python.org.
+      - >-
+        `from datetime import date, timedelta` берёт из модуля нужные имена.
+        `date.fromisoformat("2026-10-20")` — дата из строки, `d.strftime("%d.%m.%Y")` — строка из
+        даты (`%m` — месяц, `%M` — минуты).
+      - >-
+        Дата + `timedelta(days=n)` — новая дата; дата − дата — промежуток, число дней в нём —
+        `.days` (а `.day` — номер дня внутри даты). Даты можно сравнивать: более ранняя — меньше.
+      - >-
+        `date.today()` — сегодняшняя дата устройства; в заданиях тренажёра «сегодня» приходит во
+        вводе.
+    question: Почему для срока возврата книги нельзя просто прибавить 14 к номеру дня?
+    answer: >-
+      У месяцев разная длина, а в високосный год в феврале 29 дней. 25 октября + 14 дало бы
+      «39 октября»: `date()` остановится с ValueError, а при ручном счёте на бумаге появится
+      что-нибудь вроде «31 ноября». `timedelta` сдвигает саму дату и сам переходит через конец
+      месяца и года.

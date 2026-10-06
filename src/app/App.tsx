@@ -1,6 +1,6 @@
-import { CircleAlert, Download, RefreshCw } from 'lucide-react';
-import { Suspense, lazy, useEffect, useState } from 'react';
-import { EmptyState } from '../components/ui.tsx';
+import { CircleAlert, Download, FileQuestion, RefreshCw, WifiOff } from 'lucide-react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
+import { EmptyState, Spinner } from '../components/ui.tsx';
 import { loadCourse } from '../content/loader.ts';
 import type { Course } from '../content/schema.ts';
 import { applyUpdate, reloadPage, useUpdateState } from '../pwa/register.ts';
@@ -55,7 +55,9 @@ function Screen({ route, course }: { route: Route; course: Course }) {
       return (
         <div className="page page-narrow">
           <EmptyState
+            as="h1"
             title="Такой страницы нет"
+            icon={FileQuestion}
             action={
               <a className="btn" href={href(paths.today())}>
                 На главную
@@ -67,65 +69,92 @@ function Screen({ route, course }: { route: Route; course: Course }) {
   }
 }
 
-function UpdateBanner() {
-  const update = useUpdateState();
-  const offline = useOfflineStatus();
-  if (update.reloadNeeded) {
-    // Новую версию применили в другой вкладке: файлы этой оболочки уже заменены.
-    return (
-      <div className="toast" role="status">
-        <RefreshCw aria-hidden="true" width={18} height={18} />
-        <span className="toast-text">«Практика» обновилась в другой вкладке. Перезагрузи страницу, чтобы всё работало. Прогресс сохранится.</span>
-        <span className="toast-actions">
-          <button type="button" className="btn btn-primary btn-sm" onClick={reloadPage}>
-            Перезагрузить
-          </button>
-        </span>
-      </div>
-    );
-  }
-  if (!update.updateReady) return null;
-  const hasDownloads = Object.values(offline.modules).some((module) => module.complete || module.stale);
+/** Баннер оболочки: строка сетки над содержимым (не поверх него), значок + короткий текст + действия. */
+function Banner({
+  tone,
+  icon: Icon,
+  role = 'status',
+  children,
+  actions,
+}: {
+  tone: 'warn' | 'err' | 'muted';
+  icon: typeof RefreshCw;
+  role?: 'status' | 'alert';
+  children: ReactNode;
+  actions: ReactNode;
+}) {
   return (
-    <div className="toast" role="status">
-      <RefreshCw aria-hidden="true" width={18} height={18} />
-      <span className="toast-text">
-        Доступна новая версия «Практики». Прогресс сохранится.
-        {hasDownloads && ' Скачанные для работы без сети уроки обновятся вместе с приложением; если какой-то модуль не скачается, приложение подскажет.'}
-      </span>
-      <span className="toast-actions">
-        <button type="button" className="btn btn-primary btn-sm" onClick={applyUpdate}>
-          Обновить
-        </button>
-      </span>
+    <div className={`banner banner-${tone}`} role={role}>
+      <Icon aria-hidden="true" />
+      <div className="banner-text">{children}</div>
+      <div className="banner-actions">{actions}</div>
     </div>
   );
 }
 
-/** После обновления прежняя версия скачанного модуля не подходит: без сети его уроки не откроются. */
-function StaleModulesBanner({ course }: { course: Course | null }) {
+function UpdateBanner() {
+  const update = useUpdateState();
+  if (update.reloadNeeded) {
+    // Новую версию применили в другой вкладке: файлы этой оболочки уже заменены.
+    return (
+      <Banner
+        tone="muted"
+        icon={RefreshCw}
+        actions={
+          <button type="button" className="btn btn-primary btn-sm" onClick={reloadPage}>
+            Перезагрузить
+          </button>
+        }
+      >
+        Приложение обновилось в другой вкладке
+      </Banner>
+    );
+  }
+  if (!update.updateReady) return null;
+  return (
+    <Banner
+      tone="muted"
+      icon={RefreshCw}
+      actions={
+        <button type="button" className="btn btn-primary btn-sm" onClick={applyUpdate}>
+          Обновить
+        </button>
+      }
+    >
+      Новая версия «Практики»
+    </Banner>
+  );
+}
+
+/**
+ * После обновления прежняя версия скачанного модуля не подходит: без сети его уроки не откроются.
+ * В «Настройках» (hidden) баннера нет: там модуль виден в «Работе без сети» со своей кнопкой — вторая главная кнопка
+ * на экране не нужна. Компонент остаётся смонтированным, чтобы «Позже» не забывалось.
+ */
+function StaleModulesBanner({ course, hidden = false }: { course: Course | null; hidden?: boolean }) {
   const offline = useOfflineStatus();
   const stale = (course?.modules ?? []).filter((module) => offline.modules[module.id]?.stale);
   const key = stale.map((module) => module.id).join(',');
   const [dismissed, setDismissed] = useState('');
-  if (stale.length === 0 || dismissed === key) return null;
+  if (hidden || stale.length === 0 || dismissed === key) return null;
   const numbers = stale.map((module) => module.number).join(', ');
   return (
-    <div className="toast" role="status">
-      <Download aria-hidden="true" width={18} height={18} />
-      <span className="toast-text">
-        {stale.length === 1 ? `Модуль ${numbers} обновился — скачай его` : `Модули ${numbers} обновились — скачай их`} заново для
-        работы без сети.
-      </span>
-      <span className="toast-actions">
-        <a className="btn btn-primary btn-sm" href={href(paths.settings('offline'))} onClick={() => setDismissed(key)}>
-          Скачать
-        </a>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDismissed(key)}>
-          Позже
-        </button>
-      </span>
-    </div>
+    <Banner
+      tone="warn"
+      icon={Download}
+      actions={
+        <>
+          <a className="btn btn-primary btn-sm" href={href(paths.settings('offline'))} onClick={() => setDismissed(key)}>
+            Скачать
+          </a>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDismissed(key)}>
+            Позже
+          </button>
+        </>
+      }
+    >
+      {stale.length === 1 ? `Модуль ${numbers} обновился — скачай заново` : `Модули ${numbers} обновились — скачай заново`}
+    </Banner>
   );
 }
 
@@ -134,22 +163,37 @@ function SaveProblemBanner() {
   const problem = useSaveProblem();
   if (!problem) return null;
   return (
-    <div className="toast toast-error" role="alert">
-      <CircleAlert aria-hidden="true" width={18} height={18} />
-      <span className="toast-text stack-sm" style={{ gap: 2 }}>
-        <strong>{problem.title}</strong>
-        <span>{problem.message}</span>
-      </span>
-      <span className="toast-actions">
-        {problem.reload && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => window.location.reload()}>
-            Перезагрузить
+    <Banner
+      tone="err"
+      icon={CircleAlert}
+      role="alert"
+      actions={
+        <>
+          {problem.reload && (
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => window.location.reload()}>
+              Перезагрузить
+            </button>
+          )}
+          <button type="button" className="btn btn-ghost btn-sm" onClick={dismissSaveProblem}>
+            Понятно
           </button>
-        )}
-        <button type="button" className="btn btn-ghost btn-sm" onClick={dismissSaveProblem}>
-          Понятно
-        </button>
-      </span>
+        </>
+      }
+    >
+      <strong className="banner-title">{problem.title}</strong>
+      <span>{problem.message}</span>
+    </Banner>
+  );
+}
+
+/** Строка ожидания: слева сверху, не по центру экрана. */
+function Loading({ children }: { children: ReactNode }) {
+  return (
+    <div className="page">
+      <p className="loading-line" role="status">
+        <Spinner />
+        {children}
+      </p>
     </div>
   );
 }
@@ -175,11 +219,7 @@ export function App() {
       setAppInfo({ version: __APP_VERSION__, contentVersion: value.contentVersion });
       setCourse(value);
     }, () =>
-      setError(
-        navigator.onLine
-          ? 'Не удалось загрузить карту курса. Попробуй обновить страницу.'
-          : 'Нет сети, а приложение ещё не сохранено для работы без интернета. Открой его один раз с сетью.',
-      ),
+      setError(navigator.onLine ? 'Не удалось загрузить курс' : 'Нет сети, приложение ещё не сохранено'),
     );
   }, []);
 
@@ -188,31 +228,37 @@ export function App() {
     document.title = title ? `${title} — Практика` : 'Практика';
   }, [route.name]);
 
-  // Фокус на основной области после перехода — для чтения с клавиатуры и скринридера.
+  // Новый экран открывается с начала: прокручивается <main>, а не окно (окно всегда ровно в экран).
   useEffect(() => {
-    if (route.name !== 'lesson') window.scrollTo({ top: 0 });
+    document.getElementById('main')?.scrollTo({ top: 0 });
+    if (document.documentElement.dataset.scroll === 'page') window.scrollTo({ top: 0 });
   }, [route.name]);
 
   return (
-    <AppShell section={sectionOf(route)}>
+    <AppShell
+      section={sectionOf(route)}
+      route={route}
+      course={course}
+      banners={
+        <>
+          <SaveProblemBanner />
+          <StaleModulesBanner course={course} hidden={route.name === 'settings'} />
+          <UpdateBanner />
+        </>
+      }
+    >
       {course ? (
         <ScreenErrorBoundary resetKey={path}>
-          <Suspense
-            fallback={
-              <div className="page">
-                <p className="muted" role="status">
-                  Открываю…
-                </p>
-              </div>
-            }
-          >
+          <Suspense fallback={<Loading>Открываю…</Loading>}>
             <Screen route={route} course={course} />
           </Suspense>
         </ScreenErrorBoundary>
       ) : error ? (
         <div className="page page-narrow">
           <EmptyState
+            as="h1"
             title="Курс не загрузился"
+            icon={navigator.onLine ? CircleAlert : WifiOff}
             action={
               <button type="button" className="btn" onClick={() => window.location.reload()}>
                 Обновить страницу
@@ -223,17 +269,8 @@ export function App() {
           </EmptyState>
         </div>
       ) : (
-        <div className="page">
-          <p className="muted" role="status">
-            Загружаю курс…
-          </p>
-        </div>
+        <Loading>Загружаю курс…</Loading>
       )}
-      <div className="toast-region">
-        <SaveProblemBanner />
-        <StaleModulesBanner course={course} />
-        <UpdateBanner />
-      </div>
     </AppShell>
   );
 }

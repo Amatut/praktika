@@ -1,0 +1,685 @@
+/* Владелец: settings. Экран «Настройки», скачивание для работы без сети (offline-controls, в том числе
+   компактная кнопка в модуле курса) и экран ошибки (ErrorBoundary).
+   Раскладка: ≥ 1200 — оглавление 220 px слева (закреплено) и колонка до 760; 900–1199 — одна колонка, оглавление —
+   полосой разделов сверху: строка раскладки, а разделы прокручиваются ниже неё в своей области (ничего не заходит
+   под полосу); < 900 — оглавление сеткой 3 × 2 / 2 × 3 в начале страницы (все разделы видны целиком), метка над
+   элементом, h1 только для скринридера (то же слово — в верхней строке оболочки).
+   Разделы — строки на линиях, без карточек и рамок. Цвета и размеры — токены. */
+
+/* ------------------------------------------------------------ каркас: оглавление + колонка */
+.settings {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100%;
+}
+
+.settings-toc {
+  border-right: 1px solid var(--line);
+}
+
+/* Область разделов. ≥ 1200 прокручивается <main>; уже — она сама (см. ниже). position: relative — скрытый h1
+   (< 900) остаётся внутри неё. */
+.settings-body {
+  position: relative;
+  min-width: 0;
+}
+
+.settings-toc ul {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: var(--sp-6) var(--sp-3);
+  list-style: none;
+}
+
+.settings-toc a {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--control);
+  padding: 0 var(--sp-3);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  color: var(--text-2);
+  font: 500 var(--fs-14) / var(--lh-14) var(--font-sans);
+  text-decoration: none;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+
+.settings-toc a svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.settings-toc a:hover {
+  background: var(--nav-hover);
+  color: var(--text);
+}
+
+/* Текущий раздел — как выбранный ряд списка: подложка акцента и черта слева. */
+.settings-toc a[aria-current] {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--accent-edge);
+}
+
+.settings-toc a[aria-current] svg {
+  color: var(--accent-text);
+}
+
+.settings-toc a:focus-visible {
+  outline-offset: -2px;
+}
+
+.settings-main {
+  width: 100%;
+  max-width: calc(760px + 2 * var(--sp-8));
+  padding: var(--sp-6) var(--sp-8) var(--sp-12);
+}
+
+/* ------------------------------------------------------------ разделы */
+.settings-section {
+  scroll-margin-top: var(--sp-4);
+}
+
+.settings-section + .settings-section {
+  margin-top: var(--sp-10);
+}
+
+.settings-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  font: 600 var(--fs-18) / var(--lh-18) var(--font-sans);
+}
+
+.settings-section-title svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--text-2);
+}
+
+/* Одна метка под заголовком раздела («Прогресс — только на этом устройстве») — до первой линии. */
+.settings-lead {
+  display: flex;
+  width: fit-content;
+  margin-bottom: var(--sp-3);
+}
+
+/* ------------------------------------------------------------ строки настроек: метка слева, элемент справа */
+.setting-row {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--sp-2) var(--sp-6);
+  align-items: start;
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--line);
+}
+
+/* Метка стоит на одной линии с текстом первого элемента справа: кнопки и поля высотой --control, сегменты — чуть ниже. */
+.setting-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+  padding-top: calc((var(--control) - 20px) / 2);
+}
+
+.setting-name {
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.setting-hint {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.setting-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.setting-control > * {
+  max-width: 100%;
+}
+
+/* Текст вместо элемента («Пока нет», строка статуса, «Модуль обновился» над кнопкой) — на линии метки. */
+.setting-control > .setting-value:first-child,
+.setting-control > .status-line:first-child,
+.setting-control > .loading-line:first-child,
+.setting-control > .offline-ctl:first-child > .status-line:first-child {
+  padding-top: calc((var(--control) - 20px) / 2);
+}
+
+.setting-value {
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* Варианты-числа («16», «17») — не уже высоты: на касании цель ≥ 44 × 44. */
+.settings .segmented button {
+  min-width: var(--control-sm);
+}
+
+/* Короткая пометка под переключателем: «Не ИИ · работают без сети». */
+.setting-note {
+  margin-top: calc(-1 * var(--sp-1));
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* Образец текста урока выбранным кеглем — отдельным блоком с чертой слева, как цитата из урока. */
+.settings-sample {
+  padding: var(--sp-1) 0 var(--sp-1) var(--sp-3);
+  border-left: 2px solid var(--line-strong);
+}
+
+/* Во всю ширину колонки: пример кода, сообщения, списки, предпросмотр файла. */
+.setting-control > .code-file,
+.setting-control > .code-block,
+.setting-control > .notice,
+.setting-control > .settings-list,
+.setting-control > .import-preview {
+  align-self: stretch;
+}
+
+/* Предупреждение о токене — по ширине поля над ним. */
+.setting-control > .setting-risk {
+  align-self: stretch;
+  max-width: 440px;
+}
+
+.setting-input {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* JetBrains Mono склеивает «://» лигатурой — в адресе это выглядит как «http: //». */
+.setting-input.mono {
+  font-variant-ligatures: none;
+}
+
+.setting-select {
+  width: auto;
+  min-width: 200px;
+}
+
+/* Итог проверки соединения: адрес строкой, полный текст адаптера — свёрнут в «Подробностях». */
+.check-origin {
+  display: block;
+  font-size: var(--fs-14);
+  font-variant-ligatures: none;
+  overflow-wrap: anywhere;
+}
+
+.notice .check-details {
+  margin-top: var(--sp-1);
+  border-top: 0;
+}
+
+.notice .check-details > summary {
+  min-height: var(--control-sm);
+  padding: var(--sp-1) 0;
+}
+
+.check-details .disclosure-body {
+  padding-bottom: var(--sp-1);
+}
+
+/* ------------------------------------------------------------ списки внутри строки: копии, обзоры */
+.settings-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-3);
+  min-height: 44px;
+  padding: var(--sp-2) 0;
+}
+
+.settings-list > li:first-child {
+  padding-top: 0;
+}
+
+.settings-list > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.settings-list-main {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-list-text {
+  flex: 1 1 220px;
+  min-width: 0;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.settings-list-title {
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.settings-list-sub {
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ предпросмотр резервной копии — блок-«файл» */
+.import-preview {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+}
+
+.import-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-3);
+  min-height: 36px;
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.import-preview-head svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-2);
+}
+
+.import-preview-title {
+  color: var(--text);
+  font: 600 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.import-preview-meta {
+  margin-left: auto;
+  color: var(--text-2);
+  font: 400 var(--fs-13) / var(--lh-13) var(--font-sans);
+}
+
+.import-preview-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+}
+
+.import-preview-body > * {
+  max-width: 100%;
+}
+
+/* Четыре счётчика — сеткой 2 × 2 (на телефоне — столбцом), а не «три и один». */
+.import-counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2) var(--sp-6);
+  align-self: stretch;
+  margin: 0;
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.import-counts > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.import-counts dt {
+  color: var(--text-2);
+}
+
+/* Жирные — только числа: в «12 из 40» слово «из» обычное. */
+.import-counts dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.import-counts .n {
+  font-weight: 600;
+}
+
+/* Предупреждение при «Заменить текущий» бывает в 2–3 строки: текст основным цветом, тон — у значка. */
+.import-preview .status-warn {
+  color: var(--text);
+  font-weight: 400;
+}
+
+.import-preview .status-warn svg {
+  color: var(--warn);
+}
+
+/* ------------------------------------------------------------ «О приложении» */
+.settings-facts {
+  margin: 0;
+}
+
+.settings-facts .setting-row {
+  padding: var(--sp-3) 0;
+}
+
+.settings-facts dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+.settings-facts dd.mono {
+  font-family: var(--font-code);
+}
+
+.settings-limits .bullets {
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14-wrap) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ скачивание для работы без сети */
+.offline-ctl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* В шапке списка уроков модуля — прижато вправо. */
+.offline-ctl.is-compact {
+  align-items: flex-end;
+  text-align: right;
+}
+
+/* Статус и действие в одну строку: «Скачан» + «Удалить». */
+.offline-ctl-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.offline-ctl.is-compact .offline-ctl-line {
+  justify-content: flex-end;
+}
+
+/* «Модуль обновился», ошибка скачивания: текст основным цветом (ошибка бывает в несколько строк), тон — у значка. */
+.offline-ctl .status-warn,
+.offline-ctl .status-err {
+  color: var(--text);
+  font-weight: 400;
+}
+
+.offline-ctl .status-warn svg {
+  color: var(--warn);
+}
+
+.offline-ctl .status-err svg {
+  color: var(--err);
+}
+
+.offline-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(280px, 100%);
+}
+
+.offline-progress-text {
+  color: var(--text);
+  font: 400 var(--fs-14) / var(--lh-14) var(--font-sans);
+}
+
+/* ------------------------------------------------------------ ошибка экрана (ErrorBoundary) */
+.screen-error {
+  max-width: calc(760px + 2 * var(--sp-8));
+}
+
+/* Подробности — на одной линии с текстом пустого состояния (значок 20 + промежуток 12). */
+.screen-error-details {
+  max-width: 760px;
+  margin: var(--sp-6) 0 0 var(--sp-8);
+}
+
+.screen-error-trace {
+  max-height: 320px;
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--bg-editor);
+  color: var(--text);
+  font: 400 var(--fs-14) / 1.6 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------ уже 1200: одна колонка, оглавление — полосой */
+@media (max-width: 1199px) {
+  /* Полоса разделов — первая строка экрана, область разделов — вторая, со своей прокруткой: полоса всегда видна
+     и ничего не закрывает. В режиме «страницей» (низкое окно, полные снимки) высота не задана — прокручивается
+     окно, полоса уходит вместе со страницей. */
+  .settings {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .settings-toc {
+    flex: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .settings-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  :root[data-scroll='page'] .settings {
+    height: auto;
+  }
+
+  :root[data-scroll='page'] .settings-body {
+    overflow-y: visible;
+  }
+
+  /* Текст первого пункта — на одной линии с текстом колонки (у пункта поля 12 px). */
+  .settings-toc ul {
+    position: static;
+    flex-direction: row;
+    gap: var(--sp-1);
+    padding: 0 calc(var(--sp-5) - var(--sp-3));
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .settings-toc ul::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Как вкладки: текущий — основным цветом и чертой снизу. */
+  .settings-toc a {
+    gap: var(--sp-2);
+    min-height: var(--head);
+    border-radius: 0;
+    white-space: nowrap;
+  }
+
+  .settings-toc a[aria-current] {
+    background: transparent;
+    box-shadow: inset 0 -2px 0 var(--accent-edge);
+  }
+
+  .settings-main {
+    padding: var(--sp-5) var(--sp-5) var(--sp-10);
+  }
+}
+
+/* Низкое окно (альбомный телефон): прокручивается страница целиком, как в режиме «страницей» оболочки. */
+@media (max-width: 1199px) and (max-height: 559px) {
+  .settings {
+    height: auto;
+  }
+
+  .settings-body {
+    overflow-y: visible;
+  }
+}
+
+/* Телефон и планшет в портрете: метка над элементом, колонка по центру до 720. */
+@media (max-width: 899px) {
+  /* «Настройки» уже написано в верхней строке оболочки: h1 остаётся для скринридера. */
+  .settings-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Оглавление — сеткой 3 × 2 (на телефоне 2 × 3): все шесть разделов видны целиком, ничего не уходит за край.
+     Сетка — начало страницы: она прокручивается вместе с разделами, а не занимает экран постоянно. */
+  .settings {
+    height: auto;
+  }
+
+  .settings-body {
+    overflow-y: visible;
+  }
+
+  .settings-toc ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-1);
+    max-width: calc(720px + 2 * var(--sp-4));
+    margin-inline: auto;
+    padding: var(--sp-3) calc(var(--sp-4) - var(--sp-3));
+    overflow: visible;
+  }
+
+  /* Пункт — как ряд списка: текущий с подложкой акцента и чертой слева. Длинное название переносится, а не режется. */
+  .settings-toc a {
+    min-height: var(--control);
+    border-radius: 0 var(--r-1) var(--r-1) 0;
+    white-space: normal;
+  }
+
+  .settings-toc a[aria-current] {
+    background: var(--accent-soft);
+    box-shadow: inset 2px 0 0 var(--accent-edge);
+  }
+
+  /* Без значков названию остаётся вся ширина ячейки. */
+  .settings-toc a svg {
+    display: none;
+  }
+
+  .settings-main {
+    max-width: calc(720px + 2 * var(--sp-4));
+    margin-inline: auto;
+    padding: var(--sp-4) var(--sp-4) var(--sp-8);
+  }
+
+  .settings-section + .settings-section {
+    margin-top: var(--sp-8);
+  }
+
+  .setting-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+
+  .setting-label,
+  .setting-control > .setting-value:first-child,
+  .setting-control > .status-line:first-child,
+  .setting-control > .loading-line:first-child,
+  .setting-control > .offline-ctl:first-child > .status-line:first-child {
+    padding-top: 0;
+  }
+
+  /* Поле во всю ширину — и предупреждение под ним тоже. */
+  .setting-input,
+  .setting-control > .setting-risk {
+    max-width: none;
+  }
+
+  /* Четыре коротких факта — метка слева, значение справа, а не столбцом в два раза длиннее. */
+  .settings-facts .setting-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: var(--sp-3);
+  }
+
+  .settings-facts dd {
+    text-align: right;
+  }
+}
+
+/* Телефон: счётчики копии — столбцом, «Заданий решено 12 из 40» не переносится посередине. */
+@media (max-width: 599px) {
+  .settings-toc ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .import-counts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* «версия данных 1» — под заголовком копии, на одной линии с его текстом, а не оторванной строкой справа. */
+  .import-preview-head {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: var(--sp-1) var(--sp-3);
+  }
+
+  .import-preview-meta {
+    grid-column: 2;
+    margin-left: 0;
+  }
+
+  /* Объём модуля уже на кнопке «Скачать модуль · 216 КБ» — строка под названием не повторяет его. */
+  .offline-size {
+    display: none;
+  }
+
+  /* Ghost-кнопка, перенесённая под текст ряда, — значком на линии текста (у неё прозрачные поля 12 px). */
+  .settings-list .btn-ghost,
+  .offline-ctl-line .btn-ghost {
+    margin-inline-start: calc(-1 * var(--sp-3));
+  }
+}

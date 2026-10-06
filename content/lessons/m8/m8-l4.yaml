@@ -1,0 +1,1272 @@
+id: m8-l4
+module: m8
+number: "8.4"
+title: "Git в работе: статус, разница, коммит"
+objective: >-
+  Перед каждым коммитом смотреть git status и git diff, добавлять в коммит только нужные файлы,
+  не пускать лишнее в репозиторий через .gitignore и делать небольшие коммиты с понятными
+  сообщениями.
+minutes: [30, 40]
+prerequisites: [m8-l3, m5-l6]
+skills: [git-workflow]
+environment: external
+
+story:
+  title: «Пара строк» от папы
+  fictional: true
+  text: >-
+    Семья Кузнецовых считает расходы за неделю маленьким скриптом, который дочь Аня хранит в Git.
+    Папа захотел, чтобы скрипт ещё и считал покупки, и поправил «пару строк» — после этого траты
+    за неделю вдруг стали равны последней покупке. Что именно он менял, папа уже не помнил. Аня
+    набрала `git diff` и за минуту увидела все изменённые строки, в том числе ту, где закралась
+    ошибка. Она исправила одну строку, папину новую оставила, и в историю ушёл аккуратный коммит
+    «Добавить подсчёт покупок» — без ошибки.
+
+why: >-
+  Git помнит каждый коммит, но пользу приносит, когда перед коммитом смотришь, что в него
+  попадёт. Например, `git diff` за секунду показывает все изменённые строки — даже те, что
+  поменялись случайно.
+
+usedIn: >-
+  В командах каждое изменение, прежде чем принять, читает коллега — это называется код-ревью, и
+  читают на нём именно diff. По сообщениям коммитов через год понимают, что и зачем менялось в
+  коде. Файл .gitignore есть почти в каждом репозитории.
+
+steps:
+  - id: three-places
+    type: theory
+    title: Что попадёт в коммит
+    body: |-
+      В уроке 5.6 коммит делался в два шага: `git add` выбирал файл, `git commit` делал снимок.
+      Между этими шагами есть важное место — **индекс** (по-английски staging area). Это корзина
+      следующего коммита: `git add файл` кладёт туда текущую версию файла, а `git commit`
+      сохраняет в истории **только то, что лежит в корзине**. Правки, которые ты не добавил, в
+      коммит не попадут, даже если файл сохранён.
+
+      Получается три места:
+
+      1. **Рабочая папка** — файлы, которые ты правишь в редакторе.
+      2. **Индекс** — то, что уйдёт в следующий коммит.
+      3. **История** — сделанные коммиты.
+
+      `git status` раскладывает изменения по разделам (подсказки Git в скобках здесь пропущены):
+
+      ```text
+      Changes to be committed:          ← в индексе: войдёт в коммит
+              modified:   todo/tasks.py
+      Changes not staged for commit:    ← изменён, но не добавлен
+              modified:   main.py
+      Untracked files:                  ← новый: Git за ним ещё не следит
+              requirements.txt
+      ```
+
+      Если разделов нет, а внизу `nothing to commit, working tree clean`, — всё как в последнем
+      коммите.
+
+      **`git diff`** показывает, что изменилось в файлах и ещё не добавлено в индекс, а
+      **`git diff --staged`** — что уже в индексе, то есть уйдёт в коммит. Новый файл, за которым
+      Git ещё не следит, в `git diff` не виден — он появится в `git diff --staged` после
+      `git add`. Вывод выглядит так:
+
+      ```text
+      diff --git a/hello.py b/hello.py
+      index 388023f..a59592f 100644
+      --- a/hello.py
+      +++ b/hello.py
+      @@ -1,3 +1,3 @@
+       name = input()
+      -print("Привет,", name)
+      +print(f"Привет, {name}!")
+       print("До встречи!")
+      ```
+
+      - первые четыре строки — служебные: какой файл сравнивается;
+      - `@@ -1,3 +1,3 @@` — где кусок: в старой версии с 1-й строки, 3 строки, в новой — тоже;
+      - `-` — строка как была, `+` — какой стала;
+      - строки без знака не менялись, они показаны для ориентира.
+
+      Знак стоит в первой колонке и в файл не входит: сама строка начинается сразу после него, со
+      своим отступом. Изменённая строка выглядит как пара: старая с минусом и новая с плюсом. Если
+      изменилось несколько строк подряд, Git показывает сначала все старые, потом все новые —
+      сравнивай их по порядку. В терминале минусы обычно красные, плюсы — зелёные.
+
+      Положил в индекс лишнее — **`git restore --staged файл`** вынет файл из индекса, а правки в
+      самом файле останутся. Не путай с `git restore файл` из урока 5.6: та команда выбрасывает
+      правки из файла.
+
+      Привычка перед каждым коммитом: `git status` → `git diff` → `git add файл` →
+      `git diff --staged` → `git commit -m "…"` → `git log --oneline`.
+    simpler: >-
+      Индекс — корзина для следующего коммита. `git add` кладёт туда файл, `git status`
+      показывает, что лежит в корзине и что рядом с ней, `git diff` — что именно изменилось:
+      минус — было, плюс — стало. В коммит попадает только содержимое корзины.
+    coach: >-
+      Привычка на всю жизнь: перед каждым коммитом — status и diff. Это пара секунд, зато в
+      историю не уедет отладочный print или случайная правка.
+
+  - id: read-status
+    type: quiz
+    title: Прочитай git status
+    question: |-
+      В проекте «Список задач» ты дописал в `todo/tasks.py` новую функцию и набрал
+      `git add todo/tasks.py`. Потом заметил в функции опечатку, исправил её и сохранил файл. Ещё
+      ты завёл файл `ideas.txt` с идеями на будущее. Теперь `git status` показывает:
+
+      ```text
+      On branch master
+      Changes to be committed:
+        (use "git restore --staged <file>..." to unstage)
+              modified:   todo/tasks.py
+
+      Changes not staged for commit:
+        (use "git add <file>..." to update what will be committed)
+        (use "git restore <file>..." to discard changes in working directory)
+              modified:   todo/tasks.py
+
+      Untracked files:
+        (use "git add <file>..." to include in what will be committed)
+              ideas.txt
+      ```
+
+      Что попадёт в коммит, если сейчас набрать `git commit -m "…"`?
+    options:
+      - "`todo/tasks.py` с исправленной опечаткой и `ideas.txt`"
+      - "`todo/tasks.py` с исправленной опечаткой"
+      - "`todo/tasks.py` в той версии, что была при `git add`, — с опечаткой"
+      - "Ничего: файл стоит в двух разделах, и Git сначала попросит выбрать"
+    correct: 2
+    explanation: >-
+      В коммит уходит только содержимое индекса — раздел `Changes to be committed`. `git add`
+      положил туда `todo/tasks.py` в тот момент, когда опечатка ещё была. Исправление сделано позже
+      и лежит в разделе `Changes not staged for commit` — поэтому файл виден в двух разделах сразу.
+      Чтобы исправление попало в коммит, снова набери `git add todo/tasks.py`. Сейчас `git diff`
+      покажет только исправление опечатки, а `git diff --staged` — то, что уйдёт в коммит.
+      `ideas.txt` — новый файл, Git за ним ещё не следит, и в коммит он не попадёт.
+    coach: >-
+      Индекс хранит снимок файла на момент `git add`, а не ссылку на файл. Поправил файл после
+      `git add` — добавь его ещё раз.
+
+  - id: moved-line
+    type: predict
+    title: Сдвинули одну строку
+    prompt: |-
+      Курьер считает общий вес посылок. Коллега поправил его программу, и `git diff` показал:
+
+      ```text
+      @@ -1,4 +1,4 @@
+       total = 0
+       for weight in [3, 5, 2]:
+           total += weight
+      -print(f"Общий вес: {total} кг")
+      +    print(f"Общий вес: {total} кг")
+      ```
+
+      Ниже — файл после правки. Как думаешь, что теперь выведет программа?
+    code: |-
+      total = 0
+      for weight in [3, 5, 2]:
+          total += weight
+          print(f"Общий вес: {total} кг")
+    options:
+      - "Общий вес: 10 кг"
+      - |-
+        Общий вес: 10 кг
+        Общий вес: 10 кг
+        Общий вес: 10 кг
+      - |-
+        Общий вес: 3 кг
+        Общий вес: 8 кг
+        Общий вес: 10 кг
+    answer: |-
+      Общий вес: 3 кг
+      Общий вес: 8 кг
+      Общий вес: 10 кг
+    explanation: >-
+      Слова в строке с print не изменились, поменялись только четыре пробела в начале — но Git
+      считает строку другой и показывает пару «минус — плюс». С отступом print попал в тело цикла
+      и выполняется на каждом проходе, сразу после того как к `total` прибавился очередной вес:
+      3, потом 8, потом 10. Пока строка стояла без отступа, после цикла, она печатала одну
+      строку — `Общий вес: 10 кг`.
+    coach: >-
+      Пара строк в diff, которые на вид одинаковые, — повод присмотреться к пробелам. В Python
+      отступ меняет смысл программы.
+
+  - id: practice-budget
+    type: exercise
+    title: Практика 1
+    exercise:
+      id: m8-l4-e1
+      kind: fix
+      title: Где сломался итог
+      filename: budget.py
+      statement: |-
+        Скрипт семьи Кузнецовых из истории. Программа получает суммы покупок за неделю в одной
+        строке через пробел и печатает, сколько потрачено. Папа добавил подсчёт покупок, но
+        коммит ещё не сделал — и теперь траты равны последней покупке. Аня набрала `git diff`:
+
+        ```text
+        diff --git a/budget.py b/budget.py
+        index a709b22..ae6a42c 100644
+        --- a/budget.py
+        +++ b/budget.py
+        @@ -1,5 +1,6 @@
+         amounts = input().split()
+         total = 0
+         for amount in amounts:
+        -    total += int(amount)
+        +    total = int(amount)
+         print(f"Потрачено за неделю: {total}")
+        +print(f"Покупок: {len(amounts)}")
+        ```
+
+        В редакторе — файл после папиной правки. По diff найди изменение, которое сломало итог,
+        и исправь его. Новая строка с числом покупок нужна — её оставь.
+
+        Для ввода `1200 350 800` программа должна вывести:
+
+        ```text
+        Потрачено за неделю: 2350
+        Покупок: 3
+        ```
+      input: Суммы покупок в одной строке через пробел — целые числа, хотя бы одно.
+      output: "Две строки: `Потрачено за неделю: …` и `Покупок: …`."
+      constraints:
+        - "Исправь сломанную строку, а папину новую оставь. `git restore budget.py` здесь не подходит: он выбросил бы и её."
+        - Надписи и порядок строк вывода не меняй.
+      starterCode: |
+        amounts = input().split()
+        total = 0
+        for amount in amounts:
+            total = int(amount)
+        print(f"Потрачено за неделю: {total}")
+        print(f"Покупок: {len(amounts)}")
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: три покупки"
+          example: true
+          stdin: "1200 350 800\n"
+          expected: |-
+            Потрачено за неделю: 2350
+            Покупок: 3
+        - id: t2
+          kind: io
+          title: "Пример 2: две покупки"
+          example: true
+          stdin: "500 500\n"
+          expected: |-
+            Потрачено за неделю: 1000
+            Покупок: 2
+        - id: t3
+          kind: io
+          title: "Граничный случай: одна покупка"
+          edge: true
+          stdin: "90\n"
+          expected: |-
+            Потрачено за неделю: 90
+            Покупок: 1
+        - id: t4
+          kind: io
+          title: "Граничный случай: в конце нули"
+          edge: true
+          stdin: "15 0 0\n"
+          expected: |-
+            Потрачено за неделю: 15
+            Покупок: 3
+      criteria:
+        - Итог — сумма всех покупок, а не последняя покупка.
+        - Строка с числом покупок осталась.
+        - Правка не откатана целиком — исправлена только поломка, для этого хватит одной строки.
+      hints:
+        - >-
+          Строки с минусом в diff — как было до папиной правки, с плюсом — как стало. Изменений
+          два: одно добавляет строку в конце, другое меняет строку, которая уже была. Какое из них
+          отвечает за сумму — и чем старая версия этой строки отличается от новой?
+        - |-
+          Тот же приём на счётчике:
+
+          ```python
+          count = 0
+          for word in ["а", "б", "в"]:
+              count += 1
+          print(count)  # 3
+          ```
+
+          `+=` прибавляет к тому, что уже накоплено. Замени его на `count = 1` — и на каждом
+          проходе счётчик не растёт, а заново становится 1: после цикла там 1. Знак `=` просто
+          записывает новое значение поверх старого.
+        - |-
+          Всё остаётся как у папы, кроме одной строки в теле цикла:
+
+          ```text
+          amounts = input().split()
+          total = 0
+          for amount in amounts:
+              ← здесь: прибавить число из amount к total, как в строке с минусом (сам минус из первой колонки не переноси)
+          print(... Потрачено за неделю ...)
+          print(... Покупок ...)
+          ```
+      solution:
+        code: |
+          amounts = input().split()
+          total = 0
+          for amount in amounts:
+              total += int(amount)
+          print(f"Потрачено за неделю: {total}")
+          print(f"Покупок: {len(amounts)}")
+        explanation: >-
+          В diff строка с минусом `total += int(amount)` превратилась в строку с плюсом
+          `total = int(amount)` — пропал плюс. С `=` переменная на каждом проходе цикла
+          перезаписывается, и после цикла в ней только последняя покупка. `+=` снова прибавляет
+          каждую покупку к накопленной сумме. Вторая правка — новая строка «Покупок» — нужная,
+          поэтому файл не откатывают через `git restore`, а исправляют одну строку.
+      altSolutions:
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = total + int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Сумма накапливается через total = total + …
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = int(amount) + total
+            print("Потрачено за неделю:", total)
+            print("Покупок:", len(amounts))
+          note: Слагаемые в другом порядке и print через запятую — вывод тот же.
+        - code: |
+            amounts = input().split()
+            total = 0
+            count = 0
+            for amount in amounts:
+                total += int(amount)
+                count += 1
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {count}")
+          note: Покупки считаются счётчиком в том же цикле, а не через len.
+      wrongSolutions:
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Код не изменён — итог равен последней покупке.
+          expectMistake: unchanged
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total =+ int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Знаки перепутаны — =+ вместо +=.
+          expectMistake: plus-after
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total += amount
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Плюс вернули, а int() потеряли — TypeError.
+          expectMistake: lost-int
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = total + amount
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Сумма через total + amount без int() — TypeError.
+          expectMistake: lost-int
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total += int(amount)
+            print(f"Потрачено за неделю: {total}")
+          note: Правка откатана целиком, как через git restore, — пропала нужная строка с покупками.
+          expectMistake: lost-count
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = int(amount)
+            print(f"Потрачено за неделю: {total}")
+          note: Удалена нужная строка, а сломанная осталась — сначала разбор главной поломки.
+          expectMistake: unchanged
+        - code: |
+            amounts = input().split()
+            for amount in amounts:
+                total = 0
+                total += int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Обнуление перенесено в цикл — итог снова равен последней покупке.
+          expectMistake: reset-in-loop
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total += int(amount)
+            print(f"Итого: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Изменена надпись — общий разбор проверки, разборы из материалов не должны сработать.
+          expectMistake: null
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = amount + total
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Плюс вернули в форме «покупка + итог», а int() потеряли — TypeError с другим текстом (can only concatenate).
+          expectMistake: lost-int
+        - code: |
+            amounts = input().split()
+            total = sum(amounts)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Цикл заменён на sum() по списку строк — TypeError.
+          expectMistake: lost-int
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = int(amount)
+            print(f"Потрачено за неделю: {sum(amounts)}")
+            print(f"Покупок: {len(amounts)}")
+          note: Обходной путь — sum() по списку строк прямо в печати, сломанная строка осталась; TypeError.
+          expectMistake: lost-int
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total += amounts
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Опечатка — прибавлен весь список amounts; разбор про строку amount не подходит, общий разбор TypeError.
+          expectMistake: null
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = + int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Знаки перепутаны и разделены пробелом — = + вместо +=.
+          expectMistake: plus-after
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total = int(amount)
+                total += int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Строку с минусом поставили рядом со строкой с плюсом, а не вместо неё — итог 1600.
+          expectMistake: both-lines
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total += int(amount)
+                total = int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Обе строки, но в другом порядке — итог снова равен последней покупке.
+          expectMistake: both-lines
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+            -    total += int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Строка скопирована из diff вместе с минусом в первой колонке — IndentationError.
+          expectMistake: diff-sign
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                -    total += int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"Покупок: {len(amounts)}")
+          note: Строку из diff сдвинули вправо вместе с минусом — SyntaxError.
+          expectMistake: diff-sign
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total += int(amount)
+            print(f"Потрачено за неделю: {total}")
+            print(f"покупок: {len(amounts)}")
+          note: Строка с покупками есть, но надпись со строчной буквы — разбор «строки нет» не должен сработать.
+          expectMistake: null
+        - code: |
+            amounts = input().split()
+            total = 0
+            for amount in amounts:
+                total += int(amount)
+            print(f"Потрачено за неделю: {total}")
+            # print(f"Покупок: {len(amounts)}")
+          note: Нужная строка закомментирована — программа её не печатает.
+          expectMistake: lost-count
+      mistakes:
+        - id: diff-sign
+          when:
+            codeRegex: '^[ \t]*[-+][ \t]*(total|for|print|amounts)\b'
+          why: >-
+            В код попал знак из diff. Минус и плюс в первой колонке только показывают, была строка
+            или стала, — в файле их нет. Python читает знак как часть кода, отсюда ошибка.
+          try: Убери знак в начале строки и оставь саму строку с отступом в 4 пробела, как у тела цикла.
+          verify: "«Пример 1: три покупки» должен дать `Потрачено за неделю: 2350`."
+        - id: plus-after
+          when:
+            codeRegex: 'total\s*=\s*\+'
+          where: Строка в теле цикла
+          why: >-
+            `=+` — не то же самое, что `+=`. Python читает `total =+ int(amount)` как
+            `total = +int(amount)`: «записать число со знаком плюс». Поэтому итог снова равен
+            последней покупке.
+          try: "Напиши `+=` слитно: сначала `+`, потом `=`, без пробела между ними."
+          verify: "«Пример 1: три покупки» должен дать `Потрачено за неделю: 2350`."
+        - id: lost-int
+          when:
+            errorType: TypeError
+            codeRegex: '^[ \t]*total\s*\+?=.*\bamount\b(?!\s*\))|\bsum\(\s*amounts\s*\)'
+          why: >-
+            `input().split()` даёт список строк: каждая покупка в нём — строка вроде `"1200"`, а
+            строку с числом не сложить — отсюда TypeError. В строке с минусом в diff было
+            `int(amount)`: покупка сначала превращается в число.
+          try: Преврати покупку в число, прежде чем прибавлять, — `int(amount)` в теле цикла, как в строке с минусом.
+          verify: Ошибка должна исчезнуть, а «Пример 1» — дать сумму 2350.
+        - id: both-lines
+          when:
+            codeRegex: '^[ \t]+total[ \t]*=[ \t]*int\([ \t]*amount[ \t]*\)[ \t]*$(?:(?=[\s\S]*^[ \t]+total[ \t]*(?:\+=|=.*\+))|(?<=^[ \t]+total[ \t]*(?:\+=|=.*\+)[\s\S]*))'
+          where: Тело цикла
+          why: >-
+            В цикле осталась и `total = int(amount)`, и строка, которая прибавляет. Первая на
+            каждом проходе записывает покупку поверх накопленного, и сумма не собирается. Пара
+            «минус — плюс» в diff означает замену: строка с плюсом встала на место строки с
+            минусом.
+          try: Оставь в цикле одну строку — ту, что была с минусом, а `total = int(amount)` удали.
+          verify: "«Пример 1: три покупки» должен дать `Потрачено за неделю: 2350`."
+        - id: unchanged
+          when:
+            codeRegex: '^[ \t]+total\s*=\s*int\(\s*amount\s*\)\s*$'
+            outputIncludes: "Потрачено за неделю: 800"
+          where: Строка в теле цикла
+          why: >-
+            В цикле по-прежнему `total = int(amount)`. Знак `=` на каждом проходе записывает в
+            `total` новую покупку поверх накопленного, и после цикла там только последняя: 800
+            вместо 2350. В строке с минусом в diff эта строка выглядела иначе.
+          try: Сравни строку в цикле со строкой с минусом в diff и верни пропавший знак — сумма должна накапливаться.
+          verify: "«Пример 1: три покупки» должен дать `Потрачено за неделю: 2350`."
+        - id: reset-in-loop
+          when:
+            codeRegex: '^[ \t]+total\s*=\s*0\s*$'
+          where: total = 0 в теле цикла
+          why: >-
+            `total = 0` стоит в теле цикла и обнуляет сумму на каждом проходе, поэтому после
+            цикла в ней остаётся только последняя покупка.
+          try: Обнуляй сумму один раз, до цикла, как в исходной программе, а в цикле оставь только прибавление.
+          verify: "«Пример 1: три покупки» должен дать `Потрачено за неделю: 2350`."
+        - id: lost-count
+          when:
+            outputEquals: "Потрачено за неделю: 2350"
+          where: Конец программы
+          why: >-
+            Строку с числом покупок программа не печатает, а она нужна: это папина новая
+            возможность, в diff она отмечена плюсом. Откатывать всю правку, как `git restore`,
+            здесь нельзя — исправлять нужно только сломанную строку.
+          try: "Верни последней строкой печать числа покупок: `Покупок:` и количество элементов в `amounts`."
+          verify: Вывод «Примера 1» должен состоять из двух строк.
+      afterPass: >-
+        Ты нашёл поломку по diff, не перечитывая программу целиком, и сохранил нужную правку. Если
+        теперь набрать `git diff`, останется одна строка с плюсом — папина новая: сломанной пары
+        больше нет. С таким diff можно спокойно делать коммит «Добавить подсчёт покупок».
+      skills: [git-workflow, debugging, accumulators]
+
+  - id: practice-workouts
+    type: exercise
+    title: Практика 2
+    exercise:
+      id: m8-l4-e2
+      kind: fix
+      title: Правка с тремя изменениями
+      filename: training_log.py
+      statement: |-
+        Тренер беговой секции Тамара (из урока 3.2) ведёт журнал тренировок: программа получает
+        минуты каждой тренировки за неделю и печатает, сколько всего набегано. Один из бегунов
+        поправил программу — дал переменным понятные имена и добавил среднее. Перед коммитом
+        Тамара смотрит `git diff`:
+
+        ```text
+        diff --git a/training_log.py b/training_log.py
+        index f553318..a5badd7 100644
+        --- a/training_log.py
+        +++ b/training_log.py
+        @@ -1,5 +1,6 @@
+        -minutes = input().split()
+        +workouts = input().split()
+         total = 0
+        -for m in minutes:
+        -    total += int(m)
+        -print(f"Всего минут: {total}")
+        +for minutes in workouts:
+        +    total += int(minutes)
+        +    print(f"Всего минут: {total}")
+        +print(f"В среднем: {total // len(workouts)}")
+        ```
+
+        Переименование и среднее — нужные изменения. Но после правки программа выводит не то, что
+        нужно. Найди в diff изменение, которое к этому привело, и исправь только его.
+
+        Для ввода `30 45 20` программа должна вывести:
+
+        ```text
+        Всего минут: 95
+        В среднем: 31
+        ```
+      input: Минуты тренировок в одной строке через пробел — целые числа, хотя бы одно.
+      output: "Две строки: `Всего минут: …` и `В среднем: …`."
+      constraints:
+        - Сохрани новые имена переменных и строку со средним — не откатывай правку целиком.
+        - "Среднее считается через `//`, как в правке: дробная часть отбрасывается."
+      starterCode: |
+        workouts = input().split()
+        total = 0
+        for minutes in workouts:
+            total += int(minutes)
+            print(f"Всего минут: {total}")
+        print(f"В среднем: {total // len(workouts)}")
+      tests:
+        - id: t1
+          kind: io
+          title: "Пример 1: три тренировки"
+          example: true
+          stdin: "30 45 20\n"
+          expected: |-
+            Всего минут: 95
+            В среднем: 31
+          compare: { ignoreSpaces: true }
+        - id: t2
+          kind: io
+          title: "Пример 2: две тренировки"
+          example: true
+          stdin: "60 40\n"
+          expected: |-
+            Всего минут: 100
+            В среднем: 50
+          compare: { ignoreSpaces: true }
+        - id: t3
+          kind: io
+          title: "Граничный случай: одна тренировка"
+          edge: true
+          stdin: "60\n"
+          expected: |-
+            Всего минут: 60
+            В среднем: 60
+          compare: { ignoreSpaces: true }
+        - id: t4
+          kind: io
+          title: "Граничный случай: среднее с остатком"
+          edge: true
+          stdin: "10 10 11\n"
+          expected: |-
+            Всего минут: 31
+            В среднем: 10
+          compare: { ignoreSpaces: true }
+        - id: t5
+          kind: io
+          title: "Граничный случай: последняя тренировка как первая"
+          edge: true
+          stdin: "20 30 20\n"
+          expected: |-
+            Всего минут: 70
+            В среднем: 23
+          compare: { ignoreSpaces: true }
+      rules:
+        - id: keep-names
+          dependsOn:
+            print: [workouts]
+          message: "Сохрани новые имена из правки: список тренировок теперь называется `workouts`."
+      criteria:
+        - «Всего минут» печатается один раз — после цикла, с полной суммой.
+        - Строка со средним осталась, среднее целое — через `//`.
+        - Новые имена из правки сохранены — список тренировок называется `workouts`.
+      hints:
+        - >-
+          В diff три разных изменения: новые имена, новая строка со средним и ещё одно — его легко
+          пропустить, потому что слова в строке не поменялись. Сравни строки с минусом и строки с
+          плюсом по порядку: первую старую с первой новой, вторую со второй. В какой паре слова
+          одинаковые, а строки всё равно разные?
+        - |-
+          Отступ решает, где выполняется строка:
+
+          ```python
+          for n in [1, 2]:
+              print("внутри:", n)
+          print("после цикла")
+          ```
+
+          Первый print — в теле цикла, он выполнится дважды: `внутри: 1`, `внутри: 2`. Второй
+          стоит на уровне `for` и выполнится один раз — после цикла. Если строку сдвинуть из тела
+          цикла на уровень `for` или обратно, в diff появится пара строк, которые отличаются только
+          пробелами в начале, — как в прогнозе про вес посылок.
+        - |-
+          Каркас:
+
+          ```text
+          workouts = input().split()
+          total = 0
+          for minutes in workouts:
+              прибавить минуты к total
+          print(... Всего минут ...)   ← на уровне for, не в теле цикла
+          print(... В среднем ...)
+          ```
+      solution:
+        code: |
+          workouts = input().split()
+          total = 0
+          for minutes in workouts:
+              total += int(minutes)
+          print(f"Всего минут: {total}")
+          print(f"В среднем: {total // len(workouts)}")
+        explanation: >-
+          Строки с print в паре «минус — плюс» отличаются только четырьмя пробелами в начале:
+          print уехал в тело цикла и стал выполняться на каждом проходе — с промежуточными суммами
+          30, 75, 95. Возвращаем ему отступ как у `for`, и он снова выполняется один раз, после
+          цикла. Переименование и среднее — нужные изменения, их оставляем.
+      altSolutions:
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            print(f"Всего минут: {total}")
+            average = total // len(workouts)
+            print(f"В среднем: {average}")
+          note: Среднее сначала сохраняется в переменную.
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total = total + int(minutes)
+            count = len(workouts)
+            print("Всего минут:", total)
+            print("В среднем:", total // count)
+          note: Сумма через total = total + …, число тренировок в отдельной переменной, print через запятую.
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+                # print(f"Всего минут: {total}")
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Строка в цикле закомментирована, а после цикла написана заново.
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            print("Всего минут: ", total)
+            print("В среднем: ", total // len(workouts))
+          note: Строки вывода набраны заново через запятую, с лишним пробелом после двоеточия — пробелы не сравниваются.
+        - code: |
+            workouts = input().split()
+            total = 0
+            count = 0
+            for minutes in workouts:
+                total += int(minutes)
+                count += 1
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total // count}")
+          note: Число тренировок считается счётчиком в цикле, а не через len.
+      wrongSolutions:
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+                print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Код не изменён — итог печатается на каждом проходе.
+          expectMistake: print-inside
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+                print(f"Всего минут: {total}")
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Второй print добавлен после цикла, а первый остался в цикле.
+          expectMistake: print-inside
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total / len(workouts)}")
+          note: Среднее через / — дробное.
+          expectMistake: true-division
+        - code: |
+            workouts = input().split()
+            total = 0
+            for m in workouts:
+                total += int(minutes)
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Имена переименованы не везде — NameError.
+          expectMistake: old-names
+        - code: |
+            minutes = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: В первой строке вернули старое имя списка — NameError на workouts.
+          expectMistake: old-names
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            prnt(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Опечатка в print — NameError, но не из-за имён переменных; общий разбор проверки.
+          expectMistake: null
+        - code: |
+            minutes = input().split()
+            total = 0
+            for m in minutes:
+                total += int(m)
+            print(f"Всего минут: {total}")
+          note: Правка откатана целиком — пропало среднее.
+          expectMistake: lost-average
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            print(f"В среднем: {total // len(workouts)}")
+          note: Строка с итогом удалена, а не перенесена.
+          expectMistake: lost-total
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            print(f"В среднем: {total // len(workouts)}")
+            print(f"Всего минут: {total}")
+          note: Итог перенесён после среднего — строки в обратном порядке.
+          expectMistake: wrong-order
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+                # print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Строка в цикле закомментирована, а после цикла не написана — в коде текст есть, в выводе нет.
+          expectMistake: lost-total
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in minutes:
+                total += int(minutes)
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: В заголовке цикла осталось старое имя списка — NameError.
+          expectMistake: old-names
+        - code: |
+            minutes = input().split()
+            total = 0
+            for m in minutes:
+                total += int(m)
+            print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(minutes)}")
+          note: Переименование откатано, среднее оставлено — вывод верный, но правило keep-names не выполнено.
+          expectMistake: null
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+                if minutes == workouts[-1]:
+                    print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Итог печатается на «последнем» проходе — ломается, когда последнее число уже встречалось (t5).
+          expectMistake: null
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+            -print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Строка скопирована из diff вместе с минусом — Python считает минус частью кода, TypeError.
+          expectMistake: diff-sign
+        - code: |
+            workouts = input().split()
+            total = 0
+            for minutes in workouts:
+                total += int(minutes)
+              print(f"Всего минут: {total}")
+            print(f"В среднем: {total // len(workouts)}")
+          note: Стёрты 2 пробела из 4 — IndentationError, общий разбор про отступ.
+          expectMistake: null
+      mistakes:
+        - id: diff-sign
+          when:
+            codeRegex: '^[ \t]*[-+][ \t]*(total|for|print|workouts|minutes)\b'
+          why: >-
+            В код попал знак из diff. Минус и плюс в первой колонке только показывают, была строка
+            или стала, — в файле их нет. Python читает знак как часть кода, отсюда ошибка.
+          try: Убери знак в начале строки, а отступ оставь такой, какой нужен строке в программе.
+          verify: "«Пример 1: три тренировки» должен дать `Всего минут: 95` и `В среднем: 31`."
+        - id: old-names
+          when:
+            errorType: NameError
+            codeRegex: '\bm\b|^[ \t]*minutes\s*=\s*input|\bin\s+minutes\s*:'
+          why: >-
+            Python не знает имени: в одной строке осталось старое имя, а в другой уже новое. В
+            правке переименовали сразу всё: список тренировок теперь `workouts`, одна тренировка
+            в цикле — `minutes`.
+          try: "Сверь имена со строками с плюсом в diff: список — `workouts`, одна тренировка в цикле — `minutes`."
+          verify: Ошибка должна исчезнуть.
+        - id: true-division
+          when:
+            outputIncludes: "31.6"
+          where: Строка со средним
+          why: >-
+            `/` даёт дробное среднее — 31.666666666666668. В правке было `//`: целое, с
+            отбрасыванием дробной части.
+          try: Верни `//` в строке со средним.
+          verify: "«Пример 1: три тренировки» должен дать `В среднем: 31`."
+        - id: lost-total
+          when:
+            outputEquals: "В среднем: 31"
+          why: >-
+            Строку «Всего минут» программа больше не печатает. Она нужна: её надо не удалить и не
+            закомментировать, а переставить — чтобы она выполнялась один раз, после цикла.
+          try: Добавь после цикла, перед средним, печать `Всего минут:` и `total`.
+          verify: "Вывод «Примера 1» должен начинаться со строки `Всего минут: 95`."
+        - id: print-inside
+          when:
+            outputIncludes: "Всего минут: 30"
+          where: print с «Всего минут»
+          why: >-
+            «Всего минут» печатается на каждом проходе цикла — с промежуточными суммами 30, 75,
+            95. В diff у строки с print поменялся только отступ: без отступа она стояла после
+            цикла, с четырьмя пробелами попала в его тело.
+          try: >-
+            Сдвинь строку с «Всего минут» влево, на уровень `for`. Если ты добавил второй print
+            после цикла, убери тот, что внутри.
+          verify: "«Пример 1: три тренировки» должен дать ровно две строки."
+        - id: lost-average
+          when:
+            outputEquals: "Всего минут: 95"
+          why: >-
+            Среднего нет — похоже, правка откатана целиком или строка удалена. Среднее — нужное
+            новое требование, в diff оно отмечено плюсом.
+          try: "Верни последней строкой печать среднего: `В среднем:` и `total // len(workouts)`."
+          verify: "«Пример 1» должен вывести две строки: `Всего минут: 95` и `В среднем: 31`."
+        - id: wrong-order
+          when:
+            outputEquals: |-
+              В среднем: 31
+              Всего минут: 95
+          why: Обе строки на месте, но в обратном порядке. По условию сначала идёт «Всего минут», потом «В среднем».
+          try: Поставь печать итога перед печатью среднего — сразу после цикла.
+          verify: "«Пример 1» должен начинаться со строки `Всего минут: 95`."
+      afterPass: >-
+        Ты нашёл изменение, которое в diff легко пропустить: слова в строке те же, поменялся только
+        отступ. Одно улучшение на будущее: делай такие правки отдельными коммитами — переименование
+        отдельно, среднее отдельно. Тогда сдвиг строки не спрятался бы среди других изменений.
+      skills: [git-workflow, debugging, loop-tracing]
+
+  - id: clean-history
+    type: theory
+    title: "Чистая история: .gitignore и понятные коммиты"
+    body: |-
+      Не всё, что лежит в папке проекта, нужно хранить в истории:
+
+      - `.venv/` — окружение из урока 8.3: сотни файлов, привязанных к твоему компьютеру. Его не
+        переносят, а пересоздают по requirements.txt.
+      - `__pycache__/` и файлы `*.pyc` — кеш, который Python сам создаёт при импорте модулей
+        (урок 8.2).
+      - `tasks.json` — твои личные задачи, другому человеку они не нужны. В модуле 11 так же
+        будешь прятать от Git ключи доступа к сервисам.
+
+      **`.gitignore`** — текстовый файл в корне проекта: на каждой строке шаблон — какие файлы Git
+      не должен замечать. Косая черта в конце (`.venv/`) означает папку, звёздочка (`*.pyc`) —
+      «любые символы»: подходят все файлы, имя которых оканчивается на `.pyc`. Такие файлы
+      пропадают из `git status`, и даже `git add .` их не возьмёт. Сам `.gitignore` коммитят: он
+      нужен всем, кто работает с проектом.
+
+      На файлы, которые уже попали в коммит, `.gitignore` не действует — за ними Git продолжает
+      следить. Команда `git rm --cached tasks.json` кладёт в индекс *удаление* файла: в следующем
+      коммите и дальше его не будет, а на диске файл останется. Но в старых коммитах он
+      сохранится — поэтому личные файлы и ключи вносят в `.gitignore` до первого коммита.
+
+      **Один коммит — одна мысль.** Три коммита «Добавить .gitignore», «Добавить зависимости»,
+      «Разнести код по модулям» лучше одного «всё сделал»: по истории видно, что и зачем менялось, а
+      неудачную правку легко найти. Сообщение отвечает на вопрос «что изменилось?», как в уроке
+      5.6, а сообщения вроде «правки», «всё сделал» или «asdf» не отвечают ни на что.
+
+      `git add .` добавляет всю папку сразу. Это удобно, только когда `.gitignore` настроен, а
+      `git status` показывает лишь нужное. И помни про `git restore файл`: правки, которых нет в
+      коммите, пропадут безвозвратно. Не уверен — сначала посмотри `git diff`.
+    simpler: >-
+      `.gitignore` — список «не замечать»: окружение, кеш, личные файлы. Файл, который уже попал в
+      коммит, он не спрячет — нужна `git rm --cached`: Git перестанет сохранять файл в новых
+      коммитах, но в старых он останется. А коммиты делай маленькими: одна мысль — один коммит с
+      понятной подписью.
+    coach: >-
+      Посмотри на свою историю глазами человека, который видит проект впервые: поймёт ли он по
+      сообщениям, что происходило?
+
+  - id: before-commit
+    type: order
+    title: Привычка перед коммитом
+    prompt: >-
+      Ты исправил ошибку в `main.py` и хочешь сохранить исправление в истории. Расставь команды в
+      том порядке, в каком их стоит выполнить.
+    items:
+      - id: status
+        text: git status — что изменено и что уже в индексе
+      - id: diff
+        text: git diff — что именно изменилось в файлах
+      - id: add
+        text: git add main.py — положить файл в индекс
+      - id: staged
+        text: git diff --staged — проверить, что уйдёт в коммит
+      - id: commit
+        text: git commit -m "Исправить подсчёт итога" — сделать снимок
+      - id: log
+        text: git log --oneline — убедиться, что коммит в истории
+    before:
+      - [status, add]
+      - [diff, add]
+      - [add, staged]
+      - [staged, commit]
+      - [commit, log]
+    explanation: >-
+      Сначала смотрят: `git status` и `git diff` — в любом порядке — показывают, какие файлы
+      изменены и что в них поменялось. Потом `git add` кладёт нужный файл в индекс, и
+      `git diff --staged` показывает ровно то, что уйдёт в коммит: по нему удобно проверить, нет
+      ли лишнего, и написать сообщение. `git log --oneline` имеет смысл только после коммита.
+    coach: >-
+      Через неделю-другую эта цепочка станет привычкой, и ты будешь набирать её не задумываясь.
+
+  - id: tidy-repo
+    type: checklist
+    title: "Наводим порядок: .gitignore"
+    body: >-
+      Дальше — работа на компьютере, в проекте «Список задач» после уроков 8.2 и 8.3: пакет
+      `todo`, окружение `.venv`, requirements.txt и раздел «Установка» в README пока не
+      закоммичены. Два блока займут 15–20 минут, третий — по желанию, ещё минут пять; интернет не
+      нужен. Работу на компьютере можно сделать отдельным заходом, хоть в другой день, —
+      останавливайся между блоками, а не посреди них. Для Git подойдёт любой терминал. Тренажёр не
+      видит твой компьютер, поэтому отмечай пункты по результату, а не по прочтении.
+    items:
+      - id: status-before
+        text: >-
+          **Посмотри, что видит Git.** Открой терминал в папке проекта и набери `git status`.
+          Скорее всего, в разделе `Changes not staged for commit` будет `modified: main.py`, а в
+          `Untracked files` — `todo/`, `requirements.txt` и, возможно, `README.md` и `tasks.json`.
+        help: >-
+          `fatal: not a git repository` — терминал открыт не в папке проекта (сравни путь слева от
+          курсора с папкой, где лежит `main.py`) или репозиторий не создан — тогда вернись к пункту
+          «Страховка» урока 8.2. Папки `.venv/` в списке может не быть: Python 3.13 и новее кладёт
+          внутрь неё свой маленький .gitignore. Видна — значит, у тебя Python 3.12 или раньше,
+          наш .gitignore решит и это. `README.md` в разделе `modified` — README уже был в коммитах, это
+          нормально. Git пишет по-русски — ищи те же разделы по смыслу. Если твой проект устроен
+          иначе, действуй по смыслу: код — в одном коммите, зависимости — в другом, личные данные и
+          служебные папки — в .gitignore.
+      - id: dry-run
+        text: >-
+          **Проба: что утащила бы `git add .`?** Набери `git add --dry-run .` — с точкой в конце:
+          точка означает «вся папка». Git только перечислит файлы, которые добавил бы, и ничего не
+          добавит. Найди в списке файлы из `todo/__pycache__/` и `tasks.json` — им в истории не
+          место.
+        help: >-
+          `--dry-run` — «проба»: команда показывает результат, но ничего не меняет. В
+          `git status` папки `__pycache__` не видно: новую папку `todo/` Git показывает одной
+          строкой и заглядывает внутрь, только когда добавляет её. Нет `tasks.json` в списке —
+          значит, задачи ещё не сохранялись или файл уже в коммитах и не менялся (об этом — в
+          следующем пункте). Если в списке сотни строк из `.venv/` — это та самая папка окружения,
+          сейчас мы её спрячем.
+      - id: gitignore
+        text: |-
+          **Создай файл `.gitignore`** в корне проекта — рядом с `main.py` — с четырьмя строками:
+
+          ```text
+          .venv/
+          __pycache__/
+          *.pyc
+          tasks.json
+          ```
+        help: >-
+          Имя начинается с точки, расширения нет. В VS Code: File → New File, имя `.gitignore`. В
+          Блокноте при сохранении выбери тип файла «Все файлы», иначе получится
+          `.gitignore.txt` — проверь командой `dir` (macOS и Linux: `ls -a`, файлы с точкой в
+          начале там скрыты). Если `tasks.json` уже был в коммитах, `.gitignore` его не спрячет:
+          выполни `git rm --cached tasks.json`. В `git status` он появится как
+          `deleted: tasks.json` в разделе `Changes to be committed`: в индексе лежит удаление, и с
+          ближайшего коммита Git перестанет хранить файл, а на диске он останется (проверь `dir`).
+          Для папки, которая уже попала в коммит, — `git rm -r --cached .venv`.
+      - id: status-after
+        text: >-
+          **Проверь, что изменилось:** снова `git add --dry-run .` и `git status`. В списке пробы
+          больше нет `__pycache__` и `tasks.json`, а в `git status` появился новый файл
+          `.gitignore`.
+        help: >-
+          Лишние файлы всё ещё в списке — проверь имя (`dir` не должен показывать
+          `.gitignore.txt`), место (рядом с `main.py`, а не в папке `todo`) и строки: без пробелов
+          в начале, косая черта `/`, а не `\`. `tasks.json` остался в `git status` как `modified`
+          — он уже в коммитах: смотри «Если не получается» в прошлом пункте.
+      - id: commit-ignore
+        text: >-
+          **Коммит 1 — только .gitignore:** `git add .gitignore`, затем
+          `git commit -m "Добавить .gitignore"`. Если ты убирал `tasks.json` через
+          `git rm --cached`, подпиши коммит точнее: «Добавить .gitignore и убрать tasks.json из
+          Git».
+        help: >-
+          Предупреждение `LF will be replaced by CRLF` — о концах строк в Windows, работе не
+          мешает. `pathspec '…' did not match any files` после `git add` или
+          `no changes added to commit` (бывает и `nothing added to commit`) после `git commit` —
+          `.gitignore` не добавлен: проверь имя в `git add`. Остальные изменения пока не трогай —
+          они пойдут в следующие коммиты.
+
+  - id: small-commits
+    type: checklist
+    title: Два коммита по смыслу
+    body: >-
+      В изменениях из уроков 8.2 и 8.3 — две разные мысли: у проекта появились зависимости и шаги
+      установки, а код разнесён по модулям. Сделаем из них два коммита и каждый раз проверим, что
+      уходит в историю. Начнём с зависимостей: код из урока 8.3 уже импортирует tabulate, поэтому
+      requirements.txt должен попасть в историю не позже кода, которому он нужен.
+    items:
+      - id: commit-deps
+        text: >-
+          **Коммит 2 — зависимости:** `git add requirements.txt README.md`, затем
+          `git diff --staged` — там строка с tabulate и раздел «Установка». Всё на месте —
+          `git commit -m "Добавить зависимости и шаги установки"`.
+        help: >-
+          `pathspec '…' did not match any files` — файла с таким именем нет: сверь имя с выводом
+          `dir` (например, файл называется `README.md.txt`). Ошибки нет, а README в
+          `git diff --staged` не видно — проверь регистр букв: Windows не различает `README.md` и
+          `readme.md`, а Git различает и молча ничего не добавляет. Набери имя так, как его
+          показывает `dir`. Нет README в проекте — добавь только `requirements.txt` и подпиши
+          коммит «Добавить requirements.txt».
+      - id: diff
+        text: >-
+          **Посмотри правку `main.py`:** `git diff`. Строки с `-` — старый код, который переехал в
+          модули, строки с `+` — импорт из пакета `todo` и `if __name__ == "__main__":`.
+        help: >-
+          Длинный diff открывается постранично: пробел — следующая страница, `q` — выход. Новых
+          файлов из `todo/` в `git diff` нет: Git за ними ещё не следит, они появятся в
+          `git diff --staged` после `git add`. После второго `@@` Git иногда пишет строку из файла
+          выше этого куска, например `def main():`, — это ориентир, а не изменение. Видишь вместо
+          русских букв значки вроде `<D0><9F>` — это особенность терминала, а не файла; попробуй
+          `git --no-pager diff`.
+      - id: stage-modules
+        text: >-
+          **Положи в индекс код:** `git add main.py todo`, затем `git status`. В разделе
+          `Changes to be committed` — `main.py` и файлы из `todo/` с пометкой `new file`. Других
+          разделов, скорее всего, нет: остальное уже в истории или в .gitignore.
+        help: >-
+          `todo` без косой черты — вся папка; `__pycache__` в индекс не попадёт, его прячет
+          .gitignore. Случайно добавил лишний файл — вынь его из индекса:
+          `git restore --staged имя_файла`, правки в файле останутся.
+      - id: staged-diff
+        text: >-
+          **Коммит 3 — код, подпись твоя.** Проверь, что уйдёт в коммит: `git diff --staged` —
+          теперь видны и новые файлы пакета. Подпиши коммит сам, по этому diff: одно действие,
+          ответ на вопрос «что изменилось?», до 50 символов, как в уроке 5.6. Набери
+          `git commit -m "…"` со своим сообщением.
+        help: >-
+          Не знаешь, как подписать, — сверься с нашим вариантом: «Разнести код по модулям в пакет
+          todo». Заметил в diff отладочный print или лишнюю правку — исправь файл, сохрани и снова
+          сделай `git add` этого файла: в индексе лежит версия на момент `git add`, и без
+          повторного добавления в коммит уйдёт она. Таблица tabulate в `todo/tasks.py` войдёт в
+          этот коммит — так и нужно: requirements.txt для неё уже в истории.
+      - id: log
+        text: |-
+          **Посмотри историю:** `git log --oneline`. Сверху три новые строки, например:
+
+          ```text
+          7126604 (HEAD -> master) Разнести код по модулям в пакет todo
+          6998e87 Добавить зависимости и шаги установки
+          90f8418 Добавить .gitignore
+          ```
+
+          Номера у тебя будут свои, а верхнее сообщение — твоё. Поймёт ли по этим строкам, что
+          происходило, человек, который видит проект впервые?
+        help: >-
+          Внизу `:` или `(END)` — режим листания: нажми `q`. Вместо `master` может быть `main` —
+          это имя основной ветки, о ветках — в уроке 8.5. `git status` теперь пишет
+          `nothing to commit, working tree clean`: всё, что есть в папке, либо в истории, либо
+          в .gitignore.
+
+  - id: undo
+    type: checklist
+    title: "Две отмены: из индекса и из файла (по желанию)"
+    body: >-
+      Необязательный блок на компьютере, около 5 минут: две отмены, которые пригодятся, когда в
+      индекс или в файл попало лишнее. Обе команды уже объяснены в теории, здесь они — вживую, на
+      безопасной правке. Нужен проект с чистым `git status`, как после прошлого блока.
+    items:
+      - id: debug-line
+        text: >-
+          **Добавь лишнее.** Допиши в конец `main.py` строку `print("ОТЛАДКА")`, сохрани файл и
+          набери `git add main.py`, затем `git status`: `main.py` в разделе
+          `Changes to be committed`.
+      - id: unstage
+        text: >-
+          **Вынь файл из индекса:** `git restore --staged main.py`, затем `git status` и
+          `git diff`. `main.py` переехал в `Changes not staged for commit`, а `git diff`
+          по-прежнему показывает строку `+print("ОТЛАДКА")`: из индекса правка ушла, а в файле
+          осталась.
+        help: >-
+          Git сам подсказывает эту команду в скобках под `Changes to be committed`:
+          `use "git restore --staged <file>..." to unstage` — «чтобы убрать из индекса».
+      - id: discard
+        text: >-
+          **Выброси правку из файла:** закрой `main.py` в редакторе и набери
+          `git restore main.py`. Теперь `git status` пишет `nothing to commit, working tree clean`,
+          а строки с отладкой в файле нет.
+        help: >-
+          Закрыть файл нужно, чтобы редактор не записал версию с отладкой обратно при следующем
+          сохранении, — как в уроке 5.6. Если файл был открыт, после restore открой его заново.
+          `git restore` без `--staged` стирает правки, которых нет в коммите, безвозвратно:
+          пользуйся им, только когда их точно не жалко.
+    coach: >-
+      Две отмены легко запомнить парой: с `--staged` — «вынь из корзины», без него — «выброси
+      правку из файла».
+
+  - id: recap
+    type: recap
+    title: Что мы узнали
+    points:
+      - "Три места: рабочая папка → индекс → история. В коммит попадает только то, что лежит в индексе, — в той версии, что была при `git add`."
+      - "Перед коммитом — `git status` и `git diff`, после `git add` — `git diff --staged`. В diff `-` — было, `+` — стало, а сам знак в файл не входит; даже сдвиг отступа меняет строку."
+      - "`.gitignore` не пускает в репозиторий окружение, кеши и личные файлы. Уже закоммиченный файл перестают сохранять через `git rm --cached`, но в старых коммитах он остаётся."
+      - "Одна мысль — один коммит с сообщением о том, что изменилось. `git restore --staged` вынимает файл из индекса, `git restore` выбрасывает правки из файла безвозвратно."
+    question: Зачем смотреть `git diff --staged` перед коммитом, если ты помнишь, что менял?
+    answer: >-
+      Память подводит: в индекс мог попасть отладочный print, лишний файл или случайная правка —
+      как у папы Ани. `git diff --staged` показывает ровно то, что уйдёт в историю, и по нему же
+      точнее пишется сообщение коммита.

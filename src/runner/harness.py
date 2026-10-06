@@ -1,11 +1,14 @@
 # Практика: учебная обвязка для запуска кода ученика в Pyodide.
 #
 # Файл выполняется один раз при старте Python (в браузере — в Web Worker,
-# при проверке материалов — в Node.js). Он:
-#   * запускает код ученика в отдельном пространстве имён;
+# при проверке материалов — в Node.js, при быстрой самопроверке — в обычном CPython). Он:
+#   * запускает код ученика в отдельном пространстве имён и в новой пустой рабочей папке
+#     (учебные файлы и базы SQLite задания, код ученика под именем файла задания);
 #   * перехватывает вывод и подставляет заранее заданный ввод (stdin);
+#   * подставляет учебный модуль requests: ответы заранее записаны, настоящих запросов нет;
 #   * ограничивает объём вывода;
-#   * сравнивает результат с тестами и возвращает подробный JSON.
+#   * сравнивает результат с тестами и возвращает подробный JSON, в том числе файлы,
+#     которые программа создала или изменила.
 #
 # Ограничение времени и остановка бесконечного цикла выполняются снаружи:
 # поток с Python завершается и запускается заново.
@@ -20,14 +23,24 @@ import io
 import json
 import linecache
 import math
+import os
+import random
 import re
+import shutil
 import sys
+import tempfile
 import time
 import traceback
+import types
+import urllib.parse
+from http import HTTPStatus
 
 USER_FILENAME = "main.py"
 DEFAULT_OUTPUT_LIMIT = 20_000
 BLOCKED_MODULES = {"js", "pyodide", "pyodide_js", "_pyodide", "micropip"}
+# «Файлы после запуска»: сколько файлов и сколько символов текста каждого возвращать.
+CHANGED_FILES_LIMIT = 20
+FILE_TEXT_LIMIT = 4_000
 
 _BUILTINS_SNAPSHOT = dict(builtins.__dict__)
 _REAL_IMPORT = builtins.__import__
@@ -140,8 +153,8 @@ def _restore_builtins():
             current[key] = value
 
 
-def _register_source(code):
-    linecache.cache[USER_FILENAME] = (len(code), None, code.splitlines(True), USER_FILENAME)
+def _register_source(code, filename):
+    linecache.cache[filename] = (len(code), None, code.splitlines(True), filename)
 
 
 def _source_line(code, lineno):
@@ -153,9 +166,9 @@ def _source_line(code, lineno):
     return None
 
 
-def _describe_syntax_error(e, code):
+def _describe_syntax_error(e, code, filename=USER_FILENAME):
     raw = "".join(traceback.format_exception_only(type(e), e)).rstrip()
-    lineno = e.lineno if e.filename == USER_FILENAME else None
+    lineno = e.lineno if e.filename == filename else None
     return {
         "phase": "compile",
         "type": type(e).__name__,
@@ -169,9 +182,20 @@ def _describe_syntax_error(e, code):
     }
 
 
-def _describe_exception(e, code):
+def _is_user_frame(frame, filename, workdir):
+    """Строка кода ученика: программа (скомпилирована под именем файла задания) или тот же файл,
+    импортированный как модуль из рабочей папки (import main в assert-тесте)."""
+    if frame.filename == filename:
+        return True
+    if not workdir:
+        return False
+    own = os.path.normcase(os.path.join(workdir, *filename.split("/")))
+    return os.path.normcase(os.path.abspath(frame.filename)) == own
+
+
+def _describe_exception(e, code, filename=USER_FILENAME, workdir=None):
     all_frames = traceback.extract_tb(e.__traceback__)
-    frames = [f for f in all_frames if f.filename == USER_FILENAME]
+    frames = [f for f in all_frames if _is_user_frame(f, filename, workdir)]
     lineno = frames[-1].lineno if frames else None
     # Ошибка внутри самой проверки (например, функция с нужным именем не найдена).
     origin = "check" if all_frames and all_frames[-1].filename == "<проверка>" else "program"
@@ -181,7 +205,8 @@ def _describe_exception(e, code):
     if frames:
         lines.append("Traceback (most recent call last):")
         for frame in frames:
-            lines.append(f'  File "{frame.filename}", line {frame.lineno}, in {frame.name}')
+            # Путь во временной папке ученику ничего не скажет — показываем имя файла задания.
+            lines.append(f'  File "{filename}", line {frame.lineno}, in {frame.name}')
             if frame.line:
                 lines.append(f"    {frame.line.strip()}")
     lines.append(only)
@@ -199,44 +224,541 @@ def _describe_exception(e, code):
     }
 
 
-def _compile(code):
-    _register_source(code)
-    return compile(code, USER_FILENAME, "exec", dont_inherit=True)
+def _compile(code, filename=USER_FILENAME):
+    _register_source(code, filename)
+    return compile(code, filename, "exec", dont_inherit=True)
 
 
-def _execute(compiled, code, stdin_text, limit, after=None):
-    """Выполняет программу; after(ns) — дополнительная проверка в том же окружении."""
-    transcript = _Transcript(limit)
-    stdin = io.StringIO(stdin_text or "")
-    namespace = {"__name__": "__main__", "__builtins__": _student_builtins(_make_input(stdin, transcript))}
-    saved = sys.stdout, sys.stderr, sys.stdin
-    sys.stdout = _Stream(transcript, "out", True)
-    sys.stderr = _Stream(transcript, "err", False)
-    sys.stdin = stdin
-    started = time.perf_counter()
-    outcome = {"error": None, "limit": False, "exitCode": None, "extra": None, "extraError": None}
+def _execute(compiled, code, stdin_text, limit, after=None, environment=None):
+    """
+    Выполняет программу в новой рабочей папке (см. _Workspace); after(ns) — дополнительная
+    проверка в том же окружении и в той же папке.
+    """
+    environment = environment or {}
+    workspace = _Workspace(environment, code)
+    workspace.open()
     try:
+        transcript = _Transcript(limit)
+        stdin = io.StringIO(stdin_text or "")
+        namespace = {
+            "__name__": "__main__",
+            "__file__": workspace.program_path,
+            "__builtins__": _student_builtins(_make_input(stdin, transcript)),
+        }
+        saved = sys.stdout, sys.stderr, sys.stdin
+        sys.stdout = _Stream(transcript, "out", True)
+        sys.stderr = _Stream(transcript, "err", False)
+        sys.stdin = stdin
+        started = time.perf_counter()
+        outcome = {"error": None, "limit": False, "exitCode": None, "extra": None, "extraError": None}
         try:
-            exec(compiled, namespace)
-        except SystemExit as e:
-            outcome["exitCode"] = e.code if isinstance(e.code, int) or e.code is None else str(e.code)
-        if after is not None:
             try:
-                outcome["extra"] = after(namespace)
+                exec(compiled, namespace)
             except SystemExit as e:
                 outcome["exitCode"] = e.code if isinstance(e.code, int) or e.code is None else str(e.code)
-    except OutputLimitExceeded:
-        outcome["limit"] = True
-    except BaseException as e:  # noqa: BLE001 - любая ошибка ученика должна быть показана
-        outcome["error"] = _describe_exception(e, code)
+            if after is not None:
+                try:
+                    outcome["extra"] = after(namespace)
+                except SystemExit as e:
+                    outcome["exitCode"] = e.code if isinstance(e.code, int) or e.code is None else str(e.code)
+        except OutputLimitExceeded:
+            outcome["limit"] = True
+        except BaseException as e:  # noqa: BLE001 - любая ошибка ученика должна быть показана
+            outcome["error"] = _describe_exception(e, code, workspace.filename, workspace.path)
+        finally:
+            sys.stdout, sys.stderr, sys.stdin = saved
+            _restore_builtins()
+        outcome["durationMs"] = round((time.perf_counter() - started) * 1000, 1)
+        outcome["transcript"] = transcript.parts
+        outcome["stdout"] = transcript.stdout()
+        outcome["truncated"] = transcript.truncated
+        outcome["files"] = workspace.changed_files()
+        return outcome
     finally:
-        sys.stdout, sys.stderr, sys.stdin = saved
-        _restore_builtins()
-    outcome["durationMs"] = round((time.perf_counter() - started) * 1000, 1)
-    outcome["transcript"] = transcript.parts
-    outcome["stdout"] = transcript.stdout()
-    outcome["truncated"] = transcript.truncated
-    return outcome
+        workspace.close()
+
+
+# ---------------------------------------------------------------- рабочая папка запуска
+#
+# Каждый запуск («Запустить», каждый тест, пример, прогноз) идёт в новой пустой папке: туда
+# записываются учебные файлы (files), создаются базы SQLite (databases) и сохраняется код ученика
+# под именем файла задания (по умолчанию main.py) — чтобы assert-тест мог сделать import main.
+# На время запуска папка — текущая (os.chdir) и первая в sys.path, в sys.modules подставлен учебный
+# requests. После запуска всё возвращается как было: модули из папки выгружаются (иначе import
+# закешировался бы между тестами), папка удаляется. В Pyodide это виртуальная файловая система
+# в памяти, в CPython (quick-check) — временная папка на диске.
+
+
+def _safe_relative_path(path, what="файл"):
+    """Путь внутри рабочей папки: относительный, через «/», без «..», «.» и пустых частей."""
+    if not isinstance(path, str) or path == "" or path.startswith("/") or re.search(r"[\\:\0]", path):
+        raise ValueError(f"Недопустимый путь ({what}): {path!r}")
+    parts = path.split("/")
+    if any(part in ("", ".", "..") for part in parts):
+        raise ValueError(f"Недопустимый путь ({what}): {path!r}")
+    return parts
+
+
+def _merge_named(base, extra):
+    """Файлы или базы задания, дополненные тестом; значение None в тесте убирает запись задания."""
+    merged = dict(base or {})
+    merged.update(extra or {})
+    return {name: value for name, value in merged.items() if value is not None}
+
+
+def _merge_http(base, extra):
+    """Ответы сети задания, дополненные тестом: запись теста заменяет запись с тем же методом и адресом."""
+    merged = {}
+    for route in list(base or []) + list(extra or []):
+        merged[_route_key(route.get("method") or "GET", route["url"])] = route
+    return list(merged.values())
+
+
+def _test_environment(base, test):
+    """Окружение одного теста: поля задания (payload), дополненные полями теста."""
+    seed = test.get("seed")
+    return {
+        "filename": base.get("filename"),
+        "files": _merge_named(base.get("files"), test.get("files")),
+        "databases": _merge_named(base.get("databases"), test.get("databases")),
+        "seed": seed if seed is not None else base.get("seed"),
+        "http": _merge_http(base.get("http"), test.get("http")),
+    }
+
+
+def _write_text(root, relative, text):
+    full = os.path.join(root, *_safe_relative_path(relative))
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    # newline="" — текст записывается как есть: на Windows (quick-check) без замены \n на \r\n.
+    with open(full, "w", encoding="utf-8", newline="") as file:
+        file.write(text)
+    return full
+
+
+def _create_database(root, relative, script):
+    import sqlite3  # только когда базы действительно нужны: модуль не нужен большинству уроков
+
+    if not relative.endswith(".db"):
+        raise ValueError(f"Имя базы данных должно оканчиваться на .db: {relative!r}")
+    full = os.path.join(root, *_safe_relative_path(relative, "база данных"))
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    connection = sqlite3.connect(full)
+    try:
+        connection.executescript(script)
+        connection.commit()
+    except sqlite3.Error as e:
+        raise ValueError(f"SQL-скрипт базы {relative} не выполнился: {e}") from None
+    finally:
+        connection.close()
+
+
+def _walk_files(root):
+    """Относительные пути всех файлов папки (через «/»), без __pycache__."""
+    found = []
+    for directory, subdirs, names in os.walk(root):
+        subdirs[:] = sorted(name for name in subdirs if name != "__pycache__")
+        for name in sorted(names):
+            full = os.path.join(directory, name)
+            found.append(os.path.relpath(full, root).replace(os.sep, "/"))
+    return found
+
+
+def _read_bytes(path):
+    with open(path, "rb") as file:
+        return file.read()
+
+
+def _file_preview(full, relative, status):
+    """Файл для «Файлов после запуска»: размер и начало текста (у двоичного файла текста нет)."""
+    size = os.path.getsize(full)
+    with open(full, "rb") as file:
+        # В UTF-8 символ занимает до 4 байт.
+        head = file.read(FILE_TEXT_LIMIT * 4 + 4)
+    text = None
+    if b"\0" not in head:
+        try:
+            text = head.decode("utf-8")
+        except UnicodeDecodeError as e:
+            # Начало файла оборвалось посреди символа — это не признак двоичного файла.
+            if len(head) < size and e.start >= len(head) - 4:
+                text = head[: e.start].decode("utf-8", errors="replace")
+    truncated = text is not None and (len(text) > FILE_TEXT_LIMIT or len(head) < size)
+    return {
+        "path": relative,
+        "status": status,
+        "size": size,
+        "text": text[:FILE_TEXT_LIMIT] if text is not None else None,
+        "truncated": truncated,
+    }
+
+
+_MISSING = object()
+_SQLITE_TEMP_SUFFIXES = ("-journal", "-wal", "-shm")
+
+
+class _Workspace:
+    def __init__(self, environment, code):
+        self.environment = environment
+        self.code = code
+        filename = environment.get("filename") or USER_FILENAME
+        _safe_relative_path(filename, "файл задания")
+        self.filename = filename
+        self.path = None
+        self.program_path = None
+        self._snapshot = {}
+        self._saved = None
+
+    def open(self):
+        self._saved = {
+            "cwd": os.getcwd(),
+            "bytecode": sys.dont_write_bytecode,
+            "modules": {name: sys.modules.get(name, _MISSING) for name in _REQUESTS_MODULES},
+        }
+        self.path = tempfile.mkdtemp(prefix="praktika-")
+        try:
+            env = self.environment
+            for relative, text in (env.get("files") or {}).items():
+                if text is not None:
+                    _write_text(self.path, relative, text)
+            for relative, script in (env.get("databases") or {}).items():
+                if script is not None:
+                    _create_database(self.path, relative, script)
+            # Код ученика — последним: его не заменит учебный файл с тем же именем.
+            self.program_path = _write_text(self.path, self.filename, self.code)
+            # Что лежало в папке до запуска — чтобы потом показать созданное и изменённое программой.
+            for relative in _walk_files(self.path):
+                full = os.path.join(self.path, *relative.split("/"))
+                self._snapshot[relative] = _read_bytes(full)
+            os.chdir(self.path)
+            sys.path.insert(0, self.path)
+            # Без .pyc: папка всё равно удаляется, а __pycache__ мешал бы списку изменённых файлов.
+            sys.dont_write_bytecode = True
+            simulation = _make_requests(env.get("http") or [])
+            sys.modules["requests"] = simulation
+            sys.modules["requests.exceptions"] = simulation.exceptions
+            if env.get("seed") is not None:
+                random.seed(env["seed"])
+        except BaseException:
+            self.close()
+            raise
+
+    def changed_files(self):
+        """Файлы, которые программа создала или изменила (без удалённых), по алфавиту."""
+        changed = []
+        if not self.path or not os.path.isdir(self.path):
+            return changed
+        for relative in _walk_files(self.path):
+            # Служебные файлы SQLite (незавершённая транзакция) — не результат программы.
+            if relative.endswith(_SQLITE_TEMP_SUFFIXES):
+                continue
+            full = os.path.join(self.path, *relative.split("/"))
+            before = self._snapshot.get(relative)
+            try:
+                if before is None:
+                    status = "created"
+                elif os.path.getsize(full) != len(before) or _read_bytes(full) != before:
+                    status = "modified"
+                else:
+                    continue
+                changed.append(_file_preview(full, relative, status))
+            except OSError:
+                continue
+            if len(changed) >= CHANGED_FILES_LIMIT:
+                break
+        return changed
+
+    def close(self):
+        saved = self._saved
+        if saved is None:
+            return
+        self._saved = None
+        sys.dont_write_bytecode = saved["bytecode"]
+        for name, module in saved["modules"].items():
+            if module is _MISSING:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = module
+        try:
+            os.chdir(saved["cwd"])
+        except OSError:
+            pass
+        if self.path:
+            sys.path[:] = [entry for entry in sys.path if entry != self.path]
+            _unload_modules_from(self.path)
+            shutil.rmtree(self.path, ignore_errors=True)
+
+
+def _inside(path, root):
+    if not isinstance(path, str) or not path:
+        return False
+    full = os.path.normcase(os.path.abspath(path))
+    base = os.path.normcase(os.path.abspath(root))
+    return full == base or full.startswith(base + os.sep)
+
+
+def _unload_modules_from(root):
+    """Выгружает модули, загруженные из папки: следующий запуск импортирует их заново."""
+    for name, module in list(sys.modules.items()):
+        locations = [getattr(module, "__file__", None)]
+        locations.extend(list(getattr(module, "__path__", None) or []))
+        if any(_inside(location, root) for location in locations):
+            del sys.modules[name]
+    for key in list(sys.path_importer_cache):
+        if _inside(key, root):
+            del sys.path_importer_cache[key]
+
+
+# ---------------------------------------------------------------- учебная симуляция сети
+#
+# Учебный модуль requests: тот же интерфейс, что у настоящей библиотеки (get, post, Response,
+# raise_for_status, исключения), но ответы берутся из поля http задания или теста. Настоящих
+# запросов модуль не делает никогда — и в браузере, и в CPython, даже если там установлен
+# настоящий requests. Каждый запуск получает новый модуль с пустым журналом вызовов requests.calls.
+
+_REQUESTS_MODULES = ("requests", "requests.exceptions")
+# Параметры настоящего requests, которые учебный модуль принимает и пропускает.
+_IGNORED_REQUEST_OPTIONS = {"cookies", "files", "auth", "allow_redirects", "proxies", "verify", "stream", "cert"}
+
+
+# Имена в harness — с подчёркиванием (чтобы не заслонять встроенный ConnectionError), а ученик
+# видит их как в requests: requests.exceptions.ConnectionError.
+class _RequestException(IOError):
+    """Общая ошибка запроса, как в requests."""
+
+    def __init__(self, *args, response=None, request=None):
+        self.response = response
+        self.request = request
+        super().__init__(*args)
+
+
+class _HTTPError(_RequestException):
+    """Ответ 4xx или 5xx (raise_for_status)."""
+
+
+class _ConnectionError(_RequestException):
+    """Не удалось подключиться — или в симуляции нет ответа для этого адреса."""
+
+
+class _Timeout(_RequestException):
+    """Сервер не ответил за отведённое время."""
+
+
+class _InvalidURL(_RequestException, ValueError):
+    """Неверный адрес."""
+
+
+class _MissingSchema(_RequestException, ValueError):
+    """В адресе нет http:// или https://."""
+
+
+class _InvalidJSONError(_RequestException):
+    """Ответ не удалось разобрать как JSON."""
+
+
+class _JSONDecodeError(_InvalidJSONError, json.JSONDecodeError):
+    """Как в requests: и RequestException, и json.JSONDecodeError (наследник ValueError)."""
+
+    def __init__(self, msg, doc="", pos=0):
+        json.JSONDecodeError.__init__(self, msg, doc, pos)
+        _InvalidJSONError.__init__(self, self.args[0])
+
+    def __str__(self):
+        return str(self.args[0]) if self.args else ""
+
+
+_REQUEST_ERRORS = {
+    "RequestException": _RequestException,
+    "HTTPError": _HTTPError,
+    "ConnectionError": _ConnectionError,
+    "Timeout": _Timeout,
+    "InvalidURL": _InvalidURL,
+    "MissingSchema": _MissingSchema,
+    "InvalidJSONError": _InvalidJSONError,
+    "JSONDecodeError": _JSONDecodeError,
+}
+for _name, _error in _REQUEST_ERRORS.items():
+    _error.__name__ = _error.__qualname__ = _name
+    _error.__module__ = "requests.exceptions"
+del _name, _error
+
+
+class CaseInsensitiveDict(dict):
+    """Заголовки ответа: headers["content-type"] и headers["Content-Type"] — одно и то же."""
+
+    def _key(self, key):
+        if isinstance(key, str):
+            for existing in dict.keys(self):
+                if isinstance(existing, str) and existing.lower() == key.lower():
+                    return existing
+        return key
+
+    def __getitem__(self, key):
+        return dict.__getitem__(self, self._key(key))
+
+    def __setitem__(self, key, value):
+        existing = self._key(key)
+        if existing != key:
+            dict.__delitem__(self, existing)
+        dict.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        dict.__delitem__(self, self._key(key))
+
+    def __contains__(self, key):
+        return dict.__contains__(self, self._key(key))
+
+    def get(self, key, default=None):
+        return self[key] if key in self else default
+
+
+CaseInsensitiveDict.__module__ = "requests.structures"
+
+
+def _reason(status):
+    try:
+        return HTTPStatus(status).phrase
+    except ValueError:
+        return ""
+
+
+class Response:
+    """Ответ из записанных заранее: status_code, ok, reason, text, headers, url, json(), raise_for_status()."""
+
+    def __init__(self, route, url):
+        self.status_code = int(route.get("status") or 200)
+        self.reason = _reason(self.status_code)
+        self.url = url
+        self.encoding = "utf-8"
+        headers = CaseInsensitiveDict()
+        if "json" in route:
+            self.text = json.dumps(route["json"], ensure_ascii=False)
+            headers["Content-Type"] = "application/json"
+        elif "text" in route:
+            self.text = route["text"]
+            headers["Content-Type"] = "text/plain; charset=utf-8"
+        else:
+            self.text = ""
+        for name, value in (route.get("headers") or {}).items():
+            headers[name] = str(value)
+        self.headers = headers
+        self.content = self.text.encode("utf-8")
+
+    @property
+    def ok(self):
+        return self.status_code < 400
+
+    def json(self, **kwargs):
+        try:
+            return json.loads(self.text, **kwargs)
+        except json.JSONDecodeError as e:
+            raise _JSONDecodeError(e.msg, e.doc, e.pos) from None
+
+    def raise_for_status(self):
+        if 400 <= self.status_code < 500:
+            kind = "Client Error"
+        elif 500 <= self.status_code < 600:
+            kind = "Server Error"
+        else:
+            return
+        raise _HTTPError(f"{self.status_code} {kind}: {self.reason} for url: {self.url}", response=self)
+
+    def __bool__(self):
+        return self.ok
+
+    def __repr__(self):
+        return f"<Response [{self.status_code}]>"
+
+
+Response.__module__ = "requests.models"
+
+
+def _split_url(url):
+    """Адрес без query (схема и сервер — в нижнем регистре, пустой путь — «/») и строка query."""
+    parts = urllib.parse.urlsplit(url)
+    base = urllib.parse.urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path or "/", "", ""))
+    return base, parts.query
+
+
+def _params_pairs(params):
+    """params из вызова — пары (имя, значение) строками, как их отправил бы requests."""
+    if params is None:
+        return []
+    if isinstance(params, (str, bytes)):
+        text = params.decode() if isinstance(params, bytes) else params
+        return urllib.parse.parse_qsl(text, keep_blank_values=True)
+    items = params.items() if isinstance(params, dict) else params
+    pairs = []
+    for key, value in items:
+        for item in value if isinstance(value, (list, tuple)) else [value]:
+            if item is None:
+                continue
+            pairs.append((str(key), item.decode() if isinstance(item, bytes) else str(item)))
+    return pairs
+
+
+def _route_key(method, url, extra_pairs=()):
+    """Метод, адрес без query и query-параметры без учёта порядка."""
+    base, query = _split_url(url)
+    pairs = urllib.parse.parse_qsl(query, keep_blank_values=True) + list(extra_pairs)
+    return method.upper(), base, tuple(sorted(pairs))
+
+
+def _make_requests(routes):
+    """Новый учебный модуль requests с ответами routes и пустым журналом calls."""
+    table = {_route_key(route.get("method") or "GET", route["url"]): route for route in routes}
+    module = types.ModuleType("requests", "Учебная симуляция requests: ответы заранее записаны, настоящих запросов нет.")
+    exceptions = types.ModuleType("requests.exceptions")
+    calls = []
+
+    def request(method, url, params=None, data=None, json=None, headers=None, timeout=None, **options):  # noqa: A002
+        unknown = sorted(set(options) - _IGNORED_REQUEST_OPTIONS)
+        if unknown:
+            raise TypeError(f"request() got an unexpected keyword argument '{unknown[0]}'")
+        method = str(method).upper()
+        url = str(url)
+        calls.append({
+            "method": method,
+            "url": url,
+            "params": params,
+            "json": json,
+            "data": data,
+            "headers": dict(headers) if isinstance(headers, dict) else headers,
+            "timeout": timeout,
+        })
+        if "://" not in url:
+            raise _MissingSchema(f"Invalid URL {url!r}: No scheme supplied. Perhaps you meant https://{url}?")
+        pairs = _params_pairs(params)
+        full_url = url
+        if pairs:
+            full_url += ("&" if "?" in url else "?") + urllib.parse.urlencode(pairs)
+        # В сообщении — адрес без %-кодов: «city=Казань», а не «city=%D0%9A…».
+        shown = f"{method} {urllib.parse.unquote(full_url)}"
+        route = table.get(_route_key(method, url, pairs))
+        if route is None:
+            raise _ConnectionError(f"в учебной симуляции нет ответа для {shown}")
+        waited = f" (timeout={timeout})" if timeout is not None else ""
+        if route.get("error") == "timeout":
+            raise _Timeout(f"учебная симуляция: сервер не ответил вовремя{waited} — {shown}")
+        if route.get("error") == "connection":
+            raise _ConnectionError(f"учебная симуляция: не удалось подключиться к серверу — {shown}")
+        return Response(route, full_url)
+
+    def get(url, params=None, headers=None, timeout=None, data=None, json=None, **options):  # noqa: A002
+        return request("GET", url, params=params, data=data, json=json, headers=headers, timeout=timeout, **options)
+
+    def post(url, data=None, json=None, params=None, headers=None, timeout=None, **options):  # noqa: A002
+        return request("POST", url, params=params, data=data, json=json, headers=headers, timeout=timeout, **options)
+
+    for name, value in _REQUEST_ERRORS.items():
+        setattr(exceptions, name, value)
+        setattr(module, name, value)
+    module.exceptions = exceptions
+    module.request = request
+    module.get = get
+    module.post = post
+    module.Response = Response
+    module.calls = calls
+    return module
 
 
 # ---------------------------------------------------------------- сравнение
@@ -624,24 +1146,34 @@ def _check_rules(code, rules):
 # ---------------------------------------------------------------- публичные функции
 
 
-def run_program(code, stdin_text="", limit=DEFAULT_OUTPUT_LIMIT):
-    """Обычный запуск: показать, что выведет программа."""
+def _filename_of(environment):
+    return (environment or {}).get("filename") or USER_FILENAME
+
+
+def run_program(code, stdin_text="", limit=DEFAULT_OUTPUT_LIMIT, environment_json=None):
+    """
+    Обычный запуск: показать, что выведет программа. environment_json — окружение запуска
+    в JSON: {"filename", "files", "databases", "seed", "http"} (всё необязательно).
+    """
+    environment = json.loads(environment_json) if environment_json else {}
+    filename = _filename_of(environment)
     try:
-        compiled = _compile(code)
+        compiled = _compile(code, filename)
     except SyntaxError as e:
-        return json.dumps({"compileError": _describe_syntax_error(e, code)}, ensure_ascii=False)
-    outcome = _execute(compiled, code, stdin_text, int(limit))
+        return json.dumps({"compileError": _describe_syntax_error(e, code, filename)}, ensure_ascii=False)
+    outcome = _execute(compiled, code, stdin_text, int(limit), environment=environment)
     outcome.pop("extra", None)
     outcome.pop("extraError", None)
     return json.dumps(outcome, ensure_ascii=False)
 
 
-def _run_test(compiled, code, test, limit):
+def _run_test(compiled, code, test, limit, environment):
     kind = test["kind"]
     result = {"id": test["id"], "kind": kind, "passed": False, "stdin": test.get("stdin", "")}
+    stdin = test.get("stdin", "")
 
     if kind == "io":
-        outcome = _execute(compiled, code, test.get("stdin", ""), limit)
+        outcome = _execute(compiled, code, stdin, limit, environment=environment)
         result["expected"] = test["expected"]
         if not outcome["error"] and not outcome["limit"]:
             passed, difference = _compare_output(outcome["stdout"], test)
@@ -653,7 +1185,7 @@ def _run_test(compiled, code, test, limit):
             value = eval(compile(test["call"], "<проверка>", "eval", dont_inherit=True), namespace)  # noqa: S307
             return value
 
-        outcome = _execute(compiled, code, test.get("stdin", ""), limit, after)
+        outcome = _execute(compiled, code, stdin, limit, after, environment)
         result["call"] = test["call"]
         result["expected"] = test["expected"]
         if not outcome["error"] and not outcome["limit"]:
@@ -672,7 +1204,7 @@ def _run_test(compiled, code, test, limit):
                 return False
             return True
 
-        outcome = _execute(compiled, code, test.get("stdin", ""), limit, after)
+        outcome = _execute(compiled, code, stdin, limit, after, environment)
         result["message"] = test["message"]
         if not outcome["error"] and not outcome["limit"]:
             result["passed"] = outcome["extra"] is True
@@ -687,18 +1219,24 @@ def _run_test(compiled, code, test, limit):
     result["truncated"] = outcome["truncated"]
     result["exitCode"] = outcome["exitCode"]
     result["durationMs"] = outcome["durationMs"]
+    result["files"] = outcome["files"]
     return result
 
 
 def check_program(payload_json, notify=None):
-    """Проверка по тестам. payload: {"code", "tests", "rules", "limit"}."""
+    """
+    Проверка по тестам. payload: {"code", "tests", "rules", "limit"} и окружение задания —
+    {"filename", "files", "databases", "seed", "http"}; у теста могут быть свои files, databases,
+    seed и http, они дополняют и заменяют поля задания (см. _test_environment).
+    """
     payload = json.loads(payload_json)
     code = payload["code"]
     limit = int(payload.get("limit") or DEFAULT_OUTPUT_LIMIT)
+    filename = _filename_of(payload)
     try:
-        compiled = _compile(code)
+        compiled = _compile(code, filename)
     except SyntaxError as e:
-        return json.dumps({"compileError": _describe_syntax_error(e, code), "rules": [], "tests": []},
+        return json.dumps({"compileError": _describe_syntax_error(e, code, filename), "rules": [], "tests": []},
                           ensure_ascii=False)
 
     rules = _check_rules(code, payload.get("rules") or [])
@@ -706,5 +1244,5 @@ def check_program(payload_json, notify=None):
     for index, test in enumerate(payload.get("tests") or []):
         if notify is not None:
             notify(index)
-        tests.append(_run_test(compiled, code, test, limit))
+        tests.append(_run_test(compiled, code, test, limit, _test_environment(payload, test)))
     return json.dumps({"compileError": None, "rules": rules, "tests": tests}, ensure_ascii=False)
