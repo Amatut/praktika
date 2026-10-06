@@ -144,13 +144,17 @@ describe('TodayScreen', () => {
     expect(later).not.toMatch(/Ближайшее повторение[^<]*\.</);
   });
 
-  it('все готовые уроки пройдены: нет метки «Продолжить», маршрут «Основ» отмечен пройденным', () => {
+  it('все готовые уроки пройдены: нет метки «Продолжить»; «Основы» пройдены, только если все их уроки написаны', () => {
     const all = course.modules.flatMap((module) => module.lessons).map((item) => lessonRecord({ lessonId: item.id, completedAt: 2 }));
     const html = render(learnerWith({ lessons: all }));
     expect(text(html)).toContain('Готовые уроки пройдены');
     expect(html).not.toContain('id="today-resume-label"');
     expect(text(html)).not.toMatch(/Продолжить|Начать урок/);
-    expect(html).toContain('class="today-route is-complete"');
+    // Пока часть уроков «Основ» не написана, маршрут честно не показывает «Основы» пройденными.
+    const basicsWritten = course.modules
+      .filter((module) => module.part === 'basics')
+      .every((module) => module.lessons.every((lesson) => lesson.ready));
+    expect(html).toContain(basicsWritten ? 'class="today-route is-complete"' : 'class="today-route"');
   });
 
   it('телефон: секции в разметке идут в видимом порядке, состояние — внизу', () => {
